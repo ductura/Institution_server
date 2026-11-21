@@ -8,7 +8,8 @@
 -- What is copied is only what the teacher wrote: the title, the
 -- instructions, the work type, the dates (or new ones), the rules on AI
 -- tools, the evidence profile, the import rule, the word range, the purpose
--- catalogue and the work language. Nothing a student made or received is
+-- catalogue, the work language and whether it is practice (SRV-1901: a copy
+-- of a practice assignment is practice too). Nothing a student made or received is
 -- copied: no submission, work, evidence, acknowledgment, deadline extension,
 -- individual work language, accommodation, grant, source, attachment,
 -- comment or note. Groups belong to the source's course and stay there.
@@ -50,7 +51,7 @@ BEGIN
   -- caller's institution that the caller teaches.
   SELECT v.title, v.instructions, v.work_type, v.opens_at, v.due_at, v.ai_policy, v.ai_purposes,
          v.evidence_profile, v.import_allowed, v.word_min, v.word_max, v.purpose_catalog_version,
-         v.work_language
+         v.work_language, a.is_practice
     INTO src
     FROM institution.assignment a
     JOIN institution.assignment_version v
@@ -75,8 +76,8 @@ BEGIN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
 
-  INSERT INTO institution.assignment (course_id, institution_id, created_by, request_id)
-  VALUES (p_course_id, actor.institution_id, actor.user_id, p_request_id)
+  INSERT INTO institution.assignment (course_id, institution_id, created_by, request_id, is_practice)
+  VALUES (p_course_id, actor.institution_id, actor.user_id, p_request_id, src.is_practice)
   ON CONFLICT (created_by, request_id) WHERE request_id IS NOT NULL DO NOTHING
   RETURNING id INTO v_assignment;
 
@@ -95,7 +96,7 @@ BEGIN
   -- its course and its first version are what this call would write.
   SELECT a.id, a.course_id, v.title, v.instructions, v.work_type, v.opens_at, v.due_at, v.ai_policy,
          v.ai_purposes, v.evidence_profile, v.import_allowed, v.word_min, v.word_max,
-         v.purpose_catalog_version, v.work_language
+         v.purpose_catalog_version, v.work_language, a.is_practice
     INTO existing
     FROM institution.assignment a
     JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = 1
@@ -114,7 +115,8 @@ BEGIN
      OR existing.word_min IS DISTINCT FROM src.word_min
      OR existing.word_max IS DISTINCT FROM src.word_max
      OR existing.purpose_catalog_version IS DISTINCT FROM src.purpose_catalog_version
-     OR existing.work_language IS DISTINCT FROM src.work_language THEN
+     OR existing.work_language IS DISTINCT FROM src.work_language
+     OR existing.is_practice IS DISTINCT FROM src.is_practice THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
   RETURN existing.id;

@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { MUTATION_GUARD } from "./shared.ts";
+import { assignmentGradeGet } from "./assignments.ts";
 import { Name } from "./teacher.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/create-course.ts,
@@ -422,7 +423,12 @@ export const courseAssignmentsPost = defineRoute({
     params: closed({ courseId: Uuid }),
     contentType: "application/json",
     maxBodyBytes: 90_000,
-    body: closed({ requestKey: Uuid, ...ASSIGNMENT_CONTENT, ...ASSIGNMENT_SETUP }),
+    body: closed({
+      requestKey: Uuid,
+      ...ASSIGNMENT_CONTENT,
+      ...ASSIGNMENT_SETUP,
+      isPractice: Type.Optional(Type.Boolean({ default: false })),
+    }),
   },
   responses: [{ status: 201, description: "created", body: closed({ id: LowerUuid }) }],
   errors: [...MUTATION_ERRORS, error(409, "conflict")],
@@ -467,6 +473,7 @@ export const assignmentGet = defineRoute({
         groupIds: Type.Optional(Type.Array(LowerUuid, { maxItems: 20 })),
         externalToolsAllowed: Type.Optional(Type.Boolean()),
         aiSummaryOnly: Type.Optional(Type.Boolean()),
+        isPractice: Type.Optional(Type.Boolean()),
       }),
     },
   ],
@@ -511,5 +518,6 @@ export const institutionRoutes = [
   courseGroupTeachersPost,
   courseAssignmentsPost,
   assignmentGet,
+  assignmentGradeGet,
   enrollmentCodeStateGet,
 ] as const;

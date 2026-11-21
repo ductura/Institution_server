@@ -148,6 +148,20 @@ SELECT is(
     WHERE a.request_id = pg_temp.id('key2')),
   '365 days|395 days|Z1', 'the copy takes the new dates and keeps the rest of the content');
 
+-- SRV-1901: whether the source is practice comes along; the copy above is not.
+SELECT is((SELECT is_practice FROM institution.assignment WHERE id = pg_temp.id('copy1')), false,
+  'a copy of a regular assignment is regular');
+INSERT INTO ref VALUES ('z4', '00000000-0000-4000-8000-0000000000a4'), ('key3', '00000000-0000-4000-8000-00000000c0f3');
+INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by, is_practice)
+VALUES (pg_temp.id('z4'), pg_temp.id('k1'), pg_temp.id('fak_a'), 1, pg_temp.id('vesna'), true);
+INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type, opens_at, due_at,
+  ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+VALUES (pg_temp.id('z4'), 1, 'Z4', 'Upute za izmišljenu probu.', 'essay', now(), now() + interval '7 days',
+  'prohibited', '{}', 'basic', false, pg_temp.id('vesna'));
+SELECT is(pg_temp.copy('vesna', '{z4}', '{k1}', '{key3}'), 'ok', 'Vesna copies the practice assignment Z4');
+SELECT is((SELECT is_practice FROM institution.assignment WHERE request_id = pg_temp.id('key3')), true,
+  'a copy of a practice assignment is practice too');
+
 -- A student of K1 sees the copy as a new assignment of the course, as after
 -- any new assignment; the copy is readable through RLS like any other.
 SELECT is(pg_temp.ask('ana', 'SELECT count(*)::text FROM institution.assignment WHERE id = {copy1}'), '1',

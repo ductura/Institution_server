@@ -3,7 +3,7 @@
 // new assignment at version 1 with the source's current content and, if sent,
 // new dates. Nothing about students is copied: no acknowledgment, read,
 // work language exception or work. The real rules are
-// institution.copy_assignment (20261130190400).
+// institution.copy_assignment (20261201190400).
 import { randomUUID } from "node:crypto";
 
 import type { Handlers } from "./server.ts";

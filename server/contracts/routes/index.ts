@@ -56,6 +56,7 @@ export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-
 export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
+export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
   MentorNoteInput,
   MentorshipNoteParams,

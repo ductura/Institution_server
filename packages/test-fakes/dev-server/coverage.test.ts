@@ -105,6 +105,13 @@ const VERSION = {
 };
 const A = `/api/v1/institution/assignments/${IDS.assignment}`;
 const C = `/api/v1/institution/courses/${IDS.course}`;
+const TEAM = `/api/v1/courses/${IDS.course}/team`;
+const SET_TEAM: Step = {
+  path: TEAM,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { assistantIds: [IDS.teacher2] },
+};
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
 const REQUEST_SLOT: Step = {
@@ -402,6 +409,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.assignment.get": { request: { path: A, as: "nastavnik" } },
+  "teacher.assignment-grade.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/grade`, as: "nastavnik" },
+  },
   "institution.enrollment-code-state.get": {
     request: {
       path: `${C}/enrollment-code/state`,
@@ -449,6 +459,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
+  "institution.teaching-team.post": { request: SET_TEAM },
+  "institution.teaching-group-members.put": {
+    before: [SET_TEAM],
+    request: {
+      path: `/api/v1/courses/${IDS.course}/groups/${IDS.groupA}/members`,
+      method: "PUT",
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { assistantIds: [IDS.teacher2], studentIds: [IDS.student] },
+    },
+  },
   "institution.course-groups.post": {
     request: { path: `${C}/groups`, as: "nastavnik", body: { name: "Grupa C" } },
   },

@@ -50,6 +50,8 @@ export type Course = {
   readonly createdBy: string;
   studentIds: string[];
   groups: Group[];
+  /** Explicit assistant roster; false marks a revoked assistant. */
+  teachingAssistants?: Map<string, boolean>;
   codes: EnrollmentCode[];
   /** Removed students, refused by a code until a teacher lets them back. */
   removed: string[];
@@ -80,6 +82,7 @@ export type AssignmentContent = {
   groupIds?: string[];
   externalToolsAllowed?: boolean;
   aiSummaryOnly?: boolean;
+  isPractice?: boolean;
 };
 
 export type Assignment = {
@@ -527,7 +530,11 @@ export function accountByKey(state: State, key: AccountKey): Account {
 
 /** Teachers of a course: its holder and the teachers of its groups. */
 export function courseTeachers(course: Course): string[] {
-  return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
+  const groupTeachers = course.groups.flatMap((g) => g.teacherIds);
+  return [
+    course.holderId,
+    ...groupTeachers.filter((id) => course.teachingAssistants?.get(id) !== false),
+  ];
 }
 
 /** The course of a work, when it exists. */
