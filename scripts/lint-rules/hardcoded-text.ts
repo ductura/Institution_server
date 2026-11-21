@@ -166,6 +166,8 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/projection/process-summary.ts": ["TextDecoder"],
   "server/teacher/fast-path.ts": ["TextDecoder"],
   "server/institution/create-assignment.ts": ["TextDecoder"],
+  // The AI assistant request body, strict UTF-8 before JSON.parse (SRV-1201).
+  "server/domain/assistant/request.ts": ["TextDecoder"],
   // The verified segment payloads of the process summary as text (Ductus copy, as evidence/replay.ts).
   "server/projection/process-summary-reader.ts": ["TextDecoder"],
   // Croatian collation of the Ductus copy (Intl.Collator("hr")): it orders text and
