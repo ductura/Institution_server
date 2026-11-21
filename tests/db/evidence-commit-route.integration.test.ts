@@ -371,6 +371,7 @@ describe("evidence/commit through a real server over real PostgreSQL", () => {
       revision: 1,
       receipt: { status: "signed" },
     });
+    expect(committed.body).not.toHaveProperty("duplicate");
     const signedReceipt = (committed.body.receipt as { signedReceipt: unknown }).signedReceipt;
     const verified = await verifySignedEvidenceReceiptV2(
       signedReceipt,
@@ -387,11 +388,20 @@ describe("evidence/commit through a real server over real PostgreSQL", () => {
 
     const again = await post("/api/v1/evidence/commit", request);
     expect(again.status).toBe(200);
-    expect(again.body.status).toBe("duplicate");
+    expect(again.body).toStrictEqual({
+      ...committed.body,
+      status: "duplicate",
+      duplicate: true,
+    });
     expect(JSON.stringify((again.body.receipt as { signedReceipt: unknown }).signedReceipt)).toBe(
       JSON.stringify(signedReceipt),
     );
     expect(payloads.size).toBe(1);
+    const segments = await admin.query<{ count: number }>(
+      "SELECT count(*)::int AS count FROM evidence.segment WHERE document_id = $1",
+      [documentId],
+    );
+    expect(segments.rows).toEqual([{ count: 1 }]);
 
     const reopened = await post("/api/v1/evidence/open", { assignmentId: id.z1 });
     expect(reopened.body).toMatchObject({
@@ -484,7 +494,7 @@ describe("evidence/commit under protocol 2 through a real server over real Postg
     expect(first.body).toStrictEqual({ status: "committed", ...pending });
     const second = await commit("2");
     expectVector(second, "duplicate-pending-signature");
-    expect(second.body).toStrictEqual({ status: "duplicate", ...pending });
+    expect(second.body).toStrictEqual({ status: "duplicate", duplicate: true, ...pending });
     expect(await stored()).toEqual([{ status: "pending_signature", signature: null }]);
     expect(webSigns).toBe(0);
 
@@ -511,6 +521,7 @@ describe("evidence/commit under protocol 2 through a real server over real Postg
     expectVector(after, "duplicate-signed-after-pending");
     expect(after.body).toMatchObject({
       status: "duplicate",
+      duplicate: true,
       revision: 1,
       receipt: { status: "signed" },
     });
