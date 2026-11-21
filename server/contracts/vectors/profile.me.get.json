@@ -13,7 +13,10 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "institution": { "slug": "demo-fakultet", "displayName": "Demo fakultet (test)" },
+          "institution": {
+            "slug": "demo-fakultet",
+            "displayName": "Demo fakultet (test)"
+          },
           "roles": ["student"],
           "displayName": "Ana Primjer",
           "journalScope": "4e84fd38a2f8f663661b8e1b2fc52bad9b9da56f8accead18bfd24ca20b96d12",
@@ -33,7 +36,10 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "institution": { "slug": "demo-fakultet", "displayName": null },
+          "institution": {
+            "slug": "demo-fakultet",
+            "displayName": null
+          },
           "roles": ["institution_admin", "teacher"],
           "displayName": null,
           "journalScope": "c3c10a7bd4a52fae73329070fefa320aa45810a01f113936745f05b769698a45",
@@ -95,6 +101,27 @@
           "code": "unavailable",
           "messageKey": "errors.unavailable",
           "status": 503
+        }
+      }
+    },
+    {
+      "name": "session-idle-expired",
+      "kind": "error",
+      "code": "session_idle_expired",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni_token-racuna_studenta_0000000001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "session_idle_expired",
+          "code": "session_idle_expired",
+          "messageKey": "errors.sessionIdleExpired",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000000"
         }
       }
     }
