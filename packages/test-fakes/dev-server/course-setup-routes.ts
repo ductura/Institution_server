@@ -130,8 +130,18 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
         courseId: assignment.courseId,
         versionNo: assignment.version,
         ...assignment.content,
+        isPractice: assignment.content.isPractice ?? false,
       },
     };
+  },
+  "teacher.assignment-grade.get": ({ state, account, params }) => {
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId.toLowerCase());
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (!assignment || !account || !course || !teachesCourse(course, account)) {
+      return { error: "not_found" };
+    }
+    if (assignment.content.isPractice) return { error: "practice_assignment" };
+    return { status: 200, body: { eligible: true } };
   },
   "institution.course-assignments.post": ({ state, account, params, body }) => {
     const course = state.courses.find((c) => c.id === params.courseId);
@@ -141,7 +151,12 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
     const dueAt = parseInstant(body.dueAt);
     if (opensAt === null || dueAt === null) return { error: "invalid_input" };
     const { requestKey, groupIds, ...fields } = body;
-    const content: AssignmentContent = { ...fields, opensAt, dueAt };
+    const content: AssignmentContent = {
+      ...fields,
+      opensAt,
+      dueAt,
+      isPractice: fields.isPractice ?? false,
+    };
     // UGOVORI-API: the groups are the course's, each once; summary only needs AI help and no purpose.
     const groups = (groupIds ?? []).map((id) => id.toLowerCase());
     if (groupIds !== undefined) content.groupIds = groups;

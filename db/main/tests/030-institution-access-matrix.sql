@@ -6,7 +6,20 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2593);
+SELECT plan(2596);
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
+  'maintenance_window has forced RLS and the operations owner')
+  FROM pg_class c WHERE c.oid = 'identity.maintenance_window'::regclass;
+SELECT results_eq($$ SELECT policyname::text, cmd::text, roles = ARRAY['ductus_identity'::name]
+  FROM pg_policies WHERE schemaname = 'identity' AND tablename = 'maintenance_window' ORDER BY policyname $$,
+  $$ VALUES ('maintenance_read'::text, 'SELECT'::text, true), ('maintenance_record', 'INSERT', true) $$,
+  'maintenance_window lets the operator read and append');
+SELECT bag_eq($$ SELECT r.rolname::text FROM pg_roles r
+  WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
+    AND has_function_privilege(r.oid, 'identity.public_maintenance_windows()', 'EXECUTE')
+  UNION ALL SELECT 'public' WHERE has_function_privilege('public', 'identity.public_maintenance_windows()', 'EXECUTE') $$,
+  ARRAY['ductus_identity', 'ductus_app'], 'only the app and owner execute the maintenance projection');
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -237,7 +250,8 @@ SELECT bag_eq(
   $$ SELECT c.relname || ': ' || t.tgname || ' ' || t.tgtype::text || ' ' || t.tgenabled::text
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
-  ARRAY['assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
+  ARRAY['assignment: assignment_practice_immutable 19 O',
+        'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',
         'assignment_version: assignment_version_work_language 7 O',
@@ -255,6 +269,7 @@ SELECT bag_eq(
         'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
         'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O',
         'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
+        'merlin_package: merlin_package_practice 7 O',
         'merlin_package_download: merlin_package_download_immutable 27 O',
         'merlin_package_download: merlin_package_download_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
@@ -302,6 +317,10 @@ SELECT bag_eq(
     'create_assignment(p_course_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer) definer app',
+    'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean) definer app',
+    'assignment_grade_state(p_assignment_id uuid) app',
+    'refuse_assignment_practice_change()',
+    'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'acknowledge_notice(p_assignment_id uuid, p_version_no integer, p_template_version integer) definer app',
     'notice_fingerprint(p_template_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_word_min integer, p_word_max integer)',

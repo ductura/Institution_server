@@ -55,7 +55,7 @@ describe("createAssignment", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0]!.token).toBe(TOKEN);
     expect(seen[0]!.text).toContain("institution.create_assignment(");
-    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES]);
+    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false]);
   });
 
   it.each([
