@@ -4,6 +4,9 @@
 -- the base is not changed, so this one keys the notes by the institution of
 -- their source, drops the cascade and removes the notes in the functions that
 -- remove a source, as 20261121130000 does for proofs.
+SET LOCAL ROLE ductus_migrator;
+-- Only while this migration runs; revoked at the end.
+GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
 ALTER TABLE institution.source_note ADD COLUMN institution_id uuid;
@@ -166,7 +169,14 @@ BEGIN
 END
 $$;
 
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
+REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
+
 -- migrate:down
+SET LOCAL ROLE ductus_migrator;
+-- Only while this migration runs; revoked at the end.
+GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 CREATE OR REPLACE FUNCTION institution.delete_work_source(p_assignment_id uuid, p_source_id uuid) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
@@ -310,3 +320,7 @@ ALTER TABLE institution.source_note ADD CONSTRAINT source_note_assignment_id_stu
   FOREIGN KEY (assignment_id, student_id, source_id)
   REFERENCES institution.work_source (assignment_id, student_id, id) ON DELETE CASCADE;
 ALTER TABLE institution.source_note DROP COLUMN institution_id;
+
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
+REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
