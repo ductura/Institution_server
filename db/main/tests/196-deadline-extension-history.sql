@@ -47,6 +47,26 @@ SELECT throws_ok($$ TRUNCATE institution.deadline_extension $$, 'ZD403', NULL,
   'the history cannot be truncated');
 SELECT is((SELECT count(*) FROM institution.deadline_extension), 3::bigint, 'all three extension records remain');
 
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM institution.extend_assignment_deadline(
+    {z1}, NULL, now() + interval '55 days', 'all') $$), '1', 'a later common extension is appended');
+SELECT is(institution.effective_due_at(pg_temp.id('z1'), pg_temp.id('ana')), now() + interval '55 days',
+  'the common extension lengthens Ana''s deadline');
+SELECT is(institution.effective_due_at(pg_temp.id('z1'), pg_temp.id('dora')), now() + interval '60 days',
+  'the common extension preserves Dora''s longer individual deadline');
+
+SET LOCAL ROLE ductus_identity;
+INSERT INTO institution.assignment_version (
+  assignment_id, version_no, title, instructions, work_type, opens_at, due_at, ai_policy, ai_purposes,
+  evidence_profile, import_allowed, created_by
+) VALUES (pg_temp.id('z1'), 3, 'Z1', 'Uputa za izmišljeni zadatak.', 'essay', now() - interval '1 day',
+  now() + interval '70 days', 'partially_allowed', '{proofreading}', 'extended', true, pg_temp.id('vesna'));
+UPDATE institution.assignment SET current_version = 3 WHERE id = pg_temp.id('z1');
+RESET ROLE;
+SELECT is(institution.effective_due_at(pg_temp.id('z1'), pg_temp.id('dora')), now() + interval '70 days',
+  'an earlier extension cannot shorten a new published deadline');
+SELECT is(pg_temp.ask('dora', $$ SELECT extended_due_at IS NULL FROM institution.student_assignments() WHERE assignment_id = {z1} $$),
+  'true', 'the list leaves the extension field empty when the published deadline is later');
+
 -- Search the installed function bodies, so a later migration that shadows a
 -- caller or implements a second history-based resolver is checked as well.
 SELECT set_eq($$ SELECT p.proname::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace

@@ -3,6 +3,20 @@ SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
+-- An extension can lengthen the published deadline. A common extension that
+-- ends earlier than an individual extension still leaves the latter in force.
+CREATE OR REPLACE FUNCTION institution.effective_due_at(p_assignment_id uuid, p_student_id uuid) RETURNS timestamptz
+LANGUAGE sql STABLE SET search_path = ''
+AS $$
+  SELECT greatest(v.due_at, (
+    SELECT max(e.due_at) FROM institution.deadline_extension e
+     WHERE e.assignment_id = a.id AND (e.student_id IS NULL OR e.student_id = p_student_id)
+  ))
+    FROM institution.assignment a
+    JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
+   WHERE a.id = p_assignment_id
+$$;
+
 -- SRV-1509: the SRV-1108 table already holds the append-only history.
 -- Only an active student of the assignment can read this projection. Derive
 -- student and institution from the session; include common extensions and
@@ -130,6 +144,19 @@ GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
 DROP FUNCTION institution.student_deadline_history(uuid);
+
+CREATE OR REPLACE FUNCTION institution.effective_due_at(p_assignment_id uuid, p_student_id uuid) RETURNS timestamptz
+LANGUAGE sql STABLE SET search_path = ''
+AS $$
+  SELECT coalesce(
+    (SELECT e.due_at FROM institution.deadline_extension e
+      WHERE e.assignment_id = p_assignment_id
+        AND (e.student_id IS NULL OR e.student_id = p_student_id)
+      ORDER BY e.seq DESC LIMIT 1),
+    (SELECT v.due_at FROM institution.assignment a
+       JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
+      WHERE a.id = p_assignment_id))
+$$;
 
 CREATE OR REPLACE FUNCTION institution.student_assignments()
 RETURNS TABLE (

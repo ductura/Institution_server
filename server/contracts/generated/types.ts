@@ -400,6 +400,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "completed"; "requestId": string; "conversationId": string; "response": { "id": string; "text": string } } | { "outcome": "idempotency_conflict" | "forbidden" | "ai_disabled" | "purpose_not_allowed" | "budget_exceeded" | "in_progress" | "request_outcome_unknown" | "provider_failed"; "requestId": string | null; "conversationId": string | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "precondition_required" | "invalid_input" | "unavailable";
   };
+  "student.deadline-history.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all"; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.declaration-attachments.post": {
     params: { "assignmentId": string };
     query: undefined;

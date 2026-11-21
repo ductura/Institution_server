@@ -31,6 +31,7 @@ import {
   createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -307,6 +308,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
     ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
     routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createStudentDeadlineHistoryRouteFor(databases.main)",
+    ids: ["student.deadline-history.get"],
+    routes: () => [createStudentDeadlineHistoryRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-1109: the Merlin roster of an assignment and its CSV over the main database.
@@ -603,6 +609,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
+      "student.deadline-history.get",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
       "teacher.merlin-packages.post",

@@ -59,6 +59,7 @@ import {
   createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -615,6 +616,12 @@ const SESSION_ROUTES = {
     body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
     live: 404,
   },
+  "student.deadline-history.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/deadline-extensions`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1109: a live session that teaches no such assignment gets 404.
   "teacher.merlin-roster.get": {
     method: "GET",
@@ -900,6 +907,7 @@ const FACTORIES = [
   "createCourseAggregateRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
+  "createStudentDeadlineHistoryRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
@@ -965,6 +973,7 @@ const MOUNTED = [
   createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  createStudentDeadlineHistoryRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),

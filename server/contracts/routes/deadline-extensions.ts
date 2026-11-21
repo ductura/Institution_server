@@ -103,7 +103,39 @@ export const teacherDeadlineExtensionPost = defineRoute({
   ],
 });
 
+export const studentDeadlineHistoryGet = defineRoute({
+  id: "student.deadline-history.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/deadline-extensions",
+  inventory: "app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The caller's individual and assignment-wide extensions, oldest first. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: AssignmentParams },
+  responses: [
+    {
+      status: 200,
+      description: "the student's extensions, possibly empty",
+      body: closed({
+        extensions: Type.Array(
+          closed({
+            id: Uuid,
+            scope: literals(["one", "all"]),
+            previousDueAt: Instant,
+            dueAt: Instant,
+            reasonId: ReasonId,
+            createdAt: Instant,
+          }),
+        ),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
+});
+
 export const deadlineExtensionRoutes = [
   teacherDeadlineExtensionsGet,
   teacherDeadlineExtensionPost,
+  studentDeadlineHistoryGet,
 ] as const;
