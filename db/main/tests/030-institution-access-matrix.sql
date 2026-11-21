@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2723);
+SELECT plan(2803);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -173,7 +173,7 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'mentor_note'],
+        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -292,7 +292,8 @@ SELECT bag_eq(
     'merlin_package_download: merlin_package_download_owner ALL to ductus_identity',
     'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
-    'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity'
+    'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity',
+    'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -325,7 +326,9 @@ SELECT bag_eq(
         'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
         'merlin_package: merlin_package_practice 7 O',
         'merlin_package_download: merlin_package_download_immutable 27 O',
-        'merlin_package_download: merlin_package_download_no_truncate 34 O'],
+        'merlin_package_download: merlin_package_download_no_truncate 34 O',
+        'submission_withdrawal_setting: submission_withdrawal_setting_immutable 27 O',
+        'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -487,7 +490,11 @@ SELECT bag_eq(
     'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app',
     'consultation_slots(p_document_id text) definer app',
     'request_consultation_slot(p_document_id text, p_starts_at timestamp with time zone) definer app',
-    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app'
+    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app',
+    'refuse_withdrawal_setting_change()',
+    'withdrawal_setting_of(p_assignment_id uuid)',
+    'submission_withdrawal_setting(p_assignment_id uuid) definer app',
+    'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -942,6 +949,24 @@ FROM (VALUES
   ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
 
+-- 1i. SRV-1903: the withdrawal switch of an assignment
+-- (institution.submission_withdrawal_setting) only through its RPCs, only for
+-- the teacher of the assignment. The rest is in 205-submission-withdrawal.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT allowed::text FROM institution.submission_withdrawal_setting({z1})'), 1, 5),
+  c.result, format('SRV-1903: %s reads the withdrawal switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT allowed::text FROM institution.set_submission_withdrawal({z1}, true)'), 1, 5),
+  c.result, format('SRV-1903: %s sets the withdrawal switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+
 SELECT is(pg_temp.ask(c.actor, 'SELECT count(*) FROM institution.student_deadline_history({z1})'), c.result,
   format('SRV-1509: %s reads only the own history of Z1: %s', c.actor, c.result))
 FROM (VALUES
@@ -1030,12 +1055,13 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
+                        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'])
+                        WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant', 'submission_withdrawal_setting') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

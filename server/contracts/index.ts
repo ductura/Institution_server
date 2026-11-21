@@ -39,6 +39,7 @@ import {
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
+  submissionsRoutes,
   assignmentCopyRoutes,
   merlinRosterRoutes,
   merlinPackageRoutes,
@@ -69,6 +70,7 @@ export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
   NotificationId,
   NotificationsPage,
@@ -140,6 +142,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
   ...deadlineExtensionRoutes,
+  ...submissionsRoutes,
   ...assignmentCopyRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,

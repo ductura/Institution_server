@@ -265,6 +265,18 @@ export type State = {
   deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
     assignmentId: string;
   })[];
+  /** SRV-1903: each withdrawn submission with its withdrawal receipt, oldest first. */
+  submissionWithdrawals: {
+    assignmentId: string;
+    studentId: string;
+    submission: Operations["submission.submit.post"]["success"]["body"]["receipt"];
+    withdrawal: Operations["student.submission-withdrawal.post"]["success"]["body"]["receipt"];
+  }[];
+  /** SRV-1903: the teacher's withdrawal switch by assignment id; none means allowed. */
+  withdrawalSettings: Map<
+    string,
+    Operations["teacher.submission-withdrawal.get"]["success"]["body"]
+  >;
   workSources: WorkSource[];
   sourceNotes: Map<string, Operations["work.source-notes.post"]["success"]["body"][]>;
   sourceProofs: SourceProof[];
@@ -473,6 +485,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     ],
     submissionNotes: [],
     deadlineExtensions: [],
+    submissionWithdrawals: [],
+    withdrawalSettings: new Map(),
     workSources: [],
     sourceNotes: new Map(),
     sourceProofs: [],

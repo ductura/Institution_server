@@ -56,6 +56,11 @@ export {
   type CourseAggregate,
 } from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export {
+  SignedWithdrawalReceipt,
+  submissionsRoutes,
+  WITHDRAWAL_RECEIPT_SCHEMA,
+} from "./submissions.ts";
 export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
