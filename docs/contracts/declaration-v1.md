@@ -1,6 +1,6 @@
 # Izjava v1: shema, prilozi razgovora, veza s predajom i rute
 
-**Status: ODOBREN (Daniel, 21. 11. 2026., „Odobravam”).** Odobrenje vrijedi za ugovor kakav jest; otvorena pitanja [OD-n] nisu time zatvorena. Implementacijski korak koji treba pitanje označeno „blokira kod” (OD-1, OD-2, OD-3, OD-4, OD-11) ne počinje dok vlasnik to pitanje ne zatvori.
+**Status: ODOBREN (Daniel, 21. 11. 2026., „Odobravam”).** Otvorena pitanja zatvorena su u odjeljku „Odluke vlasnika (21. 11. 2026.)”; vrijedi ono što tamo piše, i ima prednost pred oznakama [OD-n] u tekstu.
 
 SRV-M75U `ugovor-izjave-m75`, M7.5 (DAN-383), `Risk: critical`. Ugovor bez koda, po obliku Ductusovih ugovora `ai-request-v1.md`, `ai-tools-v1.md`, `submission-receipt-v2.md` i `submission-worker-m7-v1.md` (Ductus `docs/contracts/`). Određuje:
 
@@ -103,10 +103,11 @@ Student potvrđuje tekst obrasca iz `form`. Potvrda nije unaprijed označena (S-
 | Ključ            | Oblik                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `received`       | JSON boolean                                                                                                                           |
-| `entries`        | niz od 0 do `MAX_HUMAN_HELP_ENTRIES` objekata `{ text }`; uz `received: false` mora biti prazan, uz `true` mora imati barem jedan unos |
-| `entries[].text` | izjavni tekst, pravila iz 1.6, najviše `MAX_DECLARED_TEXT_CODE_POINTS`                                                                 |
+| `entries`        | niz od 0 do `MAX_HUMAN_HELP_ENTRIES` objekata `{ kind, text }`; uz `received: false` mora biti prazan, uz `true` mora imati barem jedan unos |
+| `entries[].kind` | zatvoren skup `HUMAN_HELP_KINDS`: `language` (jezik i pravopis), `structure` (struktura i plan rada), `sources` (izvori i literatura), `content` (rasprava o sadržaju), `technical` (tehnička pomoć), `other`; nepoznata vrijednost se odbija |
+| `entries[].text` | izjavni tekst, pravila iz 1.6, 1 do `MAX_DECLARED_TEXT_CODE_POINTS`; uz polje stoji uputa da se ne upisuju imena ni osobni podaci drugih osoba (uputa, ne provjera) |
 
-Vrsta pomoći nije zatvoren skup jer ga izvor ne određuje ([OD-12]). Redoslijed unosa je studentov i ulazi u hash.
+Vrsta pomoći je zatvoren skup ([OD-12], zatvoreno 21. 11.). Redoslijed unosa je studentov i ulazi u hash.
 
 ### 1.5 `ai`: AI odjeljak
 
@@ -443,6 +444,18 @@ Svaki korak je zaseban kritični PR, tek nakon odobrenja ugovora:
 - Tekst vanjskog ispisa nije provjerljiv. Ductura sprema bajtove i hash; što piše u ispisu, izjavljuje student.
 - Lijepljenje iz odgovora pomoćnika koje poslužitelj primi tek nakon brisanja odgovora dobiva `not_observed` (evidence-segment-v4), pa taj razgovor nije obvezan. Ishod je lažno negativan, nikad lažno pozitivan.
 - Izjava se veže uz jednu reviziju. Svaka izmjena teksta nakon potvrde traži novu potvrdu (ako se prihvati [OD-15]).
+
+## Odluke vlasnika (21. 11. 2026.)
+
+Zapis: Ductus#2012 (c.7054485848, c.7054511795 i zapis za OD-4, OD-11, OD-12). Ove odluke zatvaraju otvorena pitanja ispod.
+
+- **OD-1:** trajni zapis izjave na poslužitelju i hash izjave u potvrdi predaje, kako predlaže ugovor (odjeljak 8). Izjava i dalje nije dio hashiranih bajtova dokumenta.
+- **OD-2:** mogućnost A iz odjeljka 6.4.
+- **OD-3:** `EXTERNAL_FORMATS` = `text/plain`, `application/pdf`. Dubinska provjera PDF-a nije u v1.
+- **OD-4:** sve predložene vrijednosti iz odjeljka 4 postaju konstante: 2 097 152 B po vanjskom prilogu, 10 vanjskih priloga, 10 485 760 B ukupno, 50 razgovora `student_added`, 20 unosa ljudske pomoći, 20 alata, 2000 znakova izjavnog teksta, 200 znakova polja alata.
+- **OD-5 do OD-10, OD-13 do OD-16:** prihvaćeni prijedlozi kako su zapisani u ugovoru.
+- **OD-11:** tekst obrasca izjave je verzionirana datoteka uz pravila fakulteta u `config/faculties/`, mijenja se samo PR-om koji odobri vlasnik (kao prekidač OC-1). `formSha256` je SHA-256 bajtova te datoteke. Dok službeni tekst FPZG-a nije u repou, postoji samo izmišljeni obrazac `test-izjava` u testovima, a sučelje koristi neutralan naziv „Izjava”.
+- **OD-12:** vlasnik je odluku prepustio orkestratoru. Unos ljudske pomoći je `{ kind, text }` sa zatvorenim skupom vrsta (odjeljak 1.4) i obveznim kratkim opisom; uputa uz polje, bez provjere osobnih podataka.
 
 ## Otvorena pitanja
 
