@@ -2038,6 +2038,8 @@ const en = {
     loginFailed: "Signing in did not succeed. Please try again.",
     loginRefused: "Signing in was refused.",
     methodNotAllowed: "This action is not available at this address.",
+    pdfNoTextLayer:
+      "The file is a PDF without a text layer (for example a scan). Upload a PDF with text or a DOCX.",
     notAccepting: "The work does not accept changes at the moment.",
     notAcknowledged: "Acknowledge the assignment notice before submitting.",
     notAllowed: "This action is not possible in the request's current state.",

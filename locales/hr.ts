@@ -2020,6 +2020,8 @@ export const hr = {
     loginFailed: "Prijava nije uspjela. Pokušajte ponovno.",
     loginRefused: "Prijava je odbijena.",
     methodNotAllowed: "Ova radnja nije dostupna na ovoj adresi.",
+    pdfNoTextLayer:
+      "Datoteka je PDF bez tekstnog sloja (npr. skenirana). Učitajte PDF s tekstom ili DOCX.",
     notAccepting: "Rad trenutačno ne prima izmjene.",
     notAcknowledged: "Prije predaje potvrdite obavijest zadatka.",
     notAllowed: "Ova radnja nije moguća u trenutačnom stanju zahtjeva.",

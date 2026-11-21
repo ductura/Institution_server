@@ -58635,7 +58635,7 @@
     "/api/v1/works/{documentId}/imports": {
       "post": {
         "operationId": "work.imports.post",
-        "summary": "The student owner sends a DOCX of the work as standard Base64, at most 2 MiB (2 097 152 bytes), with the file name or null, as application/json. The server reads it within the limits of the import contract and refuses a macro, an embedded object or an external resource; nothing from the file is run or fetched. 201 is a preview, not yet part of the work: importId, manifestSha256 (SHA-256 of the canonical manifest ductus-import-manifest-v1 built from the received bytes), source import, evidenceKind imported, the content as document v2, the traces counted (comment, deletion, insertion; never an author or date), rawByteLength, the normalised file name (outside every hash, D-292) or null, baseRevision and expiresAt (60 minutes). Confirm it with work.imports.confirm.post. A file above the limit is 413 body_too_large, a file the reader refuses 422 invalid_document, an assignment without import allowed or a submitted work 403 import_not_allowed; a teacher, another's, an unknown or a malformed work is 404.",
+        "summary": "The student owner sends a DOCX or a PDF of the work as standard Base64, at most 2 MiB (2 097 152 bytes), with the file name or null, as application/json. The server reads it within the limits of the import contract and refuses a macro, an embedded object or an external resource; nothing from the file is run or fetched. 201 is a preview, not yet part of the work: importId, manifestSha256 (SHA-256 of the canonical manifest ductus-import-manifest-v1 built from the received bytes), source import, evidenceKind imported, the content as document v2, the traces counted (comment, deletion, insertion; never an author or date), rawByteLength, the normalised file name (outside every hash, D-292) or null, baseRevision and expiresAt (60 minutes). Confirm it with work.imports.confirm.post. A file above the limit is 413 body_too_large, a file the reader refuses 422 invalid_document (a PDF is read for its text layer only, and refused when encrypted or active; a PDF without any text, as a scan, is 422 pdf_no_text_layer), an assignment without import allowed or a submitted work 403 import_not_allowed; a teacher, another's, an unknown or a malformed work is 404.",
         "x-access": "student_owner",
         "x-inventory": "app/api/works/[documentId]/imports/route.ts",
         "parameters": [
@@ -58723,8 +58723,16 @@
                       "type": "string"
                     },
                     "fileFormat": {
-                      "const": "docx",
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "const": "docx",
+                          "type": "string"
+                        },
+                        {
+                          "const": "pdf",
+                          "type": "string"
+                        }
+                      ]
                     },
                     "content": {
                       "additionalProperties": false,
@@ -59508,7 +59516,7 @@
             }
           },
           "422": {
-            "description": "invalid_input, invalid_document",
+            "description": "invalid_input, invalid_document, pdf_no_text_layer",
             "content": {
               "application/json": {
                 "schema": {
@@ -59559,6 +59567,35 @@
                         },
                         "messageKey": {
                           "const": "errors.invalidDocument",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 422,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "pdf_no_text_layer",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "pdf_no_text_layer",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.pdfNoTextLayer",
                           "type": "string"
                         },
                         "status": {
@@ -59678,6 +59715,11 @@
             "status": 422,
             "code": "invalid_document",
             "key": "errors.invalid_document"
+          },
+          {
+            "status": 422,
+            "code": "pdf_no_text_layer",
+            "key": "errors.pdf_no_text_layer"
           },
           {
             "status": 403,

@@ -6,7 +6,8 @@
 // that is not a work id is the same 404 as another's work, C-23), the media
 // type, the bounded body and its shape. For an import the database gate comes
 // first, so a work that does not take an import (403) or is not the caller's
-// (404) costs no read of the file; then server/import reads the file and
+// (404) costs no read of the file; then server/import reads the file (DOCX or
+// PDF, by its own first bytes, SRV-1804) and
 // builds the manifest, and server/database/import stores it. The preview is
 // marked source import and evidence kind imported. A throw is 503 and
 // reported; no byte or name of the file reaches a log or an error.
@@ -30,7 +31,7 @@ import {
   type Imports,
   type WithActor,
 } from "../../database/index.ts";
-import { prepareDocxImport } from "../../import/index.ts";
+import { prepareImport } from "../../import/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import {
@@ -104,7 +105,7 @@ export function createImportPostRoute(imports: Imports): Route {
         const gate = await imports.gate(token, documentId);
         if (gate.status === "not_allowed") return sendProblem(response, 403, "import_not_allowed");
         if (gate.status !== "allowed") return refusalOf(response, gate.status, "not_found");
-        const prepared = prepareDocxImport({
+        const prepared = await prepareImport({
           bytes: new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength),
           documentId,
           fileName,
@@ -113,6 +114,8 @@ export function createImportPostRoute(imports: Imports): Route {
         if (!prepared.ok) {
           if (prepared.code === "FILE_TOO_LARGE")
             return sendProblem(response, 413, "body_too_large");
+          if (prepared.code === "PDF_NO_TEXT_LAYER")
+            return sendProblem(response, 422, "pdf_no_text_layer");
           if (prepared.code === "MANIFEST_INVALID")
             return sendProblem(response, 422, "invalid_input");
           return sendProblem(response, 422, "invalid_document");
@@ -133,7 +136,7 @@ export function createImportPostRoute(imports: Imports): Route {
           manifestSha256: preview.manifestSha256,
           source: "import",
           evidenceKind: "imported",
-          fileFormat: "docx",
+          fileFormat: preview.fileFormat,
           content: preview.content,
           traces: preview.traces,
           rawByteLength: preview.rawByteLength,
