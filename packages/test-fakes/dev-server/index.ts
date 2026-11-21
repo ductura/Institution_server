@@ -7,6 +7,7 @@ import type { Operations } from "../../contracts/index.ts";
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
 import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
+import { CONSULTATION_SLOT_HANDLERS } from "./consultation-slots.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -63,6 +64,7 @@ export const DEV_HANDLERS: Handlers = {
   ...SETTINGS_HANDLERS,
   ...EVIDENCE_HANDLERS,
   ...COLLABORATION_HANDLERS,
+  ...CONSULTATION_SLOT_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...MESSAGES_HANDLERS,
   ...CONSULTATION_HANDLERS,

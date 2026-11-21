@@ -659,6 +659,27 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.consultation-slots.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "slots": ({ "id": string; "startsAt": string; "proposedAt": string; "state": "requested" | "countered" | "confirmed" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "work.consultation-slots.patch": {
+    params: { "documentId": string; "slotId": string };
+    query: undefined;
+    body: { "action": "confirm" } | { "action": "counter"; "startsAt": string } | { "action": "accept" };
+    success: { status: 200; body: { "id": string; "startsAt": string; "proposedAt": string; "state": "requested" | "countered" | "confirmed" }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input" | "conflict";
+  };
+  "work.consultation-slots.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "startsAt": string };
+    success: { status: 201; body: { "id": string; "startsAt": string; "proposedAt": string; "state": "requested" | "countered" | "confirmed" }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
   "work.messages.get": {
     params: { "documentId": string };
     query: undefined;

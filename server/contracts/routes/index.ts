@@ -36,4 +36,5 @@ export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
