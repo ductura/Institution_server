@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
 import { createTestDatabase, type TestDatabase } from "../../../test-support/database/index.ts";
-import type { WithActor } from "../../database/index.ts";
+import { createWorkVersionsReader, type WithActor } from "../../database/index.ts";
 import { STORAGE_NOT_CONFIGURED } from "../index.ts";
 
 import { createTimeMachineStore } from "./store.ts";
@@ -79,17 +79,13 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
   const db = await createTestDatabase("main", { authority: true });
   try {
     await setup(db);
-    const store = createTimeMachineStore(actingIn(db), STORAGE_NOT_CONFIGURED);
-    expect(await store.list("anon", "doc-m1", null)).toEqual({ status: "unauthenticated" });
+    const withActor = actingIn(db);
+    const store = createTimeMachineStore(withActor, STORAGE_NOT_CONFIGURED);
+    const list = createWorkVersionsReader(withActor);
     expect(await store.read("anon", "doc-m1", [1])).toEqual({ status: "unauthenticated" });
     expect(await store.read("ana", "doc-m1", [1])).toMatchObject({
       status: "found",
       snapshots: [{ body: document }],
-    });
-    expect(await store.list("marko", "doc-m1", null)).toEqual({
-      status: "found",
-      versions: [],
-      nextBeforeRevision: null,
     });
     expect(await store.read("marko", "doc-m1", [1])).toEqual({ status: "not_found" });
     expect(await store.read("ana", "doc-m1", [1, 2])).toEqual({ status: "not_found" });
@@ -98,7 +94,6 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
       ["vesna", "doc-m1"],
       ["tomo", "doc-m1"],
     ] as const) {
-      expect(await store.list(actor, work, null)).toEqual({ status: "not_found" });
       expect(await store.read(actor, work, [1])).toEqual({ status: "not_found" });
     }
 
@@ -112,11 +107,12 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
       [document],
     );
     expect(submitted.rows[0]?.outcome).toBe("recorded");
-    expect(await store.list("marko", "doc-m1", null)).toMatchObject({
+    const ownerList = await list("ana", "doc-m1", null);
+    expect(ownerList).toMatchObject({
       status: "found",
-      versions: [{ kind: "submission", revision: 1 }],
       nextBeforeRevision: null,
     });
+    expect(await list("marko", "doc-m1", null)).toEqual(ownerList);
     expect(await store.read("marko", "doc-m1", [1])).toMatchObject({
       status: "found",
       snapshots: [{ body: document }],
@@ -124,7 +120,6 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
     await db.exec(
       "UPDATE institution.mentorship SET ended_at = now() WHERE id = pg_temp.id('ms1')",
     );
-    expect(await store.list("marko", "doc-m1", null)).toEqual({ status: "not_found" });
     expect(await store.read("marko", "doc-m1", [1])).toEqual({ status: "not_found" });
   } finally {
     await db.close();

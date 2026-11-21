@@ -177,10 +177,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
     work.segments.push(bytes.toString("utf8"));
     work.revision = revision;
     work.document = body.document;
-    work.versionSnapshots.set(work.revision, {
-      document: body.document,
-      savedAt: now.toISOString(),
-    });
+    work.versionSnapshots.set(revision, body.document);
     work.lastSequenceTo = segment.sequenceTo;
     work.lastChangeAt = now.toISOString();
     work.transactions.set(body.clientTransactionId, { receipt: signedReceipt, documentHash });

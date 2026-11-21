@@ -2,7 +2,6 @@ import {
   type ActorTransaction,
   createReplaySource,
   type WithActor,
-  type WorkVersionsReader,
   workVersionsPageOf,
 } from "../../database/index.ts";
 import { verifyCanonicalEvidencePayloadV2 } from "../../evidence/index.ts";
@@ -30,20 +29,8 @@ const VIEWER_SQL = `SELECT CASE
 
 const VERSIONS_SQL = `SELECT outcome, kind, revision::text AS revision,
     saved_minute AS "savedMinute", after_deadline AS "afterDeadline"
-  FROM app.read_work_versions($1, $2::bigint) v
+  FROM app.read_work_versions($1) v
   ORDER BY v.revision DESC, v.kind DESC`;
-
-// A completed response explicitly sends a revision for review. A request to
-// change the text, a declined response and an autosave do not send a version.
-const REVIEWS_SQL = `SELECT 'found' AS outcome, 'checkpoint' AS kind,
-    response_revision::text AS revision, min(response_window) AS "savedMinute",
-    NULL AS "afterDeadline"
-  FROM collaboration.list_revision_requests($1)
-  WHERE response_kind = 'done' AND response_revision > 0
-    AND ($2::bigint IS NULL OR response_revision < $2)
-    AND ($3::bigint IS NULL OR response_revision <= $3)
-  GROUP BY response_revision
-  ORDER BY response_revision DESC LIMIT 201`;
 
 // Reconstruction checkpoints are sparse. The original store is keyed by
 // the committed hash and still supplies other available exact revisions.
@@ -61,6 +48,8 @@ const OWNER_SNAPSHOT_SQL = `SELECT COALESCE(c.body, legacy.body) AS body, r.cont
 
 const SUBMITTED_SQL = `SELECT body, content_hash AS hash
   FROM collaboration.read_live_state($1, NULL) WHERE outcome = 'submitted'`;
+// A completed response explicitly sends a revision for review. A request to
+// change the text, a declined response and an autosave do not send a version.
 const REVIEW_EXISTS_SQL = `SELECT EXISTS (
   SELECT 1 FROM collaboration.list_revision_requests($1)
   WHERE response_kind = 'done' AND response_revision = $2::bigint
@@ -120,34 +109,6 @@ export function createTimeMachineStore(
   withActor: WithActor,
   payloads: InstitutionEvidencePayloadReader,
 ) {
-  const list: WorkVersionsReader = async (token, documentId, before) => {
-    try {
-      return await withActor(token, async (tx) => {
-        const viewer = await viewerOf(tx, documentId);
-        if (typeof viewer !== "string") return viewer;
-        const values = [documentId, before];
-        const base = (await tx.query(VERSIONS_SQL, values)).rows;
-        const page = workVersionsPageOf(base, before);
-        if (viewer === "owner" || page.status !== "found") return page;
-        const submission = page.versions.find((item) => item.kind === "submission");
-        const reviews = (await tx.query(REVIEWS_SQL, [...values, submission?.revision ?? null]))
-          .rows;
-        const rows = [...base.filter((row) => row.kind === "submission"), ...reviews]
-          .sort((a, b) => Number(b.revision) - Number(a.revision))
-          .slice(0, 201);
-        const currentViewer = await viewerOf(tx, documentId);
-        if (currentViewer !== "mentor") {
-          return typeof currentViewer === "string" ? NOT_FOUND : currentViewer;
-        }
-        return rows.length === 0
-          ? { status: "found", versions: [], nextBeforeRevision: null }
-          : workVersionsPageOf(rows, before);
-      });
-    } catch (error) {
-      return accessFailure(error);
-    }
-  };
-
   async function read(
     token: string,
     documentId: string,
@@ -157,10 +118,7 @@ export function createTimeMachineStore(
       return await withActor(token, async (tx) => {
         const viewer = await viewerOf(tx, documentId);
         if (typeof viewer !== "string") return viewer;
-        const page = workVersionsPageOf(
-          (await tx.query(VERSIONS_SQL, [documentId, null])).rows,
-          null,
-        );
+        const page = workVersionsPageOf((await tx.query(VERSIONS_SQL, [documentId])).rows, null);
         if (page.status !== "found") return page.status === "not_found" ? NOT_FOUND : UNAVAILABLE;
         const submission = page.versions.find((item) => item.kind === "submission")?.revision;
         const requested: { revision: number; submitted: boolean }[] = [];
@@ -212,7 +170,7 @@ export function createTimeMachineStore(
     }
   }
 
-  return { list, read };
+  return { read };
 }
 
 export type TimeMachineStore = ReturnType<typeof createTimeMachineStore>;

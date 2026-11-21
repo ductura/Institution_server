@@ -37,28 +37,16 @@ function storeWith(...answers: Record<string, unknown>[][]) {
   return { store: createTimeMachineStore(withActor, STORAGE_NOT_CONFIGURED), query };
 }
 
-it("keeps drafts out of a mentor's list and denies work unrelated to the actor", async () => {
+it("denies draft snapshots to a mentor and rejects an unrelated reader before version reads", async () => {
   const { store, query } = storeWith(
     [{ viewer: "mentor" }],
     [SUBMISSION, CHECKPOINT],
-    [],
-    [{ viewer: "mentor" }],
+    [{ sent: false }],
     [{ viewer: null }],
   );
-  expect(await store.list("synthetic-mentor", "doc-demo", null)).toStrictEqual({
-    status: "found",
-    versions: [
-      {
-        kind: "submission",
-        revision: 2,
-        savedMinute: SAVED_MINUTE.toISOString(),
-        afterDeadline: false,
-      },
-    ],
-    nextBeforeRevision: null,
-  });
-  expect(await store.list("synthetic-other", "doc-demo", null)).toEqual({ status: "not_found" });
-  expect(query).toHaveBeenCalledTimes(5);
+  expect(await store.read("synthetic-mentor", "doc-demo", [1])).toEqual({ status: "not_found" });
+  expect(await store.read("synthetic-other", "doc-demo", [2])).toEqual({ status: "not_found" });
+  expect(query).toHaveBeenCalledTimes(4);
 });
 
 it("requires an explicit send for each revision before reading comparison snapshots", async () => {

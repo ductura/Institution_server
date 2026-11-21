@@ -8,7 +8,6 @@ import {
 import type { InstitutionEvidencePayloadReader } from "../../external/storage/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 import {
-  createWorkVersionsRoute,
   type Databases,
   reportServerError,
   requestIdOf,
@@ -84,10 +83,10 @@ export function createWorkVersionRoute(read: TimeMachineStore["read"]): Route {
   };
 }
 
-export function createTimeMachineRoutesFor(
+export function createWorkVersionRouteFor(
   main: Pick<Databases["main"], "withActor">,
   deps: { readonly payloads: InstitutionEvidencePayloadReader },
-): readonly Route[] {
+): Route {
   const store = createTimeMachineStore(main.withActor, deps.payloads);
-  return [createWorkVersionsRoute(store.list), createWorkVersionRoute(store.read)];
+  return createWorkVersionRoute(store.read);
 }

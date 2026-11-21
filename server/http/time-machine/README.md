@@ -2,11 +2,11 @@
 
 ## Što radi
 
-Vraća popis verzija, provjerenu snimku revizije i razliku između dviju poslanih revizija.
+Vraća provjerenu snimku revizije i razliku između dviju poslanih revizija. Klijent popis dobiva iz postojeće rute `work.versions.get`.
 
 ## Tko ga zove
 
-`server/server.ts` montira rute za vlasnika rada i aktivnog mentora. Mentor može otvoriti predaju i verzije koje je student poslao kao odgovor na zahtjev za doradom.
+`server/server.ts` montira detalj za vlasnika rada i aktivnog mentora. Mentor može otvoriti predaju i verzije koje je student poslao kao odgovor na zahtjev za doradom.
 
 ## Koje podatke dira
 
@@ -14,7 +14,7 @@ Vraća popis verzija, provjerenu snimku revizije i razliku između dviju poslani
 
 ## Što izvozi
 
-`createTimeMachineRoutesFor` povezuje rute sa sesijom i spremištem evidencije.
+`createWorkVersionRouteFor` povezuje detalj sa sesijom i spremištem evidencije.
 
 ## Što ne smije uvoziti
 
