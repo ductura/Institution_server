@@ -16,4 +16,6 @@ export * from "./replay.ts";
 export * from "./signature.ts";
 export * from "./submission-receipt-v2.ts";
 export * from "./submission-receipt-verifier-v2.ts";
+export * from "./submission-receipt-v3.ts";
+export * from "./submission-receipt-verifier-v3.ts";
 export * from "./submission-receipt.ts";

@@ -73,12 +73,12 @@ const KEY = new Set([
   "validTo",
   "revokedAt",
 ]);
-const refuse = (
-  reason: Extract<SubmissionReceiptVerificationV2, { ok: false }>["reason"],
-): SubmissionReceiptVerificationV2 => ({ ok: false, reason });
 
 /** Refuse accessors, symbols, missing/hidden/extra fields before reading values. */
-function dataObject(value: unknown, keys: ReadonlySet<string>): value is Record<string, unknown> {
+export function dataObject(
+  value: unknown,
+  keys: ReadonlySet<string>,
+): value is Record<string, unknown> {
   return (
     isPlainObject(value) &&
     Reflect.ownKeys(value).length === keys.size &&
@@ -124,17 +124,35 @@ function decode(value: string, length: number): Uint8Array<ArrayBuffer> | null {
   }
 }
 
+/** What a submission receipt version supplies to the shared checks below. */
+export type SubmissionReceiptFormat<P extends { evidenceDomainId: string; signedAt: string }> = {
+  isExpected(value: unknown): boolean;
+  isSigned(value: unknown): value is {
+    payload: P;
+    payloadDigestSha256: string;
+    signature: { keyId: string; keyVersion: string; signatureBase64Url: string };
+  };
+  digest(payload: P): Promise<{ sha256: string; signingInput: Uint8Array<ArrayBuffer> }>;
+};
+export type SubmissionReceiptVerification<P> =
+  { ok: true; payload: P } | Extract<SubmissionReceiptVerificationV2, { ok: false }>;
+
 /**
- * Pure, never-throw verifier of the accepted v2 contract (#599).
- * trustedKeys and expected MUST come from independent authorized sources;
- * this function cannot establish their provenance or registry freshness.
- * No runtime caller yet: no UI success, DB time/persistence or KMS claim.
+ * The checks every submission receipt version shares: key registry, key
+ * scope and validity, canonical signature and point, digest, Ed25519 over the
+ * version's own domain-separated input, then the caller's expected tuple.
  */
-export async function verifySignedSubmissionReceiptV2(
+export async function verifySignedSubmissionReceiptWith<
+  P extends { evidenceDomainId: string; signedAt: string },
+>(
+  format: SubmissionReceiptFormat<P>,
   signedReceipt: unknown,
   expected: unknown,
   trustedKeys: readonly unknown[],
-): Promise<SubmissionReceiptVerificationV2> {
+): Promise<SubmissionReceiptVerification<P>> {
+  const refuse = (
+    reason: Extract<SubmissionReceiptVerificationV2, { ok: false }>["reason"],
+  ): SubmissionReceiptVerification<P> => ({ ok: false, reason });
   try {
     if (
       typeof structuredClone !== "function" ||
@@ -142,16 +160,17 @@ export async function verifySignedSubmissionReceiptV2(
       typeof btoa !== "function"
     )
       return refuse("verification_unavailable");
-    if (!isExpected(expected) || !Array.isArray(trustedKeys)) return refuse("expectation_invalid");
+    if (!format.isExpected(expected) || !Array.isArray(trustedKeys))
+      return refuse("expectation_invalid");
     if (
       !dataObject(signedReceipt, RECEIPT) ||
       !dataObject(signedReceipt.signature, SIGNATURE) ||
-      !isSignedSubmissionReceiptV2(signedReceipt)
+      !format.isSigned(signedReceipt)
     )
       return refuse("receipt_malformed");
     // Freeze every input before hashing or importing a key yields control.
     const receipt = structuredClone(signedReceipt);
-    const expectation = structuredClone(expected);
+    const expectation = structuredClone(expected) as Record<string, unknown>;
     // A malformed duplicate must not disappear before uniqueness is checked.
     if (!trustedKeys.every(isKey)) return refuse("key_unknown");
     const named = trustedKeys.filter((k) => k.keyId === receipt.signature.keyId);
@@ -177,9 +196,9 @@ export async function verifySignedSubmissionReceiptV2(
     const spki = decode(key.keyBase64Url, 44);
     const point = spki ? ed25519KeyFromSpki(spki) : null;
     if (!spki || !point || !isSoundEd25519Point(point)) return refuse("key_unknown");
-    let digest: Awaited<ReturnType<typeof digestSubmissionReceiptPayloadV2>>;
+    let digest: Awaited<ReturnType<SubmissionReceiptFormat<P>["digest"]>>;
     try {
-      digest = await digestSubmissionReceiptPayloadV2(receipt.payload);
+      digest = await format.digest(receipt.payload);
     } catch {
       return refuse("verification_unavailable");
     }
@@ -206,7 +225,7 @@ export async function verifySignedSubmissionReceiptV2(
     if (valid !== true) return refuse("signature_invalid");
     if (
       Object.entries(expectation).some(
-        ([name, value]) => receipt.payload[name as keyof SubmissionReceiptPayloadV2] !== value,
+        ([name, value]) => (receipt.payload as Record<string, unknown>)[name] !== value,
       )
     )
       return refuse("submission_mismatch");
@@ -214,4 +233,23 @@ export async function verifySignedSubmissionReceiptV2(
   } catch {
     return refuse("receipt_malformed");
   }
+}
+
+const V2_FORMAT: SubmissionReceiptFormat<SubmissionReceiptPayloadV2> = {
+  isExpected,
+  isSigned: isSignedSubmissionReceiptV2,
+  digest: digestSubmissionReceiptPayloadV2,
+};
+
+/**
+ * Pure, never-throw verifier of the accepted v2 contract (#599).
+ * trustedKeys and expected MUST come from independent authorized sources;
+ * this function cannot establish their provenance or registry freshness.
+ */
+export async function verifySignedSubmissionReceiptV2(
+  signedReceipt: unknown,
+  expected: unknown,
+  trustedKeys: readonly unknown[],
+): Promise<SubmissionReceiptVerificationV2> {
+  return verifySignedSubmissionReceiptWith(V2_FORMAT, signedReceipt, expected, trustedKeys);
 }
