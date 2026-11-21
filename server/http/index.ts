@@ -243,6 +243,7 @@ export {
   type SecondFactor,
 } from "./operator-policy-layer.ts";
 export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
+export { facultyRulesProblems } from "../database/index.ts";
 export {
   createSettingsValuesPutRoute,
   SETTINGS_PUT_MAX_BYTES,
