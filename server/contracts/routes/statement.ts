@@ -242,3 +242,6 @@ export const statementRoutes = [
   studentDeclarationPut,
   studentDeclarationAttachmentsPost,
 ] as const;
+
+// The confirmed declaration payload, shared with the teacher's read (SRV-1213).
+export { Payload as DeclarationPayload, SHA256 as DeclarationSha256 };

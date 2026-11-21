@@ -396,6 +396,11 @@ export {
   createTeacherSubmissionReader,
   type TeacherSubmissionReader,
 } from "./teacher-submissions/index.ts";
+export {
+  createTeacherDeclarationReader,
+  type TeacherDeclaration,
+  type TeacherDeclarationReader,
+} from "./teacher-declaration/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
