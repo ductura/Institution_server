@@ -157,7 +157,10 @@ async function callPort(
   });
   try {
     return await Promise.race([
-      port.complete(input).catch((): AssistantPortOutcome => ({ kind: "aborted" })),
+      // A port that throws, before or after returning its promise, is an abort.
+      Promise.resolve()
+        .then(() => port.complete(input))
+        .catch((): AssistantPortOutcome => ({ kind: "aborted" })),
       timeout,
     ]);
   } finally {
@@ -210,6 +213,11 @@ async function run(
   }
   const known = settledOutcome(begun.state, begun.reason);
   if (known !== null) return { outcome: known, ...ids };
+  // A replayed reservation belongs to an earlier call: its provider, model and
+  // configuration are on the row, and the configuration here may have changed
+  // since. It is never sent from here; the earlier call finishes it or the
+  // sweep releases it, and a new attempt takes a new key (R5).
+  if (begun.state === "reserved" && begun.replayed) return { outcome: "in_progress", ...ids };
   if (begun.state !== "reserved" || begun.conversationId === null) {
     return { failure: "unavailable" };
   }

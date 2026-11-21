@@ -526,22 +526,27 @@ describe("student.assistant-request.post: the flow of the contract", () => {
     },
   );
 
-  it("a replay of a reservation left by a broken call finishes it once", async () => {
+  it("a replay of a reservation is in_progress: never sent under a configuration that may have changed", async () => {
     const requests = createFakeRequests();
-    requests.seed(
+    const row = requests.seed(
       STUDENT_TOKEN,
       {
         ...BODY,
         idempotencyKey: KEY,
         providerId: "provider-test-a",
-        modelId: "model-test-1",
-        configVersion: "test-config-1",
+        modelId: "model-test-0",
+        configVersion: "test-config-0",
       },
       "reserved",
     );
     const { port, base } = await start({ requests });
-    expect((await answerOf(await post(base)))["outcome"]).toBe("completed");
-    expect((port as ReturnType<typeof createSyntheticAssistant>).calls).toHaveLength(1);
+    expect(await answerOf(await post(base))).toEqual({
+      outcome: "in_progress",
+      requestId: row.id,
+      conversationId: row.conversationId,
+    });
+    expect(names(requests)).toEqual(["begin"]);
+    expect((port as ReturnType<typeof createSyntheticAssistant>).calls).toHaveLength(0);
   });
 });
 
@@ -686,6 +691,17 @@ describe("every synthetic branch through the route (S2)", () => {
 
   it("a port that throws counts as an abort after sending", async () => {
     const port: AssistantPort = { complete: () => Promise.reject(new Error("izmisljeni prekid")) };
+    const { requests, base } = await start({ port });
+    expect((await answerOf(await post(base)))["outcome"]).toBe("request_outcome_unknown");
+    expect(names(requests)).toEqual(["begin", "markSent", "markOutcomeUnknown"]);
+  });
+
+  it("a port that throws before returning a promise counts as an abort too", async () => {
+    const port: AssistantPort = {
+      complete: () => {
+        throw new Error("izmisljeni sinkroni prekid");
+      },
+    };
     const { requests, base } = await start({ port });
     expect((await answerOf(await post(base)))["outcome"]).toBe("request_outcome_unknown");
     expect(names(requests)).toEqual(["begin", "markSent", "markOutcomeUnknown"]);
