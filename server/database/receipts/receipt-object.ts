@@ -7,7 +7,31 @@
 import type { Pool } from "pg";
 
 import { isEvidenceDomainId } from "../../domain/index.ts";
-import { exactRows, isUuid, run } from "../pending-receipt-queue.ts";
+
+/** A uuid as the database writes it: lowercase, any version. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const isUuid = (value: unknown): value is string => typeof value === "string" && UUID.test(value);
+
+/** The rows of an answer, each a plain record of exactly `columns`; null for anything else. */
+function exactRows(answer: unknown, columns: readonly string[]): Record<string, unknown>[] | null {
+  const list: unknown = (answer as { rows?: unknown } | null)?.rows;
+  if (!Array.isArray(list)) return null;
+  for (const row of list) {
+    if (typeof row !== "object" || row === null || Array.isArray(row)) return null;
+    const keys = Reflect.ownKeys(row);
+    if (keys.length !== columns.length || !columns.every((c) => Object.hasOwn(row, c))) return null;
+  }
+  return list as Record<string, unknown>[];
+}
+
+async function run(db: Pick<Pool, "query">, text: string, values: unknown[]): Promise<unknown> {
+  try {
+    return await db.query(text, values);
+  } catch {
+    // The driver's message can carry the connection string; only the code leaves.
+    return undefined;
+  }
+}
 
 /** The row of `app.worker_receipt_object`, as the object check reads it. */
 export type PendingReceiptObject = {

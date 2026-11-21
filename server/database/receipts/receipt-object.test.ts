@@ -8,20 +8,28 @@ import { createPendingReceiptObjectSource } from "./receipt-object.ts";
 
 const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
 const RECEIPT = "00000000-0000-4000-8000-0000000000a1";
-const ROW = {
-  institution_id: "00000000-0000-4000-8000-0000000000c1",
-  evidence_package_id: "paket-izmisljeni-1",
-  segment_hash: "ab".repeat(32),
-  payload_bytes: 512,
-  storage_ref: "s3://izmisljeno.invalid/objekt",
-};
+// The five columns of app.worker_receipt_object, built by name: snake_case
+// meets the code only in the adapter itself (docs/CODE_STYLE.md, rule 9).
+const COLUMNS = [
+  "institution_id",
+  "evidence_package_id",
+  "segment_hash",
+  "payload_bytes",
+  "storage_ref",
+] as const;
 const OBJECT = {
-  institutionId: ROW.institution_id,
-  evidencePackageId: ROW.evidence_package_id,
-  segmentHash: ROW.segment_hash,
-  payloadBytes: ROW.payload_bytes,
-  storageRef: ROW.storage_ref,
+  institutionId: "00000000-0000-4000-8000-0000000000c1",
+  evidencePackageId: "paket-izmisljeni-1",
+  segmentHash: "ab".repeat(32),
+  payloadBytes: 512,
+  storageRef: "s3://izmisljeno.invalid/objekt",
 };
+const ROW: Record<string, unknown> = Object.fromEntries(
+  COLUMNS.map((column, i) => [column, Object.values(OBJECT)[i]]),
+);
+const set = (column: (typeof COLUMNS)[number], value: unknown) => ({ ...ROW, [column]: value });
+const without = (column: string) =>
+  Object.fromEntries(Object.entries(ROW).filter(([name]) => name !== column));
 
 function source(answer: () => unknown) {
   const calls: { text: string; values: unknown }[] = [];
@@ -78,16 +86,13 @@ describe("createPendingReceiptObjectSource", () => {
     ["no rows array", {}],
     ["two rows", { rows: [ROW, ROW] }],
     ["an extra column", { rows: [{ ...ROW, extra: 1 }] }],
-    [
-      "a missing column",
-      { rows: [{ ...ROW, storage_ref: undefined }].map(({ storage_ref, ...r }) => r) },
-    ],
-    ["an institution that is no uuid", { rows: [{ ...ROW, institution_id: "ustanova" }] }],
-    ["an empty package", { rows: [{ ...ROW, evidence_package_id: "" }] }],
-    ["a hash that is no string", { rows: [{ ...ROW, segment_hash: 1 }] }],
-    ["a byte count as text", { rows: [{ ...ROW, payload_bytes: "512" }] }],
-    ["a fractional byte count", { rows: [{ ...ROW, payload_bytes: 1.5 }] }],
-    ["an empty reference", { rows: [{ ...ROW, storage_ref: "" }] }],
+    ["a missing column", { rows: [without("storage_ref")] }],
+    ["an institution that is no uuid", { rows: [set("institution_id", "ustanova")] }],
+    ["an empty package", { rows: [set("evidence_package_id", "")] }],
+    ["a hash that is no string", { rows: [set("segment_hash", 1)] }],
+    ["a byte count as text", { rows: [set("payload_bytes", "512")] }],
+    ["a fractional byte count", { rows: [set("payload_bytes", 1.5)] }],
+    ["an empty reference", { rows: [set("storage_ref", "")] }],
   ])("answers row_malformed for %s", async (_, answer) => {
     const { made } = source(() => answer);
     await expect(made.receiptObject(DOMAIN, RECEIPT)).resolves.toEqual({
