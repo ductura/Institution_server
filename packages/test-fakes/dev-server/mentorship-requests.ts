@@ -15,8 +15,13 @@ function own(state: State, account: Account | null, id: string, as: "student" | 
   return request.studentId === account.id ? request : null;
 }
 
+function end(request: MentorshipRequest, state: "declined" | "withdrawn", now: Date) {
+  request.state = state;
+  request.endedAt = now.toISOString();
+}
+
 export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
-  "mentorship.requests.post": ({ state, account, body }) => {
+  "mentorship.requests.post": ({ state, account, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     const teacherId = body.teacherId.toLowerCase();
     const teacher = state.accounts.find((a) => a.id === teacherId);
@@ -38,15 +43,18 @@ export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
       workType: body.workType,
       state: "requested",
       mentorshipId: null,
+      requestedAt: now.toISOString(),
+      endedAt: null,
     };
     state.mentorshipRequests.push(request);
     return { status: 201, body: { requestId: request.id, state: "requested" } };
   },
-  "mentorship.request-approve.post": ({ state, account, params }) => {
+  "mentorship.request-approve.post": ({ state, account, params, now }) => {
     const request = own(state, account, params.requestId, "teacher");
     if (request === null) return { error: "not_found" };
     if (request.state === "requested") {
       request.state = "approved";
+      request.endedAt = now.toISOString();
       request.mentorshipId = `b1500000-0000-4000-8000-${request.id.slice(-12)}`;
     }
     if (request.state !== "approved" || request.mentorshipId === null) return { error: "conflict" };
@@ -55,18 +63,64 @@ export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
       body: { requestId: request.id, state: "approved", mentorshipId: request.mentorshipId },
     };
   },
-  "mentorship.request-decline.post": ({ state, account, params }) => {
+  "mentorship.request-decline.post": ({ state, account, params, now }) => {
     const request = own(state, account, params.requestId, "teacher");
     if (request === null) return { error: "not_found" };
-    if (request.state === "requested") request.state = "declined";
+    if (request.state === "requested") end(request, "declined", now);
     if (request.state !== "declined") return { error: "conflict" };
     return { status: 200, body: { requestId: request.id, state: "declined" } };
   },
-  "mentorship.request-withdraw.post": ({ state, account, params }) => {
+  "mentorship.request-withdraw.post": ({ state, account, params, now }) => {
     const request = own(state, account, params.requestId, "student");
     if (request === null) return { error: "not_found" };
-    if (request.state === "requested") request.state = "withdrawn";
+    if (request.state === "requested") end(request, "withdrawn", now);
     if (request.state !== "withdrawn") return { error: "conflict" };
     return { status: 200, body: { requestId: request.id, state: "withdrawn" } };
+  },
+  // SRV-1414: the student's side. One institution in the fake; a caller with
+  // the teacher role is refused, as app.student_mentorship_requests does.
+  "mentorship.student-requests.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (account.roles.includes("teacher")) return { error: "forbidden" };
+    const requests = state.mentorshipRequests
+      .filter((r) => r.studentId === account.id)
+      .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt) || a.id.localeCompare(b.id))
+      .map((r) => {
+        const teacher = state.accounts.find((a) => a.id === r.teacherId);
+        const base = {
+          requestId: r.id,
+          teacherId: r.teacherId,
+          teacherName: teacher
+            ? { givenName: teacher.givenName, familyName: teacher.familyName }
+            : null,
+          workType: r.workType,
+          requestedAt: r.requestedAt,
+        };
+        const endedAt = r.endedAt ?? r.requestedAt;
+        if (r.state === "requested")
+          return { ...base, state: r.state, endedAt: null, mentorshipId: null };
+        if (r.state === "approved" && r.mentorshipId !== null)
+          return { ...base, state: r.state, endedAt, mentorshipId: r.mentorshipId };
+        return { ...base, state: r.state as "declined" | "withdrawn", endedAt, mentorshipId: null };
+      });
+    return { status: 200, body: { requests } };
+  },
+  "mentorship.student-mentor-candidates.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (account.roles.includes("teacher")) return { error: "forbidden" };
+    const candidates = state.accounts
+      .filter((a) => a.id !== account.id && a.roles.includes("teacher"))
+      .sort(
+        (a, b) =>
+          a.familyName.localeCompare(b.familyName, "hr") ||
+          a.givenName.localeCompare(b.givenName, "hr") ||
+          a.id.localeCompare(b.id),
+      )
+      .map((a) => ({
+        teacherId: a.id,
+        name: { givenName: a.givenName, familyName: a.familyName },
+        department: null,
+      }));
+    return { status: 200, body: { candidates } };
   },
 };
