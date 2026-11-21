@@ -14990,7 +14990,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.45.0",
+        "apiVersion": "1.46.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15006,7 +15006,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.45.0",
+        "apiVersion": "1.46.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15645,6 +15645,26 @@
         "code": "unavailable",
         "messageKey": "errors.unavailable",
         "status": 503
+      }
+    }
+  },
+  {
+    "route": "profile.me.get",
+    "name": "session-idle-expired",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni_token-racuna_studenta_0000000001"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "session_idle_expired",
+        "code": "session_idle_expired",
+        "messageKey": "errors.sessionIdleExpired",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000000"
       }
     }
   },

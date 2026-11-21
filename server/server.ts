@@ -78,6 +78,7 @@ import {
 } from "./http/index.ts";
 import {
   institutionsProblems,
+  isNonProductionBuild,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -119,6 +120,11 @@ const LAYERS = createLayers({
   trustedProxies: TRUSTED_PROXIES ?? [],
 });
 
+// SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
+// only outside local work (NODE_ENV development or test, the one definition
+// of production); idle sessions get 401 session_idle_expired after 30 minutes.
+const SECURITY = { local: isNonProductionBuild(process.env.NODE_ENV) };
+
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
 //    here (server/server.test.ts); test-server mounts its own.
 const AREAS: readonly AreaWithRoutes[] = [
@@ -150,6 +156,7 @@ async function main(): Promise<void> {
     databases,
     shutdown,
     layers: LAYERS,
+    security: SECURITY,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired

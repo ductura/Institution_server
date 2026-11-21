@@ -171,6 +171,12 @@ export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";
 export {
+  enforceSecurityHeaders,
+  guardIdleSessions,
+  PRODUCTION_SECURITY,
+  type SecurityMode,
+} from "./security/index.ts";
+export {
   createRouter,
   routePath,
   type Handler,
