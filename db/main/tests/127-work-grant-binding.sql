@@ -39,12 +39,22 @@ SET CONSTRAINTS ALL DEFERRED;
 SET LOCAL ROLE ductus_evidence;
 INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id)
 SELECT 'project-' || w.id, pg_temp.id(w.faculty), pg_temp.id(w.assignment), pg_temp.id(w.owner) FROM work w;
-INSERT INTO evidence.document (id, institution_id, project_id, principal_id, current_content_hash)
-SELECT w.id, pg_temp.id(w.faculty), 'project-' || w.id, pg_temp.id(w.owner), repeat('a', 64) FROM work w;
+INSERT INTO evidence.document (id, institution_id, project_id, principal_id, current_revision, current_content_hash)
+SELECT w.id, pg_temp.id(w.faculty), 'project-' || w.id, pg_temp.id(w.owner),
+       CASE WHEN w.id = 'doc-ana-zm1' THEN 1 ELSE 0 END, repeat('a', 64) FROM work w;
 INSERT INTO evidence.document_revision (document_id, institution_id, revision, principal_id, content_hash)
 SELECT w.id, pg_temp.id(w.faculty), 0, pg_temp.id(w.owner), repeat('a', 64) FROM work w;
+INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+VALUES ('doc-ana-zm1', pg_temp.id('fak_a'), 1, 0, pg_temp.id('ana'), repeat('a', 64));
 SET CONSTRAINTS ALL IMMEDIATE;
 RESET ROLE;
+
+-- The live committee grants in this matrix refer to a submitted thesis (SRV-1409).
+SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-ana-zm1', 1) $$),
+  'requested', 'fixture: Ana requests submission of her thesis');
+SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.record_submission(
+  (SELECT id FROM evidence.submission_request WHERE document_id = 'doc-ana-zm1'), repeat('a', 64)) $$),
+  'recorded', 'fixture: Ana submits her thesis');
 
 -- grant_can() of p_actor, as the web process asks it.
 CREATE FUNCTION pg_temp.can(p_actor text, p_action text, p_doc text) RETURNS text

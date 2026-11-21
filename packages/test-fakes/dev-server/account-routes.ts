@@ -32,6 +32,7 @@ export const ACCOUNT_HANDLERS: Handlers = {
     body: {
       checkedAt: now.toISOString(),
       components: { writing: "radi", submission: "radi", mentorView: "radi" },
+      maintenanceWindows: [],
     },
   }),
   "client.context.post": () => ({ status: 204 }),

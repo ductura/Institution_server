@@ -22,8 +22,15 @@ export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
+export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
@@ -40,8 +47,21 @@ export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export {
+  courseAggregateGet,
+  CourseAggregateParams,
+  type CourseAggregate,
+} from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
+export { mentorshipRoutes } from "./mentorship.ts";
+export { teachingTeamRoutes } from "./teaching-team.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./mentor-notes.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";

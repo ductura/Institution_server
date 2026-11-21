@@ -38,13 +38,20 @@ import {
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
+  createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -52,6 +59,8 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
+  excludePracticeAssignment,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
@@ -60,6 +69,7 @@ import {
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -79,6 +89,7 @@ import {
   createShutdownCoordinator,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   installShutdown,
   logStartupFailed,
   logStartupRefused,
@@ -164,10 +175,13 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  const reminderCooldown = process.env.DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS;
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
+  const checkReadiness = readinessCheckFor(databases.main, evidenceDeps);
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
+  const draining = () => shutdown.state() !== "running";
   const options = {
     host,
     port,
@@ -180,10 +194,8 @@ async function main(): Promise<void> {
       // Readiness (SRV-1812, M11.3): 503 until the main database answers and
       // its migrations are done; storage and signing are reported. Draining
       // answers 503 too, so a balancer stops sending before the listener closes.
-      createReadyRoute({
-        check: readinessCheckFor(databases.main, evidenceDeps),
-        draining: () => shutdown.state() !== "running",
-      }),
+      createReadyRoute({ check: checkReadiness, draining }),
+      createStatusRouteFor(databases.main, checkReadiness, draining),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
@@ -212,6 +224,7 @@ async function main(): Promise<void> {
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
       createAssignmentCurrentVersionRouteFor(databases.main),
+      createAssignmentGradeRouteFor(databases.main),
       // A course's seminar groups and their teachers (SRV-15, Ductus#2028).
       ...createInstitutionGroupRoutesFor(databases.main),
       // The administrator creates a course with its holder (SRV-12 over SRV-07, Ductus#2028).
@@ -222,6 +235,7 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      ...createNotificationsRoutesFor(databases.main, reminderCooldown),
       // SRV-1703: delayed comments (D-51), the comment bank (N-03) and the changes since the last review (N-05).
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
@@ -240,9 +254,18 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
-      createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
+      // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
+      createWorkExportRouteFor(databases.main),
+      excludePracticeAssignment(
+        createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
+        databases.main,
+      ),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
+      // SRV-1407: the moves of one mentorship request (D-204).
+      ...createMentorshipRequestRoutesFor(databases.main),
+      ...createTeachingTeamRoutesFor(databases.main),
+      ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
@@ -265,11 +288,16 @@ async function main(): Promise<void> {
       createStaffAffiliationRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      createTeacherSubmissionDetailRouteFor(databases.main),
+      createCourseAggregateRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      createStudentDeadlineHistoryRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
-      ...createMerlinRosterRoutesFor(databases.main),
+      ...createMerlinRosterRoutesFor(databases.main).map((route) =>
+        excludePracticeAssignment(route, databases.main),
+      ),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
       ...createMerlinPackageRoutesFor(databases.main),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
