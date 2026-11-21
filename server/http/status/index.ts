@@ -3,8 +3,9 @@ import type { WithActor } from "../../database/index.ts";
 
 import { type ReadyReport, type Route, sendBareRefusal, sendJson, singleFlight } from "../index.ts";
 
-const contract = ROUTES.find((route) => route.id === "platform.status.get");
-if (contract === undefined) throw new Error("no contract platform.status.get");
+const found = ROUTES.find((route) => route.id === "platform.status.get");
+if (found === undefined) throw new Error("no contract platform.status.get");
+const contract = found;
 
 const STATUS_TTL_MS = 15_000;
 const MAINTENANCE_TIMEOUT_MS = 1_000;
