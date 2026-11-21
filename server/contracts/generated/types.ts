@@ -341,7 +341,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "checkedAt": string; "components": { "writing": "radi" | "ne_radi" | "nije_ukljuceno"; "submission": "radi" | "ne_radi" | "nije_ukljuceno"; "mentorView": "radi" | "ne_radi" | "nije_ukljuceno" } }; headers: {  } };
+    success: { status: 200; body: { "checkedAt": string; "components": { "writing": "radi" | "ne_radi" | "nije_ukljuceno"; "submission": "radi" | "ne_radi" | "nije_ukljuceno"; "mentorView": "radi" | "ne_radi" | "nije_ukljuceno" }; "maintenanceWindows"?: ({ "startsAt": string; "endsAt": string })[] }; headers: {  } };
     errorCode: "unavailable";
   };
   "profile.interface-locale.get": {

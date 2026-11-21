@@ -17933,7 +17933,13 @@
           "writing": "radi",
           "submission": "radi",
           "mentorView": "nije_ukljuceno"
-        }
+        },
+        "maintenanceWindows": [
+          {
+            "startsAt": "2026-01-16T10:00:00.000Z",
+            "endsAt": "2026-01-16T11:00:00.000Z"
+          }
+        ]
       }
     }
   },
