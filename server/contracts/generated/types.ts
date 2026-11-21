@@ -267,6 +267,20 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "mentorship.notes.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "body": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "forbidden";
+  };
+  "mentorship.notes.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "body": string };
+    success: { status: 201; body: { "id": string; "body": string; "createdAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "mentorship.request-approve.post": {
     params: { "requestId": string };
     query: undefined;
