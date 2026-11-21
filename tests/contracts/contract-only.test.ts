@@ -30,6 +30,7 @@ import {
   createDeadlineExtensionRoutesFor,
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
+  createAssistantRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -293,6 +294,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMerlinRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-1204: the AI assistant proxy; no provider in production (ai_disabled).
+    call: "...createAssistantRoutesFor(databases.main)",
+    ids: ["student.assistant-request.post", "student.assistant-conversation.get"],
+    routes: () => createAssistantRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_31,
     routes: () =>
@@ -548,6 +555,8 @@ describe("routes the entry point mounts itself", () => {
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
+      "student.assistant-request.post",
+      "student.assistant-conversation.get",
       ...SRV_31,
       "work.consultation-slots.get",
       "work.consultation-slots.post",

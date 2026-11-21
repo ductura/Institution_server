@@ -121,7 +121,8 @@ describe("fake server over HTTP", () => {
     // SRV-1104 has two content-length vectors per mutation.
     // work.messages.post (SRV-1106) five.
     // work.milestones.patch (SRV-1103) five, teacher.working-criterion.put (SRV-1107) five.
-    expect(VECTORS.length - overHttp.length).toBe(234);
+    // student.assistant-request.post (SRV-1204) five.
+    expect(VECTORS.length - overHttp.length).toBe(239);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

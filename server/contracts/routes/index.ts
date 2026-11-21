@@ -38,3 +38,4 @@ export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-w
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
+export { assistantRoutes } from "./assistant.ts";

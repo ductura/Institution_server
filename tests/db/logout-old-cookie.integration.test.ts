@@ -53,6 +53,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
+  createAssistantRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
@@ -520,6 +521,26 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1204: no provider in production, so a live session reads ai_disabled
+  // (200) and a conversation nobody owns 404.
+  "student.assistant-request.post": {
+    path: "/api/v1/student/assistant/requests",
+    headers: { "idempotency-key": randomUUID() },
+    body: () => ({
+      assignmentId: randomUUID(),
+      conversationId: null,
+      purposeCatalogVersion: 1,
+      purposeKey: "proofreading",
+      paragraph: "Izmišljeni odlomak.",
+    }),
+    live: 200,
+  },
+  "student.assistant-conversation.get": {
+    method: "GET",
+    path: `/api/v1/student/assistant/conversations/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
@@ -731,6 +752,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
+  "createAssistantRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
@@ -782,6 +804,7 @@ const MOUNTED = [
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
+  ...createAssistantRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
