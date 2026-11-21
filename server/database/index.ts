@@ -144,6 +144,12 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export {
+  createSchemaReadinessReader,
+  MIGRATION_LOCK_KEY,
+  type SchemaReadiness,
+  type SchemaReadinessReader,
+} from "./schema-readiness.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
