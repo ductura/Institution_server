@@ -6,6 +6,7 @@
 import {
   appOrigin,
   environmentProblems,
+  EXIT_CONFIGURATION,
   listenAddress,
   listenProblems,
   originProblems,
@@ -69,8 +70,12 @@ import {
   createMetricsSampling,
   createShutdownCoordinator,
   createHealthRoute,
+  createReadyRoute,
   installShutdown,
+  logStartupFailed,
+  logStartupRefused,
   parseTrustedProxies,
+  readinessCheckFor,
   routesOf,
   serverShutdownHooks,
   startServer,
@@ -140,8 +145,9 @@ const AREAS: readonly AreaWithRoutes[] = [
 
 async function main(): Promise<void> {
   if (problems.length > 0) {
-    for (const problem of problems) console.error(`startup refused: ${problem}`);
-    process.exitCode = 1;
+    // One structured line per problem (server/log), then EX_CONFIG (SRV-1812).
+    logStartupRefused(problems);
+    process.exitCode = EXIT_CONFIGURATION;
     return;
   }
   const { host, port } = listenAddress(process.env);
@@ -158,6 +164,13 @@ async function main(): Promise<void> {
     security: SECURITY,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      // Readiness (SRV-1812, M11.3): 503 until the main database answers and
+      // its migrations are done; storage and signing are reported. Draining
+      // answers 503 too, so a balancer stops sending before the listener closes.
+      createReadyRoute({
+        check: readinessCheckFor(databases.main, evidenceDeps),
+        draining: () => shutdown.state() !== "running",
+      }),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
@@ -251,8 +264,7 @@ async function main(): Promise<void> {
   }).catch((error: unknown) => {
     // A system error has a code (EADDRINUSE, EACCES); anything else is a
     // programming error of the route table, whose message names no value.
-    const { code, message } = error as { code?: string; message?: string };
-    console.error(code === undefined ? `startup failed: ${message}` : `listen failed: ${code}`);
+    logStartupFailed(error);
     process.exitCode = 1;
     return undefined;
   });

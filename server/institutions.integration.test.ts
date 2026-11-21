@@ -62,9 +62,10 @@ describe("dist/server.js with a broken institutions file", () => {
         resolve(exitCode);
       });
     });
-    expect(code).toBe(1);
+    // SRV-1812: EX_CONFIG and a structured line of server/log.
+    expect(code).toBe(78);
     expect(stderr).toContain(
-      "startup refused: institutions file is refused: INSTITUTION_SLUG_MALFORMED",
+      '"event":"startup.refused","fields":{"problem":"institutions file is refused: INSTITUTION_SLUG_MALFORMED"}',
     );
     expect(stderr + stdout).not.toContain(CANARY);
     expect(stdout).not.toContain("server.listening");
