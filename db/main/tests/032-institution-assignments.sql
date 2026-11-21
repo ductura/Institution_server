@@ -294,6 +294,8 @@ ALTER TABLE audit.access_log DISABLE TRIGGER access_log_no_truncate;
 ALTER TABLE institution.notice_read DISABLE TRIGGER notice_read_no_truncate;
 -- A student's note (SRV-21) references the assignment and is append-only.
 ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate;
+-- A student's amendment or dispute of an event (SRV-1314) references the assignment and is append-only.
+ALTER TABLE evidence.event_dispute DISABLE TRIGGER event_dispute_no_truncate;
 -- A work's attachment (SRV-10B) references the assignment and is append-only.
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
@@ -331,6 +333,7 @@ SELECT is(
   'with the TRUNCATE trigger disabled the same statement empties the versions'
 );
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
+ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;

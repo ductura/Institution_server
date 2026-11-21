@@ -115,6 +115,7 @@ SELECT is(
      UNION ALL SELECT assignment_id FROM evidence.submission_request
      UNION ALL SELECT assignment_id FROM evidence.submission
      UNION ALL SELECT assignment_id FROM evidence.submission_note
+     UNION ALL SELECT assignment_id FROM evidence.event_dispute
      UNION ALL SELECT assignment_id FROM collaboration.comment_thread
      UNION ALL SELECT assignment_id FROM collaboration.live_state
      UNION ALL SELECT assignment_id FROM collaboration.teacher_note
