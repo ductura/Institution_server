@@ -8,12 +8,12 @@
 // The cut is the slot's start minus the 30 days, never the clock at the time
 // the job runs: a second run of the same slot deletes nothing more.
 //
-// The job registers itself through the schedule's registerScheduledJob
-// (server/database/queue/schedule); the worker's composition root passes that
-// function and the retention port (createEndedSessionsPurge there). The types
-// below are their shapes, written out here: the web process must not name the
-// queue folder (server/database/registry-boundary.test.ts), so this area does
-// not import it, not even as a type.
+// The job registers itself through the schedule's registerScheduledJob (the
+// schedule folder of the worker's job queue); the worker's composition root
+// passes that function and the retention port (createEndedSessionsPurge
+// there). The types below are their shapes, written out here: no production
+// file outside the queue folder may name it (registry-boundary.test.ts in
+// server/database), so this area does not import it, not even as a type.
 
 /** The retention port: app.purge_ended_sessions under the retention role. */
 export type EndedSessionsPort = {

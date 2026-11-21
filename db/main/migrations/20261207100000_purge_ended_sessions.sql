@@ -27,7 +27,7 @@
 -- never a token, an id or a time.
 --
 -- The owner is ductus_identity, the owner of identity.session. The retention
--- role already has USAGE on schema app (20261125100000_erasure_tombstone.sql)
+-- role already has USAGE on schema app (20261205100000_erasure_tombstone.sql)
 -- and gets EXECUTE on this function, nothing else.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
