@@ -31,6 +31,8 @@ CREATE TRIGGER statement_no_update BEFORE UPDATE ON declaration.statement
 CREATE TRIGGER statement_immutable BEFORE DELETE ON declaration.statement
   FOR EACH ROW WHEN (OLD.payload_jcs IS NOT NULL) EXECUTE FUNCTION evidence.reject_append_only_change();
 
+-- IS TRUE: a missing or null field makes a comparison NULL, which a CHECK
+-- would otherwise accept.
 ALTER TABLE declaration.statement ADD CONSTRAINT statement_payload_matches_row CHECK (payload_jcs IS NULL OR (
   payload_jcs = declaration.canonical_payload(payload_jcs::jsonb)
   AND payload_jcs::jsonb ->> 'declarationSchema' = 'ductura-declaration-v1'
@@ -38,7 +40,7 @@ ALTER TABLE declaration.statement ADD CONSTRAINT statement_payload_matches_row C
   AND payload_jcs::jsonb ->> 'assignmentId' = assignment_id::text
   AND payload_jcs::jsonb -> 'assignmentVersion' = to_jsonb(assignment_version)
   AND payload_jcs::jsonb ->> 'documentId' = document_id
-  AND payload_jcs::jsonb -> 'revision' = to_jsonb(revision)));
+  AND payload_jcs::jsonb -> 'revision' = to_jsonb(revision)) IS TRUE);
 
 ALTER TABLE declaration.statement ADD CONSTRAINT statement_id_institution UNIQUE (id, institution_id);
 CREATE TABLE declaration.conversation_attachment (
@@ -86,9 +88,11 @@ CREATE TRIGGER conversation_attachment_in_payload BEFORE INSERT ON declaration.c
   FOR EACH ROW EXECUTE FUNCTION declaration.check_conversation_attachment();
 
 -- At commit, every conversation entry of a confirmed payload has its row, so
--- the rows and the hashed bytes cannot tell different stories.
+-- the rows and the hashed bytes cannot tell different stories. The check is
+-- deferred, so it fires after the RPC's definer context has ended, with the
+-- web login as the current user; it therefore runs with the owner's rights.
 CREATE FUNCTION declaration.check_statement_attachments() RETURNS trigger
-LANGUAGE plpgsql SET search_path = '' AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF NEW.payload_jcs IS NOT NULL AND (
     SELECT count(*) FROM declaration.payload_conversations(NEW.payload_jcs)
