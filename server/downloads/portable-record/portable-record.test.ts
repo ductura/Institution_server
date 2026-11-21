@@ -40,7 +40,7 @@ import {
   SUBMISSION_ID,
   TEXT,
   unzipStored,
-} from "./portable-record.fixture.ts";
+} from "../../../test-support/portable-record/index.ts";
 
 const encoder = new TextEncoder();
 const hex = (bytes: Uint8Array) => Buffer.from(bytes).toString("hex");

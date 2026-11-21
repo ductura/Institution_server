@@ -2,17 +2,18 @@
 // scripts/evidence-verify: two invented students, an invented text, a receipt
 // signed with the public RFC 8032 test vector 1 key (never a deployed key) and
 // a reader of the stored ZIP the builder writes. No real person, work or key.
-import { createPrivateKey, sign } from "node:crypto";
+import { createHash, createPrivateKey, sign } from "node:crypto";
 
+import type { PortableRecordSource, renderReceiptPdf } from "../../server/downloads/index.ts";
 import {
   canonicalizeJcs,
   digestSubmissionReceiptPayloadV2,
   type SubmissionReceiptPayloadV2,
-} from "../../domain/index.ts";
-import type { ReceiptPdfLabels } from "../receipt-pdf/index.ts";
+} from "../../server/domain/index.ts";
 
-import type { PortableRecordSource } from "./build.ts";
-import { sha256Hex } from "./format.ts";
+const sha256Hex = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+
+type ReceiptPdfLabels = Parameters<typeof renderReceiptPdf>[2];
 
 export const ORIGIN = "https://ductura.invalid";
 
