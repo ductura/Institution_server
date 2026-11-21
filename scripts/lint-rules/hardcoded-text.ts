@@ -129,7 +129,8 @@ const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex",
 export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // Request bodies and path segments.
   "server/session/backchannel.ts": ["TextDecoder"],
-  "server/http/evidence-request.ts": ["TextDecoder"],
+  // The closed object of every evidence body, strict UTF-8 before JSON.parse (M3.1, N-19).
+  "server/evidence/ingest/closed-object.ts": ["TextDecoder"],
   // The client context body, strict UTF-8 before JSON.parse (DAN-846).
   "server/http/client-context.ts": ["TextDecoder"],
   // WebAuthn clientDataJSON, strict UTF-8 before JSON.parse (DAN-840-2b).
@@ -161,11 +162,10 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/domain/forensics/evidence-receipt-verifier.ts": ["atob"],
   "server/domain/forensics/submission-receipt-verifier-v2.ts": ["atob"],
   // Bodies of the Ductus backend copy, strict UTF-8 before JSON.parse: comments,
-  // revision requests, the evidence ingest, the process summary, the fast path
+  // revision requests, the process summary, the fast path
   // and the new assignment.
   "server/collaboration/comments.ts": ["TextDecoder"],
   "server/collaboration/revision-requests.ts": ["TextDecoder"],
-  "server/evidence/ingest-http.ts": ["TextDecoder"],
   "server/projection/process-summary.ts": ["TextDecoder"],
   "server/teacher/fast-path.ts": ["TextDecoder"],
   "server/institution/create-assignment.ts": ["TextDecoder"],
