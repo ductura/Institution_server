@@ -254,6 +254,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  // SRV-1310 (plan M8.4, Ductus#2052 c.7063253708): the DOCX of a saved version of a work; Ductus has no such route.
+  "app/api/works/[documentId]/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
+  },
   // SRV-1106 (Val 11, Ductus#2051 c.7048423523; E§3.5 mentor2, PO-22): the messages of a work; Ductus has no such route.
   "app/api/works/[documentId]/messages/route.ts": {
     methods: ["GET", "POST"],

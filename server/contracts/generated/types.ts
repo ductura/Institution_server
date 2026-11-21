@@ -806,6 +806,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "applied" | "unchanged"; "mode": "suggestions" | "direct"; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.export.get": {
+    params: { "documentId": string };
+    query: { "format": "docx" | "pdf"; "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-snapshot-sha256"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.messages.get": {
     params: { "documentId": string };
     query: undefined;

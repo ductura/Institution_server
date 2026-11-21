@@ -23,6 +23,7 @@ import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
+import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import type { Handlers } from "./server.ts";
 
 type SourceLookupBody = Operations["sources.lookup.post"]["success"]["body"];
@@ -72,6 +73,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,
+  ...WORK_EXPORT_HANDLERS,
   ...MESSAGES_HANDLERS,
   ...COMMENTS_HANDLERS,
   ...DIRECT_EDIT_HANDLERS,

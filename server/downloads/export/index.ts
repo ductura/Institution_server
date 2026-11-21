@@ -7,4 +7,5 @@ export {
   type ExportModel,
   type ExportRun,
 } from "./model.ts";
+export { renderWorkDocx, type WorkDocx, type WorkDocxInput } from "./work-docx.ts";
 export { writeZip, type ZipEntry } from "./zip.ts";
