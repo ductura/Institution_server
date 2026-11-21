@@ -119,6 +119,7 @@ describe("route inventory", () => {
       "teacher.merlin-packages.post: app/api/teacher/assignments/[assignmentId]/merlin/packages/route.ts is not in the inventory",
       "teacher.merlin-package.get: app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/route.ts is not in the inventory",
       "teacher.merlin-package-download.get: app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts is not in the inventory",
+      "support.problem-reports.post: app/api/problem-reports/route.ts is not in the inventory",
       "projection.process-summary-details.post: app/api/process-summary/details/route.ts is not in the inventory",
       "work.consultation-slots.get: app/api/works/[documentId]/consultation-slots/route.ts is not in the inventory",
       "work.consultation-slots.post: app/api/works/[documentId]/consultation-slots/route.ts is not in the inventory",
