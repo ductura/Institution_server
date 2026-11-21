@@ -24,6 +24,7 @@ export { workerProvisionInvocation } from "./provision-worker.ts";
 export {
   checkBase,
   checkLedger,
+  checkVersions,
   DIR,
   LEDGER,
   readBase,
