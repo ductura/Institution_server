@@ -58,6 +58,8 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
+  excludePracticeAssignment,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
@@ -221,6 +223,7 @@ async function main(): Promise<void> {
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
       createAssignmentCurrentVersionRouteFor(databases.main),
+      createAssignmentGradeRouteFor(databases.main),
       // A course's seminar groups and their teachers (SRV-15, Ductus#2028).
       ...createInstitutionGroupRoutesFor(databases.main),
       // The administrator creates a course with its holder (SRV-12 over SRV-07, Ductus#2028).
@@ -252,7 +255,10 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
-      createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
+      excludePracticeAssignment(
+        createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
+        databases.main,
+      ),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
@@ -286,7 +292,9 @@ async function main(): Promise<void> {
       ...createDeadlineExtensionRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
-      ...createMerlinRosterRoutesFor(databases.main),
+      ...createMerlinRosterRoutesFor(databases.main).map((route) =>
+        excludePracticeAssignment(route, databases.main),
+      ),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
       ...createMerlinPackageRoutesFor(databases.main),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
