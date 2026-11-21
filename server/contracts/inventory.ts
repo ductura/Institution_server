@@ -83,6 +83,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064009405",
   },
+  "app/api/mentorships/[id]/key-dates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
+  },
   // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
   "app/api/mentorship-requests/route.ts": {
     methods: ["POST"],

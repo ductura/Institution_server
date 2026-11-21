@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.59.0",
+    "version": "1.60.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -22544,6 +22544,273 @@
             "status": 422,
             "code": "invalid_document",
             "key": "errors.invalid_document"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/mentorships/{id}/key-dates": {
+      "get": {
+        "operationId": "mentorship.key-dates.get",
+        "summary": "The effective deadline, dated milestones and consultation slots of one active mentorship, in chronological order. Only its student and mentor may read.",
+        "x-access": "owner_or_mentor",
+        "x-inventory": "app/api/mentorships/[id]/key-dates/route.ts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?![\\s\\S])",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dates ordered by instant, kind and id. The deadline id is the assignment id.",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "dates"
+                  ],
+                  "properties": {
+                    "dates": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "at"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "deadline",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "at",
+                              "title"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "milestone",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "title": {
+                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "at",
+                              "state"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "consultation",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "state": {
+                                "anyOf": [
+                                  {
+                                    "const": "requested",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "countered",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "confirmed",
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
           },
           {
             "status": 503,
