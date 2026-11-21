@@ -57,6 +57,12 @@ const CREATE_CONSULTATION: Step = {
     agreement: "Dodati zaključak.",
   },
 };
+const CREATE_EVENT_DISPUTE: Step = {
+  path: `/api/v1/works/${IDS.document}/event-disputes`,
+  as: "student",
+  headers: ORIGIN,
+  body: { kind: "dispute", eventId: "pastes/0", text: "Izmišljeno osporavanje opisa." },
+};
 const ANCHOR = {
   nodeId: "0a000000-0000-4000-8000-000000000001",
   quote: "Izmišljeno",
@@ -859,6 +865,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
       body: { text: "Izmišljena dopuna." },
     },
+  },
+  "work.event-disputes.get": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_EVENT_DISPUTE],
+    request: { path: `/api/v1/works/${IDS.document}/event-disputes`, as: "nastavnik" },
+  },
+  "work.event-disputes.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: CREATE_EVENT_DISPUTE,
   },
   "work.versions.get": {
     before: [commit("izmisljena-transakcija-1", 0)],

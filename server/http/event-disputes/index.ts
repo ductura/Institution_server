@@ -58,8 +58,11 @@ export function createEventDisputeRoutes(disputes: EventDisputes): Route[] {
         if (documentId === null) return sendProblem(response, 404, "not_found");
         try {
           const answer = await disputes.listForWork(token, documentId);
-          if (answer.status === "unauthorized") return sendProblem(response, 401, "unauthorized");
-          if (answer.status === "not_found") return sendProblem(response, 404, "not_found");
+          if (answer.status !== "read") {
+            return answer.status === "unauthorized"
+              ? sendProblem(response, 401, "unauthorized")
+              : sendProblem(response, 404, "not_found");
+          }
           sendJson(response, 200, {
             disputes: answer.records.map((record) => ({
               disputeId: record.id,
