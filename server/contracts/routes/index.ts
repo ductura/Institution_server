@@ -34,6 +34,7 @@ export {
 } from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
+export { importRoutes } from "./import.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
@@ -55,6 +56,7 @@ export {
   type CourseAggregate,
 } from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";

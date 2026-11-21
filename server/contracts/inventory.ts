@@ -372,6 +372,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
+  // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  "app/api/works/[documentId]/imports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
+  },
+  "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
+  },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],
     source: "ductura/Institution_server#471",
@@ -426,6 +435,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
+  },
+  // SRV-1904 (P-D4): copying an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/copy/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064495167",
   },
   // SRV-1109 (Val 11, N-18, C-16, D-286): the Merlin roster and its CSV; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts": {

@@ -48,6 +48,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   assistant: ["domain", "database"],
   worker: ["log", "database", "evidence", "external/storage"],
   identity: ["domain"],
+  import: ["domain", "contracts"],
   http: [
     ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
     ...[
@@ -66,6 +67,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     "external/assistant",
     "external/assistant-tools",
     "identity",
+    "import",
   ],
   "test-server": ["http", "settings"],
   tests: ["domain", "downloads"],

@@ -1244,6 +1244,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "teacher.assignment-copy.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.assignment-copy.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const local3 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['requestKey'] === 'string') &&
+      local0.test(value['requestKey']) &&
+      (typeof value['courseId'] === 'string') &&
+      local1.test(value['courseId']) &&
+      (value['opensAt'] !== undefined ? ((typeof value['opensAt'] === 'string') && local2.test(value['opensAt'])) : true) &&
+      (value['dueAt'] !== undefined ? ((typeof value['dueAt'] === 'string') && local3.test(value['dueAt'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'courseId', 'opensAt', 'dueAt'].includes(key))
+    )
+  }
+  })(),
   "teacher.assignment-grade.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1775,6 +1801,59 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((value['format'] === 'docx')) || ((value['format'] === 'pdf'))) &&
       (value['versionId'] !== undefined ? ((typeof value['versionId'] === 'string') && local0.test(value['versionId'])) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['format', 'versionId'].includes(key))
+    )
+  }
+  })(),
+  "work.imports.confirm.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['importId'] === 'string') &&
+      local1.test(value['importId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.imports.confirm.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  const local1 = /^[0-9a-f]{64}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['importId'] === 'string') &&
+      local0.test(value['importId']) &&
+      (typeof value['manifestSha256'] === 'string') &&
+      local1.test(value['manifestSha256']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.imports.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.imports.post:body": (() => {
+  const local0 = /^[A-Za-z0-9+/]+={0,2}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['fileBase64'] === 'string') &&
+      value['fileBase64'].length <= 2796204 &&
+      value['fileBase64'].length >= 4 &&
+      local0.test(value['fileBase64']) &&
+      (((typeof value['fileName'] === 'string') && value['fileName'].length <= 1024) || ((value['fileName'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 2
     )
   }
   })(),
