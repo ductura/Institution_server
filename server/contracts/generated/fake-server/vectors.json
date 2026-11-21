@@ -19606,7 +19606,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.70.0",
+        "apiVersion": "1.71.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19622,7 +19622,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.70.0",
+        "apiVersion": "1.71.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -28348,6 +28348,139 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000002003"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "zip",
+    "request": {
+      "params": {
+        "submissionId": "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studentice-a-0000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-disposition": "attachment; filename=\"prenosivi-zapis.zip\"",
+        "cache-control": "private, no-store",
+        "x-content-sha256": "6a1f0c3e5b7d9a2c4e6f8a0b1c3d5e7f9a1b2c3d4e5f60718293a4b5c6d7e8f9"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "no-session",
+    "request": {
+      "params": {
+        "submissionId": "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000611"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "submissionId": "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studentice-a-0000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000612"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "another-students-submission",
+    "request": {
+      "params": {
+        "submissionId": "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-b-00000000000002"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000613"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "malformed-id",
+    "request": {
+      "params": {
+        "submissionId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studentice-a-0000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000614"
+      }
+    }
+  },
+  {
+    "route": "student.portable-record.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "submissionId": "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studentice-a-0000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000615"
       }
     }
   },

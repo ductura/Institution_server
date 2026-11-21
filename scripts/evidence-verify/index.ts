@@ -1,13 +1,22 @@
 // CLI entry of the offline check of a signed daily root (SRV-1311):
 //   node scripts/evidence-verify/index.ts --root root.json --entries entries.ndjson --public-key key.pem
 // Exit code 0 when the record verifies, 1 otherwise. No network, no database.
-import { open } from "node:fs/promises";
+// SRV-1312: the unpacked portable record of a submission, with the same CLI:
+//   node scripts/evidence-verify/index.ts --record <directory>
+import { open, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
+import { runPortableRecordVerify, type ListDirectory } from "./portable-record.ts";
 import { runEvidenceVerify, type ReadFile } from "./verify.ts";
 
 export { runEvidenceVerify, parseArgs, parseEntries, USAGE, type VerifyOutcome } from "./verify.ts";
+export {
+  checkDailyRootSignature,
+  RECORD_USAGE,
+  runPortableRecordVerify,
+  type RecordOutcome,
+} from "./portable-record.ts";
 
 /** Reads at most `maxBytes`; a longer file is "too_large", a missing one null. */
 export const readLocalFile: ReadFile = async (path, maxBytes) => {
@@ -30,8 +39,26 @@ export const readLocalFile: ReadFile = async (path, maxBytes) => {
   }
 };
 
+/** The names of the regular files in a directory, or null. */
+export const listLocalDirectory: ListDirectory = async (path) => {
+  try {
+    const entries = await readdir(path, { withFileTypes: true });
+    return entries.map((entry) => entry.name);
+  } catch {
+    return null;
+  }
+};
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const outcome = await runEvidenceVerify(process.argv.slice(2), readLocalFile);
+  const argv = process.argv.slice(2);
+  const outcome =
+    argv[0] === "--record"
+      ? await runPortableRecordVerify(argv, {
+          readFile: readLocalFile,
+          listDirectory: listLocalDirectory,
+          join,
+        })
+      : await runEvidenceVerify(argv, readLocalFile);
   (outcome.exitCode === 0 ? process.stdout : process.stderr).write(`${outcome.line}\n`);
   process.exitCode = outcome.exitCode;
 }

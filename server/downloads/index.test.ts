@@ -15,8 +15,12 @@ describe("server/downloads public interface", () => {
       "DOWNLOADS_SCHEMAS",
       "MERLIN_PACKAGE_CSV",
       "MERLIN_PACKAGE_FINGERPRINTS",
+      "PENDING_DAILY_ROOT",
+      "PORTABLE_RECORD_FILENAME",
+      "PORTABLE_RECORD_FILES",
       "buildExportModel",
       "buildMerlinPackageZip",
+      "buildPortableRecord",
       "createDownloadsService",
       "createMerlinPackageService",
       "createMerlinRosterReader",
@@ -27,6 +31,7 @@ describe("server/downloads public interface", () => {
       "renderDocx",
       "renderReceiptPdf",
       "renderWorkDocx",
+      "verifyPortableRecord",
     ]);
     expect(area.DOWNLOADS_ROUTES).toEqual([]);
     expect(area.DOWNLOADS_SCHEMAS).toEqual({});

@@ -240,6 +240,7 @@ const SUBMIT: Step = {
   body: { documentId: IDS.document, revision: 1 },
 };
 const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
+const PORTABLE_SUBMISSION = "c1312000-0000-4000-8000-000000000001";
 
 // SRV-1703: an invented draft and an invented bank entry. The fake numbers
 // what it stores in order (comments-routes.ts nextId): the first draft is
@@ -702,6 +703,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "student.submission.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
+  },
+  // SRV-1312: the fake draws the submission id at random; the scenario pins it.
+  "student.portable-record.get": {
+    before: SUBMIT_STEPS,
+    prepare: (state) => {
+      const receipt = state.works.find(
+        (work) => work.submissionReceipt !== null,
+      )?.submissionReceipt;
+      if (receipt) Object.assign(receipt.payload, { submissionId: PORTABLE_SUBMISSION });
+    },
+    request: {
+      path: `/api/v1/student/submissions/${PORTABLE_SUBMISSION}/portable-record`,
+      as: "student",
+    },
   },
   "student.receipt-pdf.get": {
     before: SUBMIT_STEPS,
