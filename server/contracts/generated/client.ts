@@ -125,6 +125,7 @@ export const ROUTE_TABLE = {
   "work.direct-edit.get": { method: "GET", path: "/api/v1/works/{documentId}/direct-edit", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "work.direct-edit.put": { method: "PUT", path: "/api/v1/works/{documentId}/direct-edit", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.export-pdf.get": { method: "GET", path: "/api/v1/assignments/{assignmentId}/works/{documentId}/export/pdf", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
+  "work.export.get": { method: "GET", path: "/api/v1/works/{documentId}/export", body: null, headers: ["x-export-snapshot-sha256"], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.messages.get": { method: "GET", path: "/api/v1/works/{documentId}/messages", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "work.messages.post": { method: "POST", path: "/api/v1/works/{documentId}/messages", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.milestones.get": { method: "GET", path: "/api/v1/works/{documentId}/milestones", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
@@ -192,8 +193,8 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const type = res.headers.get("content-type") ?? "";
-    // A binary answer (image/jpeg) is read as a Blob; it is never a problem body.
-    const body: unknown = type.startsWith("application/json") ? await res.json() : type.startsWith("image/") && res.status < 400 ? await res.blob() : undefined;
+    // A binary answer (image/jpeg, DOCX) is read as a Blob; it is never a problem body.
+    const body: unknown = type.startsWith("application/json") ? await res.json() : (type.startsWith("image/") || type.startsWith("application/vnd.openxmlformats-officedocument.")) && res.status < 400 ? await res.blob() : undefined;
     // A status the contract lists as an answer is one even at 400 or above
     // (live.document.put 409 {outcome, token}), unless its body is a problem
     // body: the same status can also be an error (revision-requests 409).
