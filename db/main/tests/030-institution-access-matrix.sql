@@ -315,6 +315,8 @@ SELECT bag_eq(
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
+      'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
+      'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
     'merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[])',
