@@ -39,5 +39,6 @@ jobs:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
         run: |
           docker compose up -d --build --wait postgres-main
-          pnpm db:migrate:main
+          pnpm db:provision
+          node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"
           pnpm test:integration:pg server/http/export/work-pdf.pg.integration.test.ts
