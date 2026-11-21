@@ -111,6 +111,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/server/evidence/assignment-submissions.ts",
   },
+  "app/api/teacher/assignments/[assignmentId]/submissions/[submissionId]/route.ts": {
+    methods: ["GET"],
+    source: "docs/plan/PLAN-MIGRACIJE.md#b6-nastavnički-detalj-zadatka-i-pregled-predane-verzije",
+  },
   // DAN-903-2: Ductus reads it in its teacher pages, not in a route.
   "app/api/teacher/access/route.ts": {
     methods: ["GET"],

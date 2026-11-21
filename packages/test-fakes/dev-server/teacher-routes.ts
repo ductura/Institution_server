@@ -60,9 +60,11 @@ function submissions(state: State, account: Account | null, assignment: Assignme
         studentId,
         documentId,
         submitted: true,
-        revision: work.revision,
+        revision: work.submissionReceipt?.payload.revision ?? work.revision,
         requestedMinute: `${work.submittedAt.slice(0, 16)}:00.000Z`,
-        afterDeadline: work.submittedAt > assignment.content.dueAt,
+        afterDeadline:
+          work.submissionReceipt?.payload.afterDeadline ??
+          work.submittedAt > assignment.content.dueAt,
       } as const;
     });
 }
@@ -179,10 +181,67 @@ export const TEACHER_HANDLERS: Handlers = {
       }));
     return { status: 200, body: { courses } };
   },
-  "teacher.submissions.get": ({ state, account, params }) => ({
-    status: 200,
-    body: { submissions: submissions(state, account, taught(state, account, params.assignmentId)) },
-  }),
+  "teacher.submissions.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    const rows = submissions(state, account, assignment);
+    const submittedVersions = rows.flatMap((row) => {
+      if (!row.submitted) return [];
+      const work = state.works.find(
+        (item) => item.assignmentId === assignment?.id && item.studentId === row.studentId,
+      );
+      return [
+        {
+          studentId: row.studentId,
+          submissionId: work?.submissionReceipt?.payload.submissionId ?? null,
+          revision: row.revision,
+          late: row.afterDeadline,
+        },
+      ];
+    });
+    return {
+      status: 200,
+      body:
+        submittedVersions.length === 0
+          ? { submissions: rows }
+          : { submissions: rows, submittedVersions },
+    };
+  },
+  "teacher.submission-detail.get": ({ state, account, params, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null) return { error: "not_found" };
+    const visible = studentsOf(state, account, assignment);
+    const work = state.works.find(
+      (item) =>
+        item.assignmentId === assignment.id &&
+        visible.includes(item.studentId) &&
+        item.submissionReceipt?.payload.submissionId === params.submissionId.toLowerCase(),
+    );
+    const receipt = work?.submissionReceipt;
+    if (work === undefined || receipt == null) return { error: "not_found" };
+    if (work.submittedDocument === null) return { error: "unavailable" };
+    recordOpening(
+      state,
+      {
+        documentId: work.documentId,
+        readerId: account.id,
+        role: "teacher",
+        surface: "submitted_text",
+      },
+      now,
+    );
+    const { submissionId, revision, afterDeadline } = receipt.payload;
+    return {
+      status: 200,
+      body: {
+        submissionId,
+        studentId: work.studentId,
+        revision,
+        late: afterDeadline,
+        document: work.submittedDocument,
+      },
+    };
+  },
   "teacher.assignment-submissions.post": ({ state, account, body }) => {
     const ids = [...new Set(body.assignmentIds.map((id) => id.toLowerCase()))];
     const assignments = ids.map((assignmentId) => ({

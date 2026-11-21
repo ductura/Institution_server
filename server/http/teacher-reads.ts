@@ -11,8 +11,10 @@ import {
   createTeacherAccessReader,
   type MentoredWorksReader,
   createTeacherCoursesReader,
+  createTeacherSubmissions,
   type TeacherAccessReader,
   type TeacherCoursesReader,
+  type TeacherSubmissions,
 } from "../database/index.ts";
 import { liveSessionTokenFromCookie, principalScope } from "../session/index.ts";
 
@@ -89,6 +91,7 @@ export function createTeacherAccessRoute(read: TeacherAccessReader): Route {
 export type TeacherReadOptions = {
   readonly mentored: MentoredWorksReader;
   readonly submissions: AssignmentSubmissionsReader;
+  readonly submissionList: TeacherSubmissions["list"];
   /** For tests: a shorter body deadline. */
   readonly timeoutMs?: number;
 };
@@ -167,14 +170,10 @@ export function createTeacherReadRoutes(options: TeacherReadOptions): Route[] {
         : { ok: false, status: read.status };
     }),
     getRoute("teacher.submissions.get", async (token, params) => {
-      // Ductus: a malformed id is the same empty list as any refusal, without asking.
       const assignmentId = workIdFromPath(params?.assignmentId ?? "") ?? "";
-      const read = await options.submissions(token, [assignmentId]);
+      const read = await options.submissionList(token, assignmentId);
       return read.status === "ok"
-        ? {
-            ok: true,
-            body: { submissions: read.submissions.get(assignmentId.toLowerCase()) ?? [] },
-          }
+        ? { ok: true, body: read.body }
         : { ok: false, status: read.status };
     }),
     {
@@ -215,6 +214,7 @@ export function createTeacherReadRoutesFor(main: Pick<Databases["main"], "withAc
     ...createTeacherReadRoutes({
       mentored: createMentoredWorksReader(main.withActor),
       submissions: createAssignmentSubmissionsReader(main.withActor),
+      submissionList: createTeacherSubmissions(main.withActor).list,
     }),
   ];
 }
