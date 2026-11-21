@@ -3166,6 +3166,173 @@
     }
   },
   {
+    "route": "course.aggregate.get",
+    "name": "course-aggregate",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "status": "available",
+        "started": 10,
+        "submitted": 5,
+        "stages": {
+          "notStarted": 5,
+          "inProgress": 5,
+          "submitted": 5
+        }
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "suppressed",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "status": "suppressed"
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001701"
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001702"
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-00000000dead"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001703"
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      },
+      "query": {
+        "groupId": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000001704"
+      }
+    }
+  },
+  {
+    "route": "course.aggregate.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001705"
+      }
+    }
+  },
+  {
     "route": "downloads.manifest.get",
     "name": "ready",
     "request": {},
@@ -16644,7 +16811,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.52.0",
+        "apiVersion": "1.53.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -16660,7 +16827,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.52.0",
+        "apiVersion": "1.53.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
