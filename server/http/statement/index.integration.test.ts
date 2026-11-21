@@ -40,21 +40,24 @@ async function serve(answer: Awaited<ReturnType<StatementPort["run"]>>) {
 }
 
 it.each([
-  ["text/html", "<p>Izmisljeni ispis</p>"],
-  ["application/json", '{"izmisljeno":true}'],
-  ["image/png", "izmisljeno"],
-  ["application/pdf", "nije PDF"],
-  ["text/plain", ""],
-])("returns 422 without a DB write for %s with invalid bytes or type", async (type, body) => {
-  const { url, run } = await serve({ status: "conflict" });
-  const response = await fetch(`${url}/declaration-attachments`, {
-    method: "POST",
-    headers: { ...HEADERS, "content-type": type },
-    body,
-  });
-  expect(response.status).toBe(422);
-  expect(run).not.toHaveBeenCalled();
-});
+  ["text/html", "<p>Izmisljeni ispis</p>", 415],
+  ["application/json", '{"izmisljeno":true}', 415],
+  ["image/png", "izmisljeno", 415],
+  ["application/pdf", "nije PDF", 422],
+  ["text/plain", "", 422],
+])(
+  "refuses %s with an unsupported type or invalid bytes without a DB write",
+  async (type, body, status) => {
+    const { url, run } = await serve({ status: "conflict" });
+    const response = await fetch(`${url}/declaration-attachments`, {
+      method: "POST",
+      headers: { ...HEADERS, "content-type": type },
+      body,
+    });
+    expect(response.status).toBe(status);
+    expect(run).not.toHaveBeenCalled();
+  },
+);
 
 it.each([
   ["text/plain; charset=utf-8", "Izmišljeni ispis."],
@@ -92,14 +95,107 @@ it.each([
     },
     422,
   ],
-  [{ ...BODY, ownWork: { confirmed: false } }, 409],
-])("refuses invalid or incomplete declarations before the DB write", async (body, status) => {
-  const { url, run } = await serve({ status: "conflict" });
-  const response = await fetch(`${url}/declaration`, {
+  [{ ...BODY, ownWork: { confirmed: false } }, 409, "incomplete"],
+])(
+  "refuses invalid or incomplete declarations before the DB write",
+  async (body, status, code = "invalid_input") => {
+    const { url, run } = await serve({ status: "conflict" });
+    const response = await fetch(`${url}/declaration`, {
+      method: "PUT",
+      headers: { ...HEADERS, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    expect(response.status).toBe(status);
+    expect(await response.json()).toMatchObject({ code });
+    expect(run).not.toHaveBeenCalled();
+  },
+);
+
+async function save(answer: Awaited<ReturnType<StatementPort["run"]>>) {
+  const { url } = await serve(answer);
+  return fetch(`${url}/declaration`, {
     method: "PUT",
     headers: { ...HEADERS, "content-type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(BODY),
   });
-  expect(response.status).toBe(status);
-  expect(run).not.toHaveBeenCalled();
+}
+
+it.each([
+  [
+    { status: "conflict", reason: "declaration_conflict", currentVersion: 3 },
+    409,
+    { currentVersion: 3 },
+  ],
+  [
+    { status: "conflict", reason: "stale_revision", currentRevision: 2 },
+    409,
+    { currentRevision: 2 },
+  ],
+  [
+    { status: "conflict", reason: "attachment_stale", conversationIds: [ID] },
+    409,
+    { conversationIds: [ID] },
+  ],
+  [
+    { status: "conflict", reason: "mandatory_attachment_missing", conversationIds: [ID] },
+    409,
+    { conversationIds: [ID] },
+  ],
+  [{ status: "conflict", reason: "already_submitted" }, 409, {}],
+  [{ status: "conflict", reason: "form_outdated" }, 409, {}],
+  [{ status: "conflict", reason: "incomplete" }, 409, {}],
+  [{ status: "not_found", reason: "invalid_attachment" }, 422, {}],
+  [{ status: "invalid_input", reason: "invalid_attachment" }, 422, {}],
+] as const)(
+  "answers the RPC reason %o with its own code and context",
+  async (answer, status, context) => {
+    const response = await save(answer);
+    expect(response.status).toBe(status);
+    const body = await response.json();
+    expect(body).toEqual({
+      ...context,
+      error: answer.reason,
+      code: answer.reason,
+      messageKey: expect.stringMatching(/^errors\./u),
+      status,
+      requestId: expect.any(String),
+    });
+  },
+);
+
+it.each([
+  [{ status: "conflict" }, 409, "conflict"],
+  [{ status: "conflict", reason: "unlisted_reason" }, 409, "conflict"],
+  [{ status: "not_found", reason: "unlisted_reason" }, 404, "not_found"],
+] as const)(
+  "answers %o without a listed reason with the shared code",
+  async (answer, status, code) => {
+    const response = await save(answer);
+    expect(response.status).toBe(status);
+    expect(await response.json()).toMatchObject({ code });
+  },
+);
+
+it("answers 500 when the RPC context does not fit the contract of its reason", async () => {
+  const response = await save({
+    status: "conflict",
+    reason: "already_submitted",
+    currentVersion: 3,
+  });
+  expect(response.status).toBe(500);
+  expect(JSON.stringify(await response.json())).not.toContain("currentVersion");
 });
+
+it.each(["too_many_attachments", "attachments_too_large", "already_submitted"])(
+  "answers the upload refusal %s with its own code",
+  async (reason) => {
+    const { url } = await serve({ status: "conflict", reason });
+    const response = await fetch(`${url}/declaration-attachments`, {
+      method: "POST",
+      headers: { ...HEADERS, "content-type": "text/plain" },
+      body: "Izmišljeni ispis.",
+    });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: reason });
+  },
+);

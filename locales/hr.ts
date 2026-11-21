@@ -2054,6 +2054,16 @@ export const hr = {
     versionConflict:
       "Zadatak je u međuvremenu promijenjen. Učitajte zadnju verziju pa pokušajte ponovno.",
     practiceAssignment: "Probni zadatak nema ocjenu.",
+    alreadySubmitted: "Rad je već predan, pa se izjava više ne može mijenjati.",
+    attachmentStale: "Priloženi razgovor se u međuvremenu promijenio. Priložite ga ponovno.",
+    attachmentsTooLarge: "Prilozi izjave zajedno su preveliki.",
+    declarationConflict: "Izjava je u međuvremenu promijenjena. Učitajte je ponovno.",
+    formOutdated: "Obrazac izjave se u međuvremenu promijenio. Učitajte novi obrazac.",
+    incomplete: "Izjava nije potpuna. Ispunite sva obavezna polja.",
+    invalidAttachment: "Prilog nije pronađen ili ne pripada ovom radu.",
+    mandatoryAttachmentMissing:
+      "Nedostaje obavezni prilog razgovora. Priložite ga pa pokušajte ponovno.",
+    tooManyAttachments: "Izjava već ima najveći dopušteni broj priloga.",
   },
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.

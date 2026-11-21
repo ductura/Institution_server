@@ -25258,6 +25258,114 @@
     }
   },
   {
+    "route": "student.declaration-attachments.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "text/html"
+      },
+      "rawBody": "x"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-attachments.post",
+    "name": "already-submitted",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "text/plain"
+      },
+      "rawBody": "x"
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "already_submitted",
+        "code": "already_submitted",
+        "messageKey": "errors.alreadySubmitted",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-attachments.post",
+    "name": "too-many-attachments",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "text/plain"
+      },
+      "rawBody": "x"
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "too_many_attachments",
+        "code": "too_many_attachments",
+        "messageKey": "errors.tooManyAttachments",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-attachments.post",
+    "name": "attachments-too-large",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "text/plain"
+      },
+      "rawBody": "x"
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "attachments_too_large",
+        "code": "attachments_too_large",
+        "messageKey": "errors.attachmentsTooLarge",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
     "route": "student.declaration.get",
     "name": "success",
     "request": {
@@ -26187,6 +26295,406 @@
         "messageKey": "errors.unsupportedMediaType",
         "status": 415,
         "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "invalid-attachment",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_attachment",
+        "code": "invalid_attachment",
+        "messageKey": "errors.invalidAttachment",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "already-submitted",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "already_submitted",
+        "code": "already_submitted",
+        "messageKey": "errors.alreadySubmitted",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "form-outdated",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "form_outdated",
+        "code": "form_outdated",
+        "messageKey": "errors.formOutdated",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "incomplete",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "incomplete",
+        "code": "incomplete",
+        "messageKey": "errors.incomplete",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "declaration-conflict",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "declaration_conflict",
+        "code": "declaration_conflict",
+        "messageKey": "errors.declarationConflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000",
+        "currentVersion": 3
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "stale-revision",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "stale_revision",
+        "code": "stale_revision",
+        "messageKey": "errors.staleRevision",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000",
+        "currentRevision": 2
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "mandatory-attachment-missing",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "mandatory_attachment_missing",
+        "code": "mandatory_attachment_missing",
+        "messageKey": "errors.mandatoryAttachmentMissing",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000",
+        "conversationIds": [
+          "00000000-0000-4000-8000-0000000000a1"
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "attachment-stale",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "attachment_stale",
+        "code": "attachment_stale",
+        "messageKey": "errors.attachmentStale",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000",
+        "conversationIds": [
+          "00000000-0000-4000-8000-0000000000a1"
+        ]
       }
     }
   },

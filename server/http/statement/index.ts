@@ -1,9 +1,9 @@
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve } from "node:path";
 
 import { Value } from "@sinclair/typebox/value";
 
-import { ROUTES } from "../../contracts/index.ts";
+import { ROUTES, type RouteContract } from "../../contracts/index.ts";
 import {
   checkExternalAttachmentBytes,
   createStatementPort,
@@ -12,6 +12,7 @@ import {
   parseDeclarationPutBody,
   type StatementOperation,
   type StatementPort,
+  type StatementRefusal,
   type WithActor,
 } from "../../database/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
@@ -23,6 +24,7 @@ import {
   requestIdOf,
   sendJson,
   sendProblem,
+  sendProblemWith,
   type Route,
 } from "../index.ts";
 import { createFormReader } from "./form.ts";
@@ -39,6 +41,32 @@ function mediaType(request: IncomingMessage): string | undefined {
   const types = request.headersDistinct["content-type"];
   if (types?.length !== 1) return undefined;
   return types[0]?.split(";")[0]?.trim().toLowerCase();
+}
+
+const STATUS = { unauthorized: 401, not_found: 404, conflict: 409, invalid_input: 422 } as const;
+
+/**
+ * The wire answer of an RPC refusal (declaration-v1 §7.3): a reason the
+ * route's contract names becomes its own code with its context; any other
+ * refusal keeps the shared code of its status.
+ */
+function sendRefusal(
+  response: ServerResponse,
+  contract: RouteContract,
+  { status, reason, ...context }: StatementRefusal,
+): void {
+  const named =
+    reason === "invalid_attachment" && (status === "not_found" || status === "invalid_input")
+      ? { status: 422, code: reason }
+      : reason === "unsupported_media_type" && status === "invalid_input"
+        ? { status: 415, code: reason }
+        : status === "conflict" && reason !== undefined
+          ? { status: 409, code: reason }
+          : undefined;
+  const spec =
+    named && contract.errors.find((e) => e.status === named.status && e.code === named.code);
+  if (spec) return sendProblemWith(response, spec, context);
+  return sendProblem(response, STATUS[status], status);
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
@@ -63,7 +91,7 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           if (id !== READ) {
             const format = mediaType(request);
             if (id === UPLOAD && !isExternalFormat(format))
-              return refuse(response, 422, "invalid_input");
+              return refuse(response, 415, "unsupported_media_type");
             if (id === SAVE && format !== "application/json")
               return refuse(response, 415, "unsupported_media_type");
             const raw = await readBodyWithLimit(
@@ -80,7 +108,7 @@ export function createStatementRoutes(port: StatementPort): Route[] {
                 return sendProblem(response, 422, "invalid_input");
               }
               if (parsed.body.confirm && incompleteFields(parsed.body).length > 0) {
-                return sendProblem(response, 409, "conflict");
+                return sendProblem(response, 409, "incomplete");
               }
               op = { type: "save", body: parsed.body };
             } else {
@@ -90,22 +118,11 @@ export function createStatementRoutes(port: StatementPort): Route[] {
             }
           }
           const outcome = await port.run(token, assignmentId.toLowerCase(), slug, op);
-          switch (outcome.status) {
-            case "unauthorized":
-              return sendProblem(response, 401, outcome.status);
-            case "not_found":
-              return sendProblem(response, 404, outcome.status);
-            case "conflict":
-              return sendProblem(response, 409, outcome.status);
-            case "invalid_input":
-              return sendProblem(response, 422, outcome.status);
-            case "ok": {
-              const schema = contract.responses[0]?.body;
-              if (schema !== undefined && Value.Check(schema, outcome.body))
-                return sendJson(response, 200, outcome.body);
-              throw new Error("Declaration response outside its contract");
-            }
-          }
+          if (outcome.status !== "ok") return sendRefusal(response, contract, outcome);
+          const schema = contract.responses[0]?.body;
+          if (schema !== undefined && Value.Check(schema, outcome.body))
+            return sendJson(response, 200, outcome.body);
+          throw new Error("Declaration response outside its contract");
         } catch {
           // The postgres error can carry submitted text in its detail or context.
           reportServerError(

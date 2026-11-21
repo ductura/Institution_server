@@ -149,11 +149,15 @@ describe("the problem body under a oneOf", () => {
         if (!("error" in props)) continue;
         seen += 1;
         const where = `${route.id} ${spec.status} ${spec.code}`;
-        expect(Object.keys(props).sort(), where).toEqual(
-          ["code", "error", "messageKey", "requestId", "status"].sort(),
-        );
+        const problem = ["code", "error", "messageKey", "requestId", "status"];
+        // A refusal may carry the context the client recovers with (declaration-v1 §7.3);
+        // that context is always present, so the problem fields stay the only optional ones.
+        const context = Object.keys(props).filter((key) => !problem.includes(key));
+        expect(Object.keys(props), where).toEqual(expect.arrayContaining(problem));
         expect(props["error"], where).toMatchObject({ const: spec.code });
-        expect((spec.body as TObject).required, where).toEqual(["error"]);
+        expect([...((spec.body as TObject).required ?? [])].sort(), where).toEqual(
+          ["error", ...context].sort(),
+        );
       }
     }
     expect(seen).toBeGreaterThanOrEqual(7);
