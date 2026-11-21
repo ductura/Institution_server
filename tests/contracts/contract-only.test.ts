@@ -27,6 +27,8 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createConsultationSlotRoutesFor,
@@ -299,9 +301,19 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createCourseAggregateRouteFor(databases.main)",
+    ids: ["course.aggregate.get"],
+    routes: () => [createCourseAggregateRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createTeacherRosterRoutesFor(databases.main)",
     ids: TEACHER_ROSTER_ROUTES,
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createTeacherSubmissionDetailRouteFor(databases.main)",
+    ids: ["teacher.submission-detail.get"],
+    routes: () => [createTeacherSubmissionDetailRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-1108: the deadline extensions of an assignment over the main database.
@@ -609,7 +621,9 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "course.aggregate.get",
       ...TEACHER_ROSTER_ROUTES,
+      "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",

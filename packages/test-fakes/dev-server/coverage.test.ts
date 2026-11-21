@@ -793,6 +793,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "course.aggregate.get": {
+    request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
+  },
   "teacher.fast-path.post": {
     request: {
       path: "/api/v1/teacher/fast-path",
@@ -819,6 +822,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "teacher.submissions.get": {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions`, as: "nastavnik" },
+  },
+  "teacher.submission-detail.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}`,
+      as: "nastavnik",
+    },
   },
   "teacher.receipt-pdf.get": {
     before: SUBMIT_STEPS,

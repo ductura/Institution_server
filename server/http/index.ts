@@ -16,10 +16,12 @@ export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
+export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,

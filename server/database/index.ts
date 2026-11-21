@@ -349,7 +349,11 @@ export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
 export { createWorkLanguages } from "./work-language.ts";
-export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
+export { createAssignmentSubmissionsReader, submissionOf } from "./assignment-submissions.ts";
+export {
+  createTeacherSubmissionReader,
+  type TeacherSubmissionReader,
+} from "./teacher-submissions/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
@@ -617,3 +621,4 @@ export {
   type DirectEditState,
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
+export { createCourseAggregateReader } from "./course-aggregate/index.ts";
