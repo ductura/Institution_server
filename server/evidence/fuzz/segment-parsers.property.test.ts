@@ -33,7 +33,7 @@ const FUZZ = {
   interruptAfterTimeLimit: 3_000,
   markInterruptAsFailure: true,
 };
-const TEST_TIMEOUT_MS = 5_000;
+const TEST_OPTIONS = { timeout: 5_000 };
 
 async function expectRefusal(bytes: Uint8Array, reason: "invalid" | "too_large") {
   // B-8 uses the single-segment verifier. B-12 verifies the stored chain before replay.
@@ -58,14 +58,14 @@ it("accepts both original segments and their recorded chain", async () => {
   });
 });
 
-it("rejects arbitrary bytes without a parser exception", TEST_TIMEOUT_MS, async () => {
+it("rejects arbitrary bytes without a parser exception", TEST_OPTIONS, async () => {
   await fc.assert(
     fc.asyncProperty(fc.uint8Array({ maxLength: 128 }), (bytes) => expectRefusal(bytes, "invalid")),
     FUZZ,
   );
 });
 
-it("rejects malformed steps inside a canonical segment", TEST_TIMEOUT_MS, async () => {
+it("rejects malformed steps inside a canonical segment", TEST_OPTIONS, async () => {
   const { events, ...segment } = second!.segment;
   const invalidStep = fc.oneof(fc.integer(), fc.boolean(), fc.constant(null), fc.string());
   await fc.assert(
@@ -80,7 +80,7 @@ it("rejects malformed steps inside a canonical segment", TEST_TIMEOUT_MS, async 
   );
 });
 
-it("rejects truncated segments without a parser exception", TEST_TIMEOUT_MS, async () => {
+it("rejects truncated segments without a parser exception", TEST_OPTIONS, async () => {
   await fc.assert(
     fc.asyncProperty(fc.nat(SECOND.length - 1), (end) =>
       expectRefusal(SECOND.subarray(0, end), "invalid"),
@@ -89,7 +89,7 @@ it("rejects truncated segments without a parser exception", TEST_TIMEOUT_MS, asy
   );
 });
 
-it("returns the size refusal for segments above the byte limit", TEST_TIMEOUT_MS, async () => {
+it("returns the size refusal for segments above the byte limit", TEST_OPTIONS, async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 256 }), async (extraBytes) => {
       const bytes = new Uint8Array(MAX_EVIDENCE_SEGMENT_BYTES + extraBytes).fill(0x20);
