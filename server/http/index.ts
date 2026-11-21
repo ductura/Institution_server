@@ -159,12 +159,15 @@ export {
 export {
   knownError,
   problemOf,
+  sendBareRefusal,
   sendHtmlProblem,
   sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";
+export { createStatusRouteFor } from "./status/index.ts";
+export { singleFlight } from "./ready-outcomes.ts";
 export {
   createReadyCheck,
   READY_TIMEOUT_MS,

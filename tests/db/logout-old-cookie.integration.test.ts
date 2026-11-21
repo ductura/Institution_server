@@ -47,6 +47,7 @@ import {
   createStudentNoticeRouteFor,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -938,6 +939,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 const FACTORIES = [
   "createHealthRoute",
   "createReadyRoute",
+  "createStatusRouteFor",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -1010,6 +1012,11 @@ const MOUNTED = [
     check: async () => ({ ready: true, capabilities: {}, codes: {} }),
     draining: () => false,
   }),
+  createStatusRouteFor(
+    databases.main,
+    async () => ({ ready: true, capabilities: {}, codes: {} }),
+    () => false,
+  ),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),

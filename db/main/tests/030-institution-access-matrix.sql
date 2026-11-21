@@ -6,7 +6,20 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2593);
+SELECT plan(2596);
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
+  'maintenance_window has forced RLS and the operations owner')
+  FROM pg_class c WHERE c.oid = 'identity.maintenance_window'::regclass;
+SELECT results_eq($$ SELECT policyname::text, cmd::text, roles = ARRAY['ductus_identity'::name]
+  FROM pg_policies WHERE schemaname = 'identity' AND tablename = 'maintenance_window' ORDER BY policyname $$,
+  $$ VALUES ('maintenance_read'::text, 'SELECT'::text, true), ('maintenance_record', 'INSERT', true) $$,
+  'maintenance_window lets the operator read and append');
+SELECT bag_eq($$ SELECT r.rolname::text FROM pg_roles r
+  WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
+    AND has_function_privilege(r.oid, 'identity.public_maintenance_windows()', 'EXECUTE')
+  UNION ALL SELECT 'public' WHERE has_function_privilege('public', 'identity.public_maintenance_windows()', 'EXECUTE') $$,
+  ARRAY['ductus_identity', 'ductus_app'], 'only the app and owner execute the maintenance projection');
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')

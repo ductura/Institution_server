@@ -88,6 +88,7 @@ import {
   createShutdownCoordinator,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   installShutdown,
   logStartupFailed,
   logStartupRefused,
@@ -177,7 +178,9 @@ async function main(): Promise<void> {
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
+  const checkReadiness = readinessCheckFor(databases.main, evidenceDeps);
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
+  const draining = () => shutdown.state() !== "running";
   const options = {
     host,
     port,
@@ -190,10 +193,8 @@ async function main(): Promise<void> {
       // Readiness (SRV-1812, M11.3): 503 until the main database answers and
       // its migrations are done; storage and signing are reported. Draining
       // answers 503 too, so a balancer stops sending before the listener closes.
-      createReadyRoute({
-        check: readinessCheckFor(databases.main, evidenceDeps),
-        draining: () => shutdown.state() !== "running",
-      }),
+      createReadyRoute({ check: checkReadiness, draining }),
+      createStatusRouteFor(databases.main, checkReadiness, draining),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
