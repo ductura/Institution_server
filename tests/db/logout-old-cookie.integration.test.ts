@@ -79,6 +79,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
@@ -102,6 +103,7 @@ import {
   routesOf,
   startServer,
 } from "../../server/http/index.ts";
+import { issuePackageLink } from "../../server/downloads/index.ts";
 import { newSessionToken } from "../../server/session/index.ts";
 
 // S-1D-d, DAN-829-2: after POST /api/v1/auth/logout the old session cookie is
@@ -166,6 +168,8 @@ const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}
 const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
 const IMPORT_ID = randomUUID();
+/** A submission that does not exist; the package link is signed for it (SRV-1807). */
+const PACKAGE_SUBMISSION = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -360,9 +364,17 @@ const SESSION_ROUTES = {
     body: () => ({ kind: "package" }),
     live: 404,
   },
+  // The link is this session's own (issued with its token), so the download
+  // reaches the session check: a live session reads no such submission (404),
+  // and the same link with the cookie after logout is 401, not the 404 of a
+  // foreign link.
   "student.submission-package.get": {
     method: "GET",
-    path: `/api/v1/student/submissions/${randomUUID()}/package/package?token=1763800000000.${"A".repeat(43)}`,
+    path: `/api/v1/student/submissions/${PACKAGE_SUBMISSION}/package/package`,
+    pathFor: (token: string) =>
+      `/api/v1/student/submissions/${PACKAGE_SUBMISSION}/package/package?token=${
+        issuePackageLink(token, PACKAGE_SUBMISSION, "package", Date.now()).token
+      }`,
     body: () => undefined,
     live: 404,
   },
@@ -1135,6 +1147,23 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  // SRV-1406: the rules of the institution; not an administrator, so 403.
+  "institution.config.get": {
+    method: "GET",
+    path: "/api/v1/institution/config",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.config-versions.post": {
+    path: "/api/v1/institution/config/versions",
+    body: () => ({
+      expectedVersion: 0,
+      citationStyle: "fpzg",
+      workLanguages: ["hr"],
+      defaultWorkLanguage: "hr",
+    }),
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",
@@ -1230,6 +1259,7 @@ const FACTORIES = [
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
   "createRetentionRouteFor",
+  "createInstitutionConfigRoutesFor",
   "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
@@ -1326,6 +1356,7 @@ const MOUNTED = [
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
   createRetentionRouteFor(databases.main),
+  ...createInstitutionConfigRoutesFor(databases.main),
   createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
@@ -1396,6 +1427,7 @@ const call = (id: SessionRouteId, token: string, body?: unknown) => {
     method?: string;
     headers?: Readonly<Record<string, string>>;
     form?: () => FormData;
+    pathFor?: (token: string) => string;
   } = SESSION_ROUTES[id];
   // A multipart route (SRV-1102): fetch writes the form and its content type.
   if (route.form !== undefined)
@@ -1408,7 +1440,8 @@ const call = (id: SessionRouteId, token: string, body?: unknown) => {
       },
       body: route.form(),
     });
-  return post(route.path, token, body ?? route.body(), route.method, route.headers);
+  const path = route.pathFor?.(token) ?? route.path;
+  return post(path, token, body ?? route.body(), route.method, route.headers);
 };
 
 const LOCALE = "/api/v1/profile/interface-locale";

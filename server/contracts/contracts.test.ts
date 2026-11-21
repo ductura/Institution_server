@@ -118,6 +118,8 @@ describe("route inventory", () => {
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
       "ops.pilot-metrics.get: app/api/ops/pilot-metrics/route.ts is not in the inventory",
       "institution.retention.get: app/api/institution/retention/route.ts is not in the inventory",
+      "institution.config.get: app/api/institution/config/route.ts is not in the inventory",
+      "institution.config-versions.post: app/api/institution/config/versions/route.ts is not in the inventory",
       "work.access.get: app/api/works/[documentId]/access/route.ts is not in the inventory",
       "teacher.deadline-extensions.get: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.deadline-extension.post: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",

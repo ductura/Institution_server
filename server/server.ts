@@ -62,6 +62,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
@@ -334,6 +335,8 @@ async function main(): Promise<void> {
       createPilotMetricsRouteFor(databases.main),
       // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run.
       createRetentionRouteFor(databases.main),
+      // SRV-1406: the versioned rules of the institution, for its administrator.
+      ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
