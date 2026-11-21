@@ -4,8 +4,8 @@
 // value here is invented.
 import { describe, expect, it } from "vitest";
 
-import type { EvidenceCommitRequestOutcome } from "../index.ts";
-import { commitAnswer } from "../../http/evidence-commit.ts";
+import type { EvidenceCommitRequestOutcome } from "../evidence/index.ts";
+import { commitAnswer } from "./evidence-commit.ts";
 
 const RECEIPT = { payload: { receiptId: "potvrda-izmisljena" } } as never;
 
