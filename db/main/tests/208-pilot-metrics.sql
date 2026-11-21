@@ -1,6 +1,7 @@
 -- SRV-1906 (plan P-D6): the operator's pilot numbers. Only counts and two
 -- durations, never an identifier; a count from 1 to 4, or one derivable from
--- the published ones, is NULL; the numbers end at the cutoff. Rows are
+-- the published ones, is NULL; shown counts are rounded down to a multiple
+-- of five; the numbers end at the cutoff. Rows are
 -- invented and written with foreign keys off (session_replication_role), so
 -- only the counted columns matter. Personas of institution.inc.
 BEGIN;
@@ -95,31 +96,45 @@ $$;
 
 SELECT is(pg_temp.at(0), '0 0 0 0 0 0', 'P-D6: no data: zeros, no durations');
 
-SELECT pg_temp.seed(1, 6, 1, 3, 1);
+SELECT pg_temp.seed(1, 6, 0, 5, 1);
 SELECT pg_temp.report(1, 6, 2);
--- Six recorded; one open request, three receipts against three pending and
--- two save reports against four others are all too small.
-SELECT is(pg_temp.at(1), '6 6', 'P-D6: day 1: only the recorded submissions and help requests');
+-- Six recorded (shown as 5); five receipts against one pending hide both,
+-- and the durations with them: a shown duration would prove five receipts
+-- and so the one pending. Two save reports against four others are hidden.
+SELECT is(pg_temp.at(1), '5 0 5', 'P-D6: day 1: counts rounded down, small parts hidden');
 SELECT is(
-  (SELECT row(receipts_issued, receipts_pending, receipt_p50_ms)::text FROM app.pilot_metrics_at('2026-01-02')),
-  '(,,)', 'P-D6: day 1: a small part of a published total is hidden on both sides');
+  (SELECT row(receipts_issued, receipts_pending, receipt_p50_ms, receipt_p95_ms, save_problem_reports)::text
+     FROM app.pilot_metrics_at('2026-01-02')),
+  '(,,,,)', 'P-D6: day 1: a hidden receipt partition hides the durations too');
 
-SELECT pg_temp.seed(2, 4, 4, 2, 4);
+SELECT pg_temp.seed(2, 4, 5, 0, 0);
 SELECT pg_temp.report(2, 3, 3);
 -- Ten recorded, five open; five receipts 1..5 s after the request, five
--- pending; nine help requests, five about saving and four others.
-SELECT is(pg_temp.at(2), '10 5 5 5 9 3000 4800', 'P-D6: day 2: receipts and durations from five up');
-SELECT is(pg_temp.at(1), '6 6', 'P-D6: the cutoff leaves out the later day');
+-- pending; nine help requests (shown as 5), five about saving, four others.
+SELECT is(pg_temp.at(2), '10 5 5 5 5 3000 4800', 'P-D6: day 2: receipts and durations from five up');
+SELECT is(pg_temp.at(1), '5 0 5', 'P-D6: the cutoff leaves out the later day');
 
 SELECT pg_temp.report(3, 1, 0);
+-- One more help request: ten, so five about saving against five others.
 SELECT is(pg_temp.at(3), '10 5 5 5 10 5 3000 4800', 'P-D6: day 3: five save reports against five others');
+SELECT ok(
+  (SELECT help_requests FROM app.pilot_metrics_at('2026-01-04'))
+    - (SELECT help_requests FROM app.pilot_metrics_at('2026-01-03')) IN (0, 5),
+  'P-D6: one new help request is no difference of one between two days');
+
+-- Day 4: five more receipts, about 34.7 days after their requests.
+SELECT pg_temp.seed(4, 5, 0, 5, 3000000);
+SELECT is(pg_temp.at(5), '15 5 5 10 10 5 3000 4800', 'P-D6: receipts after the cutoff are pending');
+-- p95 of ten durations is 3 000 003 550 ms, above the integer range: capped.
+SELECT is(pg_temp.at(60), '15 5 10 5 10 5 1500002500 2147483647',
+  'P-D6: a duration above the integer range is capped, the counts stay');
 
 -- The application reads the same numbers up to the start of today in Zagreb.
 SELECT is(
   pg_temp.ask('ana', $$ SELECT concat_ws(' ', as_of = date_trunc('day', statement_timestamp(), 'Europe/Zagreb'),
     submissions_recorded, submissions_not_recorded, receipts_issued, receipts_pending, help_requests,
     save_problem_reports, receipt_p50_ms, receipt_p95_ms) FROM app.pilot_metrics() $$),
-  't 10 5 5 5 10 5 3000 4800', 'P-D6: pilot_metrics() ends at the start of the day in Zagreb');
+  't 15 5 10 5 10 5 1500002500 2147483647', 'P-D6: pilot_metrics() ends at the start of the day in Zagreb');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -55,7 +55,7 @@
           "asOf": "2026-11-20T23:00:00.000Z",
           "minimumGroup": 5,
           "submissions": {
-            "recorded": 6,
+            "recorded": 5,
             "notRecorded": null
           },
           "receipts": {
@@ -63,7 +63,7 @@
             "pending": null
           },
           "helpRequests": {
-            "total": 6,
+            "total": 5,
             "saveProblems": null
           },
           "receiptTime": {

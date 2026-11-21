@@ -1,8 +1,8 @@
 import type { WithActor } from "../index.ts";
 
-// One call of the definer RPC (db/main/migrations/20261201110000_pilot_metrics.sql).
-// The database already hides small groups; the reader checks it again and
-// refuses a row that would publish one.
+// One call of the definer RPC (db/main/migrations/20261201130000_pilot_metrics.sql).
+// The database already hides small groups and rounds down to a multiple of
+// five; the reader checks it again and refuses any other count.
 const SQL = `SELECT as_of AS "asOf",
        submissions_recorded AS "submissionsRecorded",
        submissions_not_recorded AS "submissionsNotRecorded",
@@ -36,7 +36,10 @@ type Row = Record<string, unknown>;
 
 const isCount = (value: unknown): value is number | null =>
   value === null ||
-  (typeof value === "number" && Number.isSafeInteger(value) && (value === 0 || value >= MIN_GROUP));
+  (typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value % MIN_GROUP === 0);
 const isDuration = (value: unknown): value is number | null =>
   value === null || (typeof value === "number" && Number.isSafeInteger(value) && value >= 0);
 

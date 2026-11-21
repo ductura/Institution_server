@@ -5,7 +5,8 @@
 -- (/api/v1/ops, step 8 of the pipeline). Counts end at the start of the
 -- current day in Zagreb, so a repeated read does not show single events.
 -- A count from 1 to 4 is never returned; nor is any count from which one
--- could be derived by subtraction from the published ones.
+-- could be derived by subtraction from the published ones. Shown counts are
+-- rounded down to a multiple of five against differencing between days.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA app TO ductus_evidence;
@@ -61,15 +62,21 @@ AS $$
            h.save BETWEEN 1 AND 4 OR h.total - h.save BETWEEN 1 AND 4 AS save
       FROM e, h
   )
+  -- A shown count is rounded down to a multiple of five, so the totals of two
+  -- days never differ by a small exact number. Durations are capped at the
+  -- integer range and hidden with the receipt partition: a shown duration
+  -- would prove five receipts and so reveal a hidden pending count.
   SELECT p_before,
-         CASE WHEN e.recorded BETWEEN 1 AND 4 THEN NULL ELSE e.recorded END::integer,
-         CASE WHEN e.not_recorded BETWEEN 1 AND 4 THEN NULL ELSE e.not_recorded END::integer,
-         CASE WHEN small.receipts THEN NULL ELSE e.issued END::integer,
-         CASE WHEN small.receipts THEN NULL ELSE e.recorded - e.issued END::integer,
-         CASE WHEN h.total BETWEEN 1 AND 4 THEN NULL ELSE h.total END::integer,
-         CASE WHEN small.save THEN NULL ELSE h.save END::integer,
-         CASE WHEN e.issued >= 5 THEN e.receipt_p50_ms END::integer,
-         CASE WHEN e.issued >= 5 THEN e.receipt_p95_ms END::integer
+         CASE WHEN e.recorded BETWEEN 1 AND 4 THEN NULL ELSE e.recorded - e.recorded % 5 END::integer,
+         CASE WHEN e.not_recorded BETWEEN 1 AND 4 THEN NULL
+              ELSE e.not_recorded - e.not_recorded % 5 END::integer,
+         CASE WHEN small.receipts THEN NULL ELSE e.issued - e.issued % 5 END::integer,
+         CASE WHEN small.receipts THEN NULL
+              ELSE (e.recorded - e.issued) - (e.recorded - e.issued) % 5 END::integer,
+         CASE WHEN h.total BETWEEN 1 AND 4 THEN NULL ELSE h.total - h.total % 5 END::integer,
+         CASE WHEN small.save THEN NULL ELSE h.save - h.save % 5 END::integer,
+         CASE WHEN e.issued >= 5 AND NOT small.receipts THEN least(e.receipt_p50_ms, 2147483647) END::integer,
+         CASE WHEN e.issued >= 5 AND NOT small.receipts THEN least(e.receipt_p95_ms, 2147483647) END::integer
     FROM e, h, small
 $$;
 REVOKE ALL ON FUNCTION app.pilot_metrics_at(timestamptz) FROM PUBLIC;

@@ -90,10 +90,13 @@ it("answers only the aggregate numbers, with no identifier and no text", async (
   );
 });
 
-it.each([1, 2, 3, 4])("refuses a row that would publish a group of %i", async (small) => {
-  query.mockResolvedValue({ rows: [{ ...ROW, receiptsPending: small }] });
-  expect((await get()).status).toBe(503);
-});
+it.each([1, 2, 3, 4, 6, 9])(
+  "refuses a row with a count of %i (small or not rounded)",
+  async (small) => {
+    query.mockResolvedValue({ rows: [{ ...ROW, receiptsPending: small }] });
+    expect((await get()).status).toBe(503);
+  },
+);
 
 it.each([
   ["negative count", { submissionsRecorded: -5 }],
@@ -123,8 +126,8 @@ it("the contract schema itself refuses every count from 1 to 4 and every other f
   const { Value } = await import("@sinclair/typebox/value");
   const { submissions } = PilotMetrics.properties;
   const body = (recorded: number | null) => ({ recorded, notRecorded: 0 });
-  for (const ok of [0, 5, 6, null]) expect(Value.Check(submissions, body(ok))).toBe(true);
-  for (const small of [1, 2, 3, 4]) expect(Value.Check(submissions, body(small))).toBe(false);
+  for (const ok of [0, 5, 10, null]) expect(Value.Check(submissions, body(ok))).toBe(true);
+  for (const small of [1, 2, 3, 4, 6, 9]) expect(Value.Check(submissions, body(small))).toBe(false);
   expect(Value.Check(submissions, { ...body(5), studentId: "izmisljeni" })).toBe(false);
   expect(PilotMetrics.additionalProperties).toBe(false);
 });

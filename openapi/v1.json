@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.62.0",
+    "version": "1.63.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -26555,7 +26555,7 @@
     "/api/v1/ops/pilot-metrics": {
       "get": {
         "operationId": "ops.pilot-metrics.get",
-        "summary": "Whole-server technical numbers of the pilot for an operator (plan P-D6): recorded submissions and requests without one, signed receipts and submissions still without one, help requests and those reporting a save problem, and the median and 95th percentile from a submission request to its signed receipt. Counted up to asOf, the start of the current day in Zagreb. No identifier, no text, no breakdown and no filter. A count from 1 to 4 is null, and so is any count derivable from the published ones by subtraction; the durations are null below five receipts.",
+        "summary": "Whole-server technical numbers of the pilot for an operator (plan P-D6): recorded submissions and requests without one, signed receipts and submissions still without one, help requests and those reporting a save problem, and the median and 95th percentile from a submission request to its signed receipt. Counted up to asOf, the start of the current day in Zagreb. No identifier, no text, no breakdown and no filter. A count from 1 to 4 is null, and so is any count derivable from the published ones by subtraction; a shown count is rounded down to a multiple of five. The durations are null below five receipts and whenever the receipt counts are hidden, and capped at 2147483647 ms.",
         "x-access": "operator",
         "x-inventory": "app/api/ops/pilot-metrics/route.ts",
         "responses": {
@@ -26600,7 +26600,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {
@@ -26616,7 +26617,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {
@@ -26642,7 +26644,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {
@@ -26658,7 +26661,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {
@@ -26684,7 +26688,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {
@@ -26700,7 +26705,8 @@
                             },
                             {
                               "minimum": 5,
-                              "maximum": 2147483647,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
                               "type": "integer"
                             },
                             {

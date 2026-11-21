@@ -2,11 +2,13 @@
 // has no operator list and no second factor (step 8 of the real server), so
 // the administrator account stands in for the operator; every other account
 // gets 403. Counts come from the invented works and keep the real rule: a
-// count from 1 to 4, or one derivable from the published ones, is null.
+// count from 1 to 4, or one derivable from the published ones, is null, and a
+// shown count is rounded down to a multiple of five.
 import type { Handlers } from "./server.ts";
 
 const MIN_GROUP = 5;
-const shown = (count: number): 0 | number | null => (count > 0 && count < MIN_GROUP ? null : count);
+const shown = (count: number): 0 | number | null =>
+  count > 0 && count < MIN_GROUP ? null : count - (count % MIN_GROUP);
 
 export const OPS_HANDLERS: Handlers = {
   "ops.pilot-metrics.get": ({ state, account, header, query, now }) => {

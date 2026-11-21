@@ -19059,7 +19059,7 @@
         "asOf": "2026-11-20T23:00:00.000Z",
         "minimumGroup": 5,
         "submissions": {
-          "recorded": 6,
+          "recorded": 5,
           "notRecorded": null
         },
         "receipts": {
@@ -19067,7 +19067,7 @@
           "pending": null
         },
         "helpRequests": {
-          "total": 6,
+          "total": 5,
           "saveProblems": null
         },
         "receiptTime": {
@@ -19228,7 +19228,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.62.0",
+        "apiVersion": "1.63.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19244,7 +19244,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.62.0",
+        "apiVersion": "1.63.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
