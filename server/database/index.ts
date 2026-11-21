@@ -620,3 +620,4 @@ export {
   type DirectEditState,
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
+export { createCourseAggregateReader } from "./course-aggregate/index.ts";

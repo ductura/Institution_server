@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2475);
+SELECT plan(2477);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -26,6 +26,14 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': private to the evidence owner')
+  FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
+               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
 SELECT bag_eq(
@@ -43,7 +51,9 @@ SELECT bag_eq(
         'declaration.canonical_payload(jsonb)', 'declaration.valid_text(text,integer,boolean)',
         'declaration.save_statement(uuid,jsonb,text)', 'declaration.upload_attachment(uuid,text,bytea)',
         'declaration.payload_conversations(text)', 'declaration.check_conversation_attachment()',
-        'declaration.check_statement_attachments()'],
+        'declaration.check_statement_attachments()',
+        'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
+        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
