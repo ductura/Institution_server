@@ -5,17 +5,14 @@ GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
 CREATE TABLE institution.source_note (
-  institution_id uuid NOT NULL,
   assignment_id uuid NOT NULL,
   student_id uuid NOT NULL,
   source_id uuid NOT NULL,
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   fields jsonb NOT NULL CHECK (jsonb_strip_nulls(fields) <> '{}'::jsonb),
   PRIMARY KEY (assignment_id, student_id, source_id, id),
-  -- No cascade (no foreign key of the application cascades): the functions
-  -- that remove a source remove its notes first, below.
-  FOREIGN KEY (assignment_id, student_id, source_id, institution_id)
-    REFERENCES institution.work_source (assignment_id, student_id, id, institution_id)
+  FOREIGN KEY (assignment_id, student_id, source_id)
+    REFERENCES institution.work_source (assignment_id, student_id, id) ON DELETE CASCADE
 );
 
 ALTER TABLE institution.source_note ENABLE ROW LEVEL SECURITY;
@@ -76,8 +73,8 @@ BEGIN
            WHERE (n.assignment_id, n.student_id, n.source_id) = (v_assignment, v_user, p_source_id)) >= 100 THEN
         RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
       END IF;
-      INSERT INTO institution.source_note (institution_id, assignment_id, student_id, source_id, fields)
-        VALUES (v_institution, v_assignment, v_user, p_source_id, '{"quote":null,"page":null,"note":null}'::jsonb || p_fields)
+      INSERT INTO institution.source_note (assignment_id, student_id, source_id, fields)
+        VALUES (v_assignment, v_user, p_source_id, '{"quote":null,"page":null,"note":null}'::jsonb || p_fields)
         RETURNING id, fields INTO v_id, v_fields;
     WHEN 'PATCH' THEN
       UPDATE institution.source_note n SET fields = n.fields || p_fields
@@ -101,145 +98,10 @@ $$;
 REVOKE ALL ON FUNCTION institution.source_notes(text, uuid, text, uuid, jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION institution.source_notes(text, uuid, text, uuid, jsonb) TO ductus_app;
 
--- Removing a source removes its notes (20261121130000 did the same for proofs).
-CREATE OR REPLACE FUNCTION institution.delete_work_source(p_assignment_id uuid, p_source_id uuid) RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-DECLARE
-  v_user uuid;
-  v_institution uuid;
-BEGIN
-  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
-  IF institution.work_source_access(p_assignment_id, v_user) IS DISTINCT FROM 'student' THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  -- The proofs of the source, only when the source itself is removed below.
-  DELETE FROM institution.source_note s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
-     AND w.requirement IS NULL;
-  DELETE FROM institution.source_proof s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
-     AND w.requirement IS NULL;
-  DELETE FROM institution.work_source w
-   WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
-     AND w.requirement IS NULL;
-  IF FOUND THEN
-    RETURN true;
-  END IF;
-  IF EXISTS (SELECT 1 FROM institution.work_source w
-              WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  RETURN false;
-END
-$$;
-
--- A teacher of the work removes a recommended or required source
--- (20261120190000), now with its proofs and notes first.
-CREATE OR REPLACE FUNCTION institution.delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-BEGIN
-  PERFORM institution.require_actor();
-  IF institution.work_source_access(p_assignment_id, p_student_id) IS DISTINCT FROM 'reader' THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  -- The proofs of the source, only when the source itself is removed below.
-  DELETE FROM institution.source_note s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
-     AND w.requirement IS NOT NULL;
-  DELETE FROM institution.source_proof s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
-     AND w.requirement IS NOT NULL;
-  DELETE FROM institution.work_source w
-   WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
-     AND w.requirement IS NOT NULL;
-  IF FOUND THEN
-    RETURN true;
-  END IF;
-  IF EXISTS (SELECT 1 FROM institution.work_source w
-              WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  RETURN false;
-END
-$$;
-
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
 
 -- migrate:down
 SET LOCAL ROLE ductus_identity;
-CREATE OR REPLACE FUNCTION institution.delete_work_source(p_assignment_id uuid, p_source_id uuid) RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-DECLARE
-  v_user uuid;
-  v_institution uuid;
-BEGIN
-  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
-  IF institution.work_source_access(p_assignment_id, v_user) IS DISTINCT FROM 'student' THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  -- The proofs of the source, only when the source itself is removed below.
-  DELETE FROM institution.source_proof s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
-     AND w.requirement IS NULL;
-  DELETE FROM institution.work_source w
-   WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
-     AND w.requirement IS NULL;
-  IF FOUND THEN
-    RETURN true;
-  END IF;
-  IF EXISTS (SELECT 1 FROM institution.work_source w
-              WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  RETURN false;
-END
-$$;
-
--- A teacher of the work removes a recommended or required source
--- (20261120190000), now with its proofs first (restored).
-CREATE OR REPLACE FUNCTION institution.delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-BEGIN
-  PERFORM institution.require_actor();
-  IF institution.work_source_access(p_assignment_id, p_student_id) IS DISTINCT FROM 'reader' THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  -- The proofs of the source, only when the source itself is removed below.
-  DELETE FROM institution.source_proof s
-   USING institution.work_source w
-   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
-     AND w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
-     AND w.requirement IS NOT NULL;
-  DELETE FROM institution.work_source w
-   WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
-     AND w.requirement IS NOT NULL;
-  IF FOUND THEN
-    RETURN true;
-  END IF;
-  IF EXISTS (SELECT 1 FROM institution.work_source w
-              WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  RETURN false;
-END
-$$;
-
 DROP FUNCTION institution.source_notes(text, uuid, text, uuid, jsonb);
 DROP TABLE institution.source_note;
