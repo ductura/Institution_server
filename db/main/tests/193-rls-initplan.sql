@@ -68,10 +68,15 @@ WITH RECURSIVE plan_nodes(node) AS (
   CROSS JOIN LATERAL jsonb_array_elements(parent.node -> 'Plans') AS child(node)
 )
 SELECT is(
-  (SELECT array_agg((node ->> 'Function Name') || ':' || (node ->> 'Actual Loops'))
-   FROM plan_nodes WHERE node ->> 'Parent Relationship' = 'InitPlan'),
-  ARRAY['current_actor:1'],
-  'the 10,000-row query has one InitPlan and evaluates current_actor once'
+  ARRAY[
+    (SELECT count(*) FROM plan_nodes WHERE node ->> 'Parent Relationship' = 'InitPlan'),
+    (SELECT sum((n.node ->> 'Actual Loops')::integer)
+     FROM plan_nodes n
+     CROSS JOIN LATERAL jsonb_array_elements_text(n.node -> 'Output') AS output(expression)
+     WHERE output.expression ~ '^(app\.)?current_actor\(\)$')
+  ],
+  ARRAY[1, 1]::bigint[],
+  'the 10,000-row query has one InitPlan and one execution of the actor lookup'
 );
 
 -- A generic plan can be reused, but its identity comes from each execution.
