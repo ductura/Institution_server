@@ -44,6 +44,7 @@ import {
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createPortableRecordRouteFor,
+  createSubmissionPackageRoutesFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
@@ -280,6 +281,8 @@ async function main(): Promise<void> {
       createWorkExportRouteFor(databases.main),
       // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
       createPortableRecordRouteFor(databases.main, APP_ORIGIN),
+      // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
+      ...createSubmissionPackageRoutesFor(databases.main, APP_ORIGIN),
       excludePracticeAssignment(
         createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
         databases.main,

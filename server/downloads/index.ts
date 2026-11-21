@@ -58,3 +58,16 @@ export {
   type PortableRecordSource,
   type PortableRecordVerification,
 } from "./portable-record/index.ts";
+// SRV-1807: the 24 hour link to the export package and to the confirmation for the registrar.
+export {
+  buildSubmissionPackage,
+  checkPackageLink,
+  issuePackageLink,
+  PACKAGE_KINDS,
+  PACKAGE_LINK_TTL_MS,
+  REFERADA_CONFIRMATION_FILENAME,
+  type PackageKind,
+  type PackageLink,
+  type PackageLinkCheck,
+  type SubmissionPackageBuild,
+} from "./submission-package/index.ts";

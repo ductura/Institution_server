@@ -64,6 +64,8 @@ export type PortableRecordBuild =
       readonly sha256: string;
       /** The names in the ZIP, in order. */
       readonly names: readonly string[];
+      /** The receipt PDF inside the ZIP (same bytes), for the confirmation for the registrar (SRV-1807). */
+      readonly receiptPdf: Uint8Array;
     }
   /** A closed code for the server's own record; never shown with any value of it. */
   | { readonly status: "refused"; readonly reason: PortableRecordRefusal };
@@ -220,5 +222,6 @@ export async function buildPortableRecord(
     bytes,
     sha256: sha256Hex(bytes),
     names: entries.map((e) => e.name),
+    receiptPdf: files.get(FILES.pdf)!,
   };
 }
