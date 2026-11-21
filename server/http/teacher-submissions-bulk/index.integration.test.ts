@@ -328,6 +328,24 @@ describe("teacher.submissions-bulk-link.post and teacher.submissions-bulk.get", 
     expect(log).toHaveLength(1);
   });
 
+  it("answers 401 to a session the database no longer knows, whatever link it carries", async () => {
+    const { deps, log } = await fakePorts();
+    let live = true;
+    const host = await start({
+      ...deps,
+      access: async (token, assignmentId) =>
+        live ? deps.access(token, assignmentId) : "unauthorized",
+    });
+    const link = await linkFor(host, "pdf");
+    live = false;
+    expect((await get(host, link.downloadPath, TEACHER)).status).toBe(401);
+    const forged = link.downloadPath.replace(/token=\d+/u, "token=1763800000000");
+    expect((await get(host, forged, TEACHER)).status).toBe(401);
+    clock = START + BULK_LINK_TTL_MS;
+    expect((await get(host, link.downloadPath, TEACHER)).status).toBe(401);
+    expect(log).toEqual([]);
+  });
+
   it("answers 403 to a cross-site read and 401 without a session", async () => {
     const { deps } = await fakePorts();
     const host = await start(deps);
