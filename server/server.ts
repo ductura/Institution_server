@@ -50,6 +50,7 @@ import {
   createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -282,6 +283,7 @@ async function main(): Promise<void> {
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      createStudentDeadlineHistoryRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
       ...createMerlinRosterRoutesFor(databases.main),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.

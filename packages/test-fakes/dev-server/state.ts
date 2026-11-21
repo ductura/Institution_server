@@ -258,6 +258,9 @@ export type State = {
   assignments: Assignment[];
   works: Work[];
   submissionNotes: SubmissionNote[];
+  deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
+    assignmentId: string;
+  })[];
   workSources: WorkSource[];
   sourceNotes: Map<string, Operations["work.source-notes.post"]["success"]["body"][]>;
   sourceProofs: SourceProof[];
@@ -464,6 +467,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
       },
     ],
     submissionNotes: [],
+    deadlineExtensions: [],
     workSources: [],
     sourceNotes: new Map(),
     sourceProofs: [],
