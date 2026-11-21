@@ -33,7 +33,7 @@ import {
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
-  createWorkVersionsRouteFor,
+  createTimeMachineRoutesFor,
   createConsultationSlotRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -224,8 +224,7 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
-      // SRV-9A: the versions of a work, the same page for its owner and its teacher.
-      createWorkVersionsRouteFor(databases.main),
+      ...createTimeMachineRoutesFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and

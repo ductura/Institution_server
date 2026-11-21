@@ -757,6 +757,13 @@ export type Operations = {
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "open" | "submitted" | "approved" | "returned" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
   };
+  "work.version.get": {
+    params: { "documentId": string; "revision": string };
+    query: { "compareFrom"?: string };
+    body: undefined;
+    success: { status: 200; body: { "revision": number; "document": string } | { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.versions.get": {
     params: { "documentId": string };
     query: { "beforeRevision"?: string };

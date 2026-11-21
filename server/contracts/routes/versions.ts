@@ -15,7 +15,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character (as live.ts). */
-const WorkId = Type.String({
+export const WorkId = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])`,
 });
 const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
@@ -43,9 +43,9 @@ export const workVersionsGet = defineRoute({
   method: "GET",
   path: "/api/v1/works/{documentId}/versions",
   inventory: "app/api/works/[documentId]/versions/route.ts",
-  access: "owner_or_course_teacher",
+  access: "owner_or_mentor",
   summary:
-    "One page of the versions of a work, newest first (revision descending, the submission before the checkpoint of its revision), at most 200: the saved points of the document up to the submitted revision and the submission. The same list for the owner and the teacher of the assignment; a teacher's read writes the access log. beforeRevision, from nextBeforeRevision of the previous page, asks for the versions below that revision; a revision is never split across two pages. Another's, an unknown or a malformed work returns 404.",
+    "One page of up to 200 versions, newest first, with the submission before a checkpoint of the same revision. The owner sees saved points up to the submitted revision; the active mentor sees only sent versions (checkpoint for a review, submission for a final submission). A mentor's read writes the access log. beforeRevision, from nextBeforeRevision of the previous page, asks for the versions below that revision. Another's, an unknown or a malformed work returns 404.",
   request: {
     params: closed({ documentId: WorkId }),
     query: closed({

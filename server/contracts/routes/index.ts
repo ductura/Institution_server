@@ -21,6 +21,7 @@ export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
+export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";

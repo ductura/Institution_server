@@ -583,7 +583,11 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "work.versions.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
-    request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
+    request: { path: `/api/v1/works/${IDS.document}/versions`, as: "student" },
+  },
+  "work.version.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/versions/1`, as: "student" },
   },
   "work.messages.get": {
     before: [

@@ -38,6 +38,7 @@ import {
   createConsultationRecordRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createTimeMachineRoutesFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -360,6 +361,14 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createTimeMachineRoutesFor(databases.main, evidenceDeps)",
+    ids: ["work.versions.get", "work.version.get"],
+    routes: () =>
+      createTimeMachineRoutesFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).map(
+        (route) => route.contract.id,
+      ),
+  },
+  {
     call: "createAcknowledgmentRouteFor(databases.main)",
     ids: ["institution.acknowledgment.post"],
     routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
@@ -585,6 +594,8 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.versions.get",
+      "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
