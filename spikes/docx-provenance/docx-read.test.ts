@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { DocxReadError, LIMITS, readDocx, type ReadFailure } from "./docx-read.ts";
-import { FIXTURES, hostile } from "./fixtures.ts";
+import { FIXTURES, hostile, pack, para, run } from "./fixtures.ts";
+import { strToU8 } from "fflate";
 
 const byName = (name: string) => {
   const fixture = FIXTURES.find((f) => f.name === name);
@@ -140,5 +141,52 @@ describe("hostile and broken input", () => {
     assert.deepEqual(readDocx(hostile.withTemplateLink()).flags.externalRelationships, [
       "attachedTemplate",
     ]);
+  });
+});
+
+describe("XML details found in review", () => {
+  it("refuses deeply nested XML with a closed code, not a plain Error", () => {
+    const deep = "<w:x>".repeat(150) + "</w:x>".repeat(150);
+    assert.equal(failure(pack(deep)), "invalid_xml");
+  });
+
+  it("decodes numeric references and escaped attributes exactly once", () => {
+    const comments =
+      '<w:comments xmlns:w="x"><w:comment w:id="0" w:author="Ana &amp;amp; Iva &#x41;"><w:p><w:r><w:t>a&#38;lt;b</w:t></w:r></w:p></w:comment></w:comments>';
+    const r = readDocx(
+      pack(para("<w:r><w:t>A&#32;B &#x48;&#105;</w:t></w:r>"), {
+        "word/comments.xml": strToU8(comments),
+      }),
+    );
+    assert.equal(r.text, "A B Hi");
+    assert.equal(r.wordCount, 3);
+    assert.equal(r.comments[0]?.author, "Ana &amp; Iva A");
+    assert.equal(r.comments[0]?.text, "a&lt;b");
+  });
+
+  it("leaves an illegal character reference as written", () => {
+    assert.equal(readDocx(pack(para("<w:r><w:t>x&#0;y</w:t></w:r>"))).text, "x&#0;y");
+  });
+
+  it("ignores XML layout whitespace between tags, keeps whitespace inside w:t", () => {
+    const body =
+      '<w:p>\n  <w:r>\n    <w:t>hel</w:t>\n  </w:r>\n  <w:r>\n    <w:t xml:space="preserve">lo </w:t>\n  </w:r>\n  <w:r><w:t>world</w:t></w:r>\n</w:p>';
+    const r = readDocx(pack(body));
+    assert.equal(r.text, "hello world");
+    assert.equal(r.wordCount, 2);
+  });
+
+  it("reads a footnote typed normal the same as one without a type", () => {
+    const note = (attrs: string) =>
+      `<w:footnote ${attrs} w:id="2"><w:p><w:r><w:t>Bilješka.</w:t></w:r></w:p></w:footnote>`;
+    const read = (attrs: string) =>
+      readDocx(
+        pack(para(run("x")), {
+          "word/footnotes.xml": strToU8(`<w:footnotes xmlns:w="x">${note(attrs)}</w:footnotes>`),
+        }),
+      ).footnotes;
+    assert.deepEqual(read('w:type="normal"'), ["Bilješka."]);
+    assert.deepEqual(read(""), read('w:type="normal"'));
+    assert.deepEqual(read('w:type="separator"'), []);
   });
 });

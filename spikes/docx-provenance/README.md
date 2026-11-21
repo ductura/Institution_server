@@ -48,6 +48,7 @@ Nalazi:
 - **Metapodaci su neobvezni.** Izvoz bez `docProps` (`online-export`) nema ni autora ni vremena; takav dokument smije ući u uvoz, ali bez tih signala. Nijedan od njih nije dokaz autorstva.
 - **`TotalTime` može biti 0** (`desktop-suite`), što nije isto što i „nepoznato”; čitač ih razlikuje.
 - **Parser je popustljiv.** `fast-xml-parser` sam vraća djelomično stablo za neispravan XML (nezatvorene oznake), pa bi izgledalo kao dokument s manje odlomaka. Zato se prije parsiranja poziva `XMLValidator`, uz test.
+- **Reference znakova** (`&#32;`, `&amp;` i u atributima) dekodiraju se jednom; razmaci između oznaka XML-a nisu tekst; preduboko gniježđenje (granica parsera 100 razina) postaje `invalid_xml`.
 - **DOCTYPE i ENTITY** odbijaju se prije parsiranja (`unsafe_xml`): OOXML ih ne treba.
 - **Zip bomba** (60 MiB nula, pakirano ispod 200 kB) odbija se iz središnjeg imenika, prije raspakiranja.
 
@@ -56,7 +57,7 @@ Nalazi:
 ```sh
 cd spikes/docx-provenance
 pnpm install --frozen-lockfile --ignore-workspace
-node --test *.test.ts            # 19 testova, 5 izmišljenih DOCX-a + hostilni ulazi + OSV logika
+node --test *.test.ts            # 24 testa, 5 izmišljenih DOCX-a + hostilni ulazi + OSV logika
 node osv-scan.ts pnpm-lock.yaml  # treba mrežu prema api.osv.dev
 node report.ts
 ```

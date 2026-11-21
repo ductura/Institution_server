@@ -73,13 +73,18 @@ const parser = new XMLParser({
   parseTagValue: false,
 });
 
+const NAMED: Record<string, string> = { lt: "<", gt: ">", amp: "&", quot: '"', apos: "'" };
+
+/** Every XML character reference, decoded exactly once, in one pass. */
 function decodeEntities(text: string): string {
-  return text
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&quot;", '"')
-    .replaceAll("&apos;", "'")
-    .replaceAll("&amp;", "&");
+  return text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|lt|gt|amp|quot|apos);/g, (whole, ref: string) => {
+    const named = NAMED[ref];
+    if (named !== undefined) return named;
+    const code =
+      ref[1] === "x" ? Number.parseInt(ref.slice(2), 16) : Number.parseInt(ref.slice(1), 10);
+    const legal = code === 9 || code === 10 || code === 13 || (code >= 0x20 && code <= 0x10ffff);
+    return legal && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : whole;
+  });
 }
 
 function parseXml(bytes: Uint8Array, part: string): Node[] {
@@ -94,7 +99,12 @@ function parseXml(bytes: Uint8Array, part: string): Node[] {
   if (verdict !== true) {
     throw new DocxReadError("invalid_xml", `${part} is not well-formed XML: ${verdict.err.msg}`);
   }
-  return parser.parse(source) as Node[];
+  try {
+    return parser.parse(source) as Node[];
+  } catch (error) {
+    // The parser refuses, for one, more than 100 nested tags with a plain Error.
+    throw new DocxReadError("invalid_xml", `${part} was refused by the parser: ${String(error)}`);
+  }
 }
 
 function tagOf(node: Node): string | null {
@@ -109,7 +119,7 @@ function children(node: Node): Node[] {
 function attr(node: Node, name: string): string | null {
   const attrs = node[":@"] as Record<string, string> | undefined;
   const value = attrs?.[`${ATTR}${name}`];
-  return value === undefined ? null : value;
+  return value === undefined ? null : decodeEntities(value);
 }
 function find(nodes: Node[], tag: string): Node | undefined {
   return nodes.find((node) => tagOf(node) === tag);
@@ -123,22 +133,36 @@ function walk(nodes: Node[], visit: (node: Node, tag: string) => void): void {
   }
 }
 
-/** Text of a subtree: w:t and w:delText, tabs and breaks as in Word's copy. */
-function textOf(nodes: Node[]): string {
+type TextMode = "visible" | "all";
+
+/**
+ * Text of a subtree, only from w:t (and w:delText in mode "all"): whitespace
+ * between tags is XML layout, not content. Tabs and breaks as in Word's copy.
+ */
+function textOf(nodes: Node[], mode: TextMode = "all"): string {
   let out = "";
   const collect = (list: Node[]): void => {
     for (const node of list) {
       const tag = tagOf(node);
-      if (tag === "#text") out += decodeEntities(String(node["#text"] ?? ""));
+      if (tag === "w:t" || (tag === "w:delText" && mode === "all")) out += propText(node, false);
       else if (tag === "w:tab") out += "\t";
       else if (tag === "w:br" || tag === "w:cr") out += "\n";
-      else if (tag === "w:instrText")
-        continue; // field code, not visible text
-      else if (tag !== null) collect(children(node));
+      else if (tag === "w:del" && mode === "visible") continue;
+      else if (tag === "w:instrText" || tag === "w:pPr" || tag === "w:rPr") continue;
+      else if (tag !== null && tag !== "#text") collect(children(node));
     }
   };
   collect(nodes);
   return out;
+}
+
+/** Character data directly inside one element (w:t, dc:creator, ...). */
+function propText(node: Node, trim: boolean): string {
+  const raw = children(node)
+    .filter((child) => tagOf(child) === "#text")
+    .map((child) => String(child["#text"] ?? ""))
+    .join("");
+  return decodeEntities(trim ? raw.trim() : raw);
 }
 
 function paragraphOf(node: Node): Paragraph {
@@ -149,7 +173,7 @@ function paragraphOf(node: Node): Paragraph {
   return {
     style,
     heading: heading === undefined || heading === null ? null : Number(heading),
-    text: visibleText(kids),
+    text: textOf(kids, "visible"),
   };
 }
 
@@ -162,7 +186,7 @@ function numberOf(value: string | null): number | null {
 function simpleField(nodes: Node[], tag: string): string | null {
   const node = find(nodes, tag);
   if (node === undefined) return null;
-  const text = textOf(children(node)).trim();
+  const text = propText(node, true);
   return text === "" ? null : text;
 }
 
@@ -251,7 +275,8 @@ export function readDocx(bytes: Uint8Array): DocxReading {
   if (footnotePart !== undefined) {
     walk(parseXml(footnotePart, "word/footnotes.xml"), (node, tag) => {
       const type = attr(node, "w:type");
-      if (tag === "w:footnote" && type === null) footnotes.push(textOf(children(node)).trim());
+      if (tag === "w:footnote" && (type === null || type === "normal"))
+        footnotes.push(textOf(children(node), "visible").trim());
     });
   }
 
@@ -263,7 +288,7 @@ export function readDocx(bytes: Uint8Array): DocxReading {
         comments.push({
           author: attr(node, "w:author"),
           date: attr(node, "w:date"),
-          text: textOf(children(node)).trim(),
+          text: textOf(children(node), "visible").trim(),
         });
       }
     });
@@ -319,22 +344,4 @@ export function readDocx(bytes: Uint8Array): DocxReading {
       ).length,
     },
   };
-}
-
-/** Text of a paragraph without w:del content (those runs use w:delText). */
-function visibleText(nodes: Node[]): string {
-  let out = "";
-  const collect = (list: Node[]): void => {
-    for (const node of list) {
-      const tag = tagOf(node);
-      if (tag === "#text") out += decodeEntities(String(node["#text"] ?? ""));
-      else if (tag === "w:tab") out += "\t";
-      else if (tag === "w:br" || tag === "w:cr") out += "\n";
-      else if (tag === "w:instrText" || tag === "w:delText" || tag === "w:del") continue;
-      else if (tag === "w:pPr" || tag === "w:rPr") continue;
-      else if (tag !== null) collect(children(node));
-    }
-  };
-  collect(nodes);
-  return out;
 }

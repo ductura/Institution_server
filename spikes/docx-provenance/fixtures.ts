@@ -22,12 +22,12 @@ export function xmlEscape(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-const run = (text: string, rsid = "00A11111") =>
+export const run = (text: string, rsid = "00A11111") =>
   `<w:r w:rsidR="${rsid}"><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
-const para = (inner: string, style?: string, rsid = "00A11111") =>
+export const para = (inner: string, style?: string, rsid = "00A11111") =>
   `<w:p w:rsidR="${rsid}">${style === undefined ? "" : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${inner}</w:p>`;
 
-function pack(documentBody: string, extra: Zippable = {}, withRels = ""): Uint8Array {
+export function pack(documentBody: string, extra: Zippable = {}, withRels = ""): Uint8Array {
   const rels =
     `${HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
     `${withRels}</Relationships>`;
