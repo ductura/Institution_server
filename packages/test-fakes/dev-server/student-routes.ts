@@ -87,6 +87,20 @@ export const STUDENT_HANDLERS: Handlers = {
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
   },
+  "student.deadline-history.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const extensions = state.deadlineExtensions.flatMap((extension) => {
+      const { id, scope, studentId, previousDueAt, dueAt, reasonId, createdAt } = extension;
+      return extension.assignmentId === assignment.id &&
+        (studentId === null || studentId === account.id) &&
+        reasonId !== null
+        ? [{ id, scope, previousDueAt, dueAt, reasonId, createdAt }]
+        : [];
+    });
+    return { status: 200, body: { extensions } };
+  },
   "student.submission.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = ownAssignment(state, account, params.assignmentId);

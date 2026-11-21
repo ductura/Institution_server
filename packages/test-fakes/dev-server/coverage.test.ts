@@ -867,6 +867,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { requestId: IDS.mentorship, decision: "approve" },
     },
   },
+  "student.deadline-history.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "student",
+      method: "GET",
+    },
+  },
   "teacher.deadline-extensions.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
