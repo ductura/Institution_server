@@ -113,6 +113,7 @@ describe("route inventory", () => {
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
       "teacher.deadline-extensions.get: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.deadline-extension.post: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
+      "student.deadline-history.get: app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.merlin-roster.get: app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts is not in the inventory",
       "teacher.merlin-roster-csv.get: app/api/teacher/assignments/[assignmentId]/merlin/csv/route.ts is not in the inventory",
       "teacher.merlin-packages.post: app/api/teacher/assignments/[assignmentId]/merlin/packages/route.ts is not in the inventory",
