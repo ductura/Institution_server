@@ -251,6 +251,10 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export {
+  createStaffAffiliationRoute,
+  createStaffAffiliationRouteFor,
+} from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
@@ -334,6 +338,7 @@ export {
   type ProblemReportFaultRecord,
   type ProblemReportRouteOptions,
 } from "./support-problem-report.ts";
+export { createProblemReportsRouteFor } from "./problem-report/index.ts";
 export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,
