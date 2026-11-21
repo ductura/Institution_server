@@ -24,6 +24,8 @@ import { DATABASES } from "./databases.ts";
 export const DIR = "db/main/migrations";
 export const LEDGER = "db/main/migrations.sum";
 const LINE = /^([0-9a-f]{64}) {2}(\S+)$/;
+// dbmate uses the leading run of digits of a .sql filename as its version.
+const MIGRATION_VERSION = /^(\d{14})(?!\d).*\.sql$/;
 
 const sha256 = (buffer: Buffer): string => createHash("sha256").update(buffer).digest("hex");
 
@@ -37,6 +39,19 @@ export function readMigrations(dir: string): Map<string, Buffer> {
     migrations.set(name, readFileSync(path.join(dir, name)));
   }
   return migrations;
+}
+
+function duplicateVersions(dir: string, names: Iterable<string>): string[] {
+  const firstByVersion = new Map<string, string>();
+  const errors: string[] = [];
+  for (const name of names) {
+    const version = MIGRATION_VERSION.exec(name)?.[1];
+    if (version === undefined) continue;
+    const first = firstByVersion.get(version);
+    if (first === undefined) firstByVersion.set(version, name);
+    else errors.push(`${dir}: duplicate migration version ${version}: ${first} and ${name}`);
+  }
+  return errors;
 }
 
 export function renderLedger(migrations: Map<string, Buffer>): string {
@@ -134,10 +149,19 @@ function main(argv: string[]): number {
   const errors = unlistedMigrationDirs().map(
     (dir) => `${dir} is not a database of scripts/db/databases.ts, so no ledger covers it`,
   );
+  // Validate every database before rewriting any ledger.
+  const databases = DATABASES.map(({ migrationsDir, ledger }) => ({
+    migrationsDir,
+    ledger,
+    migrations: readMigrations(migrationsDir),
+  }));
+  for (const { migrationsDir, migrations } of databases) {
+    errors.push(...duplicateVersions(migrationsDir, migrations.keys()));
+  }
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+
   const summaries: string[] = [];
-  for (const { migrationsDir, ledger } of DATABASES) {
-    // A listed database without its directory is an error, never "nothing to check".
-    const migrations = readMigrations(migrationsDir);
+  for (const { migrationsDir, ledger, migrations } of databases) {
     if (write) {
       writeFileSync(ledger, renderLedger(migrations));
       console.log(`${ledger}: ${migrations.size} migrations`);
