@@ -40,6 +40,7 @@ import {
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
+  assignmentCopyRoutes,
   merlinRosterRoutes,
   merlinPackageRoutes,
   supportRoutes,
@@ -54,6 +55,7 @@ import {
   notificationsRoutes,
   commentsRoutes,
   directEditRoutes,
+  importRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -119,6 +121,8 @@ export {
   type VectorFile,
 } from "./vectors.ts";
 export { isWorkId, WORK_ID_MAX, workIdFromPath } from "./work-id.ts";
+// SRV-1803: the import contract (SRV-1801) for its first caller, the DOCX import.
+export * from "./import/index.ts";
 
 /** Every route of /api/v1 with a contract. */
 export const ROUTES: readonly RouteContract[] = [
@@ -139,6 +143,7 @@ export const ROUTES: readonly RouteContract[] = [
   courseAggregateGet,
   pilotMetricsGet,
   ...deadlineExtensionRoutes,
+  ...assignmentCopyRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
@@ -170,6 +175,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...notificationsRoutes,
   ...commentsRoutes,
   ...directEditRoutes,
+  ...importRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

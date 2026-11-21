@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { PDF_WORKER_OUTFILE } from "./server.ts";
+
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), "ductura-build-"));
 
@@ -27,17 +29,19 @@ describe("node scripts/build/server.ts", () => {
       "a symlinked repository",
       (): string => {
         const link = join(dir, "repo-link");
-        symlinkSync(ROOT, link, "dir");
+        symlinkSync(ROOT, link, process.platform === "win32" ? "junction" : "dir");
         return join(link, "scripts/build/server.ts");
       },
     ],
   ])(
-    "builds one file when started through %s",
-    (name, script) => {
-      const outfile = join(dir, `${name.replaceAll(" ", "-")}.js`);
+    "builds the server and PDF worker when started through %s",
+    (_name, script) => {
+      const output = mkdtempSync(join(dir, "output-"));
+      const outfile = join(output, "server.js");
       expect(buildThrough(script(), outfile)).toBe(0);
       expect(existsSync(outfile)).toBe(true);
+      expect(existsSync(join(output, PDF_WORKER_OUTFILE))).toBe(true);
     },
-    60_000,
+    300_000,
   );
 });

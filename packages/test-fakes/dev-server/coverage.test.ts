@@ -1,4 +1,8 @@
+import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
+
+import { IMPORT_READ_LIMITS } from "../../../server/contracts/index.ts";
+import { prepareDocxImport } from "../../../server/import/index.ts";
 
 import { ROUTE_TABLE } from "../fake-server/index.ts";
 import { errorCodes, type RouteId } from "./contract.ts";
@@ -10,6 +14,7 @@ import {
   type AccountKey,
   type State,
 } from "./index.ts";
+import { fakeImportIds } from "./import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -108,6 +113,41 @@ const VERSION = {
   wordMax: 2500,
 };
 const A = `/api/v1/institution/assignments/${IDS.assignment}`;
+// SRV-1803: an invented DOCX, its import into the demo work and the preview's hash.
+const DOCX_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+const DOCX_BASE64 = Buffer.from(
+  zipSync({
+    "[Content_Types].xml": strToU8(
+      `${DOCX_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+    ),
+    "_rels/.rels": strToU8(
+      `${DOCX_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,
+    ),
+    "word/document.xml": strToU8(
+      `${DOCX_HEAD}<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Izmišljeni uvezeni odlomak.</w:t></w:r></w:p></w:body></w:document>`,
+    ),
+  }),
+).toString("base64");
+const IMPORTS = `/api/v1/works/${IDS.document}/imports`;
+const POST_IMPORT: Step = {
+  path: IMPORTS,
+  as: "student",
+  headers: ORIGIN,
+  body: { fileBase64: DOCX_BASE64, fileName: "Seminar.docx" },
+};
+const FIRST_IMPORT = (() => {
+  const ids = fakeImportIds(1);
+  const prepared = prepareDocxImport({
+    bytes: new Uint8Array(Buffer.from(DOCX_BASE64, "base64")),
+    documentId: IDS.document,
+    fileName: "Seminar.docx",
+    limits: IMPORT_READ_LIMITS,
+    importId: ids.importId,
+    uuid: ids.uuid,
+  });
+  if (!prepared.ok) throw new Error("the invented DOCX must read");
+  return { importId: ids.importId, manifestSha256: prepared.preview.manifestSha256 };
+})();
 const C = `/api/v1/institution/courses/${IDS.course}`;
 const TEAM = `/api/v1/courses/${IDS.course}/team`;
 const SET_TEAM: Step = {
@@ -812,6 +852,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { mode: "direct" },
     },
   },
+  "work.imports.post": { request: POST_IMPORT },
+  "work.imports.confirm.post": {
+    before: [POST_IMPORT],
+    request: {
+      path: `${IMPORTS}/${FIRST_IMPORT.importId}/confirm`,
+      as: "student",
+      headers: ORIGIN,
+      body: FIRST_IMPORT,
+    },
+  },
   "work.messages.post": {
     request: {
       path: `/api/v1/works/${IDS.document}/messages`,
@@ -964,6 +1014,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
       as: "nastavnik",
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
+    },
+  },
+  "teacher.assignment-copy.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/copy`,
+      as: "nastavnik",
+      body: { requestKey: "00000000-0000-4000-8000-000000190401", courseId: IDS.course },
     },
   },
   "teacher.merlin-roster.get": {

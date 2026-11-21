@@ -15,6 +15,8 @@ const IGNORE = readFileSync(resolve(import.meta.dirname, "Dockerfile.dockerignor
 const CI = readFileSync(resolve(ROOT, ".github/workflows/ci.yml"), "utf8");
 const HEALTH = ROUTES.find((route) => route.id === "platform.health.get")!.path;
 const CMD = ["node", ...SERVER_NODE_FLAGS, "dist/server.js"];
+const PDF_WORKER_COPY = "--from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js";
+const RUNTIME_COPIES = ["--from=build /src/dist/server.js dist/server.js", PDF_WORKER_COPY];
 /** Instructions this Dockerfile may use; any other (SHELL, a misspelling) is refused. */
 const KNOWN = new Set(
   "FROM WORKDIR RUN COPY ADD ENV EXPOSE USER HEALTHCHECK CMD ENTRYPOINT ARG ONBUILD LABEL".split(
@@ -87,8 +89,12 @@ function runtimeProblems(body: Instruction[]): string[] {
     ?.args.split(":")[0];
   if (user === undefined || user === "root" || /^0+$/.test(user)) out.push("root");
   const copies = body.filter((i) => i.op === "COPY" || i.op === "ADD");
-  const onlyBundle = /^--from=build\s+\S+\/dist\/server\.js\s+dist\/server\.js$/;
-  if (copies.length !== 1 || !copies.every((i) => i.op === "COPY" && onlyBundle.test(i.args))) {
+  if (
+    copies.length !== RUNTIME_COPIES.length ||
+    copies.some(
+      (i, index) => i.op !== "COPY" || i.args.replace(/\s+/g, " ") !== RUNTIME_COPIES[index],
+    )
+  ) {
     out.push("final copies more than the bundle");
   }
   if (body.some((i) => i.op === "RUN")) out.push("final runs a command");
@@ -170,6 +176,7 @@ describe("infra/web/Dockerfile", () => {
       "final copies more than the bundle",
     ],
     ["the whole context", before("COPY . ."), "final copies more than the bundle"],
+    ["no PDF worker", replace(`COPY ${PDF_WORKER_COPY}`, ""), "final copies more than the bundle"],
     [
       "ADD of the bundle",
       replace("COPY --from=build /src/dist", "ADD --from=build /src/dist"),

@@ -1,6 +1,6 @@
 import type { WithActor } from "../index.ts";
 
-// One call of the definer RPC (db/main/migrations/20261201140000_pilot_metrics.sql).
+// One call of the definer RPC (db/main/migrations/20261202190500_pilot_metrics.sql).
 // The database already hides small groups and rounds down to a multiple of
 // five; the reader checks it again and refuses any other count.
 const SQL = `SELECT as_of AS "asOf",

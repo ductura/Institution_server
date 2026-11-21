@@ -38,6 +38,7 @@ import {
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createWorkPdfRouteFor,
@@ -71,6 +72,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -151,6 +153,7 @@ const WORK_SOURCE = {
 const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}/notes`;
 const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
+const IMPORT_ID = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -280,6 +283,17 @@ const SESSION_ROUTES = {
     method: "PUT",
     path: `/api/v1/works/${randomUUID()}/direct-edit`,
     body: () => ({ mode: "direct" }),
+    live: 404,
+  },
+  // SRV-1803: a work it may not import into is 404; an import of it is not found.
+  "work.imports.post": {
+    path: `/api/v1/works/${randomUUID()}/imports`,
+    body: () => ({ fileBase64: "UEsDBA==", fileName: null }),
+    live: 404,
+  },
+  "work.imports.confirm.post": {
+    path: `/api/v1/works/${randomUUID()}/imports/${IMPORT_ID}/confirm`,
+    body: () => ({ importId: IMPORT_ID, manifestSha256: "0".repeat(64) }),
     live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
@@ -752,6 +766,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1904: a live session that teaches no such assignment gets 404.
+  "teacher.assignment-copy.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/copy`,
+    body: () => ({ requestKey: randomUUID(), courseId: randomUUID() }),
+    live: 404,
+  },
   // SRV-1109: a live session that teaches no such assignment gets 404.
   "teacher.merlin-roster.get": {
     method: "GET",
@@ -1025,6 +1045,7 @@ const FACTORIES = [
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
+  "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -1056,6 +1077,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
+  "createAssignmentCopyRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
@@ -1107,6 +1129,7 @@ const MOUNTED = [
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
+  ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
@@ -1138,6 +1161,7 @@ const MOUNTED = [
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   createStudentDeadlineHistoryRouteFor(databases.main),
+  createAssignmentCopyRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),
