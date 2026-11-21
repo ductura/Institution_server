@@ -16,6 +16,11 @@ import { createWithActor, type WithActor } from "./with-actor.ts";
 export { createConsultationSlotStore } from "./consultation-slots/index.ts";
 export { createMentorshipRequestStore } from "./mentorship/index.ts";
 export { createStudentMentorshipReader } from "./mentorship/index.ts";
+export {
+  createStudentWorkStarter,
+  createStudentWorksReader,
+  type StartWorkOutcome,
+} from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
 export {

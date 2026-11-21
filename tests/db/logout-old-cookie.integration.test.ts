@@ -22,6 +22,7 @@ import {
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -384,6 +385,18 @@ const SESSION_ROUTES = {
   "mentorship.student-mentor-candidates.get": {
     method: "GET",
     path: "/api/v1/student/mentor-candidates",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-1412: an assignment of no course of the account is 404; its own works are none.
+  "student-work.start.post": {
+    path: `/api/v1/assignments/${randomUUID()}/start`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student-work.works.get": {
+    method: "GET",
+    path: "/api/v1/student/works",
     body: () => undefined,
     live: 200,
   },
@@ -1132,6 +1145,7 @@ const FACTORIES = [
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
   "createMentorshipStudentRoutesFor",
+  "createStudentWorkRoutesFor",
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
@@ -1221,6 +1235,7 @@ const MOUNTED = [
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
   ...createMentorshipStudentRoutesFor(databases.main),
+  ...createStudentWorkRoutesFor(databases.main),
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
@@ -1494,6 +1509,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
+        id.startsWith("student-work.") ||
         id.startsWith("work.") ||
         id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")

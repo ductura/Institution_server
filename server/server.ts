@@ -47,6 +47,7 @@ import {
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -284,6 +285,8 @@ async function main(): Promise<void> {
       ...createMentorshipRequestRoutesFor(databases.main),
       // SRV-1414: the student's own requests and the teachers they may ask.
       ...createMentorshipStudentRoutesFor(databases.main),
+      // SRV-1412: the student starts the own work and reads the own works.
+      ...createStudentWorkRoutesFor(databases.main),
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
