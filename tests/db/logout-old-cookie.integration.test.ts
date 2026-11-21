@@ -63,6 +63,7 @@ import {
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
@@ -131,6 +132,8 @@ const WORK_SOURCE = {
   place: "Izmišljeni grad",
   publisher: "Izmišljena naklada",
 };
+const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}/notes`;
+const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
 const SESSION_ROUTES = {
   "evidence.open.post": {
@@ -407,6 +410,25 @@ const SESSION_ROUTES = {
   "student.work-sources.delete": {
     method: "DELETE",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.source-notes.get": { method: "GET", path: SOURCE_NOTES, body: () => undefined, live: 404 },
+  "work.source-notes.post": {
+    method: "POST",
+    path: SOURCE_NOTES,
+    body: () => ({ note: "Izmišljena bilješka." }),
+    live: 404,
+  },
+  "work.source-notes.patch": {
+    method: "PATCH",
+    path: SOURCE_NOTES,
+    body: () => ({ noteId: SOURCE_NOTE_ID, page: "12–14" }),
+    live: 404,
+  },
+  "work.source-notes.delete": {
+    method: "DELETE",
+    path: `${SOURCE_NOTES}?noteId=${SOURCE_NOTE_ID}`,
     body: () => undefined,
     live: 404,
   },
@@ -829,6 +851,7 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createSourceNotebookRoutesFor",
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createTeacherWorkingCriteriaRoutesFor",
@@ -890,6 +913,7 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  ...createSourceNotebookRoutesFor(databases.main),
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),

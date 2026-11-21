@@ -27,6 +27,7 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceNotebookRoutes,
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
@@ -49,6 +50,7 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { sourceNotebookRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 
 export {
@@ -97,6 +99,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceNotebookRoutes,
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,

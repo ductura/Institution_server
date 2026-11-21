@@ -247,6 +247,7 @@ export type State = {
   works: Work[];
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
+  sourceNotes: Map<string, Operations["work.source-notes.post"]["success"]["body"][]>;
   sourceProofs: SourceProof[];
   consultationSlots: {
     documentId: string;
@@ -442,6 +443,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     ],
     submissionNotes: [],
     workSources: [],
+    sourceNotes: new Map(),
     sourceProofs: [],
     consultationSlots: [],
     attachments: [],

@@ -212,6 +212,7 @@ export const STUDENT_HANDLERS: Handlers = {
     );
     if (old === undefined || old.requirement !== null) return { error: "not_found" };
     state.workSources = state.workSources.filter((s) => s !== old);
+    state.sourceNotes.delete(`${old.assignmentId}:${old.studentId}:${old.id}`);
     // The proofs of the source go with it, as institution.delete_work_source removes them.
     state.sourceProofs = state.sourceProofs.filter(
       (p) =>

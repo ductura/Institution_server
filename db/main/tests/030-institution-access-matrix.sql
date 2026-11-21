@@ -298,7 +298,7 @@ SELECT bag_eq(
     'student_assignments() definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
-    'source_notes(p_assignment_id uuid, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
+    'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',

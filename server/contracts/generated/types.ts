@@ -841,6 +841,34 @@ export type Operations = {
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
+  "work.source-notes.delete": {
+    params: { "id": string; "sourceId": string };
+    query: { "noteId": string };
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_input";
+  };
+  "work.source-notes.get": {
+    params: { "id": string; "sourceId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "quote": string | null; "page": string | null; "note": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.source-notes.patch": {
+    params: { "id": string; "sourceId": string };
+    query: undefined;
+    body: { "noteId": string; "quote"?: string | null; "page"?: string | null; "note"?: string | null };
+    success: { status: 200; body: { "id": string; "quote": string | null; "page": string | null; "note": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "work.source-notes.post": {
+    params: { "id": string; "sourceId": string };
+    query: undefined;
+    body: { "quote"?: string | null; "page"?: string | null; "note"?: string | null };
+    success: { status: 201; body: { "id": string; "quote": string | null; "page": string | null; "note": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "work.versions.get": {
     params: { "documentId": string };
     query: { "beforeRevision"?: string };

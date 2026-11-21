@@ -32,6 +32,7 @@ import {
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createConsultationSlotRoutesFor,
@@ -181,6 +182,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      ...createSourceNotebookRoutesFor(databases.main),
       ...createSourceProofRoutesFor(databases.main),
       createTextCheckConfigRoute(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
