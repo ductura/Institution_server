@@ -124,8 +124,9 @@ describe("vitest.config.ts", () => {
     expect(scripts["test:database"]).toBe(
       "vitest run --project database && pnpm test:integration:pg",
     );
+    // CI runs the same two vitest runs, each split by the matrix leg.
     expect(readFileSync(join(ROOT, ".github/workflows/ci.yml"), "utf8")).toMatch(
-      /run: pnpm test:database\n/u,
+      /run: \|\n {10}pnpm exec vitest run --project database --shard="\$SHARD"\n {10}pnpm test:integration:pg --shard="\$SHARD"\n/u,
     );
   });
 });

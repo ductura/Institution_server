@@ -31,6 +31,9 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentWriteRoutesFor,
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
@@ -52,6 +55,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
+  createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -99,6 +103,7 @@ import {
   installShutdown,
   logStartupFailed,
   logStartupRefused,
+  facultyRulesProblems,
   parseTrustedProxies,
   readRateLimitConfig,
   readinessCheckFor,
@@ -117,7 +122,8 @@ import {
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
 //    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
-//    institutions file built into the server must pass its schema (DAN-911).
+//    institutions file built into the server must pass its schema (DAN-911),
+//    and so must every config/faculties/<faculty>/rules.json (SRV-1405).
 //    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const rateLimitConfig = readRateLimitConfig(process.env);
@@ -128,6 +134,7 @@ const problems = [
   ...originProblems(process.env),
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
+  ...facultyRulesProblems(),
   ...testModeProblems(process.env),
   ...rateLimitConfig.problems,
   ...(TRUSTED_PROXIES === null
@@ -295,6 +302,11 @@ async function main(): Promise<void> {
       ...createStudentSubmissionRoutesFor(databases.main),
       // SRV-NG: the notice of the current version for a student of the course (E-6).
       createStudentNoticeRouteFor(databases.main),
+      // Faza 3 readiness: the student's assignment list (DAN-803), own access log
+      // (DAN-904), enrolment by code and notice read (SRV-02), over the main database.
+      createStudentAssignmentsRouteFor(databases.main),
+      createStudentAccessLogRouteFor(databases.main),
+      ...createStudentWriteRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // SRV-1403: the caller's own staff affiliation, or staff_affiliation_missing.
@@ -303,6 +315,8 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
+      // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
+      createPilotMetricsRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),

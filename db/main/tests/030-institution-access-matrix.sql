@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2742);
+SELECT plan(2749);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -304,7 +304,7 @@ SELECT bag_eq(
   $$ SELECT c.relname || ': ' || t.tgname || ' ' || t.tgtype::text || ' ' || t.tgenabled::text
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
-  ARRAY['assignment: assignment_practice_immutable 19 O',
+  ARRAY['assignment: assignment_practice_immutable 19 O', 'assignment: assignment_config_pin 23 O',
         'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',
@@ -374,6 +374,7 @@ SELECT bag_eq(
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean) definer app',
     'assignment_grade_state(p_assignment_id uuid) app',
     'refuse_assignment_practice_change()',
+    'pin_assignment_config() definer',
     'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'acknowledge_notice(p_assignment_id uuid, p_version_no integer, p_template_version integer) definer app',
@@ -652,6 +653,25 @@ FROM (VALUES
   ('nina', '{k1}', '0'), ('petra', '{k1}', '0'), ('vesna', '{nobody}', '0'),
   ('closed', '{k1}', 'ZD401: not authenticated')
 ) AS c (actor, course, result);
+-- SRV-1906 (plan P-D6): the operator's pilot numbers. Only the web role
+-- executes the RPC (the operator list and the second factor are the server's,
+-- step 8); every live session gets one row of counts, none without a session.
+-- The rest (suppression, cutoff, columns) is in 208-pilot-metrics.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.pilot_metrics()', 'app.pilot_metrics_at(timestamptz)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1906: only ductus_app and the owner execute the pilot numbers'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.pilot_metrics()'), c.result,
+  format('SRV-1906: %s reads the pilot numbers: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
+  ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
 INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(

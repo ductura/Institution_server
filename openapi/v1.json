@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.66.0",
+    "version": "1.67.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -27529,6 +27529,378 @@
             "status": 400,
             "code": "body_stream_error",
             "key": "errors.body_stream_error"
+          }
+        ]
+      }
+    },
+    "/api/v1/ops/pilot-metrics": {
+      "get": {
+        "operationId": "ops.pilot-metrics.get",
+        "summary": "Whole-server technical numbers of the pilot for an operator (plan P-D6): recorded submissions and requests without one, signed receipts and submissions still without one, help requests and those reporting a save problem, and the median and 95th percentile from a submission request to its signed receipt. Counted up to asOf, the start of the current day in Zagreb. No identifier, no text, no breakdown and no filter. A count from 1 to 4 is null, and so is any count derivable from the published ones by subtraction; a shown count is rounded down to a multiple of five. The durations are null below five receipts and whenever the receipt counts are hidden, and capped at 2147483647 ms.",
+        "x-access": "operator",
+        "x-inventory": "app/api/ops/pilot-metrics/route.ts",
+        "responses": {
+          "200": {
+            "description": "the pilot numbers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "asOf",
+                    "minimumGroup",
+                    "submissions",
+                    "receipts",
+                    "helpRequests",
+                    "receiptTime"
+                  ],
+                  "properties": {
+                    "asOf": {
+                      "format": "date-time",
+                      "maxLength": 24,
+                      "type": "string"
+                    },
+                    "minimumGroup": {
+                      "const": 5,
+                      "type": "number"
+                    },
+                    "submissions": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "recorded",
+                        "notRecorded"
+                      ],
+                      "properties": {
+                        "recorded": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "notRecorded": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "receipts": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "issued",
+                        "pending"
+                      ],
+                      "properties": {
+                        "issued": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "pending": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "helpRequests": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "saveProblems"
+                      ],
+                      "properties": {
+                        "total": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "saveProblems": {
+                          "anyOf": [
+                            {
+                              "const": 0,
+                              "type": "number"
+                            },
+                            {
+                              "minimum": 5,
+                              "maximum": 2147483645,
+                              "multipleOf": 5,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "receiptTime": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "p50Ms",
+                        "p95Ms"
+                      ],
+                      "properties": {
+                        "p50Ms": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "p95Ms": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthenticated",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthenticated",
+            "key": "errors.unauthenticated"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
           }
         ]
       }

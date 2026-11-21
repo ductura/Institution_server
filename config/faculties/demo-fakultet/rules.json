@@ -1,0 +1,9 @@
+{
+  "format": "ductura-faculty-rules-v1",
+  "faculty": "demo-fakultet",
+  "rules": {
+    "citationStyle": "fpzg",
+    "workLanguages": ["hr", "en"],
+    "defaultWorkLanguage": "hr"
+  }
+}

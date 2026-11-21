@@ -18,6 +18,14 @@ export { createMentorshipRequestStore } from "./mentorship/index.ts";
 export { createStudentMentorshipReader } from "./mentorship/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export {
+  createInstitutionConfigStore,
+  facultyRulesProblems,
+  loadFacultyRules,
+  type FacultyRules,
+  type FacultyRulesCatalog,
+  type InstitutionConfigStore,
+} from "./institution-config/index.ts";
 export type {
   BackchannelLogout,
   BackchannelLogoutInput,
@@ -660,3 +668,4 @@ export {
 } from "./import/index.ts";
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
+export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";

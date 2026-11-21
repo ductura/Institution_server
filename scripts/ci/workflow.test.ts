@@ -8,6 +8,13 @@ const ROOT = resolve(import.meta.dirname, "../..");
 const CI = readFileSync(resolve(ROOT, ".github/workflows/ci.yml"), "utf8");
 const SMOKE = readFileSync(resolve(ROOT, "db/tests/00-environment.sql"), "utf8");
 const ALL_JOBS = ["scope", ...jobsFor("full")];
+// The vitest projects split across the two legs of a job matrix (vitest --shard).
+const SHARD_ENV = "\n          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}\n";
+const MATRIX = "\n      fail-fast: false\n      matrix:\n        shard: [1, 2]\n";
+const LEG_NAME = /^ {4}name: .+ \(\$\{\{ matrix\.shard \}\}\/\$\{\{ strategy\.job-total \}\}\)$/;
+// pnpm test:database as its two vitest runs, each with the leg's shard.
+const DATABASE_TESTS =
+  /\n {8}run: \|\n {10}pnpm exec vitest run --project database --shard="\$SHARD"\n {10}pnpm test:integration:pg --shard="\$SHARD"\n/;
 
 /** The text of one top-level job, up to the next job. */
 function job(name: string): string {
@@ -75,7 +82,7 @@ describe("ci.yml", () => {
       'node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"',
     );
     const count = database.indexOf('[ "$applied" -eq "$files" ]');
-    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    const tests = database.search(DATABASE_TESTS);
     expect(migrator).toBeGreaterThan(database.indexOf("pg_prove"));
     expect(migrate).toBeGreaterThan(migrator);
     expect(count).toBeGreaterThan(migrate);
@@ -107,7 +114,7 @@ describe("ci.yml", () => {
       'node scripts/db/migrate-locked.ts --database logs --url "$LOGS_DATABASE_URL?sslmode=disable&role=ductus_logs_migrator"',
     );
     const count = database.indexOf("find db/logs/migrations -maxdepth 1 -name '*.sql'");
-    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    const tests = database.search(DATABASE_TESTS);
     expect(cluster).toBeGreaterThan(database.indexOf('[ "$applied" -eq "$files" ]'));
     expect(bootstrap).toBeGreaterThan(cluster);
     expect(migrate).toBeGreaterThan(bootstrap);
@@ -129,7 +136,7 @@ describe("ci.yml", () => {
       'node scripts/db/migrate-locked.ts --database legal --url "$LEGAL_DATABASE_URL?sslmode=disable&role=ductus_legal_migrator"',
     );
     const count = database.indexOf("find db/legal/migrations -maxdepth 1 -name '*.sql'");
-    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    const tests = database.search(DATABASE_TESTS);
     expect(create).toBeGreaterThan(database.indexOf("-f db/main/local/app-login.sql"));
     expect(bootstrap).toBeGreaterThan(create);
     expect(migrate).toBeGreaterThan(bootstrap);
@@ -173,16 +180,43 @@ describe("ci.yml", () => {
 
   it("checks run every repository check and test project", () => {
     const checks = job("checks");
-    for (const script of [
-      "typecheck",
-      "lint",
-      "format:check",
-      "test:unit",
-      "test:property",
-      "test:integration",
-    ]) {
+    for (const script of ["typecheck", "lint", "format:check", "test:equality", "test:property"]) {
       expect(checks).toMatch(new RegExp(`\\n {8}run: pnpm ${script}\\n`));
     }
+    for (const script of ["test:unit", "test:integration"]) {
+      expect(checks).toContain(`${SHARD_ENV}        run: pnpm ${script} --shard="$SHARD"\n`);
+    }
+  });
+
+  // Both test jobs run as two legs. Each leg runs its half of the files of the
+  // unit, integration, database and integration-pg projects, and every other
+  // step (static checks, images, migrations, pgTAP, VS-1) in full; ci-ok sees
+  // one result per job, failed when any leg failed.
+  it("splits the vitest projects across two legs of checks and database, nothing else", () => {
+    for (const name of ["checks", "database"]) {
+      const body = job(name);
+      const matrix = body.indexOf(MATRIX);
+      expect(body.split("\n")[2], name).toMatch(LEG_NAME);
+      expect(matrix, name).toBeGreaterThan(body.indexOf("\n    strategy:\n"));
+      expect(matrix, name).toBeLessThan(body.indexOf("\n    steps:\n"));
+      expect([...body.matchAll(/--shard="\$SHARD"/g)], name).toHaveLength(2);
+    }
+    expect([...CI.matchAll(/strategy:|--shard=/g)]).toHaveLength(6);
+    const database = job("database");
+    const tests = database.search(DATABASE_TESTS);
+    expect(database.slice(database.indexOf("- name: Testovi migracija"), tests)).toContain(
+      SHARD_ENV,
+    );
+    // The two runs are exactly what `pnpm test:database` runs locally.
+    const scripts = (
+      JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as {
+        scripts: Record<string, string>;
+      }
+    ).scripts;
+    expect(scripts["test:database"]).toBe(
+      "vitest run --project database && pnpm test:integration:pg",
+    );
+    expect(scripts["test:integration:pg"]).toBe("vitest run --project integration-pg");
   });
 
   it("installs PostgreSQL with the production major version and runs pgTAP", () => {
