@@ -43,9 +43,14 @@ function send(
         resolve({
           status: res.statusCode ?? 0,
           headers: res.headers,
-          // A JPEG answer (SRV-1102) is compared in Base64, as the vector writes it.
+          // A JPEG or DOCX answer (SRV-1102, SRV-1310) is compared in Base64, as the vector writes it.
           body: Buffer.concat(chunks).toString(
-            res.headers["content-type"] === "image/jpeg" ? "base64" : "utf8",
+            res.headers["content-type"] === "image/jpeg" ||
+              res.headers["content-type"]?.startsWith(
+                "application/vnd.openxmlformats-officedocument.",
+              )
+              ? "base64"
+              : "utf8",
           ),
         }),
       );

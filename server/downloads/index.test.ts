@@ -6,6 +6,7 @@ import type { Result } from "../domain/index.ts";
 describe("server/downloads public interface", () => {
   it("exports the empty routes and schemas, the manifest service and its errors, and the Merlin roster and package, and the DOCX export", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "A4_PAGE",
       "DOWNLOADS_ERRORS",
       "DOWNLOADS_RELEASES_INVALID",
       "DOWNLOADS_RELEASES_ORDER",
@@ -22,6 +23,7 @@ describe("server/downloads public interface", () => {
       "merlinRosterCsv",
       "renderDocx",
       "renderReceiptPdf",
+      "renderWorkDocx",
     ]);
     expect(area.DOWNLOADS_ROUTES).toEqual([]);
     expect(area.DOWNLOADS_SCHEMAS).toEqual({});
