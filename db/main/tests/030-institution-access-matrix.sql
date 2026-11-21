@@ -6,7 +6,21 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2596);
+SELECT plan(2661);
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
+    AND has_table_privilege('ductus_app', c.oid, 'SELECT')
+    AND has_table_privilege('ductus_problem_report_reader', c.oid, 'SELECT')
+    AND NOT has_database_privilege('ductus_problem_report_reader', current_database(), 'CONNECT')
+    AND NOT has_table_privilege('public', c.oid, 'SELECT')
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
+        AND r.rolname NOT IN ('ductus_identity', 'ductus_app', 'ductus_problem_report_reader')
+        AND has_any_column_privilege(r.oid, c.oid, 'SELECT'))
+    AND NOT has_table_privilege('ductus_app', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('ductus_problem_report_reader', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE'),
+  'problem reports have forced RLS and only app and operations read grants outside the owner')
+  FROM pg_class c WHERE c.oid = 'identity.problem_report'::regclass;
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
   'maintenance_window has forced RLS and the operations owner')
@@ -118,7 +132,7 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
         'work_milestone_deadline', 'mentor_note'],
   'the institution schema holds exactly the tables of this matrix'
@@ -231,6 +245,7 @@ SELECT bag_eq(
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
+    'source_note: source_note_owner ALL to ductus_identity',
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
     'deadline_extension: deadline_extension_owner ALL to ductus_identity',
@@ -398,6 +413,7 @@ SELECT bag_eq(
     'student_assignments() definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
+    'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
@@ -958,14 +974,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
+                        'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
                         'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

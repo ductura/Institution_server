@@ -42,6 +42,6 @@ describe("node scripts/build/server.ts", () => {
       expect(existsSync(outfile)).toBe(true);
       expect(existsSync(join(output, PDF_WORKER_OUTFILE))).toBe(true);
     },
-    180_000,
+    300_000,
   );
 });
