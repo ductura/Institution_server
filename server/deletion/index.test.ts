@@ -12,9 +12,12 @@ describe("server/deletion public interface", () => {
       "ERASURE_CHECKPOINT_OBJECT_GROUP",
       "ERASURE_DATA_CLASSES",
       "ERASURE_REASONS",
+      "MAX_DRILL_COPY_ITEMS",
       "MAX_ERASURE_CHECKPOINT_BYTES",
       "MAX_ERASURE_CHECKPOINT_RECORDS",
+      "SYNTHETIC_INSTITUTION_PATTERN",
       "createDeletionService",
+      "runRestoreDrill",
       "verifyErasureCheckpoint",
     ]);
     expect(area.DELETION_ROUTES).toEqual([]);

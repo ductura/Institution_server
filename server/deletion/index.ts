@@ -26,3 +26,11 @@ export {
   type ErasureCheckpointSigner,
   type StoredErasureCheckpoint,
 } from "./service.ts";
+export {
+  MAX_DRILL_COPY_ITEMS,
+  runRestoreDrill,
+  SYNTHETIC_INSTITUTION_PATTERN,
+  type DrillCopyItem,
+  type RestoreDrillProblem,
+  type RestoreDrillResult,
+} from "./restore-drill/index.ts";
