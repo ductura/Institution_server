@@ -25,7 +25,7 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
   'maintenance_window has forced RLS and the operations owner')
   FROM pg_class c WHERE c.oid = 'identity.maintenance_window'::regclass;
-SELECT results_eq($$ SELECT policyname::text, cmd::text, roles = ARRAY['ductus_identity'::name]
+SELECT results_eq($$ SELECT policyname::text, cmd::text, roles::text[] = ARRAY['ductus_identity']
   FROM pg_policies WHERE schemaname = 'identity' AND tablename = 'maintenance_window' ORDER BY policyname $$,
   $$ VALUES ('maintenance_read'::text, 'SELECT'::text, true), ('maintenance_record', 'INSERT', true) $$,
   'maintenance_window lets the operator read and append');
