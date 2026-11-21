@@ -13,6 +13,7 @@ export {
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
+export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,

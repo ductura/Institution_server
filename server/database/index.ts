@@ -347,6 +347,14 @@ export type {
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
+export {
+  createTeacherWorkingCriteria,
+  WORKING_CRITERIA,
+  type Assessment as WorkingCriterionAssessment,
+  type TeacherWorkingCriteria,
+  type WorkingCriterion,
+  type WorkingCriterionId,
+} from "./teacher-working-criteria/index.ts";
 export type { CommentTemplate, TeacherNote, TeacherNotes, TemplateKind } from "./teacher-notes.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";

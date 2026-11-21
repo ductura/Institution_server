@@ -597,6 +597,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assignmentId: IDS.assignment },
     },
   },
+  "teacher.working-criteria.get": {
+    request: { path: `/api/v1/teacher/works/${IDS.document}/working-criteria`, as: "nastavnik" },
+  },
+  "teacher.working-criterion.put": {
+    request: {
+      path: `/api/v1/teacher/works/${IDS.document}/working-criteria/sources`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { assessment: 1, note: "Izmišljena napomena." },
+    },
+  },
   "teacher.mentorship.get": {
     request: { path: `/api/v1/teacher/mentorships/${IDS.mentorship}`, as: "nastavnik" },
   },
