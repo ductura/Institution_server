@@ -577,6 +577,41 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length <= 0
     )
   }),
+  "institution.student-data-exports-approve.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['exportId'] === 'string') &&
+      local0.test(value['exportId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.student-data-exports-approve.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['reference'] === 'string') &&
+      value['reference'].length <= 120 &&
+      value['reference'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.student-data-exports.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['studentId'] === 'string') &&
+      local0.test(value['studentId']) &&
+      (((value['identityCheckedBy'] === 'identity_card')) || ((value['identityCheckedBy'] === 'passport')) || ((value['identityCheckedBy'] === 'student_card'))) &&
+      (typeof value['note'] === 'string') &&
+      value['note'].length <= 80 &&
+      value['note'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
   "institution.student-removal.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -1020,6 +1055,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['paragraph'] === 'string') &&
       value['paragraph'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 5
+    )
+  }
+  })(),
+  "student.data-export.get:params": (() => {
+  const local0 = /^[A-Za-z0-9_-]{43}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['token'] === 'string') &&
+      local0.test(value['token']) &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }
   })(),
