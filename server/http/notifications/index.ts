@@ -41,10 +41,10 @@ function databaseFailure(response: ServerResponse, error: unknown, operation: st
 
 export function createNotificationsRoutesFor(
   main: { withActor: WithActor },
-  env: Readonly<Record<string, string | undefined>> = process.env,
+  configuredCooldown?: string,
 ): Route[] {
   const notifications = createNotifications(main.withActor);
-  const cooldown = reminderSeconds(env.DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS);
+  const cooldown = reminderSeconds(configuredCooldown);
   return [
     {
       contract: LIST,

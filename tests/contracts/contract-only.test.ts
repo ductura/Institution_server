@@ -367,7 +367,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
-    call: "...createNotificationsRoutesFor(databases.main)",
+    call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
     ids: ["notifications.list.get", "notifications.read.post"],
     routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },

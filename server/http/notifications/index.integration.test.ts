@@ -20,10 +20,7 @@ beforeEach(async () => {
     port: 0,
     layers: createLayers({ expectedOrigin: ORIGIN }),
     databases: createDatabases(),
-    routes: createNotificationsRoutesFor(
-      { withActor },
-      { DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS: "900" },
-    ),
+    routes: createNotificationsRoutesFor({ withActor }, "900"),
   });
 });
 afterEach(() => running.close());
@@ -45,10 +42,10 @@ it("bounds the inbox page and passes the configured cooldown with the cursor", a
   const response = await get(`?before=${ID}`);
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  const page = await response.json();
-  expect(page.notifications).toHaveLength(50);
-  expect(page.nextBefore).toBe(rows[49]?.id);
-  expect(page.notifications[0].createdAt).toBe(AT);
+  expect(await response.json()).toEqual({
+    notifications: rows.slice(0, 50).map((row) => ({ ...row, createdAt: AT })),
+    nextBefore: rows[49]?.id,
+  });
   expect(query.mock.calls[0]?.[1]).toEqual([ID, 900]);
 });
 
