@@ -38,6 +38,7 @@ export {
   createAssignmentCopyRouteFor,
 } from "./assignment-copy/index.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
+export { createTeacherDeclarationRouteFor } from "./teacher-declaration/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,

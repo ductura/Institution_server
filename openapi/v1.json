@@ -55438,6 +55438,544 @@
         ]
       }
     },
+    "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration": {
+      "get": {
+        "operationId": "teacher.declaration.get",
+        "summary": "The declaration a student bound to the live submission of the named assignment, for the course teacher. Without a live submission the state is none. An assignment, student or relationship the teacher has no access to returns 404. Opening a bound declaration is recorded in the access log.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the bound declaration with its hash, or none",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "state",
+                        "payload",
+                        "declarationSha256"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "none",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "type": "null"
+                        },
+                        "declarationSha256": {
+                          "type": "null"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "state",
+                        "payload",
+                        "declarationSha256"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "bound",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "declarationSchema",
+                            "declarationId",
+                            "declarationVersion",
+                            "principalId",
+                            "assignmentId",
+                            "assignmentVersion",
+                            "documentId",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirmedAt"
+                          ],
+                          "properties": {
+                            "declarationSchema": {
+                              "const": "ductura-declaration-v1",
+                              "type": "string"
+                            },
+                            "declarationId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "declarationVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "principalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "documentId": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "const": true,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "recorded",
+                                "attachments"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "const": "used",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "not_used",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "recorded": {
+                                  "maxItems": 0,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "aiTransferId",
+                                      "aiTransferSha256"
+                                    ],
+                                    "properties": {
+                                      "aiTransferId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "aiTransferSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 10,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "externalAttachmentId",
+                                      "format",
+                                      "byteLength",
+                                      "contentSha256",
+                                      "reason"
+                                    ],
+                                    "properties": {
+                                      "externalAttachmentId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "format": {
+                                        "anyOf": [
+                                          {
+                                            "const": "application/pdf",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "text/plain",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "byteLength": {
+                                        "minimum": 1,
+                                        "maximum": 2097152,
+                                        "type": "integer"
+                                      },
+                                      "contentSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      },
+                                      "reason": {
+                                        "const": "external_upload",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "confirmedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "declarationSha256": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/teacher/fast-path": {
       "post": {
         "operationId": "teacher.fast-path.post",
