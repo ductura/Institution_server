@@ -63,7 +63,7 @@ CREATE TEMP VIEW open_policy AS
                      AND p.polroles = ARRAY[to_regrole('ductus_worker')::oid], false)
     AND NOT coalesce(p.polrelid = 'identity.problem_report'::regclass
                      AND p.polname = 'problem_report_operator_read' AND p.polcmd = 'r'
-                     AND p.polroles = ARRAY['ductus_problem_report_reader'::regrole::oid]
+                     AND p.polroles = ARRAY[to_regrole('ductus_problem_report_reader')::oid]
                      AND pg_get_expr(p.polqual, p.polrelid) = 'true' AND p.polwithcheck IS NULL, false);
 
 CREATE TEMP VIEW probe AS
