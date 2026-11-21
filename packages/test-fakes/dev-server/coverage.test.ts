@@ -665,6 +665,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.access-log.get": {
     request: { path: `/api/v1/student/works/${IDS.document}/access-log`, as: "student" },
   },
+  "work.access.get": {
+    request: { path: `/api/v1/works/${IDS.document}/access`, as: "student" },
+  },
   "student.assignment-requirements.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/requirements`, as: "student" },
   },
