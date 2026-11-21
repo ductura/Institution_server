@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2838);
+SELECT plan(2843);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -720,6 +720,27 @@ FROM (VALUES
   ('ductus_app', '42501: permission denied for function erasure_of'),
   ('ductus_identity', '42501: permission denied for function erasure_of'),
   ('ductus_worker', '42501: permission denied for function erasure_of'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', '0')
+) AS c (role, result);
+-- SRV-1303 (M10.0-S2): the scheduled purge of ended sessions. Only the
+-- retention role and the owner of identity.session execute it; the web role
+-- does not. The cut here is a century back, so the call deletes nothing of
+-- this file's fixtures. The rest is in 181-purge-ended-sessions.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_retention', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.purge_ended_sessions(timestamptz)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1303: only the retention role and the owner execute the session purge'
+);
+SELECT is(pg_temp.ask_as(c.role, 'anon', $$ SELECT app.purge_ended_sessions(now() - interval '100 years')::text $$), c.result,
+  format('SRV-1303: %s purges ended sessions: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function purge_ended_sessions'),
+  ('ductus_worker', '42501: permission denied for function purge_ended_sessions'),
   ('ductus_auth', '42501: permission denied for schema app'),
   ('ductus_retention', '0')
 ) AS c (role, result);
