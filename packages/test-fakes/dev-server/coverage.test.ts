@@ -757,6 +757,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "course.aggregate.get": {
+    request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
+  },
   "teacher.fast-path.post": {
     request: {
       path: "/api/v1/teacher/fast-path",
