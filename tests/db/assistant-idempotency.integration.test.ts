@@ -249,10 +249,10 @@ async function flow(
   const outcome = await assistant.complete(
     buildPortInput({
       instructions: "Izmišljene upute poslužitelja.",
-      paragraph: req.paragraph,
+      data: [{ kind: "paragraph", text: req.paragraph, truncated: false }],
+      tools: [],
       purposeKey: req.purposeKey,
       modelId: req.modelId,
-      maxResponseCodePoints: 2000,
     }),
   );
   const called = { ...base, portCalled: true };
