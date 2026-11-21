@@ -442,6 +442,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051",
+  },
   "app/api/teacher/mentorship-requests/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",

@@ -771,6 +771,13 @@ export type Operations = {
     success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.declaration.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none"; "payload": null; "declarationSha256": null } | { "state": "bound"; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string }; "declarationSha256": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.fast-path.post": {
     params: undefined;
     query: undefined;

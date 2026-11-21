@@ -1001,6 +1001,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  "teacher.declaration.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration`,
+      as: "nastavnik",
+    },
+  },
   "teacher.mentorship-requests.get": {
     request: { path: "/api/v1/teacher/mentorship-requests", as: "nastavnik" },
   },

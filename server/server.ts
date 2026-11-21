@@ -55,6 +55,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
+  createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
@@ -318,6 +319,7 @@ async function main(): Promise<void> {
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
+      createTeacherDeclarationRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
