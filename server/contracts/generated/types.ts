@@ -946,6 +946,20 @@ export type Operations = {
     success: { status: 200; body: Blob; headers: { "x-export-snapshot-sha256"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
+  "work.imports.confirm.post": {
+    params: { "documentId": string; "importId": string };
+    query: undefined;
+    body: { "importId": string; "manifestSha256": string };
+    success: { status: 200; body: { "importId": string; "eventId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "import_not_found" | "import_manifest_mismatch" | "import_expired" | "import_not_allowed" | "import_revision_changed" | "unavailable";
+  };
+  "work.imports.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "fileBase64": string; "fileName": string | null };
+    success: { status: 201; body: { "importId": string; "manifestSha256": string; "source": "import"; "evidenceKind": "imported"; "fileFormat": "docx" | "pdf"; "content": { "schemaVersion": 2; "nodes": ({ "type": "paragraph"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "heading"; "id": string; "level": 1 | 2 | 3; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "bulletItem"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "quote"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] })[]; "sources": ({  })[] }; "traces": ({ "traceKind": "comment" | "deletion" | "insertion"; "count": number })[]; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "expiresAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_document" | "pdf_no_text_layer" | "import_not_allowed" | "not_found" | "unavailable";
+  };
   "work.messages.get": {
     params: { "documentId": string };
     query: undefined;

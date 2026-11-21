@@ -48,13 +48,28 @@ const importForms = (spec: string): string[] => [
 ];
 
 // DAN-822-4 (orchestrator decision A, Ductus#1836 c.6948159989): the watch
-// thread of the attempt fence, the one file that may import node:worker_threads
+// thread of the attempt fence, which may import node:worker_threads
 // (only workerData) and use process.hrtime, kill and pid.
 const WATCH = "server/database/queue/attempt-fence-watch.ts";
 const WATCH_CODE = readFileSync(path.join(ROOT, WATCH), "utf8");
 const WT = "node:worker_threads";
+const PDF_WORKER = "server/import/pdf/worker.ts";
+const PDF_IMPORT = `import { Worker } from "${WT}";\n`;
 
 const failing: Case[] = [
+  ...at("server/import/pdf/other.ts", "module", [PDF_IMPORT]),
+  ...at("server/import/pdf/Worker.ts", "module", [PDF_IMPORT]),
+  ...at(PDF_WORKER, "nodeExport", [
+    `${PDF_IMPORT}export { Worker };\n`,
+    `import { parentPort } from "${WT}";\nexport { parentPort };\n`,
+    `${PDF_IMPORT}export async function anotherWorker() { return Worker; }\n`,
+  ]),
+  ...at(PDF_WORKER, "global", [
+    'new URL("./other.ts", import.meta.url);\n',
+    'const file = "./worker.ts";\nnew URL(file, import.meta.url);\n',
+    "const base = import.meta.url;\n",
+  ]),
+  ...at("server/import/pdf/other.ts", "global", ['new URL("./worker.ts", import.meta.url);\n']),
   // The same code in any other file, the fence's own file included.
   ...[
     "server/database/queue/attempt-fence.ts",

@@ -1,14 +1,15 @@
-// Builds the one entry point server/server.ts into one file, dist/server.js
-// (S-1B-a, DAN-775). Dependencies are bundled, so the file runs with node and
-// nothing else; pg-native stays out because pg loads it only on request.
+// Bundles the server and its static PDF import worker into adjacent files.
+// pg-native stays out because pg loads it only on request.
 import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { build, type Plugin } from "esbuild";
+import { build, type BuildOptions, type Plugin } from "esbuild";
 
 export const ENTRY = "server/server.ts";
 export const OUTFILE = "dist/server.js";
+const PDF_WORKER_ENTRY = "server/import/pdf/worker.ts";
+export const PDF_WORKER_OUTFILE = "pdf-import-worker.js";
 
 /**
  * Bundles the entry into `outfile`; the root is the repository. `plugins` is
@@ -20,10 +21,8 @@ export async function buildServer(
   outfile: string = OUTFILE,
   plugins: readonly Plugin[] = [],
 ): Promise<void> {
-  await build({
+  const options: BuildOptions = {
     absWorkingDir: root,
-    entryPoints: [ENTRY],
-    outfile,
     bundle: true,
     platform: "node",
     format: "esm",
@@ -34,8 +33,12 @@ export async function buildServer(
       js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
     },
     logLevel: "warning",
-    plugins: [...plugins],
-  });
+  };
+  const workerOutfile = resolve(root, dirname(outfile), PDF_WORKER_OUTFILE);
+  await Promise.all([
+    build({ ...options, entryPoints: [ENTRY], outfile, plugins: [...plugins] }),
+    build({ ...options, entryPoints: [PDF_WORKER_ENTRY], outfile: workerOutfile }),
+  ]);
 }
 
 // argv[1] keeps a symlinked path, import.meta.url is the real one. An

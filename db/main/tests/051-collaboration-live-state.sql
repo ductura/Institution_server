@@ -133,8 +133,11 @@ SELECT bag_eq(
             ('collaboration.set_direct_edit(text,text)'),
             ('collaboration.read_direct_edit(text)'),
             ('collaboration.list_direct_edit_record(text)'),
-            ('collaboration.publish_teacher_direct_edit(text,text,text)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks)');
+            ('collaboration.publish_teacher_direct_edit(text,text,text)'),
+            ('collaboration.import_gate(text)'),
+            ('collaboration.prepare_import(text,uuid,text,text,text)'),
+            ('collaboration.confirm_import(text,uuid,text)') $$,
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
