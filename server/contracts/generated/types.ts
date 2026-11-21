@@ -547,6 +547,27 @@ export type Operations = {
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
   };
+  "teacher.comment-bank.delete": {
+    params: { "entryId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.comment-bank.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "createdAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "teacher.comment-bank.post": {
+    params: undefined;
+    query: undefined;
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise" };
+    success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "teacher.course-students.get": {
     params: { "courseId": string };
     query: undefined;
@@ -694,6 +715,41 @@ export type Operations = {
     success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "created": boolean }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
   };
+  "work.changes-since-review.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "reviewedRevision": number | null; "currentRevision": number; "changed": boolean; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "text": string; "change": "unchanged" | "removed" | "added" } | { "kind": "heading"; "level": number; "text": string; "change": "unchanged" | "removed" | "added" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-draft.delete": {
+    params: { "commentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-drafts.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-drafts.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "text": string; "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number } } | { "threadId": string; "text": string };
+    success: { status: 201; body: { "threadId": string } | { "commentId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.comments.publish.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "published": number }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
   "work.consultation-additions.post": {
     params: { "documentId": string; "recordId": string };
     query: undefined;
@@ -777,6 +833,13 @@ export type Operations = {
     body: { "dueAt": string };
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "open" | "submitted" | "approved" | "returned" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.review.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
   "work.version.get": {
     params: { "documentId": string; "revision": string };

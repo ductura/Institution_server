@@ -564,6 +564,14 @@ export async function closePools(): Promise<void> {
   await registry.close();
 }
 export {
+  createCommentDelay,
+  type CommentDelay,
+  type CommentDelayRefusal,
+  type CommentDelayResult,
+  type CommentDraft,
+  type WorkReviewState,
+} from "./comment-delay/index.ts";
+export {
   createWorkMessages,
   type WorkMessage,
   type WorkMessageCreated,
