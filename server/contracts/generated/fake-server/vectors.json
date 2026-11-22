@@ -18263,6 +18263,150 @@
     }
   },
   {
+    "route": "institution.work-work-language.get",
+    "name": "follows-assignment",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-citanja-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "title": "Izmišljeni naslov rada",
+        "assignmentLanguage": "hr",
+        "exception": null
+      }
+    }
+  },
+  {
+    "route": "institution.work-work-language.get",
+    "name": "exception",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-citanja-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "title": "Izmišljeni naslov rada",
+        "assignmentLanguage": "hr",
+        "exception": "en"
+      }
+    }
+  },
+  {
+    "route": "institution.work-work-language.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000160"
+      }
+    }
+  },
+  {
+    "route": "institution.work-work-language.get",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-citanja-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000161"
+      }
+    }
+  },
+  {
+    "route": "institution.work-work-language.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-citanja-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000162"
+      }
+    }
+  },
+  {
+    "route": "institution.work-work-language.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-citanja-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000163"
+      }
+    }
+  },
+  {
     "route": "institution.work-work-language.post",
     "name": "set",
     "request": {
