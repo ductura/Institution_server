@@ -106,6 +106,7 @@ export type {
 export type {
   AssignmentWorkLanguageOutcome,
   WorkLanguageOutcome,
+  WorkLanguageReadOutcome,
   WorkLanguages,
 } from "./work-language.ts";
 export type { Enrollment, InstitutionEnrollment } from "./institution-enrollment.ts";

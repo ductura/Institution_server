@@ -26,6 +26,7 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
   "app/api/institution/assignments/[assignmentId]/versions/route.ts": ["POST"],
   "app/api/institution/assignments/[assignmentId]/work-language/route.ts": ["POST"],
   "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts": [
+    "GET",
     "POST",
   ],
   "app/api/institution/courses/[courseId]/assignments/route.ts": ["POST"],

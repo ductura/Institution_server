@@ -22,7 +22,29 @@ export type AssignmentWorkLanguageOutcome =
 export type WorkLanguageOutcome =
   { readonly status: "updated"; readonly language: WorkLanguage } | Refusal | Unavailable;
 
+/** What the teacher's page for one work's language shows (contract institution.work-work-language.get). */
+export type WorkLanguageReadOutcome =
+  | {
+      readonly status: "read";
+      readonly title: string;
+      readonly assignmentLanguage: WorkLanguage;
+      /** The work's own language, or null when it follows the assignment. */
+      readonly exception: WorkLanguage | null;
+    }
+  | Refusal
+  | Unavailable;
+
 export type WorkLanguages = {
+  /**
+   * One snapshot: the work's title, its assignment's language and its
+   * exception, for a teacher of the assignment. A work that is not one of this
+   * teacher's assignment reads like a missing one (forbidden).
+   */
+  readWorkLanguageForDocument(
+    token: string,
+    assignmentId: string,
+    documentId: string,
+  ): Promise<WorkLanguageReadOutcome>;
   setAssignmentWorkLanguage(
     token: string,
     assignmentId: string,
@@ -50,6 +72,18 @@ const ASSIGNMENT_SQL = "SELECT institution.set_assignment_work_language($1, $2, 
 const WORK_SQL = "SELECT institution.set_work_language($1, $2, $3) AS language";
 const WORKS_SQL =
   "SELECT x.student_id::text AS student_id FROM app.assignment_works($1::uuid) x WHERE x.document_id = $2 LIMIT 2";
+// app.assignment_works() names the student of each work only for a teacher of
+// the assignment; the student id is checked here and never leaves the server.
+// institution.work_language() answers null for anyone but the student and a
+// teacher of the work. Ductus work-language-exception-read.ts QUERY.
+const READ_SQL = `WITH w AS (SELECT x.student_id FROM app.assignment_works($1::uuid) x WHERE x.document_id = $2)
+SELECT w.student_id::text AS student_id, institution.work_language($1::uuid, w.student_id) AS language,
+  v.work_language AS "assignmentLanguage", v.title AS title,
+  (SELECT o.work_language FROM institution.work_language_override o
+    WHERE o.assignment_id = a.id AND o.student_id = w.student_id) AS exception
+FROM w
+LEFT JOIN institution.assignment a ON a.id = $1::uuid
+LEFT JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version`;
 const REFUSED = new Map<string, "unauthenticated" | "forbidden" | "conflict" | "invalid">([
   ["ZD401", "unauthenticated"],
   ["ZD403", "forbidden"],
@@ -67,6 +101,44 @@ const readLanguage = (rows: unknown) => parseWorkLanguage(single(rows, "language
 
 export function createWorkLanguages(withActor: WithActor): WorkLanguages {
   return {
+    async readWorkLanguageForDocument(token, assignmentId, documentId) {
+      if (!UUID.test(assignmentId)) return FORBIDDEN;
+      try {
+        const rows = await withActor(token, async (tx) => {
+          const me = (await tx.query("SELECT app.current_user_id() AS user_id")).rows;
+          // Without a live session assignment_works() refuses; ask it nothing.
+          if (single(me, "user_id") == null) return null;
+          return (await tx.query(READ_SQL, [assignmentId.toLowerCase(), documentId])).rows;
+        });
+        if (rows === null) return { status: "unauthenticated" };
+        // A document id names one work; more than one row is not explained here.
+        if (rows.length > 1) return { status: "unavailable", reason: "work_language_malformed" };
+        if (rows.length === 0 || single(rows, "language") === null) return FORBIDDEN;
+        const title = single(rows, "title");
+        const assignmentLanguage = parseWorkLanguage(single(rows, "assignmentLanguage"));
+        const raw = single(rows, "exception");
+        const exception = raw === null ? null : parseWorkLanguage(raw);
+        const language = parseWorkLanguage(single(rows, "language"));
+        // The three values must explain the language the work has.
+        if (
+          typeof title !== "string" ||
+          title === "" ||
+          assignmentLanguage === null ||
+          language === null ||
+          (raw !== null && exception === null) ||
+          language !== (exception ?? assignmentLanguage)
+        ) {
+          return { status: "unavailable", reason: "work_language_malformed" };
+        }
+        return { status: "read", title, assignmentLanguage, exception };
+      } catch (thrown) {
+        const code = codeOf(thrown);
+        const status = typeof code === "string" ? REFUSED.get(code) : undefined;
+        return status === undefined
+          ? { status: "unavailable", reason: "database_error" }
+          : { status };
+      }
+    },
     async setAssignmentWorkLanguage(token, assignmentId, expectedVersion, language) {
       if (!UUID.test(assignmentId)) return FORBIDDEN;
       if (
