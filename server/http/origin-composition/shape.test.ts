@@ -10,7 +10,7 @@ describe("origin composition contract", () => {
   const body = route.responses[0]!.body!;
 
   it("has one property, the parts, with a closed kind and a share", () => {
-    expect(Object.keys((body as { properties: object }).properties)).toEqual(["parts"]);
+    expect(Object.keys((body as unknown as { properties: object }).properties)).toEqual(["parts"]);
     const text = JSON.stringify(body);
     expect(text).not.toMatch(
       /keycode|keystroke|\bkeys?\b|speed|wpm|average|median|velocity|profile|stddev|variance/i,
