@@ -76,6 +76,7 @@ import {
   directEditRoutes,
   importRoutes,
   workMilestonesRoutes,
+  milestoneTemplateRoutes,
   returnForRevisionRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
@@ -99,6 +100,9 @@ export {
   workMilestonesRoutes,
 } from "./routes/index.ts";
 export {
+  MilestoneTemplateInput,
+  WorkMilestoneAddInput,
+  milestoneTemplateRoutes,
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,
@@ -237,6 +241,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...eventDisputesRoutes,
   ...facultyRulesRoutes,
   ...workMilestonesRoutes,
+  ...milestoneTemplateRoutes,
   ...returnForRevisionRoutes,
 ];
 

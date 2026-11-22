@@ -414,6 +414,12 @@ export {
   type RecordInput,
 } from "./consultation-records/index.ts";
 export { createWorkMilestones } from "./work-milestones/index.ts";
+export {
+  createMilestoneTemplate,
+  type MilestoneTemplate,
+  type MilestoneTemplateItem,
+  type MilestoneTemplateVersion,
+} from "./milestone-template/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";

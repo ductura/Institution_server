@@ -271,6 +271,11 @@ export function compileValidator(schema: TSchema, where: string): string {
     .replace(ANY_PARAMETER, `function check(value: Record<string, unknown>): boolean {`)
     // An array's items are checked one by one after Array.isArray, so unknown is enough.
     .replaceAll(ANY_ITEM, "(array: unknown[]) => { for(const value of array)")
+    // The items of an array of objects are read by key, so they are typed as records (SRV-1521).
+    .replaceAll(
+      "for(const value of array) if(!(((typeof value === 'object'",
+      "for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object'",
+    )
     // TypeBox names a pattern's regex local_N; the naming rule wants camelCase.
     // Only its declarations and .test( calls: a field or pattern text keeps local_N as it is.
     .replace(/^(\s*const )local_(\d+) = /gm, "$1local$2 = ")
@@ -302,7 +307,7 @@ function nestedObjects(code: string, where: string): string {
     throw new Error(`unexpected nested validator shape for ${where}`);
   const keys = [...new Set([...code.matchAll(NESTED_READ)].map((m) => m[1] ?? ""))];
   if (keys.length === 0) return code;
-  if (code.includes("for(const value of array)") || /\['\w+'\]\['\w+'\]\['/.test(code))
+  if (code.includes("for(const value of array") || /\['\w+'\]\['\w+'\]\['/.test(code))
     throw new Error(`unexpected nested validator shape for ${where}`);
   const head = "function check(value: Record<string, unknown>): boolean {";
   const name = (key: string) => `nested${key.charAt(0).toUpperCase()}${key.slice(1)}`;

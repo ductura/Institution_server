@@ -36,6 +36,7 @@ import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
 import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
@@ -124,6 +125,7 @@ export const DEV_HANDLERS: Handlers = {
   ...FACULTY_THRESHOLD_HANDLERS,
   ...TEACHER_SOURCE_HANDLERS,
   ...MILESTONE_HANDLERS,
+  ...MILESTONE_TEMPLATE_HANDLERS,
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...OPS_HANDLERS,

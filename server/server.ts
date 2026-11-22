@@ -106,6 +106,7 @@ import {
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
+  createMilestoneTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -297,6 +298,7 @@ async function main(): Promise<void> {
       // SRV-1315: amendments and disputes of process summary events of a work.
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
+      ...createMilestoneTemplateRoutesFor(databases.main),
       // SRV-1606: the teacher returns the whole submitted work for revision.
       ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).

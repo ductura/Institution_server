@@ -267,6 +267,20 @@ export type Operations = {
     success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
   };
+  "institution.milestone-template.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "current": { "version": number; "effectiveFrom": string; "requireFinalStageApproval": boolean; "milestones": ({ "title": string; "relativeDue"?: number; "submits": "topic_text" | "current_version" })[] } | null; "versions": ({ "version": number; "effectiveFrom": string; "requireFinalStageApproval": boolean; "milestones": ({ "title": string; "relativeDue"?: number; "submits": "topic_text" | "current_version" })[] })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.milestone-template.put": {
+    params: undefined;
+    query: undefined;
+    body: { "expectedVersion": number; "requireFinalStageApproval": boolean; "milestones": ({ "title": string; "relativeDue"?: number; "submits": "topic_text" | "current_version" })[] };
+    success: { status: 200; body: { "version": number; "effectiveFrom": string; "requireFinalStageApproval": boolean; "milestones": ({ "title": string; "relativeDue"?: number; "submits": "topic_text" | "current_version" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "conflict" | "unavailable";
+  };
   "institution.origin-threshold.delete": {
     params: { "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown" };
     query: undefined;
@@ -1442,6 +1456,27 @@ export type Operations = {
     body: { "text": string };
     success: { status: 201; body: { "id": string; "senderRole": "student" | "teacher"; "text": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "work.milestone-plan.add.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "title": string; "dueAt"?: string; "submits": "topic_text" | "current_version" };
+    success: { status: 201; body: { "milestones": ({ "id": string; "position": number; "title": string; "dueAt": string | null; "submits": "topic_text" | "current_version" })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "work.milestone-plan.apply-template.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "milestones": ({ "id": string; "position": number; "title": string; "dueAt": string | null; "submits": "topic_text" | "current_version" })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "work.milestone-plan.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "milestones": ({ "id": string; "position": number; "title": string; "dueAt": string | null; "submits": "topic_text" | "current_version" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.milestone-states.get": {
     params: { "documentId": string };
