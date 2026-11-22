@@ -24,7 +24,7 @@ IP prava (`ip-rules.ts`, ugovor Ductus#1836, DAN-832-1):
 - Popis je string: adrese i CIDR rasponi odvojeni zarezom, s ograničenjima kao `TRUSTED_PROXIES` (bez bitova domaćina, ne šire od /8 i /16), oko unosa samo razmaci, najviše 16 unosa i 256 znakova. Svaki drugi znak (tab, CR, LF, NBSP, DEL, `%`, zagrade, port), prazan unos ili ne-string daje `null`.
 - Odluku donosi samo popis koji je napravio `parseAllowedNetworks`; drugo polje ne propušta nikoga. Odbijanje (403 `forbidden`) piše `http`.
 
-Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, plan napada ductura/server#117):
+Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, plan napada ductura/Institution_server#117):
 
 - Token bucket po IP-u (iz `clientIpOf`; bez adrese jedan zajednički bucket) i po korisniku (SHA-256 tokena sesije; sesija se ne razrješava). Token čita funkcija `sessionTokenOf` koju daje `http` (`sessionTokenFromCookie` iz `session`), pa limiter i sesija uvijek čitaju isti kolačić. Bez tokena (ili kad funkcija baci) samo bucket po IP-u.
 - Razredi: `login` (`GET`/`HEAD` `/api/v1/auth/login` i `/api/v1/auth/callback`; samo po IP-u), `enroll` (`POST /api/v1/institution/enrollments`, staza iz ugovora rute `institution.enrollments.post`; DAN-853-1a), `save` (`POST /api/v1/evidence/commit`) i `default`. Razred je iz metode i točne staze bez upita; svaki drugi oblik staze je `default`.

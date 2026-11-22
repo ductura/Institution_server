@@ -26,6 +26,10 @@ const WIRE_NAMES = [
   ...["requested_revision", "opened_is_own", "opened_window", "response_kind"],
   ...["response_explanation", "response_revision", "response_is_own", "response_window"],
   ...["closed_as", "closed_is_own", "closed_window", "accepted_revision", "accepted_range_hash"],
+  // The seats per role of an institution instance, keys on the wire of the
+  // provisioning contract (Ductus#2028 c.6993786629 §2).
+  "network_engineer",
+  "institution_admin",
   // OAuth 2.0 (RFC 6749): authorization request, token request and response, errors.
   "client_id",
   "client_secret",
@@ -103,6 +107,8 @@ const ENV_NAMES = [
   "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).
   "APP_ORIGIN",
+  // The shared secret of the provisioning routes (Ductus#2028 c.6993786629 §2).
+  "DUCTURA_PROVISIONING_TOKEN",
   // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
   "OIDC_ISSUER",
   "OIDC_CLIENT_ID",
@@ -119,6 +125,10 @@ const ENV_NAMES = [
   "METRICS_INTERVAL_MS",
   // The test mode of the server (S-1H.7, DAN-938-1, server/settings).
   "DUCTURA_MODE",
+  // The KMS signer's configuration (DAN-963, server/settings/kms.ts).
+  "DUCTUS_KMS_PROVIDER",
+  "DUCTUS_KMS_KEY_ID",
+  "DUCTUS_KMS_REGION",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",
@@ -141,6 +151,12 @@ const ENV_NAMES = [
   "REDIRECT_URI",
   "POST_LOGOUT_REDIRECT_URI",
   "BACKCHANNEL_LOGOUT_URI",
+  // `pnpm lokalno` (Ductus#2028, scripts/lokalno): the login of the login
+  // callback (server/database), the provisioning token of contract §2 and the
+  // simulator's named accounts (packages/test-fakes/oidc).
+  "AUTH_DATABASE_URL",
+  "DUCTURA_PROVISIONING_TOKEN",
+  "FAKE_OIDC_ACCOUNTS_FILE",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported

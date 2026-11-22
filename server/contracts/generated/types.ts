@@ -211,6 +211,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "ops.events.get": {
+    params: undefined;
+    query: { "from": string; "to": string; "after"?: string };
+    body: undefined;
+    success: { status: 200; body: { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": null } | { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": number }; headers: {  } };
+    errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "platform.health.get": {
     params: undefined;
     query: undefined;
@@ -245,6 +252,13 @@ export type Operations = {
     body: { "locale": "hr" | "en" };
     success: { status: 200; body: { "locale": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "invalid_input" | "unavailable";
+  };
+  "profile.me.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "projection.process-summary.post": {
     params: undefined;

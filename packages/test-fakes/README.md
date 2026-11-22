@@ -18,7 +18,7 @@ Lažne zamjene za testove servera i klijenata (U9, DAN-741). **Samo lokalno i u 
 Svaka objavljena verzija je i `.tgz` na javnom GitHub Releaseu oznake `test-fakes-v2.0.0`, pa instalacija ne traži token (GitHub Packages ga traži i za javne pakete):
 
 ```sh
-pnpm add -D https://github.com/ductura/server/releases/download/test-fakes-v2.0.0/ductura-test-fakes-2.0.0.tgz
+pnpm add -D https://github.com/ductura/Institution_server/releases/download/test-fakes-v2.0.0/ductura-test-fakes-2.0.0.tgz
 ```
 
 Tarball je isti onaj koji je `publish.yml` provjerio i objavio; njegov sha256 je u bilješci izdanja.

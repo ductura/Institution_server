@@ -80,7 +80,7 @@ const PGLITE_RE =
   /^@electric-sql\/pglite(?:$|\/)|(?:^|\/)node_modules\/(?:\.pnpm\/)?@electric-sql[/+]pglite/iu;
 const PGLITE_ALLOWED_RE = /^(?:server\/database|tests\/db|packages\/test-fakes\/pglite)\//u;
 // Package self-reference and subpath imports would bypass the relative-path checks.
-const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
+const ALIAS_RE = /^(?:#|@ductura\/institution-server(?:$|\/))/iu;
 // A URL scheme other than node: (data:, file:, http:) loads code past the path checks.
 const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
 // An absolute path ("/app/server/x", "C:\\x", "\\\\host") names a file past the

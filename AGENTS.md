@@ -1,4 +1,4 @@
-# ductura/server: upute za AI coding agente
+# ductura/Institution_server: upute za AI coding agente
 
 Ulazna točka za Codex i druge agente koji automatski čitaju `AGENTS.md`. Tanki adapter: ne uvodi nova pravila.
 

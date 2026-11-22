@@ -20,11 +20,14 @@ import {
   createHealthRoute,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
+  createInternalInstitutionRoutes,
   createLayers,
+  createMeRouteFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
+  INTERNAL_PATH_PREFIX,
   type Running,
   routesOf,
   startServer,
@@ -109,6 +112,13 @@ const SESSION_ROUTES = {
     body: () => ({ locale: "en" }),
     live: 200,
   },
+  // Ductus#2028 c.6993786629 §3.3: the signed-in account; it only reads.
+  "profile.me.get": {
+    method: "GET",
+    path: "/api/v1/me",
+    body: () => undefined,
+    live: 200,
+  },
   // DAN-851-2d2a: the problem report. The body is its JCS form (keys in
   // order), which the service asks for; a live report is 201 and stored.
   "support.problem-report.post": {
@@ -181,6 +191,8 @@ const FACTORIES = [
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
+  "createMeRouteFor",
+  "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
 ];
@@ -197,6 +209,8 @@ const MOUNTED = [
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+  createMeRouteFor(databases.main),
+  ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),
 ];
@@ -350,7 +364,17 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     const list = /\broutes:\s*\[([\s\S]*?)\n\s*\],/u.exec(entry)?.[1] ?? "";
     const code = list.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
     expect([...code.matchAll(/\b(create\w+|routesOf)\(/gu)].map((m) => m[1])).toEqual(FACTORIES);
-    const with401 = MOUNTED.filter((r) => r.contract.errors.some((e) => e.status === 401));
+    // The server-to-server routes of Aplication_server read no cookie: their
+    // 401 is a missing or wrong bearer token, so an old cookie cannot reach them.
+    const internal = (r: (typeof MOUNTED)[number]) =>
+      r.contract.path.startsWith(INTERNAL_PATH_PREFIX);
+    expect(MOUNTED.filter(internal).map((r) => r.contract.id)).toEqual([
+      "internal.institutions.post",
+      "internal.institution.get",
+    ]);
+    const with401 = MOUNTED.filter(
+      (r) => !internal(r) && r.contract.errors.some((e) => e.status === 401),
+    );
     expect(with401.map((r) => r.contract.id).sort()).toEqual([...SESSION_IDS].sort());
   });
 
@@ -388,7 +412,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       const body: unknown = await answer.json();
       const old =
         id === "settings.values.put" ||
-        id.startsWith("profile.interface-locale.") ||
+        id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
         id.startsWith("auth.webauthn-")

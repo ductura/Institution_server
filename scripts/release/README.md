@@ -1,9 +1,9 @@
 # scripts/release
 
-Priprema i provjera paketa za objavu na GitHub Packages (U10-a, DAN-742; [plan](../../docs/PLAN.md) §5 U10 i §7 „Izdanja”). Objavu iz Actionsa radi `.github/workflows/publish.yml` (U10-b); skripte ove mape same ništa ne objavljuju.
+Priprema i provjera paketa za objavu na GitHub Packages (U10-a, DAN-742; [plan](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka) §5 U10 i §7 „Izdanja”). Objavu iz Actionsa radi `.github/workflows/publish.yml` (U10-b); skripte ove mape same ništa ne objavljuju.
 
 - `manifest.ts`: što je svaki paket (`@ductura/contracts`, `@ductura/test-fakes`): ulazi, podatkovne datoteke, objavljene ovisnosti i **točan popis datoteka** tarballa.
-- `stage.ts`: `stagePackage` prevodi ulaze `tsc`-om (JS i `.d.ts`, `rewriteRelativeImportExtensions`) u `dist/release/<paket>/`, kopira podatkovne datoteke i piše objavni `package.json` (bez `private`, `publishConfig.registry` GitHub Packages, `repository` ductura/server). `manifestErrors` odbija manifest koji nije za objavu: jedna stroga TypeBox shema cijelog manifesta (nijedno drugo polje; `publishConfig` je samo registar), zatim ime, `/pglite`, ciljevi `exports` i ovisnosti.
+- `stage.ts`: `stagePackage` prevodi ulaze `tsc`-om (JS i `.d.ts`, `rewriteRelativeImportExtensions`) u `dist/release/<paket>/`, kopira podatkovne datoteke i piše objavni `package.json` (bez `private`, `publishConfig.registry` GitHub Packages, `repository` ductura/Institution_server). `manifestErrors` odbija manifest koji nije za objavu: jedna stroga TypeBox shema cijelog manifesta (nijedno drugo polje; `publishConfig` je samo registar), zatim ime, `/pglite`, ciljevi `exports` i ovisnosti.
 - `pack.ts`: `npm pack --dry-run --json`; jedna TypeBox shema (`PackOutputSchema`) provjerava cijeli izlaz prije upotrebe.
 - `secrets.ts`: `scanSecrets` odbija privatne ključeve, tokene i URL baze s lozinkom.
 - `check.ts`: `pnpm release:check` priprema oba paketa i pada ako tarball nije točno popis, manifest nije ispravan, postoji nešto nalik tajni ili se `test-fakes` učita uz `NODE_ENV=production`. `pnpm release:stage` samo priprema.

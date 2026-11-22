@@ -1,0 +1,120 @@
+// GET /api/v1/me (contract Ductus#2028 c.6993786629 §3.3) on a real server
+// with the real pipeline, over a fake reader: every vector of the contract,
+// cookie included, and no read without a well-formed session cookie. All
+// values are invented.
+import { readFileSync } from "node:fs";
+import { request as httpRequest } from "node:http";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type { MyAccountResult } from "../database/index.ts";
+
+import { createDatabases } from "./databases.ts";
+import { createLayers } from "./pipeline.ts";
+import { createMeRoute } from "./profile-me.ts";
+import { type Running, startServer } from "./start.ts";
+
+type Vector = {
+  name: string;
+  request: { headers?: Record<string, string> };
+  response: { status: number; body: Record<string, unknown> };
+};
+const VECTORS = (
+  JSON.parse(
+    readFileSync(new URL("../contracts/vectors/profile.me.get.json", import.meta.url), "utf8"),
+  ) as { vectors: Vector[] }
+).vectors;
+const vector = (name: string) => VECTORS.find((v) => v.name === name)!;
+
+let server: Running | undefined;
+const reads: string[] = [];
+let answer: () => Promise<MyAccountResult>;
+
+async function start(next: () => Promise<MyAccountResult>) {
+  answer = next;
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: "https://ductura.example.invalid" }),
+    databases: createDatabases(),
+    routes: [
+      createMeRoute(async (token) => {
+        reads.push(token);
+        return answer();
+      }),
+    ],
+  });
+}
+afterEach(async () => {
+  reads.length = 0;
+  vi.restoreAllMocks();
+  await server?.close();
+  server = undefined;
+});
+
+function get(headers: Record<string, string> = {}): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      { host: "127.0.0.1", port: server!.port, method: "GET", path: "/api/v1/me", headers },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => (text += chunk));
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: JSON.parse(text) }));
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+const tokenOf = (v: Vector) => v.request.headers!.cookie!.slice("__Host-ductus_session=".length);
+const withoutRequestId = (body: unknown) =>
+  Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).filter(([k]) => k !== "requestId"),
+  );
+
+describe("GET /api/v1/me", () => {
+  it.each(["student", "teacher-without-name"])("answers the %s vector", async (name) => {
+    const v = vector(name);
+    await start(async () => ({ ok: true, value: v.response.body as never }));
+    const got = await get(v.request.headers);
+    expect(got).toEqual({ status: 200, body: v.response.body });
+    expect(reads).toEqual([tokenOf(v)]);
+  });
+
+  it("401 without a cookie, before any read", async () => {
+    await start(async () => ({ ok: false, reason: "unauthenticated" }));
+    const got = await get();
+    expect([got.status, withoutRequestId(got.body)]).toEqual([
+      401,
+      vector("unauthorized").response.body,
+    ]);
+    expect(reads).toEqual([]);
+  });
+
+  it("401 when the database finds no live session behind the cookie", async () => {
+    const v = vector("student");
+    await start(async () => ({ ok: false, reason: "unauthenticated" }));
+    const got = await get(v.request.headers);
+    expect(got.status).toBe(401);
+    expect(reads).toEqual([tokenOf(v)]);
+  });
+
+  it("403 for a cross-site request, before any read", async () => {
+    const v = vector("forbidden");
+    await start(async () => ({ ok: false, reason: "unauthenticated" }));
+    const got = await get(v.request.headers);
+    expect([got.status, withoutRequestId(got.body)]).toEqual([403, v.response.body]);
+    expect(reads).toEqual([]);
+  });
+
+  it("503 when the read fails", async () => {
+    const v = vector("unavailable");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await start(async () => {
+      throw new Error("down");
+    });
+    const got = await get(v.request.headers);
+    expect([got.status, withoutRequestId(got.body)]).toEqual([503, v.response.body]);
+  });
+});

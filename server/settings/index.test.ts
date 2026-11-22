@@ -13,6 +13,8 @@ describe("server/settings public interface", () => {
       "SETTINGS_SCHEMAS",
       "institutionsProblems",
       "isNonProductionBuild",
+      "kmsProblems",
+      "kmsSettings",
       "loadInstitutions",
       "metricsIntervalMs",
       "metricsIntervalProblems",

@@ -21,6 +21,8 @@ import {
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
+  createInternalInstitutionRoutes,
+  createMeRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createWebAuthnRoutesFor,
@@ -40,6 +42,7 @@ import {
 } from "./http/index.ts";
 import {
   institutionsProblems,
+  kmsProblems,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -49,7 +52,8 @@ import {
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
 //    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
 //    institutions file built into the server must pass its schema (DAN-911).
-//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
+//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1). Any
+//    DUCTUS_KMS_* variable asks for all three, usable (DAN-963).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const problems = [
   ...environmentProblems(process.env),
@@ -59,6 +63,7 @@ const problems = [
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
   ...testModeProblems(process.env),
+  ...kmsProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -136,6 +141,11 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+      // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
+      createMeRouteFor(databases.main),
+      // Provisioning of an institution instance by Aplication_server, server
+      // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
+      ...createInternalInstitutionRoutes({ env: process.env }),
       // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),

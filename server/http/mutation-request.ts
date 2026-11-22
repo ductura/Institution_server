@@ -82,6 +82,9 @@ const PROVIDER_ROUTES: ReadonlySet<string> = new Set(
   ),
 );
 
+/** Every path under it is a server-to-server route (internal-institutions.ts). */
+export const INTERNAL_PATH_PREFIX = "/internal/v1/";
+
 /** Step 7 of the pipeline; null refuses every state-changing request. */
 export function originLayer(
   expectedOrigin: string | null,
@@ -94,6 +97,10 @@ export function originLayer(
     if (PROVIDER_ROUTES.has(`${request.method ?? ""} ${routePath(request.url) ?? ""}`)) {
       return "next";
     }
+    // Server-to-server routes of Aplication_server (internal-institutions.ts,
+    // Ductus#2028 c.6993786629 §2): no Origin is sent and no cookie is read;
+    // the bearer token is the proof, checked by the route.
+    if (routePath(request.url)?.startsWith(INTERNAL_PATH_PREFIX) === true) return "next";
     const check = checkMutationRequest(request, expectedOrigin);
     if (check.ok) return "next";
     // A navigation route's contract gives its own page (vector "forbidden",

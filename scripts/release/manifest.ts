@@ -4,7 +4,7 @@
 // `npm pack --dry-run --json` of the staged package.
 
 export const REGISTRY = "https://npm.pkg.github.com";
-export const REPOSITORY_URL = "git+https://github.com/ductura/server.git";
+export const REPOSITORY_URL = "git+https://github.com/ductura/Institution_server.git";
 
 export type PackageSpec = {
   readonly name: string;
@@ -92,7 +92,9 @@ export const TEST_FAKES: PackageSpec = {
     ...js(`${FAKES}/clock/clock`, `${FAKES}/fido2/authenticator`, `${FAKES}/services/services`),
     ...js(`${FAKES}/hostile-inputs/hostile-inputs`),
     ...js(
-      ...["accounts", "guard", "modes", "redirect-uris", "server"].map((f) => `${FAKES}/oidc/${f}`),
+      ...["accounts", "guard", "modes", "redirect-uris", "server", "simulated-accounts"].map(
+        (f) => `${FAKES}/oidc/${f}`,
+      ),
     ),
   ].sort(),
 };

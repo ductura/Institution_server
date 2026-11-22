@@ -138,7 +138,7 @@ describe("text changes", () => {
   it("are the four texts of the decision in both languages and the English noun copy", () => {
     const decision =
       "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023";
-    const finding = "https://github.com/ductura/server/pull/38#issuecomment-6889516654";
+    const finding = "https://github.com/ductura/Institution_server/pull/38#issuecomment-6889516654";
     const paths = (language: "hr" | "en", reason: string) =>
       SOURCE_TEXT_CHANGES.filter((c) => c.language === language && c.decision === reason)
         .map((c) => c.path)

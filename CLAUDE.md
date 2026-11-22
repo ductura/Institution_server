@@ -1,4 +1,4 @@
-# ductura/server: pravila za AI agente
+# ductura/Institution_server: pravila za AI agente
 
 Ovaj dokument je tanki adapter. Ne uvodi nova pravila: pravila rada su ista kao u repozitoriju Ductus, a razlikuju se samo putanje (tablica niže). U sukobu vrijedi izvorni dokument u Ductusu, a ovaj se ispravlja.
 
@@ -34,7 +34,7 @@ Izvor: Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/m
 
 ## Putanje: Ductus → ovdje
 
-| U Ductusu                                                                       | U ductura/server                                                                                                                                                                                          |
+| U Ductusu                                                                       | U ductura/Institution_server                                                                                                                                                                              |
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `db/migrations/`                                                                | `db/migrations/` (još ne postoji)                                                                                                                                                                         |
 | `db/tests/`                                                                     | `db/tests/` (pgTAP; još ne postoji)                                                                                                                                                                       |
