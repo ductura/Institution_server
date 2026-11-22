@@ -57,6 +57,7 @@ import {
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createRevisionRequestsRouteFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createNotificationsRoutesFor,
@@ -528,6 +529,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createCollaborationCommentsRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createRevisionRequestsRouteFor(databases.main)",
+    ids: ["collaboration.revision-requests.post"],
+    routes: () => [createRevisionRequestsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "...createConsultationRecordRoutesFor(databases.main)",
     ids: [
       "work.consultation-records.get",
@@ -776,6 +782,7 @@ describe("CONTRACT_ONLY", () => {
         "live.document.get",
         "live.document.put",
         "collaboration.comments.post",
+        "collaboration.revision-requests.post",
         "institution.acknowledgment.post",
         "public.verification.post",
         ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
@@ -870,6 +877,7 @@ describe("routes the entry point mounts itself", () => {
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
+      "collaboration.revision-requests.post",
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",

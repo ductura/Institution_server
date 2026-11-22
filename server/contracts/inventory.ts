@@ -607,7 +607,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "collaboration.revision-requests.post",
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
