@@ -398,6 +398,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "work.interview.get": { before: [ADD_QUESTION], request: { path: INTERVIEW, as: "nastavnik" } },
+  "work.interview-pdf.get": {
+    before: [ADD_QUESTION, INVITE],
+    request: { path: `${INTERVIEW}/pdf`, as: "nastavnik" },
+  },
   "work.interview-questions.post": { request: ADD_QUESTION },
   "work.interview-questions.delete": {
     before: [ADD_QUESTION],

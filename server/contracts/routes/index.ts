@@ -92,6 +92,7 @@ export {
 } from "./institution-config.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { WORK_INTERVIEW_DRAFT_DAYS, workInterviewRoutes } from "./work-interview.ts";
+export { workInterviewPdfRoutes } from "./work-interview-pdf.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
 export { StudentWork, studentWorkRoutes } from "./student-work.ts";

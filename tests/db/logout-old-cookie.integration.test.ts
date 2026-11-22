@@ -458,6 +458,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  "work.interview-pdf.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/interview/pdf`,
+    body: () => undefined,
+    live: 403,
+  },
   "work.interview-questions.post": {
     path: `/api/v1/works/${randomUUID()}/interview/questions`,
     body: () => ({ questionText: "Kako je nastao ovaj odlomak?" }),
