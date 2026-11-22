@@ -35597,10 +35597,6 @@
                               {
                                 "const": "deadline_reminder",
                                 "type": "string"
-                              },
-                              {
-                                "const": "work_returned",
-                                "type": "string"
                               }
                             ]
                           },
@@ -97181,7 +97177,7 @@
     "/api/v1/works/{documentId}/return-for-revision": {
       "post": {
         "operationId": "work.return-for-revision.post",
-        "summary": "The teacher of the work's assignment (its course teacher or its mentor) returns the whole submitted work to the student for revision, with a required comment and an optional new revision due date (a reminder, it never blocks). The submission stays recorded but is no longer the live one: the student edits and submits again as the next round, and is notified. Only a live submission can be returned (409 otherwise). The student owner gets 403; everybody else who is not its teacher, and an unknown work, 404.",
+        "summary": "The teacher of the work's assignment (its course teacher or its mentor) returns the whole submitted work to the student for revision, with a required comment and an optional new revision due date (a reminder, it never blocks). The submission stays recorded but is no longer the live one: the student edits and submits again as the next round. Only a live submission can be returned (409 otherwise). The student owner gets 403; everybody else who is not its teacher, and an unknown work, 404.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/works/[documentId]/return-for-revision/route.ts",
         "parameters": [

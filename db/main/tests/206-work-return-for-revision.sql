@@ -37,20 +37,18 @@ SELECT bag_eq(
        FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_identity', 'ductus_evidence',
                          'ductus_auth', 'ductus_test_stranger', 'public']) r
       CROSS JOIN unnest(ARRAY['app.return_work_for_revision(text,text,timestamptz)',
-                              'app.work_return_context(uuid,uuid)', 'app.notify_work_returned(uuid,uuid,uuid)']) f
+                              'app.work_return_context(uuid,uuid)']) f
       WHERE has_function_privilege(r, f, 'EXECUTE')
         AND NOT (r = 'ductus_identity' AND f <> 'app.return_work_for_revision(text,text,timestamptz)'
-                 AND f <> 'app.work_return_context(uuid,uuid)' AND f <> 'app.notify_work_returned(uuid,uuid,uuid)') $$,
+                 AND f <> 'app.work_return_context(uuid,uuid)') $$,
   ARRAY['ductus_app app.return_work_for_revision(text,text,timestamptz)',
         'ductus_evidence app.return_work_for_revision(text,text,timestamptz)',
-        'ductus_evidence app.work_return_context(uuid,uuid)', 'ductus_evidence app.notify_work_returned(uuid,uuid,uuid)',
-        'ductus_identity app.work_return_context(uuid,uuid)', 'ductus_identity app.notify_work_returned(uuid,uuid,uuid)'],
+        'ductus_evidence app.work_return_context(uuid,uuid)', 'ductus_identity app.work_return_context(uuid,uuid)'],
   'who executes what, besides the owners');
 SELECT is_empty(
   $$ SELECT oid::regprocedure::text FROM pg_proc
       WHERE oid IN ('app.return_work_for_revision(text,text,timestamptz)'::regprocedure,
-                    'app.work_return_context(uuid,uuid)'::regprocedure,
-                    'app.notify_work_returned(uuid,uuid,uuid)'::regprocedure)
+                    'app.work_return_context(uuid,uuid)'::regprocedure)
         AND (NOT prosecdef OR NOT 'search_path=""' = ANY (proconfig)) $$,
   'every function is SECURITY DEFINER with an empty search_path');
 SELECT is(pg_get_function_arguments('app.return_work_for_revision(text,text,timestamptz)'::regprocedure),
@@ -96,11 +94,6 @@ SELECT is((SELECT bool_and(accepts_evidence)::text FROM evidence.package WHERE d
   'the packages accept evidence again: she edits');
 SELECT is(pg_temp.back('vesna'), 'not_submitted', 'returning twice: the submission is no longer live');
 SELECT is((SELECT count(*)::int FROM evidence.submission_return), 1, 'still one record');
-SELECT is((SELECT concat_ws(' ', count(*), min(kind), bool_and(target_id = pg_temp.id('z1')))
-             FROM institution.notification WHERE recipient_id = pg_temp.id('ana') AND kind = 'work_returned'),
-  '1 work_returned t', 'Ana is notified once');
-SELECT is((SELECT count(*)::int FROM institution.notification
-            WHERE kind = 'work_returned' AND recipient_id <> pg_temp.id('ana')), 0, 'nobody else is');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*)::text FROM evidence.submission_return $$), '1',
   'Ana reads her own return');
 SELECT is(pg_temp.ask('dora', $$ SELECT count(*)::text FROM evidence.submission_return $$), '0',

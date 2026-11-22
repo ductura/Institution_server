@@ -24,39 +24,18 @@
 --   evidence.submission_return          the record, append-only
 --   app.work_return_context             the bridge for the evidence role, which does
 --                                       not read schema institution
---   app.notify_work_returned            the notification of the student (kind work_returned)
 --   app.return_work_for_revision        the one RPC
 --
 -- Outcomes in check order: unauthorized, invalid, not_found, forbidden, not_submitted
 -- (no live submission: none yet, withdrawn or already returned), returned.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
-GRANT CREATE ON SCHEMA institution TO ductus_identity;
 GRANT CREATE ON SCHEMA app TO ductus_identity, ductus_evidence;
 GRANT CREATE ON SCHEMA evidence TO ductus_evidence;
 GRANT ductus_evidence TO ductus_identity WITH INHERIT FALSE, SET TRUE;
 
--- 1. The notification kind and the bridge (identity role).
+-- 1. The bridge (identity role).
 SET LOCAL ROLE ductus_identity;
--- squawk-ignore ban-drop-constraint
-ALTER TABLE institution.notification DROP CONSTRAINT notification_kind_check, DROP CONSTRAINT notification_check;
-ALTER TABLE institution.notification ADD CONSTRAINT notification_kind_check
-  CHECK (kind IN ('comment_posted', 'assignment_version', 'submission_recorded', 'course_handover',
-                  'deadline_reminder', 'work_returned')) NOT VALID,
-  ADD CONSTRAINT notification_check CHECK (
-    left(event_key, length(kind) + 1) = kind || ':'
-    AND substring(event_key FROM length(kind) + 2 FOR 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    AND CASE kind
-      WHEN 'assignment_version' THEN substring(event_key FROM length(kind) + 38) ~ '^:[1-9][0-9]{0,9}$'
-      WHEN 'deadline_reminder' THEN substring(event_key FROM length(kind) + 38) ~ '^:[0-9]{20}$'
-      ELSE length(event_key) = length(kind) + 37
-    END
-  ) NOT VALID;
--- squawk-ignore constraint-missing-not-valid
-ALTER TABLE institution.notification VALIDATE CONSTRAINT notification_kind_check;
--- squawk-ignore constraint-missing-not-valid
-ALTER TABLE institution.notification VALIDATE CONSTRAINT notification_check;
-
 -- The caller's relation to the work: teacher (of the assignment), owner (the student
 -- herself) or none; and whether the named person is a student of the assignment.
 -- Only the actor of the session is asked; nothing else is read out.
@@ -74,21 +53,8 @@ AS $$
    WHERE a.id = p_assignment_id
 $$;
 
--- The student of a returned work is told once per return.
-CREATE FUNCTION app.notify_work_returned(p_return uuid, p_student uuid, p_assignment uuid)
-RETURNS void LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = ''
-AS $$
-  INSERT INTO institution.notification (institution_id, recipient_id, kind, event_key, target_id)
-  SELECT a.institution_id, p_student, 'work_returned', 'work_returned:' || p_return, a.id
-    FROM institution.assignment a
-   WHERE a.id = p_assignment
-     AND institution.work_relation(p_student, a.id) = 'student'
-  ON CONFLICT (recipient_id, event_key) DO NOTHING
-$$;
 REVOKE ALL ON FUNCTION app.work_return_context(uuid, uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION app.notify_work_returned(uuid, uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app.work_return_context(uuid, uuid) TO ductus_evidence;
-GRANT EXECUTE ON FUNCTION app.notify_work_returned(uuid, uuid, uuid) TO ductus_evidence;
 
 -- 2. The record and the RPC (evidence role).
 SET LOCAL ROLE ductus_evidence;
@@ -246,7 +212,6 @@ BEGIN
   UPDATE evidence.package k SET accepts_evidence = true
    WHERE k.document_id = v_request.document_id AND k.institution_id = v_request.institution_id
      AND NOT k.accepts_evidence;
-  PERFORM app.notify_work_returned(v_id, v_submission.principal_id, v_submission.assignment_id);
   RETURN QUERY SELECT 'returned'::text, v_id, v_submission.assignment_id, v_submission.principal_id,
     v_request.attempt, p_comment, p_revision_due_at, v_at;
 END
@@ -256,7 +221,6 @@ REVOKE ALL ON FUNCTION app.return_work_for_revision(text, text, timestamptz) FRO
 GRANT EXECUTE ON FUNCTION app.return_work_for_revision(text, text, timestamptz) TO ductus_app;
 
 SET LOCAL ROLE ductus_migrator;
-REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
 REVOKE CREATE ON SCHEMA app FROM ductus_identity, ductus_evidence;
 REVOKE CREATE ON SCHEMA evidence FROM ductus_evidence;
 REVOKE ductus_evidence FROM ductus_identity;

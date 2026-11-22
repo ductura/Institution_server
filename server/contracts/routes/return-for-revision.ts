@@ -50,7 +50,7 @@ export const workReturnForRevisionPost = defineRoute({
   inventory: "app/api/works/[documentId]/return-for-revision/route.ts",
   access: "course_teacher",
   summary:
-    "The teacher of the work's assignment (its course teacher or its mentor) returns the whole submitted work to the student for revision, with a required comment and an optional new revision due date (a reminder, it never blocks). The submission stays recorded but is no longer the live one: the student edits and submits again as the next round, and is notified. Only a live submission can be returned (409 otherwise). The student owner gets 403; everybody else who is not its teacher, and an unknown work, 404.",
+    "The teacher of the work's assignment (its course teacher or its mentor) returns the whole submitted work to the student for revision, with a required comment and an optional new revision due date (a reminder, it never blocks). The submission stays recorded but is no longer the live one: the student edits and submits again as the next round. Only a live submission can be returned (409 otherwise). The student owner gets 403; everybody else who is not its teacher, and an unknown work, 404.",
   request: {
     params: closed({ documentId: DocumentId }),
     contentType: "application/json",

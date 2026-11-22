@@ -488,7 +488,7 @@ export type Operations = {
     params: undefined;
     query: { "before"?: string };
     body: undefined;
-    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "assignment_version" | "course_handover" | "comment_posted" | "submission_recorded" | "deadline_reminder" | "work_returned"; "targetId": string; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "assignment_version" | "course_handover" | "comment_posted" | "submission_recorded" | "deadline_reminder"; "targetId": string; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "notifications.read.post": {

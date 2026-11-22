@@ -17,7 +17,6 @@ const Notification = closed({
     Type.Literal("comment_posted"),
     Type.Literal("submission_recorded"),
     Type.Literal("deadline_reminder"),
-    Type.Literal("work_returned"),
   ]),
   targetId: NotificationId,
   createdAt: Instant,
