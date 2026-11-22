@@ -37,6 +37,8 @@ import {
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
+  INTERNAL_INSTITUTION_GET,
+  INTERNAL_INSTITUTIONS_POST,
   operatorPolicyLayer,
   type OperatorList,
   type Route,
@@ -632,7 +634,11 @@ describe("answerable, for every route of the inventory", () => {
     const held = ENTRY_TEXT.replace("...routesOf(AREAS),", "...routesOf(AREAS),\n      ready,");
     expect(entryTable(held).rest).not.toMatch(/^[\s,.]*$/u);
     expect(new Set(ENTRY_IDS).size).toBe(ENTRY_IDS.length);
-    for (const id of ENTRY_IDS) expect(ROUTES.some((r) => r.id === id)).toBe(true);
+    // The provisioning routes are server to server and stay out of the public
+    // contract (server/http/internal-institutions.ts); every other one is in it.
+    const internal = [INTERNAL_INSTITUTIONS_POST.id, INTERNAL_INSTITUTION_GET.id];
+    for (const id of internal) expect(ENTRY_IDS).toContain(id);
+    for (const id of ENTRY_IDS) expect(ROUTES.some((r) => r.id === id), id).toBe(!internal.includes(id));
     for (const path of ["/api/v1/ready", "/api/v1/status"]) {
       expect(ROUTES.some((r) => r.path === path)).toBe(true);
       expect((await answerable("GET", path)).size, path).toBe(0);
