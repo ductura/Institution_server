@@ -29,7 +29,10 @@ const SAME_ORIGIN = { "sec-fetch-site": "same-origin", origin: APP };
 const CLEARED = "__Host-ductus_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
 
 let idp: ReturnType<typeof createTestIdp>;
-let deps: AuthDeps & { closeAllSessions: ReturnType<typeof vi.fn> };
+let deps: AuthDeps & {
+  closeSession: ReturnType<typeof vi.fn>;
+  closeAllSessions: ReturnType<typeof vi.fn>;
+};
 let errors: ReturnType<typeof vi.spyOn>;
 let events: string[];
 
