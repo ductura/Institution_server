@@ -43,7 +43,6 @@ export type AuthDeps = {
 
 /** The pending login attempt: state, nonce, PKCE verifier and where to go after. */
 export const LOGIN_COOKIE_NAME = "__Host-ductus_login";
-const LOGIN_COOKIE_MAX_AGE = 600;
 const RANDOM_VALUE = /^[A-Za-z0-9_-]{43}$/;
 /** The longest attempt cookie value finishLogin reads. */
 const MAX_ATTEMPT_CHARS = 1024;
@@ -61,6 +60,11 @@ export const LOGIN_PATH = "/api/v1/auth/login";
 export const SIGNED_OUT_COOKIE_NAME = "__Secure-ductus_signed_out";
 const SIGNED_OUT_VALUE = "1";
 const SIGNED_OUT_COOKIE_MAX_AGE = 300;
+/**
+ * The attempt lives no longer than the sign-out mark (INT-20f): an attempt
+ * started before a sign-out must not outlast the mark that refuses it.
+ */
+const LOGIN_COOKIE_MAX_AGE = SIGNED_OUT_COOKIE_MAX_AGE;
 const AUTH_ROUTES_PATH = "/api/v1/auth";
 
 const NO_STORE = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
@@ -80,12 +84,27 @@ export const signedOutSetCookie = () =>
 /** The Set-Cookie that drops the sign-out mark. */
 export const clearedSignedOutSetCookie = () => signedOutCookie("", "Max-Age=0");
 
-function readCookie(request: Request, name: string): string | undefined {
+/** Every value the Cookie header carries under this name, in order. */
+function readCookies(request: Request, name: string): string[] {
+  const values: string[] = [];
   for (const part of (request.headers.get("cookie") ?? "").split(";")) {
     const at = part.indexOf("=");
-    if (at > 0 && part.slice(0, at).trim() === name) return part.slice(at + 1).trim();
+    if (at > 0 && part.slice(0, at).trim() === name) values.push(part.slice(at + 1).trim());
   }
-  return undefined;
+  return values;
+}
+
+function readCookie(request: Request, name: string): string | undefined {
+  return readCookies(request, name)[0];
+}
+
+/**
+ * The sign-out mark counts wherever it appears in the Cookie header
+ * (INT-20f), not only first: another cookie of the same name sent before it
+ * cannot hide it.
+ */
+function hasSignedOutMark(request: Request): boolean {
+  return readCookies(request, SIGNED_OUT_COOKIE_NAME).includes(SIGNED_OUT_VALUE);
 }
 
 type Attempt = LoginChecks & {
@@ -204,7 +223,7 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   // mark stays until a login succeeds, so an abandoned attempt does not
   // spend it. `max_age=0` (INT-20d) makes the provider report when the
   // person signed in, and the attempt keeps its start to compare (finishLogin).
-  const signedOut = readCookie(request, SIGNED_OUT_COOKIE_NAME) === SIGNED_OUT_VALUE;
+  const signedOut = hasSignedOutMark(request);
   const fresh = signedOut ? { freshSince: Math.floor(Date.now() / 1000) } : {};
   let location: URL;
   try {
@@ -244,7 +263,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   // While the sign-out mark is there, only an attempt started with it counts
   // (INT-20e): an attempt without its start is refused before the provider
   // is asked, and the mark stays for the next attempt.
-  const signedOut = readCookie(request, SIGNED_OUT_COOKIE_NAME) === SIGNED_OUT_VALUE;
+  const signedOut = hasSignedOutMark(request);
   if (signedOut && attempt.freshSince === undefined) {
     logFailure("callback", "attempt_without_start");
     return failurePage(400, cleared);
@@ -306,8 +325,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     sessionSetCookie(token, opened.expires),
     // The sign-out mark has done its work once an attempt started with it
     // succeeded (INT-20e); a failed callback keeps it for the next attempt.
-    ...(attempt.freshSince !== undefined &&
-    readCookie(request, SIGNED_OUT_COOKIE_NAME) !== undefined
+    ...(attempt.freshSince !== undefined && readCookies(request, SIGNED_OUT_COOKIE_NAME).length > 0
       ? [clearedSignedOutSetCookie()]
       : []),
   ]);
