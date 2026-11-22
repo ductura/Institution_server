@@ -1,0 +1,160 @@
+{
+  "route": "teacher.source-guidance.get",
+  "vectors": [
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "dokument-izmisljeni-a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-0000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "canWrite": true,
+          "sources": [],
+          "proofRequests": [],
+          "literatureSeenAt": null
+        }
+      }
+    },
+    {
+      "name": "with-sources-reader",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "dokument-izmisljeni-a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-0000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "canWrite": false,
+          "sources": [
+            {
+              "id": "00000000-0000-4000-8000-00000000c5a1",
+              "record": {
+                "id": "00000000-0000-4000-8000-00000000c5a1",
+                "type": "book",
+                "authors": [
+                  {
+                    "kind": "person",
+                    "family": "Horvat",
+                    "given": "Ivan"
+                  }
+                ],
+                "year": 2020,
+                "title": "Izmišljena knjiga o izvorima",
+                "place": "Zagreb",
+                "publisher": "Izmišljeni izdavač"
+              },
+              "doi": "10.1000/izmisljeno-1",
+              "isbn": null,
+              "undated": false,
+              "requirement": "required",
+              "createdAt": "2026-11-30T10:00:00.000Z",
+              "updatedAt": "2026-11-30T10:00:00.000Z",
+              "proofCount": 1
+            }
+          ],
+          "proofRequests": [
+            {
+              "id": "00000000-0000-4000-8000-00000000e5a1",
+              "sourceId": "00000000-0000-4000-8000-00000000c5a1",
+              "instruction": "Priložite stranicu 14 iz izvora.",
+              "dueAt": "2026-12-07T10:00:00.000Z",
+              "createdAt": "2026-11-30T10:00:00.000Z",
+              "closedAt": null
+            }
+          ],
+          "literatureSeenAt": "2026-12-07T10:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "dokument-izmisljeni-a1"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000016050001"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "dokument-izmisljeni-a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-0000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000016050002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "dokument-izmisljeni-a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-pokvaren-00000000000000000"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000016050003"
+        }
+      }
+    }
+  ]
+}

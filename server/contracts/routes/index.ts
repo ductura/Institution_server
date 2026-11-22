@@ -61,6 +61,7 @@ export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
+export { teacherSourcesRoutes } from "./teacher-sources.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
