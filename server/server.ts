@@ -90,6 +90,7 @@ import {
   createProblemReportsRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createRevisionRequestsRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
@@ -265,6 +266,8 @@ async function main(): Promise<void> {
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
       createCollaborationCommentsRouteFor(databases.main),
+      // SRV-2006: revision requests (DAN-314), the teacher asks for a rework of a passage.
+      createRevisionRequestsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
       ...createNotificationsRoutesFor(databases.main, reminderCooldown),

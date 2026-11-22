@@ -211,6 +211,37 @@ export const workWorkLanguagePost = defineRoute({
   errors: [...LANGUAGE_ERRORS],
 });
 
+export const workWorkLanguageGet = defineRoute({
+  id: "institution.work-work-language.get",
+  method: "GET",
+  path: "/api/v1/institution/assignments/{assignmentId}/works/{documentId}/work-language",
+  inventory:
+    "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts",
+  access: "course_teacher",
+  summary:
+    "What the page for one work's language shows a teacher: the work's title, the language of its assignment and the work's own exception (null when it follows the assignment). Keyed by the document id so the student's id never reaches the browser. A document that is not a work of this teacher's assignment, another teacher's or another institution's assignment and a missing one all read alike (403); a malformed assignment or document id is 422.",
+  request: {
+    params: closed({ assignmentId: Uuid, documentId: WorkId }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the work's title, its assignment's language and its exception",
+      body: closed({
+        title: Type.String({ minLength: 1 }),
+        assignmentLanguage: Language,
+        exception: Type.Union([Language, Type.Null()]),
+      }),
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(403, "forbidden"),
+    error(422, "invalid_input"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const enrollmentRoutes = [
   enrollmentsPost,
   studentEnrollmentsPost,
@@ -218,4 +249,5 @@ export const enrollmentRoutes = [
   workLanguagePost,
   studentWorkLanguagePost,
   workWorkLanguagePost,
+  workWorkLanguageGet,
 ] as const;

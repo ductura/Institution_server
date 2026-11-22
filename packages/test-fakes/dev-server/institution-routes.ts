@@ -282,6 +282,21 @@ export const INSTITUTION_HANDLERS: Handlers = {
     else assignment.studentLanguage.set(params.studentId, body.language);
     return { status: 200, body: { language: body.language ?? assignment.language } };
   },
+  "institution.work-work-language.get": ({ state, account, params }) => {
+    const assignment = taughtAssignment(state, account, params.assignmentId);
+    const work = state.works.find(
+      (w) => w.documentId === params.documentId && w.assignmentId === assignment?.id,
+    );
+    if (assignment === null || work === undefined) return { error: "forbidden" };
+    return {
+      status: 200,
+      body: {
+        title: assignment.content.title,
+        assignmentLanguage: assignment.language,
+        exception: assignment.studentLanguage.get(work.studentId) ?? null,
+      },
+    };
+  },
   "institution.work-work-language.post": ({ state, account, params, body }) => {
     const assignment = taughtAssignment(state, account, params.assignmentId);
     const work = state.works.find(

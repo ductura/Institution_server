@@ -67,6 +67,8 @@ const CODE_REFUSALS: Refusals = new Map<string, Refusal>([
   ["invalid", INVALID],
   ["invalid_input", INVALID],
 ]);
+// The read has no stale version and no body to refuse: who may, and nothing else.
+const LANGUAGE_READ_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBIDDEN]);
 const REVOKE_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBIDDEN]);
 // The work language RPCs (Ductus work-language.ts refusalOf): ZD409 is a stale
 // version or a work already asked to be submitted, ZD422 a refused input.
@@ -195,6 +197,45 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
     };
   };
 
+  // The teacher's read of one work's language (institution.work-work-language.get):
+  // no body, so no content type or origin; the session (401), then every path
+  // id (422), then the read, whose outcome is the only thing that is answered.
+  const readLanguage = (): Route => {
+    const contract = ROUTES.find((found) => found.id === "institution.work-work-language.get")!;
+    return {
+      contract,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        const assignmentId = decodeOnce(params?.assignmentId);
+        const documentId = decodeOnce(params?.documentId);
+        if (!UUID.test(assignmentId) || !isWorkId(documentId)) {
+          return sendProblem(response, ...INVALID);
+        }
+        try {
+          const outcome = await options.languages.readWorkLanguageForDocument(
+            token,
+            assignmentId,
+            documentId,
+          );
+          if (outcome.status !== "read") {
+            const known = LANGUAGE_READ_REFUSALS.get(outcome.status);
+            const [status, code] = known ?? [503, "unavailable"];
+            return sendProblem(response, status, code);
+          }
+          sendJson(response, 200, {
+            title: outcome.title,
+            assignmentLanguage: outcome.assignmentLanguage,
+            exception: outcome.exception,
+          });
+        } catch (error) {
+          reportServerError("route", error, requestIdOf(response), contract.id);
+          return sendProblem(response, 503, "unavailable");
+        }
+      },
+    };
+  };
+
   return [
     route("institution.courses.post", COURSE_REFUSALS, async (token, value) => {
       const outcome = await service.createCourse(token, value);
@@ -276,6 +317,7 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
           : refused(outcome);
       },
     ),
+    readLanguage(),
   ];
 }
 
