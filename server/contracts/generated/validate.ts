@@ -563,6 +563,25 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 3
     )
   }),
+  "institution.milestone-template.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.milestone-template.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483646 &&
+      value['expectedVersion'] >= 0 &&
+      (typeof value['requireFinalStageApproval'] === 'boolean') &&
+      Array.isArray(value['milestones']) &&
+      value['milestones'].length <= 20 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['title'] === 'string') && value['title'].length <= 200 && value['title'].length >= 1 && (value['relativeDue'] !== undefined ? ((typeof value['relativeDue'] === 'number' && Number.isInteger(value['relativeDue'])) && value['relativeDue'] <= 1095 && value['relativeDue'] >= 1) : true) && (((value['submits'] === 'topic_text')) || ((value['submits'] === 'current_version'))) && Object.getOwnPropertyNames(value).every(key => ['title', 'relativeDue', 'submits'].includes(key))))) { return false }; return true; })(value['milestones']) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }),
   "institution.retention.get:query": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -2422,6 +2441,53 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['text'] === 'string') &&
       local0.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.milestone-plan.add.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.milestone-plan.add.post:body": (() => {
+  const local0 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['title'] === 'string') &&
+      value['title'].length <= 200 &&
+      value['title'].length >= 1 &&
+      (value['dueAt'] !== undefined ? ((typeof value['dueAt'] === 'string') && local0.test(value['dueAt'])) : true) &&
+      (((value['submits'] === 'topic_text')) || ((value['submits'] === 'current_version'))) &&
+      Object.getOwnPropertyNames(value).every(key => ['title', 'dueAt', 'submits'].includes(key))
+    )
+  }
+  })(),
+  "work.milestone-plan.apply-template.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.milestone-plan.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }

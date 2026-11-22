@@ -527,6 +527,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-1521 (Ductus#2052, N-15 etape): the template of milestones and the plan of one work; Ductus has no such route.
+  "app/api/institution/milestone-template/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestone-plan/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestone-plan/milestones/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestone-plan/apply-template/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",

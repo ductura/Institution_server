@@ -47,6 +47,11 @@ export {
   WorkMilestoneRevisionInput,
   workMilestonesRoutes,
 } from "./work-milestones.ts";
+export {
+  MilestoneTemplateInput,
+  WorkMilestoneAddInput,
+  milestoneTemplateRoutes,
+} from "./milestone-template.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";

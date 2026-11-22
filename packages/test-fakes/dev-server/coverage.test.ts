@@ -902,6 +902,58 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
   },
+  "institution.milestone-template.get": {
+    request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
+  },
+  "institution.milestone-template.put": {
+    request: {
+      method: "PUT",
+      path: "/api/v1/institution/milestone-template",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        requireFinalStageApproval: false,
+        milestones: [
+          { title: "Tema i nacrt", relativeDue: 14, submits: "topic_text" },
+          { title: "Prvo poglavlje", submits: "current_version" },
+        ],
+      },
+    },
+  },
+  "work.milestone-plan.get": {
+    request: { path: `/api/v1/works/${IDS.document}/milestone-plan`, as: "student" },
+  },
+  "work.milestone-plan.add.post": {
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/milestone-plan/milestones`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { title: "Zaključak", dueAt: "2026-12-30T10:00:00Z", submits: "current_version" },
+    },
+  },
+  "work.milestone-plan.apply-template.post": {
+    before: [
+      {
+        method: "PUT",
+        path: "/api/v1/institution/milestone-template",
+        as: "administrator",
+        headers: ORIGIN,
+        body: {
+          expectedVersion: 0,
+          requireFinalStageApproval: false,
+          milestones: [{ title: "Tema i nacrt", relativeDue: 14, submits: "topic_text" }],
+        },
+      },
+    ],
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/milestone-plan/apply-template`,
+      as: "nastavnik",
+      headers: ORIGIN,
+    },
+  },
   "work.milestone-states.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
   },

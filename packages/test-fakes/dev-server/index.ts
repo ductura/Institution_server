@@ -32,6 +32,7 @@ import { ASSIGNMENT_COPY_HANDLERS } from "./assignment-copy-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { EVENT_DISPUTE_HANDLERS } from "./event-dispute-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -115,6 +116,7 @@ export const DEV_HANDLERS: Handlers = {
   ...CONSULTATION_HANDLERS,
   ...EVENT_DISPUTE_HANDLERS,
   ...MILESTONE_HANDLERS,
+  ...MILESTONE_TEMPLATE_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...OPS_HANDLERS,
   ...RETENTION_HANDLERS,

@@ -64,6 +64,7 @@ import {
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createMilestoneTemplateRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
   createWorkCompareRouteFor,
@@ -588,6 +589,17 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createMilestoneTemplateRoutesFor(databases.main)",
+    ids: [
+      "institution.milestone-template.get",
+      "institution.milestone-template.put",
+      "work.milestone-plan.get",
+      "work.milestone-plan.add.post",
+      "work.milestone-plan.apply-template.post",
+    ],
+    routes: () => createMilestoneTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createSourceNotebookRoutesFor(databases.main)",
     ids: [
       "work.source-notes.get",
@@ -926,6 +938,11 @@ describe("routes the entry point mounts itself", () => {
       "work.milestones.submit.post",
       "work.milestones.request-revision.post",
       "work.milestones.approve.post",
+      "institution.milestone-template.get",
+      "institution.milestone-template.put",
+      "work.milestone-plan.get",
+      "work.milestone-plan.add.post",
+      "work.milestone-plan.apply-template.post",
       "work.source-notes.get",
       "work.source-notes.post",
       "work.source-notes.patch",
