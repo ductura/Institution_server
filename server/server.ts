@@ -47,6 +47,7 @@ import {
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
   createWorkVersionRouteFor,
+  createWorkCompareRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
@@ -296,6 +297,8 @@ async function main(): Promise<void> {
         databases.main,
       ),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
+      // SRV-2004: the comparison of two revisions of a work, rebuilt from the record.
+      createWorkCompareRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),

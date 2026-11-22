@@ -63,6 +63,7 @@ import {
   createWorkMilestonesRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
+  createWorkCompareRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -565,6 +566,13 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ],
   },
   {
+    call: "createWorkCompareRouteFor(databases.main, evidenceDeps)",
+    ids: ["work.compare.get"],
+    routes: () => [
+      createWorkCompareRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).contract.id,
+    ],
+  },
+  {
     call: "createAcknowledgmentRouteFor(databases.main)",
     ids: ["institution.acknowledgment.post"],
     routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
@@ -866,6 +874,7 @@ describe("routes the entry point mounts itself", () => {
       "work.source-notes.patch",
       "work.source-notes.delete",
       "work.version.get",
+      "work.compare.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",

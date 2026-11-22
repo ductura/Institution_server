@@ -22895,7 +22895,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.75.0",
+        "apiVersion": "1.76.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -22911,7 +22911,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.75.0",
+        "apiVersion": "1.76.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -49045,6 +49045,156 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-00000000c129"
+      }
+    }
+  },
+  {
+    "route": "work.compare.get",
+    "name": "diff",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-usporedba-000000000000000001"
+      },
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "from": "1",
+        "to": "3"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "from": 1,
+        "to": 3,
+        "blocks": [
+          {
+            "kind": "heading",
+            "level": 1,
+            "change": "unchanged",
+            "text": "Izmišljeni naslov"
+          },
+          {
+            "kind": "paragraph",
+            "change": "removed",
+            "text": "Izmišljeni stari odlomak."
+          },
+          {
+            "kind": "paragraph",
+            "change": "added",
+            "text": "Izmišljeni novi odlomak."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.compare.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "from": "1",
+        "to": "3"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.compare.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-usporedba-000000000000000001"
+      },
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "from": "1",
+        "to": "3"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.compare.get",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-usporedba-000000000000000001"
+      },
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "from": "3",
+        "to": "3"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.compare.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-usporedba-000000000000000001"
+      },
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "from": "1",
+        "to": "3"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002000"
       }
     }
   },

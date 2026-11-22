@@ -36,6 +36,7 @@ export {
   notificationsRoutes,
 } from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
+export { workCompareRoutes } from "./work-compare.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { importRoutes } from "./import.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";

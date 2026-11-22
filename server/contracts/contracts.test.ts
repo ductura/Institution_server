@@ -213,6 +213,7 @@ describe("route inventory", () => {
       "teacher.comment-bank.delete: app/api/teacher/comment-bank/[entryId]/route.ts is not in the inventory",
       "work.review.post: app/api/works/[documentId]/review/route.ts is not in the inventory",
       "work.changes-since-review.get: app/api/works/[documentId]/changes-since-review/route.ts is not in the inventory",
+      "work.compare.get: app/api/works/[documentId]/compare/route.ts is not in the inventory",
       "work.direct-edit.get: app/api/works/[documentId]/direct-edit/route.ts is not in the inventory",
       "work.direct-edit.put: app/api/works/[documentId]/direct-edit/route.ts is not in the inventory",
       "work.imports.post: app/api/works/[documentId]/imports/route.ts is not in the inventory",

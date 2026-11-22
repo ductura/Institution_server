@@ -334,6 +334,7 @@ export {
   createPortableRecordRouteFor,
 } from "./portable-record/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
+export { createWorkCompareRoute, createWorkCompareRouteFor } from "./work-compare/index.ts";
 export {
   createCommentBankRoutes,
   createCommentDraftRoutes,

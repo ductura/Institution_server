@@ -1072,6 +1072,13 @@ export type Operations = {
     success: { status: 200; body: { "published": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
+  "work.compare.get": {
+    params: { "documentId": string };
+    query: { "from": string; "to": string };
+    body: undefined;
+    success: { status: 200; body: { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.consultation-additions.post": {
     params: { "documentId": string; "recordId": string };
     query: undefined;
