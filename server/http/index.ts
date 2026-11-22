@@ -30,6 +30,7 @@ export {
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkRoutesFor } from "./teacher-work/index.ts";
+export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";
 export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
 export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";

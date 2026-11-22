@@ -39,6 +39,7 @@ import {
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
   createFacultyThresholdRoutesFor,
+  createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
@@ -246,6 +247,8 @@ async function main(): Promise<void> {
       ...createOriginCompositionRoutesFor(databases.main),
       // The thresholds of a faculty per kind of origin and the comparison of a work (SRV-1111, P-1).
       ...createFacultyThresholdRoutesFor(databases.main),
+      // The guidance of a teacher on sources (SRV-1605, WEB-2133).
+      ...createTeacherSourceRoutesFor(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),

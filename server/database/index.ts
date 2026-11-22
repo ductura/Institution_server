@@ -306,6 +306,14 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export {
+  createTeacherSources,
+  type ProofImage,
+  type ProofRequestInput,
+  type RecommendationInput,
+  type SourceGuidanceInput,
+  type TeacherSources,
+} from "./teacher-sources/index.ts";
 export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
