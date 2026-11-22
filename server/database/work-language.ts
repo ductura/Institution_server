@@ -78,7 +78,7 @@ const WORKS_SQL =
 // teacher of the work. Ductus work-language-exception-read.ts QUERY.
 const READ_SQL = `WITH w AS (SELECT x.student_id FROM app.assignment_works($1::uuid) x WHERE x.document_id = $2)
 SELECT w.student_id::text AS student_id, institution.work_language($1::uuid, w.student_id) AS language,
-  v.work_language AS assignment_language, v.title AS title,
+  v.work_language AS "assignmentLanguage", v.title AS title,
   (SELECT o.work_language FROM institution.work_language_override o
     WHERE o.assignment_id = a.id AND o.student_id = w.student_id) AS exception
 FROM w
@@ -115,7 +115,7 @@ export function createWorkLanguages(withActor: WithActor): WorkLanguages {
         if (rows.length > 1) return { status: "unavailable", reason: "work_language_malformed" };
         if (rows.length === 0 || single(rows, "language") === null) return FORBIDDEN;
         const title = single(rows, "title");
-        const assignmentLanguage = parseWorkLanguage(single(rows, "assignment_language"));
+        const assignmentLanguage = parseWorkLanguage(single(rows, "assignmentLanguage"));
         const raw = single(rows, "exception");
         const exception = raw === null ? null : parseWorkLanguage(raw);
         const language = parseWorkLanguage(single(rows, "language"));

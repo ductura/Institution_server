@@ -165,7 +165,7 @@ describe("readWorkLanguageForDocument", () => {
   const row = (over: Record<string, unknown> = {}) => ({
     student_id: STUDENT,
     language: "hr",
-    assignment_language: "hr",
+    assignmentLanguage: "hr",
     title: "Izmišljeni naslov rada",
     exception: null,
     ...over,
@@ -209,7 +209,7 @@ describe("readWorkLanguageForDocument", () => {
   it.each<[string, unknown[]]>([
     ["two rows", [row(), row()]],
     ["an empty title", [row({ title: "" })]],
-    ["an unknown assignment language", [row({ assignment_language: "de" })]],
+    ["an unknown assignment language", [row({ assignmentLanguage: "de" })]],
     ["an unknown exception", [row({ exception: "de", language: "hr" })]],
     ["a language the values do not explain", [row({ language: "en" })]],
   ])("%s is unavailable", async (_name, rows) => {
