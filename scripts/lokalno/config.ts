@@ -7,8 +7,10 @@ import { randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { type EvidenceSetup, type S3Credentials, serverEvidenceEnv } from "../stack/index.ts";
+
 /** The ports of contract §1. */
-export const PORTS = Object.freeze({ edge: 8000, server: 4000, oidc: 8090 });
+export const PORTS = Object.freeze({ edge: 8000, server: 4000, oidc: 8090, s3: 4192 });
 /** The issuer of the simulator; db/main/local/seed.sql stores the same spelling. */
 export const ISSUER = `http://localhost:${PORTS.oidc}`;
 /** The browser's one origin, the edge proxy of the Preloader (contract §1). */
@@ -199,7 +201,7 @@ export function stackOptions(
 // Variables a child never takes from the caller: database and login steering,
 // and NODE_ENV, which each child gets from here.
 const STEERING =
-  /^(?:PG|PSQL|DBMATE_|DATABASE_URL$|APP_|AUTH_|OIDC_|DUCTUS_|DUCTURA_|NODE_ENV$|NODE_OPTIONS$|HOST$|PORT$|ISSUER$|REDIRECT_URI$|POST_LOGOUT_REDIRECT_URI$|BACKCHANNEL_LOGOUT_URI$|FAKE_OIDC_)/iu;
+  /^(?:PG|PSQL|DBMATE_|DATABASE_URL$|APP_|AUTH_|OIDC_|DUCTUS_|DUCTURA_|NODE_ENV$|NODE_OPTIONS$|HOST$|PORT$|ISSUER$|REDIRECT_URI$|POST_LOGOUT_REDIRECT_URI$|BACKCHANNEL_LOGOUT_URI$|FAKE_OIDC_|EVIDENCE_|VS1_)/iu;
 
 /**
  * The caller's environment without anything that steers a database, a login
@@ -232,11 +234,27 @@ export function oidcEnv(options: StackOptions): Record<string, string> {
   };
 }
 
-/** The server's own variables: the fake provider, both logins and the provisioning token. */
+/**
+ * The evidence storage and receipt key of the local stack (INT-08): the
+ * institution of the seed, the signing seed file outside the checkout and the
+ * credentials of this run's local S3 (scripts/stack/evidence.ts).
+ */
+export type LocalEvidence = EvidenceSetup & {
+  readonly s3Port: number;
+  readonly credentials: S3Credentials;
+};
+
+/**
+ * The server's own variables: the fake provider, both logins and the
+ * provisioning token; with `evidence` also EVIDENCE_STORAGE_DOMAINS, the S3
+ * credentials and DUCTUS_DEV_SIGNING_KEY_FILE, so that a commit reaches the
+ * storage and the signer instead of answering 503.
+ */
 export function serverEnv(
   options: StackOptions,
   database: Pick<AdminTarget, "host" | "port">,
   secrets: LocalSecrets,
+  evidence?: LocalEvidence,
 ): Record<string, string> {
   return {
     NODE_ENV: "development",
@@ -251,6 +269,9 @@ export function serverEnv(
     OIDC_CLIENT_SECRET: LOCAL_OIDC_CLIENT.secret,
     OIDC_REDIRECT_URI: callback(options.origin),
     DUCTURA_PROVISIONING_TOKEN: secrets.provisioningToken,
+    ...(evidence === undefined
+      ? {}
+      : serverEvidenceEnv(evidence, evidence.s3Port, evidence.credentials)),
   };
 }
 

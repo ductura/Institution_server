@@ -1,6 +1,6 @@
 # Lokalni stog jednom naredbom (`pnpm stog:gore`)
 
-Cijela aplikacija na jednom računalu: PostgreSQL s migracijama i seedom, Institution_server, lažni OIDC (simulator AAI@EduHr) i Next.js front `Institution_front_web_chrome` iz susjedne mape. **Samo lokalni razvoj (D-09):** simulator i server ga odbijaju izvan `NODE_ENV` `development` i `test`. Svi računi i podaci su izmišljeni. Pojedinosti servera i simulatora su u [docs/LOKALNO.md](../LOKALNO.md).
+Cijela aplikacija na jednom računalu: PostgreSQL s migracijama i seedom, Institution_server, lokalno spremište dokaza (S3) s razvojnim ključem za potpis, lažni OIDC (simulator AAI@EduHr) i Next.js front `Institution_front_web_chrome` iz susjedne mape. **Samo lokalni razvoj (D-09):** simulator i server ga odbijaju izvan `NODE_ENV` `development` i `test`. Svi računi i podaci su izmišljeni. Pojedinosti servera i simulatora su u [docs/LOKALNO.md](../LOKALNO.md).
 
 ## Preduvjeti
 
@@ -22,14 +22,24 @@ Nakon `stog:gore` otvori `http://localhost:3000`; prijava je `http://localhost:3
 
 Preglednik govori samo s frontom (`http://localhost:3000`). Front sve `/api/v1/*` prosljeđuje serveru (`INSTITUTION_SERVER_URL=http://127.0.0.1:4000`), pa kolačić sesije i povratna adresa prijave (`http://localhost:3000/api/v1/auth/callback`) pripadaju istom podrijetlu. Zato `stog:gore` pokreće `pnpm lokalno --izvor=http://localhost:3000`: `APP_ORIGIN` i povratna adresa servera i simulatora su podrijetlo fronta, a ne edge proxy na `:8000`.
 
-| Servis              | Adresa                                |
-| ------------------- | ------------------------------------- |
-| Front (Next.js)     | `http://localhost:3000`               |
-| Institution_server  | `http://localhost:4000/api/v1/health` |
-| Simulator AAI@EduHr | `http://localhost:8090`               |
-| PostgreSQL (Docker) | `127.0.0.1:54329`, baza `ductus`      |
+| Servis                        | Adresa                                |
+| ----------------------------- | ------------------------------------- |
+| Front (Next.js)               | `http://localhost:3000`               |
+| Institution_server            | `http://localhost:4000/api/v1/health` |
+| Simulator AAI@EduHr           | `http://localhost:8090`               |
+| Spremište dokaza (lokalni S3) | `127.0.0.1:4192`                      |
+| PostgreSQL (Docker)           | `127.0.0.1:54329`, baza `ductus`      |
 
 Front se pokreće skriptom `next:dev` iz njegova `package.json`; dok je nema (prije WEB-01), koristi se `dev`.
+
+## Spremište dokaza i ključ za potpis (INT-08)
+
+Završna predaja na commitu traži spremište dokaza i potpis potvrde, pa `pnpm lokalno` (a time i `stog:gore`) uz server pokreće i:
+
+- **lokalni S3** (`scripts/stack/local-s3.ts`, kao u VS-1) na `127.0.0.1:4192`; objekti su datoteke u `.local/s3/`, pa preživljavaju ponovno pokretanje; pristupni ključ se svaki put izmisli iznova i živi samo u okolini procesa;
+- **razvojni ključ za potpis**: sjeme od 32 bajta nastaje jednom u `~/.ductura/` (izvan repoa; potpisnik ga odbija unutar repoa), a javni ključ se upisuje preko `db/main/local/evidence-signing-key.sql` (bez nove migracije, ponovno pokretanje ne mijenja nijedan redak).
+
+Serveru se u `serverEnv` dodaju `EVIDENCE_STORAGE_DOMAINS`, `EVIDENCE_S3_VS1_KEY_ID`, `EVIDENCE_S3_VS1_SECRET` i `DUCTUS_DEV_SIGNING_KEY_FILE`. Sve je samo lokalno (D-09): `NODE_ENV` je `development`, a varijable `EVIDENCE_*` i `VS1_*` iz vaše okoline se ne prosljeđuju. Lokalni S3 traži POSIX putanje (Linux, macOS, WSL); `pnpm stog:zdravlje` dodaje redak `s3`.
 
 ## Postavke (varijable okoline)
 
@@ -47,7 +57,8 @@ PostgreSQL iz `compose.yaml` (`postgres-main`, lokalne vrijednosti, port vezan n
 
 ## Kad nešto ne radi
 
-- „port … is in use”: stari stog još radi; `pnpm stog:dolje`.
+- „port … is in use”: stari stog još radi; `pnpm stog:dolje` (port `4192` je lokalni S3).
+- Predaja na commitu vraća 503 u fazi spremišta ili potpisa: server je pokrenut bez `EVIDENCE_*`; pokreni ga kroz `pnpm lokalno` ili `pnpm stog:gore`.
 - „run pnpm install in …”: u frontu nema `node_modules`.
 - `front→server` je `NEMA`, a `server` je `OK`: front nema `/api/v1` proxy (WEB-02) ili `INSTITUTION_SERVER_URL` ne pokazuje na `:4000`.
 - Docker nije dostupan: instaliraj PostgreSQL 16+ lokalno i pokreni s `STOG_BAZA=vanjska DATABASE_URL=postgres://postgres:<lozinka>@localhost:5432/ductus pnpm stog:gore`.

@@ -20,6 +20,8 @@ import {
   assertLocal,
   baseEnv,
   ensureSecrets,
+  type LocalEvidence,
+  PORTS,
   oidcEnv,
   serverEnv,
   stackOptions,
@@ -27,6 +29,7 @@ import {
   TOKEN_FILE,
 } from "./config.ts";
 import { provision } from "./database.ts";
+import { listening, prepareEvidence, startS3 } from "./dokazi.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 /** Local files of this checkout, never committed (.gitignore). */
@@ -111,11 +114,16 @@ function runOnce(args: string[], env: Record<string, string>): Promise<number> {
   });
 }
 
-/** Starts the provider, then the server; the children run until stopped. */
+/**
+ * Starts the provider, the local S3 (with `evidence`, INT-08) and the server;
+ * the children run until stopped. `server` already carries the EVIDENCE_*
+ * variables (serverEnv); `evidence` only says where the S3 keeps its objects.
+ */
 export async function startStack(
   options: StackOptions,
   server: Record<string, string>,
   base: Record<string, string>,
+  evidence?: { readonly setup: LocalEvidence; readonly localDir: string },
 ): Promise<ChildProcess[]> {
   const oidc = startChild("oidc", [join(ROOT, "packages", "test-fakes", "oidc", "server.ts")], {
     ...base,
@@ -126,6 +134,20 @@ export async function startStack(
     oidc.kill();
     throw new Error("the fake OIDC provider did not start");
   }
+  const children = [oidc];
+  if (evidence !== undefined) {
+    const s3 = startS3(ROOT, evidence.localDir, evidence.setup, base);
+    for (const stream of [s3.stdout, s3.stderr])
+      stream?.on("data", (chunk: Buffer) => {
+        for (const line of chunk.toString("utf8").split(/\r?\n/u))
+          if (line !== "") console.log(`[s3] ${line}`);
+      });
+    children.push(s3);
+    if (!(await listening(evidence.setup.s3Port, s3, 30_000))) {
+      for (const child of children) child.kill();
+      throw new Error("the local S3 did not start");
+    }
+  }
   const app = startChild(
     "server",
     ["--disallow-code-generation-from-strings", join(ROOT, "dist", "server.js")],
@@ -133,10 +155,10 @@ export async function startStack(
   );
   if (!(await ready(`http://127.0.0.1:${options.serverPort}/api/v1/health`, app, 30_000))) {
     app.kill();
-    oidc.kill();
+    for (const child of children) child.kill();
     throw new Error("the server did not answer /api/v1/health with 200");
   }
-  return [oidc, app];
+  return [...children, app];
 }
 
 async function main(): Promise<void> {
@@ -156,10 +178,21 @@ async function main(): Promise<void> {
   for (const [name, port] of [
     ["server", options.serverPort],
     ["oidc", options.oidcPort],
+    ["s3", PORTS.s3],
   ] as const) {
     if (!(await portFree(port))) throw new Error(`port ${port} (${name}) is in use`);
   }
-  const children = await startStack(options, serverEnv(options, target, secrets), base);
+  // INT-08: the evidence storage and the receipt key, else a commit answers 503.
+  const evidence = await prepareEvidence({
+    root: ROOT,
+    localDir: LOCAL_DIR,
+    target,
+    s3Port: PORTS.s3,
+  });
+  const children = await startStack(options, serverEnv(options, target, secrets, evidence), base, {
+    setup: evidence,
+    localDir: LOCAL_DIR,
+  });
 
   console.log(
     [
@@ -167,13 +200,14 @@ async function main(): Promise<void> {
       "Ductura lokalno radi (samo lokalni razvoj, D-09).",
       `  Server:            http://localhost:${options.serverPort} (preglednik: ${options.origin})`,
       `  Simulator AAI@EduHr: ${options.issuer}`,
+      `  Spremište dokaza:  lokalni S3 na http://127.0.0.1:${PORTS.s3}, razvojni ključ za potpis`,
       `  Prijava:           ${options.origin}/api/v1/auth/login?returnTo=/app/web/`,
       `  Token provisioninga: .local/${TOKEN_FILE}`,
       options.accountsFile === undefined
         ? "  Računi simulatora: demo računi i obrazac (domena + uloga)"
         : `  Računi simulatora: demo računi, obrazac i ${relative(ROOT, options.accountsFile)}`,
       direct ? "" : "  Bez edge proxyja na 8000 pokreni: pnpm lokalno --izravno",
-      "Ctrl+C zaustavlja oba procesa.",
+      "Ctrl+C zaustavlja sve procese.",
       "",
     ].join("\n"),
   );

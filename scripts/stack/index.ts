@@ -33,3 +33,14 @@ export {
   writeState,
 } from "./state.ts";
 export type { Repos, Revision, StackProcess, StackState } from "./state.ts";
+export {
+  ensureBucketIdentity,
+  ensureSeed,
+  INSTITUTION_SLUG,
+  newS3Credentials,
+  S3_BUCKET,
+  S3_REGION,
+  seedFile,
+  serverEvidenceEnv,
+} from "./evidence.ts";
+export type { EvidenceSetup, S3Credentials } from "./evidence.ts";

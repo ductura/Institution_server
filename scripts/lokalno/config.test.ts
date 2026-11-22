@@ -14,6 +14,7 @@ import {
   adminTarget,
   assertLocal,
   baseEnv,
+  PORTS,
   ensureSecrets,
   ISSUER,
   loginUrl,
@@ -81,6 +82,36 @@ describe("contract §1: ports, issuer and origin", () => {
     expect(parseFlags(["--izravno"])).toEqual({ direct: true });
     expect(parseFlags([])).toEqual({ direct: false });
     expect(() => parseFlags(["--x"])).toThrow("usage");
+  });
+
+  it("INT-08: serverEnv with evidence names the storage domain, the S3 credentials and the signing seed", () => {
+    const credentials = { keyId: "vs1abc", secret: "s".repeat(40) };
+    const server = serverEnv(stackOptions(false), { host: "127.0.0.1", port: "5432" }, SECRETS, {
+      institutionId: "11111111-1111-4111-8111-111111111111",
+      seed: "/home/x/.ductura/seed",
+      s3Port: PORTS.s3,
+      credentials,
+    });
+    expect(server).toMatchObject({
+      NODE_ENV: "development",
+      EVIDENCE_S3_VS1_KEY_ID: "vs1abc",
+      EVIDENCE_S3_VS1_SECRET: credentials.secret,
+      DUCTUS_DEV_SIGNING_KEY_FILE: "/home/x/.ductura/seed",
+    });
+    const domains = JSON.parse(server.EVIDENCE_STORAGE_DOMAINS ?? "") as {
+      domains: { endpoint: string; institutionId: string }[];
+    };
+    expect(domains.domains).toHaveLength(1);
+    expect(domains.domains[0]).toMatchObject({
+      endpoint: `http://127.0.0.1:${PORTS.s3}`,
+      institutionId: "11111111-1111-4111-8111-111111111111",
+    });
+    // Without evidence none of it is set; and the caller's EVIDENCE_* never reaches a child.
+    const plain = serverEnv(stackOptions(false), { host: "127.0.0.1", port: "5432" }, SECRETS);
+    expect(plain).not.toHaveProperty("EVIDENCE_STORAGE_DOMAINS");
+    expect(baseEnv({ EVIDENCE_STORAGE_DOMAINS: "x", VS1_S3_ROOT: "/x", keep: "1" })).toEqual({
+      keep: "1",
+    });
   });
 
   it("the logins are the local app and auth roles of the database ductus", () => {
