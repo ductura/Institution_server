@@ -1,5 +1,6 @@
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
+import { successBody } from "./contract.ts";
 import { parseInstant, readerOf, type Account, type State } from "./state.ts";
 
 type Interview = Operations["work.interview.get"]["success"]["body"];
@@ -42,6 +43,20 @@ export const WORK_INTERVIEW_HANDLERS: Handlers = {
     const entry = state.workInterviews.get(params.documentId);
     if (who === "owner" && entry?.invitedAt == null) return { error: "forbidden" };
     return { status: 200, body: view(entryOf(state, params.documentId), account) };
+  },
+  "work.interview-pdf.get": ({ state, account, params }) => {
+    const who = role(state, params.documentId, account);
+    if (who === null || account === null) return { error: "forbidden" };
+    // Only what the student reads goes into the PDF: nothing before the invitation.
+    if (state.workInterviews.get(params.documentId)?.invitedAt == null) {
+      return { error: who === "owner" ? "forbidden" : "conflict" };
+    }
+    return {
+      status: 200,
+      body: successBody(
+        "work.interview-pdf.get",
+      ) as Operations["work.interview-pdf.get"]["success"]["body"],
+    };
   },
   "work.interview-questions.post": ({ state, account, params, body, now }) => {
     if (role(state, params.documentId, account) !== "teacher" || account === null)
