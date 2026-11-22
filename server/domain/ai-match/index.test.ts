@@ -49,6 +49,14 @@ describe("ductura-match-norm-v1", () => {
 });
 
 describe("provenance-share-v1 AI match", () => {
+  it("finds a match held by a suffix-link ancestor in repeated words (seed 1290383480)", () => {
+    const text = Array.from({ length: 14 }, () => "biljka").join(" ");
+    const reply = [...Array.from({ length: 12 }, () => "biljka"), "cvijet", "biljka"].join(" ");
+    const { aiMatch, witnesses } = compare(text, reply);
+    expect(aiMatch.spans).toEqual([{ blockId: "demo-block", from: 0, to: text.length }]);
+    expect(witnesses[0]).toMatchObject({ normalizedFrom: 0, normalizedTo: 83 });
+  });
+
   it("reproduces the contract spans, in submitted block order, without message metadata", () => {
     const { aiMatch, witnesses } = compareAssistantResponses(
       [

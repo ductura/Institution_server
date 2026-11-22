@@ -3,10 +3,15 @@ import { expect } from "vitest";
 
 import { compareAssistantResponses } from "./index.ts";
 
-const words = fc.array(fc.constantFrom("biljka", "zeleni", "vrtlarstvo", "kompostira", "cvijet"), {
-  minLength: 14,
-  maxLength: 30,
-});
+type Word = "biljka" | "zeleni" | "vrtlarstvo" | "kompostira" | "cvijet";
+
+const words = fc.array(
+  fc.constantFrom<Word>("biljka", "zeleni", "vrtlarstvo", "kompostira", "cvijet"),
+  {
+    minLength: 14,
+    maxLength: 30,
+  },
+);
 
 function bruteForceSpans(text: string, answers: string[]) {
   const coverage = Array.from({ length: text.length }, () => false);
@@ -28,7 +33,17 @@ function bruteForceSpans(text: string, answers: string[]) {
   return spans;
 }
 
-test.prop([words, words, fc.array(fc.tuple(fc.nat(29), fc.nat(29)), { maxLength: 4 })])(
+// Shrunk counterexample from seed 1290383480: the start state of a repeated
+// word only held strings longer than the reply, so its match lived in an ancestor.
+const repeatedWordRegression: [Word[], Word[], [number, number][]] = [
+  Array.from({ length: 14 }, (): Word => "biljka"),
+  [...Array.from({ length: 12 }, (): Word => "biljka"), "cvijet", "biljka"],
+  [],
+];
+
+test.prop([words, words, fc.array(fc.tuple(fc.nat(29), fc.nat(29)), { maxLength: 4 })], {
+  examples: [repeatedWordRegression],
+})(
   "agrees with exhaustive word-boundary matching and each witness matches its own reply",
   (submitted, unrelated, intervals) => {
     const block = { blockId: "demo-block", text: submitted.join(" ") };
