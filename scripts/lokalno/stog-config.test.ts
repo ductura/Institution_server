@@ -71,9 +71,9 @@ describe("front wiring", () => {
 });
 
 describe("healthTargets", () => {
-  it("covers database, simulator, server, front and the front's proxy", () => {
+  it("covers database, simulator, server, local S3, front and the front's proxy", () => {
     const names = healthTargets(stogOptions("/", {})).map((t) => t.name);
-    expect(names).toEqual(["postgres", "oidc", "server", "front", "front→server"]);
+    expect(names).toEqual(["postgres", "oidc", "server", "s3", "front", "front→server"]);
   });
   it("skips the Docker database when external", () => {
     const names = healthTargets(stogOptions("/", { STOG_BAZA: "vanjska" })).map((t) => t.name);
