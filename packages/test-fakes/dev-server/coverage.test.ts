@@ -174,6 +174,15 @@ const REQUEST_SLOT: Step = {
   headers: ORIGIN,
   body: { startsAt: new Date(Date.now() + 86_400_000).toISOString() },
 };
+const INTERVIEW = `/api/v1/works/${IDS.document}/interview`;
+const INTERVIEW_QUESTION_ID = "c0300000-0000-4000-8000-000000000001";
+const ADD_QUESTION: Step = {
+  path: `${INTERVIEW}/questions`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { paragraphRef: "odlomak-1", questionText: "Kako je nastao ovaj odlomak?" },
+};
+const INVITE: Step = { path: `${INTERVIEW}/invite`, as: "nastavnik", headers: ORIGIN };
 const NOTE: Step = {
   path: "/api/v1/student/submission-notes",
   as: "student",
@@ -386,6 +395,45 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: {
       path: "/api/v1/student/assistant/conversations/00000000-0000-4000-8000-0000000000c1",
       as: "student",
+    },
+  },
+  "work.interview.get": { before: [ADD_QUESTION], request: { path: INTERVIEW, as: "nastavnik" } },
+  "work.interview-questions.post": { request: ADD_QUESTION },
+  "work.interview-questions.delete": {
+    before: [ADD_QUESTION],
+    request: {
+      path: `${INTERVIEW}/questions/${INTERVIEW_QUESTION_ID}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "work.interview-invite.post": { before: [ADD_QUESTION], request: INVITE },
+  "work.interview-appointment.put": {
+    request: {
+      path: `${INTERVIEW}/appointment`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { place: "Ured 12", at: new Date(Date.now() + 86_400_000).toISOString() },
+    },
+  },
+  "work.interview-held.post": {
+    before: [ADD_QUESTION, INVITE],
+    request: {
+      path: `${INTERVIEW}/held`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { date: new Date().toISOString().slice(0, 10) },
+    },
+  },
+  "work.interview-explanations.post": {
+    before: [ADD_QUESTION, INVITE],
+    request: {
+      path: `${INTERVIEW}/explanations`,
+      as: "student",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno objašnjenje." },
     },
   },
   "work.consultation-slots.get": {

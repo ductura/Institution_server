@@ -163,6 +163,34 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PATCH"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073682",
   },
+  "app/api/works/[documentId]/interview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/questions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/questions/[questionId]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/invite/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/appointment/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/held/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/interview/explanations/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
   "app/api/process-summary/details/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",

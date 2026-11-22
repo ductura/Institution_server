@@ -1219,6 +1219,55 @@ export type Operations = {
     success: { status: 201; body: { "importId": string; "manifestSha256": string; "source": "import"; "evidenceKind": "imported"; "fileFormat": "docx" | "pdf"; "content": { "schemaVersion": 2; "nodes": ({ "type": "paragraph"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "heading"; "id": string; "level": 1 | 2 | 3; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "bulletItem"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "quote"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] })[]; "sources": ({  })[] }; "traces": ({ "traceKind": "comment" | "deletion" | "insertion"; "count": number })[]; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "expiresAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_document" | "pdf_no_text_layer" | "import_not_allowed" | "not_found" | "unavailable";
   };
+  "work.interview-appointment.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "consultationSlotId": string } | { "place": string; "at": string };
+    success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input" | "conflict";
+  };
+  "work.interview-explanations.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "questionId"?: string | null; "text": string };
+    success: { status: 201; body: { "id": string; "questionId": string | null; "text": string; "createdAt": string }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.interview-held.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "date": string };
+    success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input" | "conflict";
+  };
+  "work.interview-invite.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "conflict";
+  };
+  "work.interview-questions.delete": {
+    params: { "documentId": string; "questionId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site";
+  };
+  "work.interview-questions.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "paragraphRef"?: string | null; "questionText": string };
+    success: { status: 201; body: { "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.interview.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "work.messages.get": {
     params: { "documentId": string };
     query: undefined;

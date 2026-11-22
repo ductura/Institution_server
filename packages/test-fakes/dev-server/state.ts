@@ -307,6 +307,20 @@ export type State = {
     documentId: string;
     slot: Operations["work.consultation-slots.post"]["success"]["body"];
   }[];
+  /** The interview preparation of a work (SRV-1530), with the author of each question. */
+  workInterviews: Map<
+    string,
+    {
+      invitedAt: string | null;
+      questions: {
+        authorId: string;
+        question: Operations["work.interview-questions.post"]["success"]["body"];
+      }[];
+      explanations: Operations["work.interview-explanations.post"]["success"]["body"][];
+      appointment: Operations["work.interview.get"]["success"]["body"]["appointment"];
+      heldOn: string | null;
+    }
+  >;
   attachments: Attachment[];
   /** Proofs attached so far, removed ones included: the next proof id never repeats. */
   sourceProofCount: number;
@@ -519,6 +533,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     sourceNotes: new Map(),
     sourceProofs: [],
     consultationSlots: [],
+    workInterviews: new Map(),
     attachments: [],
     sourceProofCount: 0,
     enrollmentGuesses: new Map(),
