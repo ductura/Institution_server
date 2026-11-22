@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createOidcClient, loadAuthConfig } from "../external/srce-auth/index.ts";
-import { type AuthDeps, logoutAll } from "./auth-flow.ts";
+import { type AuthDeps, logout, logoutAll } from "./auth-flow.ts";
 
 import {
   CLIENT_ID,
@@ -137,5 +137,32 @@ describe("POST /api/v1/auth/logout-all", () => {
     expect(deps.closeAllSessions).toHaveBeenCalledWith(TOKEN);
     expect(response.headers.getSetCookie()).toEqual([CLEARED]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
+  });
+
+  it("the same database failure clears the cookie on logout, but not on logout-all", async () => {
+    const failure = () => Object.assign(new Error("down"), { code: "57P01" });
+    deps.closeSession.mockRejectedValueOnce(failure());
+    deps.closeAllSessions.mockRejectedValueOnce(failure());
+    const request = (path: string) =>
+      new Request(`${APP}${path}`, {
+        method: "POST",
+        headers: { cookie: `__Host-ductus_session=${TOKEN}`, ...SAME_ORIGIN },
+      });
+    const one = await logout(request("/api/v1/auth/logout"), deps);
+    const all = await logoutAll(request("/api/v1/auth/logout-all"), deps);
+    expect(one.status).toBe(303);
+    expect(one.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(all.status).toBe(503);
+    expect(all.headers.getSetCookie()).toEqual([]);
+    expect(errors).toHaveBeenCalledWith("login failed", "logout", "Error:57P01");
+    expect(errors).toHaveBeenCalledWith("login failed", "logout_all", "Error:57P01");
+  });
+
+  it("without a session cookie runs no query and answers the same way", async () => {
+    const response = await post(SAME_ORIGIN, null);
+    expect(deps.closeAllSessions).not.toHaveBeenCalled();
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
   });
 });
