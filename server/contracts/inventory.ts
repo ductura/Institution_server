@@ -368,6 +368,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
   },
+  // SRV-1230 (Ductus#2052 c.7079306579, P-1, rule 13): the match of a segment with the answers of the assistant; Ductus has no such route.
+  "app/api/works/[documentId]/assistant-match/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
   // SRV-1111 (Ductus#2052 c.7079306579, P-1 rule 12): the thresholds of a faculty per kind of origin and the comparison of a work; Ductus has no such route.
   "app/api/institution/origin-thresholds/route.ts": {
     methods: ["GET"],

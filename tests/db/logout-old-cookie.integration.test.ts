@@ -108,6 +108,7 @@ import {
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
+  createAssistantMatchRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -885,6 +886,19 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1230: a live session that has no such work gets 404 on the match with the assistant.
+  "work.assistant-match.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/assistant-match",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.assistant-match.post": {
+    method: "POST",
+    path: "/api/v1/works/izmisljeni-rad-0001/assistant-match",
+    body: () => ({ segmentRef: "blok-1", text: "izmišljeni tekst odlomka" }),
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -1568,6 +1582,7 @@ const FACTORIES = [
   "createTextCheckConfigRoute",
   "createTeacherWorkRoutesFor",
   "createOriginCompositionRoutesFor",
+  "createAssistantMatchRoutesFor",
   "createFacultyThresholdRoutesFor",
   "createTeacherSourceRoutesFor",
   "createTeacherWorkingCriteriaRoutesFor",
@@ -1679,6 +1694,7 @@ const MOUNTED = [
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkRoutesFor(databases.main),
   ...createOriginCompositionRoutesFor(databases.main),
+  ...createAssistantMatchRoutesFor(databases.main),
   ...createFacultyThresholdRoutesFor(databases.main),
   ...createTeacherSourceRoutesFor(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),

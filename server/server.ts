@@ -38,6 +38,7 @@ import {
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
+  createAssistantMatchRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -246,6 +247,8 @@ async function main(): Promise<void> {
       ...createTeacherWorkRoutesFor(databases.main),
       // The composition of a work by the kind of origin (SRV-0910, P-1).
       ...createOriginCompositionRoutesFor(databases.main),
+      // The match of a segment with the answers of the assistant (SRV-1230, P-1 rule 13).
+      ...createAssistantMatchRoutesFor(databases.main),
       // The thresholds of a faculty per kind of origin and the comparison of a work (SRV-1111, P-1).
       ...createFacultyThresholdRoutesFor(databases.main),
       // The guidance of a teacher on sources (SRV-1605, WEB-2133).
