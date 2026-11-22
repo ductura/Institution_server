@@ -843,6 +843,12 @@ const SESSION_ROUTES = {
     body: () => ({ language: "en" }),
     live: 403,
   },
+  "institution.work-work-language.get": {
+    method: "GET",
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => undefined,
+    live: 403,
+  },
   "institution.work-work-language.post": {
     path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
     body: () => ({ language: null }),

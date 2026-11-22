@@ -620,6 +620,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { expectedVersion: 1, language: "en" },
     },
   },
+  "institution.work-work-language.get": {
+    request: { path: `${A}/works/${IDS.document}/work-language`, as: "nastavnik" },
+  },
   "institution.work-work-language.post": {
     request: {
       path: `${A}/works/${IDS.document}/work-language`,

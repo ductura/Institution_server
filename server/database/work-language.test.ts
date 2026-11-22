@@ -160,3 +160,73 @@ describe("setWorkLanguageForDocument", () => {
     });
   });
 });
+
+describe("readWorkLanguageForDocument", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    student_id: STUDENT,
+    language: "hr",
+    assignment_language: "hr",
+    title: "Izmišljeni naslov rada",
+    exception: null,
+    ...over,
+  });
+  const read = (...answers: (unknown[] | Error)[]) => {
+    const f = fake(...answers);
+    return { ...f, got: f.port.readWorkLanguageForDocument(TOKEN, ASSIGNMENT, DOCUMENT) };
+  };
+
+  it("answers title, assignment language and exception from one transaction", async () => {
+    const { got, transactions, seen } = read([{ user_id: STUDENT }], [row()]);
+    expect(await got).toEqual({
+      status: "read",
+      title: "Izmišljeni naslov rada",
+      assignmentLanguage: "hr",
+      exception: null,
+    });
+    expect(transactions()).toBe(1);
+    expect(seen[1]!.values).toEqual([ASSIGNMENT, DOCUMENT]);
+  });
+
+  it("answers the exception when the work has one", async () => {
+    const { got } = read([{ user_id: STUDENT }], [row({ language: "en", exception: "en" })]);
+    expect(await got).toMatchObject({ status: "read", exception: "en" });
+  });
+
+  it("no live session is unauthenticated, without the read", async () => {
+    const { got, seen } = read([{ user_id: null }]);
+    expect(await got).toEqual({ status: "unauthenticated" });
+    expect(seen).toHaveLength(1);
+  });
+
+  it.each<[string, unknown[]]>([
+    ["no work", []],
+    ["a work the caller may not see", [row({ language: null })]],
+  ])("%s is forbidden", async (_name, rows) => {
+    const { got } = read([{ user_id: STUDENT }], rows);
+    expect(await got).toEqual({ status: "forbidden" });
+  });
+
+  it.each<[string, unknown[]]>([
+    ["two rows", [row(), row()]],
+    ["an empty title", [row({ title: "" })]],
+    ["an unknown assignment language", [row({ assignment_language: "de" })]],
+    ["an unknown exception", [row({ exception: "de", language: "hr" })]],
+    ["a language the values do not explain", [row({ language: "en" })]],
+  ])("%s is unavailable", async (_name, rows) => {
+    const { got } = read([{ user_id: STUDENT }], rows);
+    expect(await got).toEqual({ status: "unavailable", reason: "work_language_malformed" });
+  });
+
+  it("a ZD403 is forbidden, any other error unavailable, and an assignment that is no UUID forbidden", async () => {
+    expect(await read(coded("ZD403")).got).toEqual({ status: "forbidden" });
+    expect(await read(new Error("x")).got).toEqual({
+      status: "unavailable",
+      reason: "database_error",
+    });
+    const { port, seen } = fake();
+    expect(await port.readWorkLanguageForDocument(TOKEN, "x", DOCUMENT)).toEqual({
+      status: "forbidden",
+    });
+    expect(seen).toEqual([]);
+  });
+});

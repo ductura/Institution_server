@@ -102,6 +102,7 @@ const INSTITUTION_COURSE_ROUTES = [
   "institution.work-language.post",
   "institution.student-work-language.post",
   "institution.work-work-language.post",
+  "institution.work-work-language.get",
 ] as const;
 
 /** The teacher's reads (Ductus#2028, w1119o), in the order of their factory. */
@@ -124,6 +125,7 @@ export const DAN_803: readonly string[] = [
   ...["institution.enrollments.post", "institution.acknowledgment.post"],
   ...["institution.work-language.post", "institution.student-work-language.post"],
   "institution.work-work-language.post",
+  "institution.work-work-language.get",
   ...["teacher.courses.get", "teacher.submissions.get", "teacher.mentorships.get"],
   ...["teacher.mentorship.get", "teacher.fast-path.post", "institution.courses.post"],
   ...["institution.course-assignments.post", "institution.enrollment-code.post"],
@@ -692,7 +694,7 @@ describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
   it("is exactly the DAN-803, DAN-806, DAN-840, DAN-903, DAN-904, DAN-989 and DAN-931 routes with a contract and no handler", () => {
-    expect(new Set(DAN_803).size).toBe(27);
+    expect(new Set(DAN_803).size).toBe(28);
     expect(new Set(DAN_806).size).toBe(3);
     expect(new Set(DAN_840).size).toBe(3);
     expect(DAN_806.filter((id) => DAN_803.includes(id))).toEqual([]);
