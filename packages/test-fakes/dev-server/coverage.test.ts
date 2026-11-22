@@ -242,6 +242,33 @@ const ADD_PROOF: Step = {
   raw: PROOF_FORM,
 };
 
+// SRV-1605: the guidance of a teacher on sources. The holder of the course writes.
+const TEACHER_WORK = `/api/v1/teacher/works/${IDS.document}`;
+const TEACHER_LITERATURE = `/api/v1/teacher/courses/${IDS.course}/required-literature`;
+const GUIDANCE_RECORD = { ...WORK_SOURCE, id: "00000000-0000-4000-8000-00000000c5a1" };
+const GUIDANCE_DUE = "2099-01-01T10:00:00.000Z";
+const RECOMMEND: Step = {
+  path: `${TEACHER_WORK}/source-recommendations/${GUIDANCE_RECORD.id}`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { record: GUIDANCE_RECORD, requirement: "recommended" },
+};
+const REQUEST_PROOF: Step = {
+  path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proof-request`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { instruction: "Priložite stranicu 14.", dueAt: GUIDANCE_DUE },
+};
+const ADD_LITERATURE: Step = {
+  path: `${TEACHER_LITERATURE}/${GUIDANCE_RECORD.id}`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { record: GUIDANCE_RECORD, doi: "10.1000/izmisljeno-1" },
+};
+
 const PNG_BASE64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]).toString(
   "base64",
 );
@@ -887,6 +914,71 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "DELETE",
       headers: ORIGIN,
     },
+  },
+  "teacher.source-guidance.get": {
+    before: [SAVE_SOURCE],
+    request: { path: `${TEACHER_WORK}/source-guidance`, as: "nastavnik" },
+  },
+  "teacher.source-recommendation.put": { request: RECOMMEND },
+  "teacher.source-recommendation.delete": {
+    before: [RECOMMEND],
+    request: {
+      path: `${TEACHER_WORK}/source-recommendations/${GUIDANCE_RECORD.id}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.source-proof-request.put": { before: [SAVE_SOURCE], request: REQUEST_PROOF },
+  "teacher.source-proof-request.delete": {
+    before: [SAVE_SOURCE, REQUEST_PROOF],
+    request: {
+      path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proof-request`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.literature-seen.put": {
+    request: {
+      path: `${TEACHER_WORK}/literature-seen`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.source-proofs.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: { path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proofs`, as: "nastavnik" },
+  },
+  "teacher.source-proof-image.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: {
+      path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proofs/00000000-0000-4000-8000-d00000000001/image`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.course-literature.get": {
+    before: [ADD_LITERATURE],
+    request: { path: TEACHER_LITERATURE, as: "nastavnik" },
+  },
+  "teacher.course-literature.put": { request: ADD_LITERATURE },
+  "teacher.course-literature.delete": {
+    before: [ADD_LITERATURE],
+    request: {
+      path: `${TEACHER_LITERATURE}/${GUIDANCE_RECORD.id}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "student.course-literature.get": {
+    before: [ADD_LITERATURE],
+    request: { path: `/api/v1/student/courses/${IDS.course}/required-literature`, as: "student" },
+  },
+  "student.source-proof-requests.get": {
+    before: [SAVE_SOURCE, REQUEST_PROOF],
+    request: { path: `${STUDENT_ASSIGNMENT}/source-proof-requests`, as: "student" },
   },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
