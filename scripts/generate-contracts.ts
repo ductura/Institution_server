@@ -284,6 +284,11 @@ export function compileValidator(schema: TSchema, where: string): string {
     .replace(
       /Number\.isInteger\((value\['\w+'\])\)/g,
       "(typeof $1 === 'number' && Number.isInteger($1))",
+    )
+    // The same for an array item, which is unknown (a bounded gap, PIL-P1-RITAM-SRV).
+    .replaceAll(
+      "Number.isInteger(value)",
+      "(typeof value === 'number' && Number.isInteger(value))",
     );
   if (code === raw || code.includes(": any"))
     throw new Error(`unexpected validator shape for ${where}`);
