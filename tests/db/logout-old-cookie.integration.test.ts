@@ -952,6 +952,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "student.submission-withdrawal.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/withdrawal`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.submission-history.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/submission/history`,

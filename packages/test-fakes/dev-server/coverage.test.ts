@@ -1214,6 +1214,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  "student.submission-withdrawal.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission/withdrawal`,
+      as: "student",
+      method: "GET",
+    },
+  },
   "student.submission-history.get": {
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/submission/history`,
