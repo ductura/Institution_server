@@ -239,6 +239,17 @@ describe("createOidcClient", () => {
     expect(url.href).not.toContain(CLIENT_SECRET);
   });
 
+  it("asks for prompt=login only when told to (INT-20b)", async () => {
+    const checks = newLoginChecks();
+    const plain = await oidc.authorizationUrl(checks);
+    expect(plain.searchParams.has("prompt")).toBe(false);
+    expect((await oidc.authorizationUrl(checks, {})).searchParams.has("prompt")).toBe(false);
+    const again = await oidc.authorizationUrl(checks, { prompt: "login" });
+    expect(again.searchParams.getAll("prompt")).toEqual(["login"]);
+    again.searchParams.delete("prompt");
+    expect([...again.searchParams].sort()).toEqual([...plain.searchParams].sort());
+  });
+
   it("discovers once for many logins", async () => {
     for (let i = 0; i < 3; i++) {
       const { checks, url } = await approved();
