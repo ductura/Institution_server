@@ -455,6 +455,13 @@ export type {
 } from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
+export {
+  createTeacherWork,
+  type TeacherWork,
+  type TeacherWorkOutcome,
+  type TeacherWorkRead,
+  type TeacherWorkState,
+} from "./teacher-work/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
 export {
   createTeacherWorkingCriteria,

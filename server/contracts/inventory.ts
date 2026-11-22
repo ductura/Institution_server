@@ -280,6 +280,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7043116568",
   },
+  // SRV-2003 (Ductus#2028 c.7024185874): the teacher's read of one work by its document id; Ductus has no such route.
+  "app/api/teacher/works/[documentId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7024185874",
+  },
   // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
   "app/api/teacher/works/[documentId]/working-criteria/route.ts": {
     methods: ["GET"],
