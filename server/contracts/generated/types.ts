@@ -1345,6 +1345,13 @@ export type Operations = {
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
   };
+  "work.origin-composition.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "parts": ({ "kind": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "percent": number })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "work.review.post": {
     params: { "documentId": string };
     query: undefined;

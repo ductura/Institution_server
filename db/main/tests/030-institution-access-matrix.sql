@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3250);
+SELECT plan(3253);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -726,6 +726,18 @@ FROM (VALUES
   ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Osporavam tom'),
   ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
 ) AS c (actor, assignment, student, result);
+
+-- 1c3. SRV-0910: the kind of origin and the rhythm of typing (evidence.origin_change,
+-- evidence.input_rhythm, evidence.input_rhythm_setting) only through the RPCs;
+-- the cells per actor are in 223-origin-rhythm.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_evidence'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-0910: ' || t.name || ' has forced RLS, the evidence owner and no privilege for another role')
+  FROM (VALUES ('origin_change'), ('input_rhythm'), ('input_rhythm_setting')) AS t (name)
+  JOIN pg_class c ON c.oid = ('evidence.' || t.name)::regclass;
 
 -- 1d. SRV-28: the decline of a mentorship request and the overview of an
 -- assignment, one cell per actor; the rest of their matrix (states, reason,

@@ -114,6 +114,7 @@ describe("route inventory", () => {
       "student.source-proof-image.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts is not in the inventory",
       "student.text-check-config.get: app/api/student/assignments/[assignmentId]/text-check-config/route.ts is not in the inventory",
       "teacher.work.get: app/api/teacher/works/[documentId]/route.ts is not in the inventory",
+      "work.origin-composition.get: app/api/works/[documentId]/origin-composition/route.ts is not in the inventory",
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",

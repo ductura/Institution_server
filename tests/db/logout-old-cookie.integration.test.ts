@@ -104,6 +104,7 @@ import {
   createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createOriginCompositionRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -732,6 +733,13 @@ const SESSION_ROUTES = {
   "teacher.work.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001",
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-0910: a live session that has no such work gets 404 on the composition by origin.
+  "work.origin-composition.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/origin-composition",
     body: () => undefined,
     live: 404,
   },
@@ -1399,6 +1407,7 @@ const FACTORIES = [
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createTeacherWorkRoutesFor",
+  "createOriginCompositionRoutesFor",
   "createTeacherWorkingCriteriaRoutesFor",
   "createSourceLookupRouteFor",
   "createPublicVerificationRouteFor",
@@ -1504,6 +1513,7 @@ const MOUNTED = [
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkRoutesFor(databases.main),
+  ...createOriginCompositionRoutesFor(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createPublicVerificationRouteFor(databases.main),
