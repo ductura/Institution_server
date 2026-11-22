@@ -1558,6 +1558,10 @@ beforeAll(async () => {
       expectedOrigin: ORIGIN,
       operators: async () => "listed",
       secondFactor: async () => "confirmed",
+      // The test sends one session token to every route twice (live, then old),
+      // which is near the per-account limit of 300 a minute and grows with each
+      // route; the limit is tested in server/http/rate-limit.integration.test.ts.
+      rateLimiter: { check: () => ({ allowed: true, limitClass: "default" }) },
     }),
     databases,
     routes: MOUNTED,
