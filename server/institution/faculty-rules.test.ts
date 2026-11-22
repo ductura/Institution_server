@@ -44,8 +44,15 @@ const EMPTY: Row = {
 
 // The single statement: the role column on every row, versions only when it is true,
 // one row without a version otherwise. `raw` replaces the answer as given.
-function database(answer: { admin?: unknown; rows?: Row[]; raw?: Row[]; code?: string }) {
+function database(answer: {
+  authenticated?: unknown;
+  admin?: unknown;
+  rows?: Row[];
+  raw?: Row[];
+  code?: string;
+}) {
   const calls: string[] = [];
+  const authenticated = "authenticated" in answer ? answer.authenticated : true;
   const admin = "admin" in answer ? answer.admin : true;
   const withActor = vi.fn(
     async (_token: string | null | undefined, fn: (tx: ActorTransaction) => Promise<unknown>) =>
@@ -58,8 +65,8 @@ function database(answer: { admin?: unknown; rows?: Row[]; raw?: Row[]; code?: s
           const rows =
             answer.raw ??
             (versions.length > 0
-              ? versions.map((row) => ({ admin, ...row }))
-              : [{ admin, ...EMPTY }]);
+              ? versions.map((row) => ({ authenticated, admin, ...row }))
+              : [{ authenticated, admin, ...EMPTY }]);
           return { rows, rowCount: rows.length };
         },
       } as unknown as ActorTransaction),
@@ -198,6 +205,9 @@ describe("readFacultyRules", () => {
     // One statement is one snapshot: a role revoked mid-read cannot pass the check and then see no rows.
     expect(db.calls).toHaveLength(1);
     expect(db.calls[0]).toMatch(
+      /^SELECT \(SELECT a\.user_id FROM app\.current_actor\(\) a\) IS NOT NULL AS authenticated,/,
+    );
+    expect(db.calls[0]).toMatch(
       /FROM \(SELECT institution\.actor_has_role\('admin'\) AS admin\) r/,
     );
     expect(db.calls[0]).toMatch(
@@ -219,8 +229,27 @@ describe("readFacultyRules", () => {
     expect(db.calls).toHaveLength(1);
   });
 
+  it("answers unauthorized to a session that is no longer open, before the role (ZEL-S10)", async () => {
+    // The old cookie after logout: no actor, so actor_has_role is false too; 401, not 403.
+    const db = database({ authenticated: false, admin: false, rows: [version()] });
+    expect(await readFacultyRules(TOKEN, db.withActor)).toEqual({ kind: "unauthorized" });
+    expect(db.calls).toHaveLength(1);
+  });
+
   it.each([
     ["no row", { raw: [] }],
+    ["not authenticated but an administrator", { authenticated: false, admin: true }],
+    ["authenticated as null", { authenticated: null }],
+    ["authenticated missing", { raw: [{ admin: true, ...EMPTY }] }],
+    [
+      "authenticated only on the first row",
+      {
+        raw: [
+          { authenticated: true, admin: true, ...version() },
+          { admin: true, ...version({ version_no: 2 }) },
+        ],
+      },
+    ],
     [
       "false with versions",
       {
