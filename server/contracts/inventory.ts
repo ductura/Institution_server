@@ -139,6 +139,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562265",
   },
+  // SRV-1607 (Ductus#2052): notifications of work returned for revision, a list of its own.
+  "app/api/notifications/returned-for-revision/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7082147227",
+  },
   "app/api/notifications/[id]/read/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562265",

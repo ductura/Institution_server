@@ -253,6 +253,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  "notifications.returned-for-revision.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications/returned-for-revision",
+    body: () => undefined,
+    live: 200,
+  },
   "notifications.read.post": {
     path: `/api/v1/notifications/${randomUUID()}/read`,
     body: () => undefined,

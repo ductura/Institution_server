@@ -6,6 +6,7 @@ import {
   NotificationId,
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
+  RevisionNotificationsPage,
   notificationsRoutes,
 } from "../../contracts/index.ts";
 import { createNotifications, type WithActor } from "../../database/index.ts";
@@ -20,7 +21,9 @@ import {
   type Route,
 } from "../index.ts";
 
-const [LIST, READ] = notificationsRoutes;
+const [LIST, READ, REVISIONS] = notificationsRoutes;
+// SRV-1607: its own list (REVISIONS); a new kind in LIST would break clients.
+const OWN_LIST_KINDS = new Set(["returned_for_revision"]);
 const MIN_REMINDER_SECONDS = 300;
 const BODY_TIMEOUT_MS = 5_000;
 
@@ -62,12 +65,42 @@ export function createNotificationsRoutesFor(
           const rows = await notifications.list(token, before, cooldown);
           const page = rows.slice(0, NOTIFICATIONS_PAGE_SIZE);
           const nextBefore = rows.length > page.length ? page.at(-1)?.id : null;
-          const body = { notifications: page, nextBefore };
+          // The page and its cursor are counted over every kind; the kinds with a list of
+          // their own are left out of the answer (the page may be short, even empty).
+          const body = {
+            notifications: page.filter((row) => !OWN_LIST_KINDS.has(row.kind)),
+            nextBefore,
+          };
           if (!Value.Check(NotificationsPage, body))
             throw new Error("inbox response outside its contract");
           return sendJson(response, 200, body);
         } catch (error) {
           return databaseFailure(response, error, LIST.id);
+        }
+      },
+    },
+    {
+      contract: REVISIONS,
+      async handle(request, response) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const query = new URLSearchParams((request.url ?? "").split("?").slice(1).join("?"));
+        const before = query.get("before");
+        if (
+          query.size > Number(before !== null) ||
+          (before !== null && !Value.Check(NotificationId, before))
+        )
+          return sendProblem(response, 422, "invalid_input");
+        try {
+          const rows = await notifications.listReturnedForRevision(token, before);
+          const page = rows.slice(0, NOTIFICATIONS_PAGE_SIZE);
+          const nextBefore = rows.length > page.length ? page.at(-1)?.id : null;
+          const body = { notifications: page, nextBefore };
+          if (!Value.Check(RevisionNotificationsPage, body))
+            throw new Error("revision inbox response outside its contract");
+          return sendJson(response, 200, body);
+        } catch (error) {
+          return databaseFailure(response, error, REVISIONS.id);
         }
       },
     },

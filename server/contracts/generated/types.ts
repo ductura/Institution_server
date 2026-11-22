@@ -498,6 +498,13 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error";
   };
+  "notifications.returned-for-revision.list.get": {
+    params: undefined;
+    query: { "before"?: string };
+    body: undefined;
+    success: { status: 200; body: { "notifications": ({ "id": string; "targetId": string; "documentId": string; "comment": string; "revisionDueAt": string | null; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "ops.pilot-metrics.get": {
     params: undefined;
     query: { [key: string]: unknown };

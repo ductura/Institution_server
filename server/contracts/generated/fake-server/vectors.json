@@ -25258,6 +25258,120 @@
     }
   },
   {
+    "route": "notifications.returned-for-revision.list.get",
+    "name": "inbox",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notifications": [
+          {
+            "id": "00000000-0000-4000-8000-000000001711",
+            "targetId": "a5000000-0000-4000-8000-000000000001",
+            "documentId": "doc-demo-1",
+            "comment": "Doradi uvod i ispravi navode.",
+            "revisionDueAt": "2026-12-15T12:00:00.000Z",
+            "createdAt": "2026-11-21T09:00:00.000Z",
+            "readAt": null
+          }
+        ],
+        "nextBefore": null
+      }
+    }
+  },
+  {
+    "route": "notifications.returned-for-revision.list.get",
+    "name": "unauthorized",
+    "request": {
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000ba"
+      }
+    }
+  },
+  {
+    "route": "notifications.returned-for-revision.list.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "query": {
+        "before": "00000000-0000-4000-8000-000000001712"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000bc"
+      }
+    }
+  },
+  {
+    "route": "notifications.returned-for-revision.list.get",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "query": {
+        "before": "invalid"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000bb"
+      }
+    }
+  },
+  {
+    "route": "notifications.returned-for-revision.list.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
     "route": "ops.pilot-metrics.get",
     "name": "pilot-metrics",
     "request": {
@@ -25480,7 +25594,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.86.0",
+        "apiVersion": "1.87.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -25496,7 +25610,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.86.0",
+        "apiVersion": "1.87.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
