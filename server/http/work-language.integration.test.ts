@@ -73,6 +73,7 @@ async function start() {
     setAssignmentWorkLanguage: record("setAssignmentWorkLanguage"),
     setWorkLanguage: record("setWorkLanguage"),
     setWorkLanguageForDocument: record("setWorkLanguageForDocument"),
+    readWorkLanguageForDocument: record("readWorkLanguageForDocument"),
   } as unknown as WorkLanguages;
   server = await startServer({
     host: "127.0.0.1",
@@ -271,5 +272,66 @@ describe("what reaches the port", () => {
       await server?.close();
       server = undefined;
     }
+  });
+});
+
+// The teacher's read (institution.work-work-language.get): no body, no origin;
+// the session (401), the path ids (422) and then the port, whose outcome alone
+// is answered. A read is no session activity.
+describe("institution.work-work-language.get", () => {
+  const getPath = (p: Record<string, string>) =>
+    `${BASE}/${p.assignmentId}/works/${encodeURIComponent(p.documentId!)}/work-language`;
+  const get = (path: string, headers: [string, string][]) =>
+    send(
+      Buffer.from(
+        `GET ${path} HTTP/1.1\r\n${[["host", "127.0.0.1"], ...headers]
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\r\n")}\r\n\r\n`,
+        "latin1",
+      ),
+    );
+  const OUTCOMES: Record<string, unknown> = {
+    forbidden: { status: "forbidden" },
+    unavailable: { status: "unavailable", reason: "database_error" },
+  };
+  const vectors = vectorsOf("institution.work-work-language.get");
+
+  it.each(vectors.map((v) => [v.name, v] as const))("vector %s", async (name, v) => {
+    outcome =
+      v.response.status === 200
+        ? { status: "read", ...v.response.body }
+        : name === "unauthorized" || name === "invalid-input"
+          ? undefined
+          : OUTCOMES[name];
+    await start();
+    const params =
+      name === "invalid-input" ? { ...v.request.params, assignmentId: "x" } : v.request.params;
+    const got = await get(getPath(params), Object.entries(v.request.headers));
+    expect(got.status).toBe(v.response.status);
+    expect(got.head["cache-control"]).toBe("no-store");
+    const json = JSON.parse(got.body) as Record<string, unknown>;
+    if (got.status === 200) expect(json).toEqual(v.response.body);
+    else expect(json).toEqual({ ...v.response.body, requestId: got.head["x-request-id"] });
+    if (outcome === undefined) expect(calls).toEqual([]);
+    else {
+      const token = v.request.headers.cookie!.slice("__Host-ductus_session=".length);
+      expect(calls.map((c) => [c.method, c.args.slice(0, 3)])).toEqual([
+        [
+          "readWorkLanguageForDocument",
+          [token, v.request.params.assignmentId, v.request.params.documentId],
+        ],
+      ]);
+    }
+    expect(activity).toEqual([]);
+  });
+
+  it("a document id that is no work id is 422 without a call", async () => {
+    await start();
+    const got = await get(
+      getPath({ assignmentId: vectors[0]!.request.params.assignmentId!, documentId: " x" }),
+      Object.entries(vectors[0]!.request.headers),
+    );
+    expect(got.status).toBe(422);
+    expect(calls).toEqual([]);
   });
 });

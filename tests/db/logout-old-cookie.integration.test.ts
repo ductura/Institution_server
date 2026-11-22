@@ -18,6 +18,7 @@ import {
   createAuthRoutes,
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
+  createRevisionRequestsRouteFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createConsultationSlotRoutesFor,
@@ -190,6 +191,11 @@ const SESSION_ROUTES = {
   },
   "collaboration.comments.post": {
     path: "/api/v1/comments/list",
+    body: () => ({ documentId: randomUUID() }),
+    live: 403,
+  },
+  "collaboration.revision-requests.post": {
+    path: "/api/v1/revision-requests/list",
     body: () => ({ documentId: randomUUID() }),
     live: 403,
   },
@@ -859,6 +865,12 @@ const SESSION_ROUTES = {
     body: () => ({ language: "en" }),
     live: 403,
   },
+  "institution.work-work-language.get": {
+    method: "GET",
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => undefined,
+    live: 403,
+  },
   "institution.work-work-language.post": {
     path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
     body: () => ({ language: null }),
@@ -1317,6 +1329,7 @@ const FACTORIES = [
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
+  "createRevisionRequestsRouteFor",
   "createWorkMessagesRoutesFor",
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
@@ -1420,6 +1433,7 @@ const MOUNTED = [
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
+  createRevisionRequestsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),

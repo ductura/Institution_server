@@ -187,7 +187,10 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     fn: "collaboration.rereview_revision_request",
     why: "no_content",
     note: "the state of a revision request (outcome, sequence, version, state)",
-    callers: ["server/collaboration/revision-requests.ts"],
+    callers: [
+      "server/collaboration/revision-requests.ts",
+      "server/http/revision-requests/store.ts",
+    ],
   },
   {
     fn: "app.retention_candidates",
