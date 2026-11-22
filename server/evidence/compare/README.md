@@ -23,7 +23,7 @@ Poznate granice: promjena koja ne dodaje znak (oznaka, navod u v2 i v3, fusnota)
 
 ## Tko ga zove
 
-HTTP adapter rute usporedbe u `server/http` (sljedeći korak).
+`server/http/work-compare` (`work.compare.get`, SRV-2004) i `server/http/comments` (promjene od zadnjeg pregleda).
 
 ## Koje podatke dira
 
