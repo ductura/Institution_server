@@ -253,6 +253,27 @@ export type Operations = {
     success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
   };
+  "institution.origin-threshold.delete": {
+    params: { "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown" };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.origin-threshold.put": {
+    params: { "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown" };
+    query: undefined;
+    body: { "thresholdPercent": number; "strictness": "hard" | "soft" };
+    success: { status: 200; body: { "changed": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.origin-thresholds.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "thresholds": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "thresholdPercent": number; "strictness": "hard" | "soft" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.retention.get": {
     params: undefined;
     query: { [key: string]: unknown };
@@ -1350,6 +1371,13 @@ export type Operations = {
     query: undefined;
     body: undefined;
     success: { status: 200; body: { "parts": ({ "kind": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "percent": number })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.origin-thresholds.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.review.post": {

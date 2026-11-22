@@ -105,6 +105,7 @@ import {
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
+  createFacultyThresholdRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -737,6 +738,31 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-0910: a live session that has no such work gets 404 on the composition by origin.
+  // SRV-1111: the thresholds of a faculty; not an administrator, so 403; the comparison of a work that is not the caller's, so 404.
+  "institution.origin-thresholds.get": {
+    method: "GET",
+    path: "/api/v1/institution/origin-thresholds",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.origin-threshold.put": {
+    method: "PUT",
+    path: "/api/v1/institution/origin-thresholds/typed",
+    body: () => ({ thresholdPercent: 90, strictness: "soft" }),
+    live: 403,
+  },
+  "institution.origin-threshold.delete": {
+    method: "DELETE",
+    path: "/api/v1/institution/origin-thresholds/typed",
+    body: () => undefined,
+    live: 403,
+  },
+  "work.origin-thresholds.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/origin-thresholds",
+    body: () => undefined,
+    live: 404,
+  },
   "work.origin-composition.get": {
     method: "GET",
     path: "/api/v1/works/izmisljeni-rad-0001/origin-composition",
@@ -1408,6 +1434,7 @@ const FACTORIES = [
   "createTextCheckConfigRoute",
   "createTeacherWorkRoutesFor",
   "createOriginCompositionRoutesFor",
+  "createFacultyThresholdRoutesFor",
   "createTeacherWorkingCriteriaRoutesFor",
   "createSourceLookupRouteFor",
   "createPublicVerificationRouteFor",
@@ -1514,6 +1541,7 @@ const MOUNTED = [
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkRoutesFor(databases.main),
   ...createOriginCompositionRoutesFor(databases.main),
+  ...createFacultyThresholdRoutesFor(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createPublicVerificationRouteFor(databases.main),
