@@ -738,12 +738,6 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-0910: a live session that has no such work gets 404 on the composition by origin.
-  "work.origin-composition.get": {
-    method: "GET",
-    path: "/api/v1/works/izmisljeni-rad-0001/origin-composition",
-    body: () => undefined,
-    live: 404,
-  },
   // SRV-1111: the thresholds of a faculty; not an administrator, so 403; the comparison of a work that is not the caller's, so 404.
   "institution.origin-thresholds.get": {
     method: "GET",
@@ -766,6 +760,12 @@ const SESSION_ROUTES = {
   "work.origin-thresholds.get": {
     method: "GET",
     path: "/api/v1/works/izmisljeni-rad-0001/origin-thresholds",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.origin-composition.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/origin-composition",
     body: () => undefined,
     live: 404,
   },

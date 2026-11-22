@@ -483,9 +483,9 @@ export {
   createFacultyThresholds,
   THRESHOLD_ORIGINS,
   type FacultyThresholds,
-  type ThresholdOrigin,
   type Threshold,
   type ThresholdComparison,
+  type ThresholdOrigin,
   type ThresholdState,
 } from "./faculty-thresholds/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
