@@ -44,6 +44,7 @@ $$;
 -- Nothing before there is a template.
 SELECT is(pg_temp.ask('iva', 'SELECT count(*)::text FROM app.read_milestone_template()'), '0', 'no template at first');
 SELECT is(pg_temp.plan('ana'), 'empty', 'a work has no milestones without a template');
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD409: conflict', 'without a template of the institution there is nothing to apply');
 
 -- Who may read and replace it.
 SELECT is(pg_temp.ask('anon', 'SELECT count(*)::text FROM app.read_milestone_template()'), 'ZD401: not authenticated', 'reading needs a session');
@@ -126,14 +127,84 @@ SELECT is(pg_temp.plan('dora'), 'ZD404: not found', 'a stranger reads nothing');
 SELECT is(pg_temp.plan('anon'), 'ZD401: not authenticated', 'reading the plan needs a session');
 SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.add_work_milestone(%L, %L, NULL, %L)', pg_temp.mdoc(), 'Poglavlje', 'current_version')), '2', 'and another');
 SELECT is(pg_temp.ask('ana', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD403: forbidden', 'the student cannot apply the template');
+SELECT is(pg_temp.ask(a, format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD404: not found', a || ' is a teacher without a part in the mentored work and is told nothing')
+  FROM (VALUES ('vesna'), ('iva'), ('dora')) AS t(a);
+SELECT is(pg_temp.ask('anon', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD401: not authenticated', 'applying needs a session');
 SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), '2', 'the mentor applies the template again');
 SELECT is(pg_temp.plan('ana'), '1:Tema i nacrt:topic_text:true,2:Prvo poglavlje:current_version:false', 'the work has the milestones of the template');
+
+-- relativeDue counts from the creation of the work, however late the template is applied
+-- again (review of #614): a work created on 1 February with a 14 day milestone has it due
+-- on 15 February, also when the mentor applies the template in May.
+RESET ROLE;
+ALTER TABLE institution.assignment DISABLE TRIGGER USER;
+UPDATE institution.assignment SET created_at = '2026-02-01T09:00:00Z' WHERE id = pg_temp.id('zm1');
+ALTER TABLE institution.assignment ENABLE TRIGGER USER;
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), '2', 'the mentor applies the template long after the work was made');
+SELECT is((SELECT m.due_at::text FROM institution.work_milestone m WHERE m.assignment_id = pg_temp.id('zm1') AND m.position = 1),
+  '2026-02-15 09:00:00+00', 'the deadline counts from the creation of the work, not from the day of applying');
+SELECT is((SELECT m.due_at FROM institution.work_milestone m WHERE m.assignment_id = pg_temp.id('zm1') AND m.position = 2), NULL, 'a milestone without relativeDue has no deadline');
 
 -- Once a milestone was submitted, the template is not applied again; adding stays possible.
 SELECT is(pg_temp.ask('ana', format('SELECT state FROM app.submit_work_milestone(%L, (SELECT id FROM app.read_work_milestone_plan(%L) WHERE position = 1))', pg_temp.mdoc(), pg_temp.mdoc())),
   'submitted', 'Ana submits the first milestone');
 SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD409: conflict', 'no template again after a submission');
 SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.add_work_milestone(%L, %L, NULL, %L)', pg_temp.mdoc(), 'Zaključak', 'current_version')), '3', 'a milestone can still be added');
+
+-- Limit 100 milestones counts milestones, not positions (review of #614): after deleting
+-- the milestones 4..99 the work has 4 milestones, the last at position 100, and adding
+-- still works; the gap is closed and the order kept.
+RESET ROLE;
+INSERT INTO institution.work_milestone (institution_id, assignment_id, position, title, due_at, submits)
+SELECT m.institution_id, m.assignment_id, n, 'Etapa ' || n, NULL, 'current_version'
+  FROM institution.work_milestone m CROSS JOIN generate_series(4, 100) n
+ WHERE m.assignment_id = pg_temp.id('zm1') AND m.position = 1;
+SELECT is((SELECT count(*)::int FROM institution.work_milestone WHERE assignment_id = pg_temp.id('zm1')), 100, 'fixture: 100 milestones');
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.add_work_milestone(%L, %L, NULL, %L)', pg_temp.mdoc(), 'Sto i prva', 'current_version')), 'ZD409: conflict', 'the 101st milestone is refused');
+DELETE FROM institution.work_milestone WHERE assignment_id = pg_temp.id('zm1') AND position BETWEEN 4 AND 99;
+SELECT is((SELECT string_agg(position::text, ',' ORDER BY position) FROM institution.work_milestone WHERE assignment_id = pg_temp.id('zm1')),
+  '1,2,3,100', 'fixture: one milestone at position 100, a gap before it');
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.add_work_milestone(%L, %L, NULL, %L)', pg_temp.mdoc(), 'Nova', 'topic_text')), '5', 'adding works with 4 milestones although the last is at position 100');
+SELECT is((SELECT string_agg(position || ':' || title, ',' ORDER BY position) FROM institution.work_milestone WHERE assignment_id = pg_temp.id('zm1')),
+  '1:Tema i nacrt,2:Prvo poglavlje,3:Zaključak,4:Etapa 100,5:Nova', 'the gap is closed and the order is kept');
+SELECT is((SELECT count(*)::int FROM institution.work_milestone_event e JOIN institution.work_milestone m ON m.id = e.milestone_id
+            WHERE m.assignment_id = pg_temp.id('zm1')), 1, 'the events stay with their milestones');
+
+-- A decimal spelling of a whole number is a valid relativeDue and must not break the
+-- assignment trigger (review of #614): 14.0 is accepted and applied as 14.
+SELECT is(pg_temp.publish('iva', 1, 'true', '[{"title":"Decimalna","submits":"topic_text","relativeDue":14.0}]'), '2', 'relativeDue 14.0 is a valid whole number');
+SET LOCAL ROLE ductus_identity;
+SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
+INSERT INTO institution.mentorship (id, institution_id, mentor_id, student_id, work_type, started_at)
+SELECT '00000000-0000-4000-8000-0000000fe0a2', s.institution_id, pg_temp.id('marko'), s.id, 'bachelor_thesis', now()
+  FROM person s WHERE s.name = 'dora';
+INSERT INTO institution.assignment (id, mentorship_id, institution_id, current_version, created_by, created_at)
+SELECT '00000000-0000-4000-8000-0000000fe002', m.id, m.institution_id, 1, m.mentor_id, '2026-03-01T00:00:00Z'
+  FROM institution.mentorship m WHERE m.id = '00000000-0000-4000-8000-0000000fe0a2';
+INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type, opens_at, due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+SELECT '00000000-0000-4000-8000-0000000fe002', 1, v.title, v.instructions, v.work_type, v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.import_allowed, v.created_by
+  FROM institution.assignment_version v WHERE v.assignment_id = pg_temp.id('zm2') AND v.version_no = 1;
+SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
+RESET ROLE;
+SELECT is((SELECT m.title || ':' || m.due_at::text FROM institution.work_milestone m WHERE m.assignment_id = '00000000-0000-4000-8000-0000000fe002'),
+  'Decimalna:2026-03-15 00:00:00+00', 'the assignment with a decimal relativeDue is made and counts 14 days from its creation');
+
+-- After the final submission of the work (N-09): neither adding a milestone nor applying
+-- the template is allowed.
+SET CONSTRAINTS ALL DEFERRED;
+INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+SELECT d.id, d.institution_id, 1, 0, d.principal_id, repeat('c', 64) FROM evidence.document d WHERE d.id = pg_temp.mdoc();
+INSERT INTO evidence.submission_request (id, institution_id, assignment_id, assignment_version, project_id, document_id, principal_id, revision, content_hash, requested_at)
+SELECT '00000000-0000-4000-8000-0000000fe0b1', d.institution_id, p.assignment_id, 1, p.id, d.id, d.principal_id, 1, repeat('c', 64), now()
+  FROM evidence.document d JOIN evidence.project p ON p.id = d.project_id AND p.institution_id = d.institution_id
+ WHERE d.id = pg_temp.mdoc();
+INSERT INTO evidence.submission (submission_request_id, institution_id, principal_id, assignment_id, assignment_version, revision, artifact_hash, requested_at, due_at, recorded_at)
+SELECT r.id, r.institution_id, r.principal_id, r.assignment_id, r.assignment_version, r.revision, r.content_hash, r.requested_at, v.due_at, r.requested_at
+  FROM evidence.submission_request r JOIN institution.assignment_version v ON v.assignment_id = r.assignment_id AND v.version_no = r.assignment_version AND v.institution_id = r.institution_id
+ WHERE r.id = '00000000-0000-4000-8000-0000000fe0b1';
+SET CONSTRAINTS ALL IMMEDIATE;
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.add_work_milestone(%L, %L, NULL, %L)', pg_temp.mdoc(), 'Kasno', 'current_version')), 'ZD409: conflict', 'no milestone can be added after the final submission');
+SELECT is(pg_temp.ask('marko', format('SELECT count(*)::text FROM app.apply_milestone_template_to_work(%L)', pg_temp.mdoc())), 'ZD409: conflict', 'the template is not applied after the final submission');
 
 SELECT * FROM finish();
 ROLLBACK;

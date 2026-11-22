@@ -119,6 +119,9 @@ $$;
 
 -- Copies the latest template of the institution into the milestones of an assignment
 -- that has none. Nothing without a template. Returns the number of milestones made.
+-- p_from is the moment the work was created (institution.assignment.created_at), so a
+-- relativeDue counts from the creation of the work, however late the template is applied
+-- again. relativeDue is a whole number, written 14 or 14.0, so it goes through numeric.
 CREATE FUNCTION institution.apply_milestone_template(p_assignment_id uuid, p_from timestamptz)
 RETURNS integer
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
@@ -137,7 +140,7 @@ BEGIN
   INSERT INTO institution.work_milestone (institution_id, assignment_id, position, title, due_at, submits)
   SELECT v_institution, p_assignment_id, e.n::integer, e.item ->> 'title',
          CASE WHEN e.item ? 'relativeDue'
-              THEN p_from + ((e.item ->> 'relativeDue')::integer * interval '1 day') END,
+              THEN p_from + ((e.item ->> 'relativeDue')::numeric::integer * interval '1 day') END,
          e.item ->> 'submits'
     FROM pg_catalog.jsonb_array_elements(v_list) WITH ORDINALITY AS e(item, n);
   GET DIAGNOSTICS v_made = ROW_COUNT;
@@ -150,7 +153,7 @@ CREATE FUNCTION institution.assignment_apply_milestone_template() RETURNS trigge
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $$
 BEGIN
-  PERFORM institution.apply_milestone_template(NEW.id, pg_catalog.statement_timestamp());
+  PERFORM institution.apply_milestone_template(NEW.id, NEW.created_at);
   RETURN NULL;
 END
 $$;
@@ -253,6 +256,9 @@ AS $$
 DECLARE
   v_ctx record;
   v_position integer;
+  v_count integer;
+  v_row record;
+  v_next integer := 0;
 BEGIN
   SELECT * INTO v_ctx FROM institution.work_milestone_context(p_document_id);
   IF v_ctx.o_role <> 'teacher' OR NOT v_ctx.o_mentor THEN
@@ -269,10 +275,26 @@ BEGIN
   IF app.document_submitted(p_document_id) THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
-  SELECT coalesce(max(m.position), 0) + 1 INTO v_position FROM institution.work_milestone m
+  -- The limit is 100 milestones, not position 100: deleting a milestone leaves a gap.
+  SELECT count(*)::integer, coalesce(max(m.position), 0) + 1 INTO v_count, v_position
+    FROM institution.work_milestone m
    WHERE m.institution_id = v_ctx.o_institution_id AND m.assignment_id = v_ctx.o_assignment_id;
-  IF v_position > 100 THEN
+  IF v_count >= 100 THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
+  END IF;
+  IF v_position > 100 THEN
+    -- Close the gaps, keeping the order. Each row moves to a free slot at or below its own
+    -- position, in ascending order, so the unique position never collides.
+    FOR v_row IN SELECT m.id, m.position FROM institution.work_milestone m
+                  WHERE m.institution_id = v_ctx.o_institution_id AND m.assignment_id = v_ctx.o_assignment_id
+                  ORDER BY m.position LOOP
+      v_next := v_next + 1;
+      IF v_row.position <> v_next THEN
+        UPDATE institution.work_milestone m SET position = v_next
+         WHERE m.id = v_row.id AND m.institution_id = v_ctx.o_institution_id;
+      END IF;
+    END LOOP;
+    v_position := v_next + 1;
   END IF;
   INSERT INTO institution.work_milestone (institution_id, assignment_id, position, title, due_at, submits)
   VALUES (v_ctx.o_institution_id, v_ctx.o_assignment_id, v_position, p_title, p_due_at, p_submits);
@@ -289,6 +311,7 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   v_ctx record;
+  v_created timestamptz;
 BEGIN
   SELECT * INTO v_ctx FROM institution.work_milestone_context(p_document_id);
   IF v_ctx.o_role <> 'teacher' OR NOT v_ctx.o_mentor THEN
@@ -311,7 +334,9 @@ BEGIN
      AND m.institution_id = v_ctx.o_institution_id AND m.assignment_id = v_ctx.o_assignment_id;
   DELETE FROM institution.work_milestone m
    WHERE m.institution_id = v_ctx.o_institution_id AND m.assignment_id = v_ctx.o_assignment_id;
-  PERFORM institution.apply_milestone_template(v_ctx.o_assignment_id, pg_catalog.statement_timestamp());
+  SELECT a.created_at INTO v_created FROM institution.assignment a
+   WHERE a.id = v_ctx.o_assignment_id AND a.institution_id = v_ctx.o_institution_id;
+  PERFORM institution.apply_milestone_template(v_ctx.o_assignment_id, v_created);
   RETURN QUERY SELECT * FROM app.read_work_milestone_plan(p_document_id);
 END
 $$;
