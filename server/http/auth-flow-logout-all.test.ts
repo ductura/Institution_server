@@ -30,6 +30,8 @@ const CLEARED = "__Host-ductus_session=; Path=/; HttpOnly; Secure; SameSite=Lax;
 // The sign-out mark (INT-20b): the next login asks the provider to sign in again.
 const MARK =
   "__Secure-ductus_signed_out=1; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=300";
+// A login attempt started before the sign-out is dropped with it (INT-20e).
+const CLEARED_ATTEMPT = "__Host-ductus_login=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
 
 let idp: ReturnType<typeof createTestIdp>;
 let deps: AuthDeps & {
@@ -115,7 +117,7 @@ describe("POST /api/v1/auth/logout-all", () => {
     const response = await post(SAME_ORIGIN, value);
     // Without a cookie no query runs; with one, the database decides.
     expect(deps.closeAllSessions).toHaveBeenCalledExactlyOnceWith(value);
-    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(response.status).toBe(withNothing.status);
     expect(response.headers.get("location")).toBe(withNothing.headers.get("location"));
     expect(response.headers.getSetCookie()).toEqual(withNothing.headers.getSetCookie());
@@ -131,7 +133,7 @@ describe("POST /api/v1/auth/logout-all", () => {
     expect(deps.closeSession).not.toHaveBeenCalled();
     expect(events[0]).toBe("close_all");
     expect(events.slice(1).every((event) => event === "provider")).toBe(true);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(JSON.stringify([...response.headers])).not.toContain(TOKEN);
   });
 
@@ -141,7 +143,7 @@ describe("POST /api/v1/auth/logout-all", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(`${APP}/`);
     expect(deps.closeAllSessions).toHaveBeenCalledWith(TOKEN);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
   });
 
@@ -157,7 +159,7 @@ describe("POST /api/v1/auth/logout-all", () => {
     const one = await logout(request("/api/v1/auth/logout"), deps);
     const all = await logoutAll(request("/api/v1/auth/logout-all"), deps);
     expect(one.status).toBe(303);
-    expect(one.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(one.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(all.status).toBe(503);
     expect(all.headers.getSetCookie()).toEqual([]);
     expect(errors).toHaveBeenCalledWith("login failed", "logout", "Error:57P01");
@@ -169,6 +171,6 @@ describe("POST /api/v1/auth/logout-all", () => {
     expect(deps.closeAllSessions).not.toHaveBeenCalled();
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
   });
 });

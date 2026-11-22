@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createOidcClient, loadAuthConfig } from "../external/srce-auth/index.ts";
-import { type AuthDeps, logout } from "./auth-flow.ts";
+import { type AuthDeps, LOGIN_COOKIE_NAME, logout } from "./auth-flow.ts";
 
 import {
   CLIENT_ID,
@@ -30,6 +30,8 @@ const CLEARED = "__Host-ductus_session=; Path=/; HttpOnly; Secure; SameSite=Lax;
 // The sign-out mark (INT-20b): the next login asks the provider to sign in again.
 const MARK =
   "__Secure-ductus_signed_out=1; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=300";
+// A login attempt started before the sign-out is dropped with it (INT-20e).
+const CLEARED_ATTEMPT = "__Host-ductus_login=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
 
 let idp: ReturnType<typeof createTestIdp>;
 let deps: AuthDeps & { closeSession: ReturnType<typeof vi.fn> };
@@ -104,8 +106,8 @@ describe("POST /api/v1/auth/logout", () => {
     expect(deps.closeSession).toHaveBeenCalledExactlyOnceWith(value);
     expect(response.status).toBe(withNothing.status);
     expect(response.headers.get("location")).toBe(withNothing.headers.get("location"));
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
-    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
+    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
   });
 
   it("N5: nothing from the query reaches the address", async () => {
@@ -120,7 +122,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(`${APP}/`);
     expect(events[0]).toBe("close");
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
     expect(JSON.stringify(errors.mock.calls)).not.toContain(TOKEN);
   });
@@ -133,7 +135,7 @@ describe("POST /api/v1/auth/logout", () => {
       const response = await post();
       expect(response.status).toBe(303);
       expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
       expect(errors).toHaveBeenCalledWith("login failed", "logout", `Error:${code}`);
     }
   });
@@ -148,7 +150,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(deps.closeAllSessions).not.toHaveBeenCalled();
     expect(events[0]).toBe("close");
     expect(events.slice(1).every((event) => event === "provider")).toBe(true);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     const everything = JSON.stringify([...response.headers]);
     expect(everything).not.toContain(TOKEN);
     expect(everything).not.toContain(CLIENT_SECRET);
@@ -183,14 +185,14 @@ describe("POST /api/v1/auth/logout", () => {
     const response = await post(SAME_ORIGIN, null);
     expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
     expect(deps.closeSession).not.toHaveBeenCalled();
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
   });
 
   it("B4: goes to the provider when the session was already closed or had expired", async () => {
     deps.closeSession.mockResolvedValueOnce(false);
     const response = await post();
     expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
   });
 
   it("DAN-99: a confirmed logout sent again goes to the provider when the second close fails", async () => {
@@ -202,7 +204,7 @@ describe("POST /api/v1/auth/logout", () => {
     for (const response of [first, second]) {
       expect(response.status).toBe(303);
       expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     }
     expect(deps.closeSession).toHaveBeenCalledTimes(2);
     expect(errors).toHaveBeenCalledWith("login failed", "logout", "Error:ECONNREFUSED");
@@ -222,7 +224,7 @@ describe("POST /api/v1/auth/logout", () => {
       for (const response of [first, second]) {
         expect(response.status).toBe(303);
         expect(response.headers.get("location")).toBe(target);
-        expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+        expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
       }
       expect(deps.closeSession).toHaveBeenCalledExactlyOnceWith(TOKEN);
       expect(errors).not.toHaveBeenCalled();
@@ -235,7 +237,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(HOME);
     expect(deps.closeSession).toHaveBeenCalledWith(TOKEN);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(errors).not.toHaveBeenCalled();
   });
 
@@ -271,7 +273,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.headers.get("location")).toBe(HOME);
     expect(deps.closeSession).toHaveBeenCalledWith(TOKEN);
     expect(events[0]).toBe("close");
-    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK, CLEARED_ATTEMPT]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
     const logged = JSON.stringify(errors.mock.calls);
     expect(logged).not.toContain(MARKER);
@@ -288,6 +290,22 @@ describe("POST /api/v1/auth/logout", () => {
     );
     expect(mark).not.toContain(TOKEN);
     expect(mark).not.toMatch(/domain=/i);
+  });
+
+  it("INT-20e: clears the login attempt cookie with the attributes it was set with", async () => {
+    const response = await post(SAME_ORIGIN, TOKEN);
+    const cleared = response.headers.getSetCookie()[2]!;
+    const [pair = "", ...attributes] = cleared.split("; ");
+    expect(pair).toBe(`${LOGIN_COOKIE_NAME}=`);
+    // __Host-: Path=/, Secure and no Domain, or the browser keeps the cookie.
+    expect(attributes.sort()).toEqual(
+      ["HttpOnly", "Max-Age=0", "Path=/", "SameSite=Lax", "Secure"].sort(),
+    );
+    expect(cleared).not.toMatch(/domain=/i);
+    // Also without a session cookie, and when the provider is not reached.
+    expect((await post(SAME_ORIGIN, null)).headers.getSetCookie()).toContain(cleared);
+    idp.state.next = { down: true };
+    expect((await post(SAME_ORIGIN, TOKEN)).headers.getSetCookie()).toContain(cleared);
   });
 
   it("#18: accepts a matching Origin when the browser sends no Sec-Fetch-Site", async () => {
