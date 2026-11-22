@@ -327,6 +327,8 @@ ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_subm
 -- The record of an import (SRV-1803) references the assignment; it is append only.
 ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
+-- The trail of an interview preparation (SRV-1530) references the assignment through the interview; it is append only.
+ALTER TABLE audit.work_interview_event DISABLE TRIGGER work_interview_event_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -346,6 +348,7 @@ ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncat
 ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_attachment_no_truncate;
 ALTER TABLE collaboration.import_event ENABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation_no_truncate;
+ALTER TABLE audit.work_interview_event ENABLE TRIGGER work_interview_event_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;

@@ -82,7 +82,7 @@ CREATE TABLE institution.work_interview_explanation (
   explanation_text text NOT NULL CHECK (collaboration.is_comment_body(explanation_text)),
   created_at timestamptz NOT NULL DEFAULT statement_timestamp(),
   FOREIGN KEY (interview_id, institution_id) REFERENCES institution.work_interview (id, institution_id),
-  FOREIGN KEY (question_id, institution_id) REFERENCES institution.work_interview_question (id, institution_id) ON DELETE SET NULL (question_id)
+  FOREIGN KEY (question_id, institution_id) REFERENCES institution.work_interview_question (id, institution_id)
 );
 CREATE INDEX work_interview_explanation_interview_idx ON institution.work_interview_explanation (interview_id, created_at, id);
 
@@ -263,19 +263,21 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   c record;
-  v_deleted integer;
 BEGIN
   SELECT * INTO c FROM institution.work_interview_context(p_document_id);
   IF c.role IS DISTINCT FROM 'teacher' OR c.interview_id IS NULL THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
-  DELETE FROM institution.work_interview_question q
-   WHERE q.id = p_question_id AND q.interview_id = c.interview_id
-     AND (c.invited OR q.author_id = c.actor_id);
-  GET DIAGNOSTICS v_deleted = ROW_COUNT;
-  IF v_deleted = 0 THEN
+  IF NOT EXISTS (
+       SELECT 1 FROM institution.work_interview_question q
+        WHERE q.id = p_question_id AND q.interview_id = c.interview_id
+          AND (c.invited OR q.author_id = c.actor_id)) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
+  -- An explanation about a removed question stays, as a general one.
+  UPDATE institution.work_interview_explanation e SET question_id = NULL
+   WHERE e.question_id = p_question_id AND e.interview_id = c.interview_id;
+  DELETE FROM institution.work_interview_question q WHERE q.id = p_question_id;
 END
 $$;
 

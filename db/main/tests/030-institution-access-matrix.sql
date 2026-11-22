@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2930);
+SELECT plan(3122);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -177,7 +177,8 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'],
+        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting',
+        'work_interview', 'work_interview_question', 'work_interview_explanation'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -297,7 +298,10 @@ SELECT bag_eq(
     'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
     'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity',
-    'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity'
+    'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity',
+    'work_interview: work_interview_owner ALL to ductus_identity',
+    'work_interview_question: work_interview_question_owner ALL to ductus_identity',
+    'work_interview_explanation: work_interview_explanation_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -507,7 +511,18 @@ SELECT bag_eq(
     'refuse_withdrawal_setting_change()',
     'withdrawal_setting_of(p_assignment_id uuid)',
     'submission_withdrawal_setting(p_assignment_id uuid) definer app',
-    'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app'
+    'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app',
+    'work_interview_draft_days()',
+    'work_interview_context(p_document_id text, OUT actor_id uuid, OUT role text, OUT institution_id uuid, OUT assignment_id uuid, OUT student_id uuid, OUT interview_id uuid, OUT invited boolean)',
+    'work_interview_read(p_document_id text, p_actor_id uuid, p_role text, p_interview_id uuid)',
+    'work_interview_ensure(p_document_id text, c record)',
+    'work_interview_get(p_document_id text) definer app',
+    'add_work_interview_question(p_document_id text, p_paragraph_ref text, p_question_text text) definer app',
+    'remove_work_interview_question(p_document_id text, p_question_id uuid) definer app',
+    'invite_work_interview(p_document_id text) definer app',
+    'set_work_interview_appointment(p_document_id text, p_slot_id uuid, p_place text, p_at timestamp with time zone) definer app',
+    'mark_work_interview_held(p_document_id text, p_date date) definer app',
+    'add_work_interview_explanation(p_document_id text, p_question_id uuid, p_text text) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -1377,13 +1392,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'])
+                        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting',
+                        'work_interview', 'work_interview_question', 'work_interview_explanation'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant', 'submission_withdrawal_setting') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
