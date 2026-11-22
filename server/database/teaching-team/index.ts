@@ -13,6 +13,15 @@ export function createTeachingTeam(withActor: WithActor) {
         if (rows.length !== 1) throw new Error("Expected one teaching team");
         return rows[0]!;
       }),
+    readView: (token: string, courseId: string) =>
+      withActor(token, async (tx) => {
+        const { rows } = await tx.query<{ view: unknown }>(
+          "SELECT institution.read_teaching_team_view($1::uuid) AS view",
+          [courseId],
+        );
+        if (rows.length !== 1) throw new Error("Expected one teaching team view");
+        return rows[0]!.view;
+      }),
     replaceAssistants: (token: string, courseId: string, assistantIds: readonly string[]) =>
       withActor(token, (tx) =>
         tx.query("SELECT institution.replace_course_assistants($1::uuid, $2::uuid[])", [

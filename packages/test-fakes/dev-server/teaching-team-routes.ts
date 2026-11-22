@@ -9,7 +9,55 @@ function normalize(ids: string[]): string[] {
   return ids.map((id) => id.toLowerCase());
 }
 
+function nameOf(state: State, id: string): string {
+  const account = state.accounts.find((a) => a.id === id);
+  return account === undefined ? "" : `${account.givenName} ${account.familyName}`.trim();
+}
+
 export const TEACHING_TEAM_HANDLERS: Handlers = {
+  "institution.teaching-team-view.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const course = courseFor(state, params.id);
+    if (course === undefined || !account.roles.includes("teacher")) return { error: "forbidden" };
+    const assistantIds = [...(course.teachingAssistants ?? [])]
+      .filter(([id, active]) => active && id !== course.holderId)
+      .map(([id]) => id)
+      .sort();
+    if (course.holderId === account.id) {
+      return {
+        status: 200,
+        body: {
+          role: "holder",
+          holderId: course.holderId,
+          assistants: assistantIds.map((id) => ({ id, name: nameOf(state, id) })),
+          students: [...course.studentIds].sort().map((id) => ({
+            id,
+            name: nameOf(state, id),
+            groupId: course.groups.find((g) => g.studentIds.includes(id))?.id ?? null,
+          })),
+          groups: course.groups.map((g) => ({
+            id: g.id,
+            name: g.name,
+            assistantIds: g.teacherIds.filter((id) => assistantIds.includes(id)).sort(),
+          })),
+        },
+      };
+    }
+    if (!assistantIds.includes(account.id)) return { error: "forbidden" };
+    return {
+      status: 200,
+      body: {
+        role: "assistant",
+        groups: course.groups
+          .filter((g) => g.teacherIds.includes(account.id))
+          .map((g) => ({
+            id: g.id,
+            name: g.name,
+            students: [...g.studentIds].sort().map((id) => ({ id, name: nameOf(state, id) })),
+          })),
+      },
+    };
+  },
   "institution.teaching-team.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseFor(state, params.id);

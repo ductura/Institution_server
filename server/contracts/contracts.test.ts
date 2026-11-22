@@ -158,6 +158,7 @@ describe("route inventory", () => {
       "student-work.works.get: app/api/student/works/route.ts is not in the inventory",
       "mentorship.key-dates.get: app/api/mentorships/[id]/key-dates/route.ts is not in the inventory",
       "institution.teaching-team.get: app/api/courses/[id]/team/route.ts is not in the inventory",
+      "institution.teaching-team-view.get: app/api/courses/[id]/team/view/route.ts is not in the inventory",
       "institution.teaching-team.post: app/api/courses/[id]/team/route.ts is not in the inventory",
       "institution.teaching-group-members.put: app/api/courses/[id]/groups/[groupId]/members/route.ts is not in the inventory",
       "mentorship.notes.get: app/api/mentorships/[id]/notes/route.ts is not in the inventory",

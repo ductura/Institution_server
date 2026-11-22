@@ -9,6 +9,24 @@ const Uuid = Type.String({
     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\\s\\S])",
 });
 const MemberIds = Type.Array(Uuid, { maxItems: 500 });
+const Name = Type.String({ maxLength: 511 });
+const Person = closed({ id: Uuid, name: Name });
+const HolderView = closed({
+  role: Type.Literal("holder"),
+  holderId: Uuid,
+  assistants: Type.Array(Person, { maxItems: 500 }),
+  students: Type.Array(closed({ id: Uuid, name: Name, groupId: Type.Union([Uuid, Type.Null()]) }), {
+    maxItems: 5000,
+  }),
+  groups: Type.Array(closed({ id: Uuid, name: Name, assistantIds: MemberIds }), { maxItems: 500 }),
+});
+const AssistantView = closed({
+  role: Type.Literal("assistant"),
+  groups: Type.Array(
+    closed({ id: Uuid, name: Name, students: Type.Array(Person, { maxItems: 5000 }) }),
+    { maxItems: 500 },
+  ),
+});
 const PATH = "/api/v1/courses/{id}";
 const INVENTORY = "app/api/courses/[id]";
 const ERRORS = [
@@ -45,6 +63,24 @@ export const teachingTeamRoutes = [
         status: 200,
         description: "the teaching team",
         body: closed({ holderId: Type.Union([Uuid, Type.Null()]), assistantIds: MemberIds }),
+      },
+    ],
+    errors: ERRORS,
+  }),
+  defineRoute({
+    id: "institution.teaching-team-view.get",
+    method: "GET",
+    path: `${PATH}/team/view`,
+    inventory: `${INVENTORY}/team/view/route.ts`,
+    access: "course_teacher",
+    summary:
+      "The teaching team screen. The holder gets the roster, the enrolled students with their group and the groups with their assistants. An assistant gets only the groups where they hold a place, with the students in them. Anyone else is refused.",
+    request: { params: closed({ id: Uuid }) },
+    responses: [
+      {
+        status: 200,
+        description: "the team view for the caller's role",
+        body: Type.Union([HolderView, AssistantView]),
       },
     ],
     errors: ERRORS,
