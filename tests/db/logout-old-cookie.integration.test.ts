@@ -661,6 +661,42 @@ const SESSION_ROUTES = {
     body: () => ({ dueAt: "2026-12-02T12:00:00.000Z" }),
     live: 404,
   },
+  "work.milestone-states.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/milestone-states`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.details.patch": {
+    method: "PATCH",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/details`,
+    body: () => ({ title: "Nacrt" }),
+    live: 404,
+  },
+  "work.milestones.delete": {
+    method: "DELETE",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.submit.post": {
+    method: "POST",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/submit`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.request-revision.post": {
+    method: "POST",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/request-revision`,
+    body: () => ({ comment: "Dopuni uvod." }),
+    live: 404,
+  },
+  "work.milestones.approve.post": {
+    method: "POST",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/approve`,
+    body: () => ({}),
+    live: 404,
+  },
   "student.source-proofs.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,

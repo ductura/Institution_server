@@ -157,6 +157,18 @@ export type WorkMilestone = {
   state: "open" | "submitted" | "approved" | "returned";
 };
 
+/** SRV-1520: what happened to one milestone of one work (key: documentId + "/" + milestoneId). */
+export type MilestoneProgress = {
+  state: "submitted" | "revision_requested" | "approved";
+  submittedRevisionId: number;
+  submittedAt: string;
+  revisionComment: string | null;
+  revisionDueAt: string | null;
+  revisionRequestedAt: string | null;
+  approvedAt: string | null;
+  approvalMessage: string | null;
+};
+
 /** An image attached to a student's work (SRV-10C). */
 export type Attachment = {
   readonly id: string;
@@ -350,6 +362,7 @@ export type State = {
   /** The amendments and disputes of summary events of the works (SRV-1315). */
   eventDisputes: EventDispute[];
   milestones: Map<string, WorkMilestone[]>;
+  milestoneProgress: Map<string, MilestoneProgress>;
 };
 
 /**
@@ -568,6 +581,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     revisionRequests: [],
     consultations: [],
     eventDisputes: [],
+    milestoneProgress: new Map(),
     milestones: new Map([
       [
         IDS.document,

@@ -39,7 +39,14 @@ export { commentsRoutes } from "./comments.ts";
 export { workCompareRoutes } from "./work-compare.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { importRoutes } from "./import.ts";
-export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
+export {
+  WorkMilestoneApprovalInput,
+  WorkMilestoneChangeInput,
+  WorkMilestoneDueInput,
+  WorkMilestoneId,
+  WorkMilestoneRevisionInput,
+  workMilestonesRoutes,
+} from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
