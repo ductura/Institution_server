@@ -63,6 +63,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createFacultyRuleRoutesFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -344,6 +345,8 @@ async function main(): Promise<void> {
       // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run.
       createRetentionRouteFor(databases.main),
       // SRV-1406: the versioned rules of the institution, for its administrator.
+      // SRV-2001: faculty rules of the institution, read and published by its administrator.
+      ...createFacultyRuleRoutesFor(databases.main),
       ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),

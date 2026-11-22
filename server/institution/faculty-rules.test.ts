@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { WORK_TYPES, facultyRulesOf, readFacultyRules } from "./faculty-rules.ts";
+import {
+  WORK_TYPES,
+  facultyRuleRefusal,
+  facultyRulesOf,
+  publishFacultyRule,
+  readFacultyRules,
+} from "./faculty-rules.ts";
 
 // Invented versions only; no institution, person or rule text from any faculty.
 const TOKEN = "T".repeat(43);
@@ -286,6 +292,61 @@ describe("readFacultyRules", () => {
       ["faculty rules read failed", "unknown"],
       ["faculty rules read failed", "row_malformed"],
     ]);
+    expect(JSON.stringify(log.mock.calls)).not.toContain(CANARY);
+  });
+});
+
+describe("facultyRuleRefusal and publishFacultyRule (SRV-2001)", () => {
+  const body = {
+    workType: "essay",
+    basedOnVersionNo: null,
+    aiPolicy: "partially_allowed",
+    aiPurposes: ["formatting"],
+    evidenceProfile: "basic",
+    importAllowed: false,
+  };
+
+  it.each([
+    ["a valid body", body, null],
+    ["not an object", [], "invalid_input"],
+    ["an added key", { ...body, origin: "operator" }, "invalid_input"],
+    ["a missing key", { ...body, importAllowed: undefined }, "invalid_input"],
+    ["basedOnVersionNo zero", { ...body, basedOnVersionNo: 0 }, "invalid_input"],
+    ["importAllowed a string", { ...body, importAllowed: "no" }, "invalid_input"],
+    ["a work type outside the list", { ...body, workType: "habilitation" }, "invalid_work_type"],
+    ["a policy outside the list", { ...body, aiPolicy: "allowed" }, "invalid_ai_policy"],
+    [
+      "a profile outside the list",
+      { ...body, evidenceProfile: "full" },
+      "invalid_evidence_profile",
+    ],
+    ["purposes with prohibited", { ...body, aiPolicy: "prohibited" }, "invalid_ai_purposes"],
+    [
+      "repeated purposes",
+      { ...body, aiPurposes: ["formatting", "formatting"] },
+      "invalid_ai_purposes",
+    ],
+  ])("refuses %s as %s", (_name, value, code) => {
+    expect(facultyRuleRefusal(value)).toBe(code);
+  });
+
+  it("does not reach the database without a well-formed session token", async () => {
+    const { withActor, calls } = database({});
+    expect(await publishFacultyRule(undefined, body as never, withActor)).toEqual({
+      kind: "unauthorized",
+    });
+    expect(await publishFacultyRule("short", body as never, withActor)).toEqual({
+      kind: "unauthorized",
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it("does not leak the message of an unknown error", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { withActor } = database({ code: "XX000" });
+    expect(await publishFacultyRule(TOKEN, body as never, withActor)).toEqual({
+      kind: "unavailable",
+    });
     expect(JSON.stringify(log.mock.calls)).not.toContain(CANARY);
   });
 });
