@@ -413,6 +413,7 @@ SELECT bag_eq(
     'require_group_manager(p_course_id uuid, p_collaborator boolean, OUT user_id uuid, OUT institution_id uuid)',
     'course_groups(p_course_id uuid) definer app',
     'read_teaching_team(p_course_id uuid) definer app',
+    'read_teaching_team_view(p_course_id uuid) definer app',
     'lock_teaching_team(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'check_teaching_member_ids(p_ids uuid[])',
     'replace_course_assistants(p_course_id uuid, p_assistant_ids uuid[]) definer app',

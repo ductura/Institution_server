@@ -70,6 +70,30 @@ describe("teaching team routing", () => {
     );
   });
 
+  it("returns the role-shaped team view through the view RPC", async () => {
+    const view = {
+      role: "assistant",
+      groups: [
+        { id: GROUP, name: "Grupa A", students: [{ id: STUDENT, name: "Izmišljen Student" }] },
+      ],
+    };
+    query.mockReturnValue([{ view }]);
+    const response = await call("GET", `${TEAM}/view`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(view);
+    expect(query).toHaveBeenCalledWith(
+      TOKEN,
+      expect.stringContaining("institution.read_teaching_team_view"),
+      [COURSE],
+    );
+  });
+
+  it("refuses a malformed course and a view answer outside the contract", async () => {
+    expect((await call("GET", "/api/v1/courses/no/team/view")).status).toBe(422);
+    query.mockReturnValue([{ view: { role: "holder", holderId: HOLDER } }]);
+    expect((await call("GET", `${TEAM}/view`)).status).toBe(503);
+  });
+
   it("passes both replacement lists to the group RPC in one actor transaction", async () => {
     query.mockReturnValue([]);
     const response = await call(
