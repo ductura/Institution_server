@@ -323,6 +323,19 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-1111 (Ductus#2052 c.7079306579, P-1 rule 12): the thresholds of a faculty per kind of origin and the comparison of a work; Ductus has no such route.
+  "app/api/institution/origin-thresholds/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/institution/origin-thresholds/[origin]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/origin-thresholds/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
   // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
   "app/api/teacher/works/[documentId]/working-criteria/route.ts": {
     methods: ["GET"],

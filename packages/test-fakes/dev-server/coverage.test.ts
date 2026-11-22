@@ -923,6 +923,47 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0), CREATE_EVENT_DISPUTE],
     request: { path: `/api/v1/works/${IDS.document}/event-disputes`, as: "nastavnik" },
   },
+  "institution.origin-thresholds.get": {
+    request: { path: "/api/v1/institution/origin-thresholds", as: "administrator" },
+  },
+  "institution.origin-threshold.put": {
+    request: {
+      path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+      method: "PUT",
+      as: "administrator",
+      headers: ORIGIN,
+      body: { thresholdPercent: 5, strictness: "hard" },
+    },
+  },
+  "institution.origin-threshold.delete": {
+    before: [
+      {
+        path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+        method: "PUT",
+        as: "administrator",
+        headers: ORIGIN,
+        body: { thresholdPercent: 5, strictness: "hard" },
+      },
+    ],
+    request: {
+      path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+      method: "DELETE",
+      as: "administrator",
+      headers: ORIGIN,
+    },
+  },
+  "work.origin-thresholds.get": {
+    before: [
+      {
+        path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+        method: "PUT",
+        as: "administrator",
+        headers: ORIGIN,
+        body: { thresholdPercent: 5, strictness: "hard" },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/origin-thresholds`, as: "nastavnik" },
+  },
   "work.origin-composition.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-composition`, as: "nastavnik" },
   },

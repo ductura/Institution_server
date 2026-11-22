@@ -563,6 +563,36 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 3
     )
   }),
+  "institution.origin-threshold.delete:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['origin'] === 'typed')) || ((value['origin'] === 'assistant_inserted')) || ((value['origin'] === 'assistant_match')) || ((value['origin'] === 'imported_file')) || ((value['origin'] === 'pasted_known')) || ((value['origin'] === 'pasted_unknown'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.origin-threshold.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['origin'] === 'typed')) || ((value['origin'] === 'assistant_inserted')) || ((value['origin'] === 'assistant_match')) || ((value['origin'] === 'imported_file')) || ((value['origin'] === 'pasted_known')) || ((value['origin'] === 'pasted_unknown'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.origin-threshold.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['thresholdPercent'] === 'number' && Number.isInteger(value['thresholdPercent'])) &&
+      value['thresholdPercent'] <= 100 &&
+      value['thresholdPercent'] >= 0 &&
+      (((value['strictness'] === 'hard')) || ((value['strictness'] === 'soft'))) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "institution.origin-thresholds.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "institution.retention.get:query": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -2463,6 +2493,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   }
   })(),
   "work.origin-composition.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.origin-thresholds.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (

@@ -148,7 +148,7 @@ describe("fake server over HTTP", () => {
     // work.event-disputes.post (SRV-1315) five.
     // institution.faculty-rules.post (SRV-2001) five.
     // SRV-1530: work.interview-* have eight framing vectors in all (the bodies of five mutations).
-    expect(VECTORS.length - overHttp.length).toBe(432);
+    expect(VECTORS.length - overHttp.length).toBe(442);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
