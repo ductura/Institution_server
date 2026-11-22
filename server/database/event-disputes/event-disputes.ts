@@ -1,5 +1,5 @@
 // The port of a student's amendments and disputes of process summary events
-// (SRV-1314, plan M7.8, R-08; migration 20261210105000). The student who owns
+// (SRV-1314, plan M7.8, R-08; migration 20261210140000). The student who owns
 // the work adds a record that names one event of the summary by its id; a
 // reader of the work (teacher of the course, of the seminar group, mentor)
 // reads them. A record is append-only and never changes the signed receipt
