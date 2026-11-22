@@ -701,6 +701,12 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 404,
   },
+  "work.return-for-revision.post": {
+    method: "POST",
+    path: `/api/v1/works/${randomUUID()}/return-for-revision`,
+    body: () => ({ comment: "Doradi uvod." }),
+    live: 404,
+  },
   "student.source-proofs.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,

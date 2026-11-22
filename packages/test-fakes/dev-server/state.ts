@@ -363,6 +363,15 @@ export type State = {
   eventDisputes: EventDispute[];
   milestones: Map<string, WorkMilestone[]>;
   milestoneProgress: Map<string, MilestoneProgress>;
+  /** The returns of whole works for revision (SRV-1606), in the order made. */
+  workReturns: {
+    id: string;
+    documentId: string;
+    round: number;
+    comment: string;
+    revisionDueAt: string | null;
+    returnedAt: string;
+  }[];
 };
 
 /**
@@ -582,6 +591,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     consultations: [],
     eventDisputes: [],
     milestoneProgress: new Map(),
+    workReturns: [],
     milestones: new Map([
       [
         IDS.document,

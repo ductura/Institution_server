@@ -488,7 +488,7 @@ export type Operations = {
     params: undefined;
     query: { "before"?: string };
     body: undefined;
-    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "assignment_version" | "course_handover" | "comment_posted" | "submission_recorded" | "deadline_reminder"; "targetId": string; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "assignment_version" | "course_handover" | "comment_posted" | "submission_recorded" | "deadline_reminder" | "work_returned"; "targetId": string; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "notifications.read.post": {
@@ -1400,6 +1400,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.return-for-revision.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "comment": string; "revisionDueAt"?: string };
+    success: { status: 200; body: { "id": string; "state": "returned_for_revision"; "round": number; "comment": string; "revisionDueAt": string | null; "returnedAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "forbidden" | "conflict" | "invalid_json" | "unsupported_media_type" | "invalid_input" | "unavailable";
   };
   "work.review.post": {
     params: { "documentId": string };

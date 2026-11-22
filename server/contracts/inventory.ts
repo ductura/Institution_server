@@ -560,6 +560,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
+  "app/api/works/[documentId]/return-for-revision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081618556",
+  },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
