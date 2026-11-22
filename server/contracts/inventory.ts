@@ -322,6 +322,47 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7024185874",
   },
+  // SRV-1605 (Ductus#2052 c.7081590679, WEB-2133): the guidance of a teacher on sources (recommendations, required literature, proof requests, the literature mark, the proofs); Ductus has no such route.
+  "app/api/teacher/works/[documentId]/source-guidance/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/source-recommendations/[sourceId]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proof-request/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/literature-seen/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proofs/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/courses/[courseId]/required-literature/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/courses/[courseId]/required-literature/[sourceId]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/student/courses/[courseId]/required-literature/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/student/assignments/[assignmentId]/source-proof-requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
   // SRV-1111 (Ductus#2052 c.7079306579, P-1 rule 12): the thresholds of a faculty per kind of origin and the comparison of a work; Ductus has no such route.
   "app/api/institution/origin-thresholds/route.ts": {
     methods: ["GET"],

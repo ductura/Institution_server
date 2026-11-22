@@ -1,7 +1,7 @@
 // POST /api/v1/works/{documentId}/return-for-revision (work.return-for-revision.post),
 // SRV-1606: the teacher returns the whole submitted work to the student for revision.
 // The HTTP edge only; the rules are the database's (server/database/return-for-revision,
-// migration 20261213100500). A malformed or unknown work id, and anybody who is not its
+// migration 20261213100600). A malformed or unknown work id, and anybody who is not its
 // teacher, is the same 404 (C-23); the student owner is 403; a work with no live
 // submission 409; a body the contract does not accept 422; an answer outside the
 // contract, or a throw, is 503 and the throw is reported.

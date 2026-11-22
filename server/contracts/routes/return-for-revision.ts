@@ -10,7 +10,7 @@ import { CODE_POINT, END } from "./teacher.ts";
 // a comment and a new revision due date). Not a milestone and not a comment anchored
 // in the text. The submission is no longer the live one: the student edits and
 // submits again as the next round (attempt) of the history of submissions. Database:
-// evidence.submission_return and app.return_work_for_revision (20261213100500).
+// evidence.submission_return and app.return_work_for_revision (20261213100600).
 
 const DocumentId = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)${END}`,
