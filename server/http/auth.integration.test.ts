@@ -16,10 +16,10 @@ import { hashSessionToken, SESSION_COOKIE_NAME } from "../session/index.ts";
 
 import { createFakeOidc, type FakeOidcMode } from "../../packages/test-fakes/oidc/index.ts";
 import { createAuthRoutes } from "./auth.ts";
-import { type AuthDeps, LOGIN_COOKIE_NAME } from "./auth-flow.ts";
+import { type AuthDeps, LOGIN_COOKIE_NAME, SIGNED_OUT_COOKIE_NAME } from "./auth-flow.ts";
 import { createDatabases } from "./databases.ts";
 import { sendHtmlProblem } from "./problem.ts";
-import { createLayers } from "./pipeline.ts";
+import { createLayers, type Layers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
 
 const EXPIRES = new Date("2030-01-01T12:00:00Z");
@@ -34,14 +34,6 @@ afterEach(async () => {
   provider = undefined;
 });
 
-async function freePort(): Promise<number> {
-  const probe = createServer();
-  await new Promise<void>((done) => probe.listen(0, "127.0.0.1", done));
-  const { port } = probe.address() as AddressInfo;
-  await new Promise<void>((done) => probe.close(() => done()));
-  return port;
-}
-
 type Stack = {
   origin: string;
   opened: OpenSessionInput[];
@@ -53,8 +45,14 @@ type Stack = {
  * The server first (its port names the callback), then the provider that
  * knows that callback. `delayUserinfo` holds the userinfo request back, so
  * the tokens of the expired mode are past their lifetime when they are used.
+ * `checkOrigin` gives the origin check of POST routes the server's own
+ * origin (the sign-out tests); every other test keeps `expectedOrigin: null`.
  */
-async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
+async function stack(
+  mode: FakeOidcMode,
+  delayUserinfo = 0,
+  { checkOrigin = false }: { checkOrigin?: boolean } = {},
+): Promise<Stack> {
   const opened: OpenSessionInput[] = [];
   const closed: string[] = [];
   const logged: string[] = [];
@@ -86,16 +84,22 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
       closeAllSessions: async () => undefined,
     };
   };
-  // A port known first, so the origin check of POST routes knows its origin.
-  const port = await freePort();
-  const origin = `http://127.0.0.1:${port}`;
+  // The server listens on port 0 and the system names the port, so no port
+  // is probed and then bound. The origin check is built once that port is
+  // known; the pipeline calls it through `originCheck` below, and no request
+  // reaches it before then.
+  const base = createLayers({ expectedOrigin: null });
+  let originCheck = base.originCheck;
+  const layers: Layers = { ...base, originCheck: (req, res) => originCheck(req, res) };
   app = await startServer({
     host: "127.0.0.1",
-    port,
-    layers: createLayers({ expectedOrigin: origin }),
+    port: 0,
+    layers,
     databases: createDatabases(),
     routes: createAuthRoutes(env, load),
   });
+  const origin = `http://127.0.0.1:${app.port}`;
+  if (checkOrigin) originCheck = createLayers({ expectedOrigin: origin }).originCheck;
   const callback = `${origin}/api/v1/auth/callback`;
 
   const server = createServer();
@@ -344,7 +348,7 @@ describe("signing out against the fake OIDC provider", () => {
   });
 
   it("the sign-out goes on to end the provider session, so the next login asks again", async () => {
-    const { origin, closed } = await stack("success");
+    const { origin, closed } = await stack("success", 0, { checkOrigin: true });
     const { browser: b, issuer } = await signedIn(origin);
     const out = await signOut(b, origin);
     expect(out.status).toBe(303);
@@ -376,18 +380,25 @@ describe("signing out against the fake OIDC provider", () => {
     }
     expect(target).toBe(`${origin}/`);
 
-    const { next } = await startAgain(b, origin);
+    // INT-20d: without the sign-out mark, so that what asks again is the
+    // provider whose session ended, not the prompt=login the mark adds.
+    expect(b.jar.get(SIGNED_OUT_COOKIE_NAME)).toBe("1");
+    b.jar.delete(SIGNED_OUT_COOKIE_NAME);
+    const { authorize, next } = await startAgain(b, origin);
+    expect(authorize.searchParams.has("prompt")).toBe(false);
+    expect(authorize.searchParams.has("max_age")).toBe(false);
     expect(silent(origin, next)).toBe(false);
     expect(new URL(next).pathname).toMatch(/^\/interaction\//u);
   });
 
   it("a sign-out that never reaches the provider still makes the next login ask again, once", async () => {
-    const { origin, opened } = await stack("success");
+    const { origin, opened } = await stack("success", 0, { checkOrigin: true });
     const { browser: b } = await signedIn(origin);
     expect((await signOut(b, origin)).status).toBe(303);
 
     const { authorize, next } = await startAgain(b, origin);
     expect(authorize.searchParams.getAll("prompt")).toEqual(["login"]);
+    expect(authorize.searchParams.getAll("max_age")).toEqual(["0"]);
     expect(silent(origin, next)).toBe(false);
     const resume = location(
       await b.get(`${next}/login`, { method: "POST", form: { account: "demo-student" } }),
@@ -395,8 +406,11 @@ describe("signing out against the fake OIDC provider", () => {
     );
     const back = location(await b.get(resume), resume);
     const answer = await b.get(back);
+    // The callback of this attempt needs an auth_time from after it began
+    // (INT-20d); the fake provider sends one, as max_age was asked for.
     expect(answer.status).toBe(303);
     expect(opened).toHaveLength(2);
+    expect(b.jar.has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
 
     // That login cleared the mark: the one after it is silent again.
     const after = await startAgain(b, origin);

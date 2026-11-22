@@ -51,6 +51,8 @@ const WIRE_NAMES = [
   "id_token", // OpenID Connect Core 1.0, section 3.1.3.3
   "given_name", // OpenID Connect Core 1.0, section 5.1 (standard claims)
   "family_name", // OpenID Connect Core 1.0, section 5.1 (standard claims)
+  "max_age", // OpenID Connect Core 1.0, section 3.1.2.1 (authentication request)
+  "auth_time", // OpenID Connect Core 1.0, section 2 (ID token claim)
   // OpenID Connect Dynamic Client Registration 1.0, section 2 (client metadata).
   "redirect_uris",
   "token_endpoint_auth_method",

@@ -45,6 +45,14 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `refuse` je jedini način na koji sloj odbija: tijelo ugovora i sigurnosna zaglavlja, i za korake prije koraka 6.
 - `readBodyWithLimit` (DAN-777, dio a2; prijenos Ductusa) čita tijelo mijenjajuće rute kao sirove bajtove do tvrde granice, prije bilo kakvog parsiranja; ništa ne dekodira. Deklarirani `Content-Length` iznad granice odbija se bez čitanja (413), neispravan je 400, tijelo bez deklarirane duljine prekida se na prvom komadu preko granice (413), prekinuto tijelo je `body_stream_error` (400), a rok `timeoutMs` daje 408. Svaki komad se kopira u jedan međuspremnik do granice, pa memorija ne raste s brojem komada. Drugi čitač istog zahtjeva dobiva `body_stream_error`. Pri odbijanju čitanje staje, a `refuse()` zatvara vezu. Pipeline čeka da odgovor dobije otvoren socket, pa zahtjev poslan iza odbijanja na istoj vezi (pipelining) ne ulazi ni u slojeve ni u aplikaciju. `declaredLengthRefusal` je isto pravilo samo iz zaglavlja, za rutu koja radi nešto prije tijela.
 
+## Pretpostavke pogona: znak odjave
+
+Znak odjave `__Secure-ductus_signed_out` (INT-20b, `auth-flow.ts`) postavljaju `logout` i `logout-all`. Dok postoji, `startLogin` traži od pružatelja `prompt=login` i `max_age=0` (INT-20d), a pokušaj prijave pamti trenutak početka (`freshSince`) u svom zapisu, kolačiću `__Host-ductus_login`. Callback takvog pokušaja traži u ID tokenu `auth_time` koji nije raniji od tog trenutka, uz dopušteno odstupanje sata (`OIDC_CLOCK_TOLERANCE_SECONDS`); bez njega ili sa starijim prijava ne uspijeva, a znak ostaje. Prijava bez znaka ne šalje ni `prompt` ni `max_age` i ne traži `auth_time`. Znak briše samo uspješan callback. Ovo su pretpostavke pogona na kojima to ponašanje počiva:
+
+- `Max-Age=300` je namjeran. Znak pokriva povratak na prijavu odmah nakon odjave. Web nakon potvrđene odjave sam slijedi rutu odjave kao običnu navigaciju (INT-20c), pa i drugi `POST` bez kolačića sesije dobiva 303 prema pružatelju i ponovno postavlja znak.
+- Prefiks je `__Secure-`, a ne `__Host-`, jer je znak ograničen na `Path=/api/v1/auth`, a `__Host-` traži `Path=/`. Pretpostavka je da na istoj registriranoj domeni nema poddomena kojima se ne vjeruje.
+- Odjava kod pružatelja ide bez `id_token_hint` (server ne čuva ID token nakon prijave). Da AAI@EduHr tada završava svoju sesiju i da poštuje `prompt=login` i `max_age=0` (uz `auth_time` u ID tokenu) treba potvrditi na stagingu s AAI@EduHr. Lažni pružatelj u testovima (`packages/test-fakes/oidc/`, `oidc-provider`) `auth_time` šalje kad zahtjev nosi `max_age` ili `prompt=login`. Ako pružatelj za pokušaj sa znakom ne vrati svjež `auth_time`, prijava završava na neutralnoj stranici dok znak traje.
+
 ## Tko ga zove
 
 Samo ulazna točka `server/server.ts` i `test-server`.
