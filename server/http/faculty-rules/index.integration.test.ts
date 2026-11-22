@@ -74,6 +74,7 @@ const post = (url: string, v: Vector, body?: unknown) =>
 const problem = async (got: Response) => ((await got.json()) as { code: string }).code;
 
 const EMPTY = {
+  authenticated: true,
   admin: true,
   work_type: null,
   version_no: null,
@@ -93,6 +94,7 @@ describe("institution.faculty-rules.get", () => {
     answer = () => ({
       rows: [
         {
+          authenticated: true,
           admin: true,
           work_type: "essay",
           version_no: 1,
@@ -127,6 +129,10 @@ describe("institution.faculty-rules.get", () => {
     expect((await send(base, un)).status).toBe(401);
     answer = () => ({ rows: [{ ...EMPTY, admin: false }] });
     expect((await send(base, withCookie)).status).toBe(403);
+    // A cookie whose session is closed (logout) is 401 before the role (ZEL-S10).
+    answer = () => ({ rows: [{ ...EMPTY, authenticated: false, admin: false }] });
+    const closed = await send(base, withCookie);
+    expect([closed.status, await problem(closed)]).toEqual([401, "unauthorized"]);
     answer = () => {
       throw new Error("izmisljena greska");
     };

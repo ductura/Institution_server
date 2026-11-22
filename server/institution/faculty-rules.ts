@@ -3,7 +3,8 @@ import type { WithActor } from "../database/with-actor.ts";
 /**
  * DAN-590 (M2.12-P03, screen A-04; contract on #1091, c.6695058963): the
  * faculty rule versions of the administrator's own institution, read only.
- * One statement in a withActor transaction: institution.actor_has_role('admin'),
+ * One statement in a withActor transaction: whether the session is open
+ * (app.current_actor(), 401 when it is not) and institution.actor_has_role('admin'),
  * so an institution without versions is told apart from a caller who may not
  * see them (notFound, as for a route that does not exist), joined with the
  * versions read through the faculty_rule_version_read policy (DAN-315). One
@@ -61,8 +62,12 @@ export type FacultyRulesRead =
 
 type Row = Record<string, unknown>;
 
-// The role row always comes back; versions join it only when it is true.
-const QUERY = `SELECT r.admin, v.work_type, v.version_no, v.ai_policy, v.ai_purposes, v.evidence_profile,
+// The role row always comes back; versions join it only when it is true. A
+// session that is not open (closed by logout, expired) is not an actor, so
+// authenticated is false and the answer is 401 before the role is asked, as on
+// the other routes (ZEL-S10).
+const QUERY = `SELECT (SELECT a.user_id FROM app.current_actor() a) IS NOT NULL AS authenticated,
+    r.admin, v.work_type, v.version_no, v.ai_policy, v.ai_purposes, v.evidence_profile,
     v.import_allowed, v.origin, v.published_at
   FROM (SELECT institution.actor_has_role('admin') AS admin) r
   LEFT JOIN institution.faculty_rule_version v ON r.admin IS TRUE
@@ -161,9 +166,13 @@ export async function readFacultyRules(
     );
     return { kind: "unavailable" };
   }
+  const first = rows.length === 1 ? rows[0]! : undefined;
+  if (first?.authenticated === false && first.admin === false) return { kind: "unauthorized" };
   const admin = rows.length > 0 ? rows[0]!.admin : undefined;
-  if (admin === false && rows.length === 1) return { kind: "notFound" };
-  const rules = admin === true && rows.every((row) => row.admin === true) ? versionsOf(rows) : null;
+  const signedIn = rows.every((row) => row.authenticated === true);
+  if (signedIn && admin === false && rows.length === 1) return { kind: "notFound" };
+  const rules =
+    signedIn && admin === true && rows.every((row) => row.admin === true) ? versionsOf(rows) : null;
   if (rules === null) {
     console.error("faculty rules read failed", "row_malformed");
     return { kind: "unavailable" };
