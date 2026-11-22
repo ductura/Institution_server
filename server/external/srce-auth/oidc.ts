@@ -29,8 +29,17 @@ export type VerifiedLogin = {
   userinfo: Readonly<Record<string, unknown>>;
 };
 
+/**
+ * What the authorization request may add beside the checks (INT-20b):
+ * `prompt: "login"` asks the provider to sign the person in again even when
+ * its own session is still open.
+ */
+export type AuthorizationOptions = {
+  prompt?: "login";
+};
+
 export type OidcClient = {
-  authorizationUrl(checks: LoginChecks): Promise<URL>;
+  authorizationUrl(checks: LoginChecks, options?: AuthorizationOptions): Promise<URL>;
   /** `callbackUrl` carries the query of the callback request, nothing else. */
   verify(callbackUrl: URL, checks: LoginChecks): Promise<VerifiedLogin>;
   /**
@@ -38,6 +47,10 @@ export type OidcClient = {
    * `end_session_endpoint` with `client_id` and the configured
    * `post_logout_redirect_uri`, no hint and nothing from a request. Null when
    * discovery names no endpoint, or one without TLS where TLS is required.
+   * No `id_token_hint` (INT-20b): the hint would need the ID token kept past
+   * the login, and this server keeps none; `client_id` names the client, and
+   * the first login after a sign-out asks for `prompt=login` whether or not
+   * the provider ended its session.
    */
   endSessionUrl(): Promise<URL | null>;
 };
@@ -220,8 +233,9 @@ export function createOidcClient(
   }
 
   return {
-    async authorizationUrl(checks) {
+    async authorizationUrl(checks, options = {}) {
       return client.buildAuthorizationUrl(await configuration(), {
+        ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
         redirect_uri: config.redirectUri.href,
         scope: SCOPES[config.provider],
         state: checks.state,

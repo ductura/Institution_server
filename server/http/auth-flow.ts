@@ -51,12 +51,34 @@ const MAX_ATTEMPT_CHARS = 1024;
 /** Where the neutral page sends a new attempt (the contract path of auth.login.get). */
 export const LOGIN_PATH = "/api/v1/auth/login";
 
+/**
+ * The mark of an explicit sign-out (INT-20b): logout and logout-all set it,
+ * and the next login asks the provider for `prompt=login`, so the provider
+ * signs the person in again even if its own session outlived the sign-out.
+ * `__Secure-` and not `__Host-`, as it is sent to the auth routes alone; the
+ * value is a constant and says nothing of the person.
+ */
+export const SIGNED_OUT_COOKIE_NAME = "__Secure-ductus_signed_out";
+const SIGNED_OUT_VALUE = "1";
+const SIGNED_OUT_COOKIE_MAX_AGE = 300;
+const AUTH_ROUTES_PATH = "/api/v1/auth";
+
 const NO_STORE = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
 
 function cookie(name: string, value: string, attributes: string): string {
   // __Host-: Secure, Path=/ and no Domain, so the cookie belongs to this host alone.
   return `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; ${attributes}`;
 }
+
+function signedOutCookie(value: string, attributes: string): string {
+  return `${SIGNED_OUT_COOKIE_NAME}=${value}; Path=${AUTH_ROUTES_PATH}; HttpOnly; Secure; SameSite=Lax; ${attributes}`;
+}
+
+/** The Set-Cookie of the sign-out mark. */
+export const signedOutSetCookie = () =>
+  signedOutCookie(SIGNED_OUT_VALUE, `Max-Age=${SIGNED_OUT_COOKIE_MAX_AGE}`);
+/** The Set-Cookie that drops the sign-out mark. */
+export const clearedSignedOutSetCookie = () => signedOutCookie("", "Max-Age=0");
 
 function readCookie(request: Request, name: string): string | undefined {
   for (const part of (request.headers.get("cookie") ?? "").split(";")) {
@@ -145,9 +167,13 @@ function redirect(location: string, cookies: string[]): Response {
 export async function startLogin(request: Request, deps: AuthDeps): Promise<Response> {
   const returnTo = safeReturnTo(new URL(request.url).searchParams.get("returnTo"));
   const checks = newLoginChecks();
+  // After an explicit sign-out the provider is asked to sign in again. The
+  // mark stays until a login succeeds, so an abandoned attempt does not
+  // spend it.
+  const signedOut = readCookie(request, SIGNED_OUT_COOKIE_NAME) === SIGNED_OUT_VALUE;
   let location: URL;
   try {
-    location = await deps.oidc.authorizationUrl(checks);
+    location = await deps.oidc.authorizationUrl(checks, signedOut ? { prompt: "login" } : {});
   } catch (error) {
     logFailure("authorize", errorCode(error));
     return failurePage(503);
@@ -217,6 +243,11 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   return redirect(new URL(attempt.returnTo, deps.config.redirectUri.origin).href, [
     clearedLoginCookie(),
     sessionSetCookie(token, opened.expires),
+    // The sign-out mark has done its work once a login succeeded; a failed
+    // callback keeps it for the next attempt.
+    ...(readCookie(request, SIGNED_OUT_COOKIE_NAME) === undefined
+      ? []
+      : [clearedSignedOutSetCookie()]),
   ]);
 }
 
@@ -273,7 +304,8 @@ async function endSessions(
   }
   // Only then the provider (DAN-212), also without a live session: its own
   // may still be open (D-200 P2). Without an endpoint, or when the provider
-  // fails, the local sign-out stands and "/" follows.
+  // fails, the local sign-out stands and "/" follows. Either way the next
+  // login asks the provider to sign in again (INT-20b).
   let location = new URL(DEFAULT_RETURN_TO, deps.config.redirectUri.origin).href;
   try {
     const endSession = await deps.oidc.endSessionUrl();
@@ -281,5 +313,5 @@ async function endSessions(
   } catch (error) {
     logFailure("end_session", errorCode(error));
   }
-  return redirect(location, [clearedSessionSetCookie()]);
+  return redirect(location, [clearedSessionSetCookie(), signedOutSetCookie()]);
 }

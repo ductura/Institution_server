@@ -27,6 +27,9 @@ const PROVIDER_LOGOUT = `${ENDPOINT}?post_logout_redirect_uri=${encodeURICompone
 const TOKEN = "t".repeat(43);
 const SAME_ORIGIN = { "sec-fetch-site": "same-origin", origin: APP };
 const CLEARED = "__Host-ductus_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+// The sign-out mark (INT-20b): the next login asks the provider to sign in again.
+const MARK =
+  "__Secure-ductus_signed_out=1; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=300";
 
 let idp: ReturnType<typeof createTestIdp>;
 let deps: AuthDeps & { closeSession: ReturnType<typeof vi.fn> };
@@ -101,8 +104,8 @@ describe("POST /api/v1/auth/logout", () => {
     expect(deps.closeSession).toHaveBeenCalledExactlyOnceWith(value);
     expect(response.status).toBe(withNothing.status);
     expect(response.headers.get("location")).toBe(withNothing.headers.get("location"));
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
-    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+    expect(withNothing.headers.getSetCookie()).toEqual([CLEARED, MARK]);
   });
 
   it("N5: nothing from the query reaches the address", async () => {
@@ -117,7 +120,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(`${APP}/`);
     expect(events[0]).toBe("close");
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
     expect(JSON.stringify(errors.mock.calls)).not.toContain(TOKEN);
   });
@@ -130,7 +133,7 @@ describe("POST /api/v1/auth/logout", () => {
       const response = await post();
       expect(response.status).toBe(303);
       expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-      expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
       expect(errors).toHaveBeenCalledWith("login failed", "logout", `Error:${code}`);
     }
   });
@@ -145,7 +148,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(deps.closeAllSessions).not.toHaveBeenCalled();
     expect(events[0]).toBe("close");
     expect(events.slice(1).every((event) => event === "provider")).toBe(true);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
     const everything = JSON.stringify([...response.headers]);
     expect(everything).not.toContain(TOKEN);
     expect(everything).not.toContain(CLIENT_SECRET);
@@ -180,14 +183,14 @@ describe("POST /api/v1/auth/logout", () => {
     const response = await post(SAME_ORIGIN, null);
     expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
     expect(deps.closeSession).not.toHaveBeenCalled();
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
   });
 
   it("B4: goes to the provider when the session was already closed or had expired", async () => {
     deps.closeSession.mockResolvedValueOnce(false);
     const response = await post();
     expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
   });
 
   it("DAN-99: a confirmed logout sent again goes to the provider when the second close fails", async () => {
@@ -199,7 +202,7 @@ describe("POST /api/v1/auth/logout", () => {
     for (const response of [first, second]) {
       expect(response.status).toBe(303);
       expect(response.headers.get("location")).toBe(PROVIDER_LOGOUT);
-      expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+      expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
     }
     expect(deps.closeSession).toHaveBeenCalledTimes(2);
     expect(errors).toHaveBeenCalledWith("login failed", "logout", "Error:ECONNREFUSED");
@@ -211,7 +214,7 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(HOME);
     expect(deps.closeSession).toHaveBeenCalledWith(TOKEN);
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
     expect(errors).not.toHaveBeenCalled();
   });
 
@@ -247,11 +250,23 @@ describe("POST /api/v1/auth/logout", () => {
     expect(response.headers.get("location")).toBe(HOME);
     expect(deps.closeSession).toHaveBeenCalledWith(TOKEN);
     expect(events[0]).toBe("close");
-    expect(response.headers.getSetCookie()).toEqual([CLEARED]);
+    expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
     expect(errors).toHaveBeenCalledWith("login failed", "end_session", expect.any(String));
     const logged = JSON.stringify(errors.mock.calls);
     expect(logged).not.toContain(MARKER);
     expect(logged).not.toContain(TOKEN);
+  });
+
+  it("INT-20b: the sign-out mark is short-lived, for the auth routes alone, and names no one", async () => {
+    const response = await post();
+    const mark = response.headers.getSetCookie()[1]!;
+    const [pair = "", ...attributes] = mark.split("; ");
+    expect(pair).toBe("__Secure-ductus_signed_out=1");
+    expect(attributes.sort()).toEqual(
+      ["HttpOnly", "Max-Age=300", "Path=/api/v1/auth", "SameSite=Lax", "Secure"].sort(),
+    );
+    expect(mark).not.toContain(TOKEN);
+    expect(mark).not.toMatch(/domain=/i);
   });
 
   it("#18: accepts a matching Origin when the browser sends no Sec-Fetch-Site", async () => {

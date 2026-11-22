@@ -1970,6 +1970,8 @@ async function expectSignedOut(answer: Response): Promise<void> {
   expect(answer.status).toBe(303);
   expect(answer.headers.getSetCookie()).toEqual([
     expect.stringMatching(/^__Host-ductus_session=;/u),
+    // INT-20b: the short-lived sign-out mark that makes the next login ask again.
+    "__Secure-ductus_signed_out=1; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=300",
   ]);
 }
 

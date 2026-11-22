@@ -16,7 +16,8 @@
         "headers": {
           "location": "/",
           "set-cookie": [
-            "__Host-ductus_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0"
+            "__Host-ductus_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0",
+            "__Secure-ductus_signed_out=1; Path=/api/v1/auth; Secure; HttpOnly; SameSite=Lax; Max-Age=300"
           ]
         }
       }
