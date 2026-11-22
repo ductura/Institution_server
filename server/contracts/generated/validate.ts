@@ -215,6 +215,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.academic-years.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "institution.acknowledgment.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -234,6 +240,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['fingerprint'] === 'string') &&
       local0.test(value['fingerprint']) &&
       Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "institution.admin-courses.get:query": (() => {
+  const local0 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['academicYear'] === 'string') &&
+      local0.test(value['academicYear']) &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }
   })(),
@@ -727,6 +744,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (((((value['language'] === 'hr')) || ((value['language'] === 'en')))) || ((value['language'] === null))) &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.teacher-roles.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
     )
   }),
   "institution.teaching-group-members.put:params": (() => {

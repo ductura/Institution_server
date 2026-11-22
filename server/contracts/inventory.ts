@@ -379,9 +379,20 @@ export const SERVER_SOURCES: Readonly<
   },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
+  // LOK-SRV-2: the administrator's reads of the courses (GET here), the
+  // academic years and the teacher roles; Ductus read them in its pages
+  // (DAN-313, DAN-581), the contracts are on #1091.
   "app/api/institution/admin/courses/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  "app/api/institution/admin/academic-years/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#1091:issuecomment-6692590206",
+  },
+  "app/api/institution/teachers/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#1091:issuecomment-6674850230",
   },
   "app/api/institution/courses/[courseId]/groups/route.ts": {
     methods: ["GET", "POST"],

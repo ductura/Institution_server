@@ -88,6 +88,7 @@ import {
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
+  createInstitutionReadRoutesFor,
   createDeadlineExtensionRoutesFor,
   createLegalHoldRoutesFor,
   createStudentDataExportRoutesFor,
@@ -1036,6 +1037,24 @@ const SESSION_ROUTES = {
     live: 200,
   },
   // SRV-1306: a live session that is no administrator of the institution gets 403 (ZD403).
+  "institution.admin-courses.get": {
+    method: "GET",
+    path: "/api/v1/institution/admin/courses?academicYear=2026%2F2027",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.academic-years.get": {
+    method: "GET",
+    path: "/api/v1/institution/admin/academic-years",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.teacher-roles.get": {
+    method: "GET",
+    path: "/api/v1/institution/teachers",
+    body: () => undefined,
+    live: 403,
+  },
   "institution.legal-holds.get": {
     method: "GET",
     path: "/api/v1/institution/legal-holds",
@@ -1504,6 +1523,7 @@ const FACTORIES = [
   "createInstitutionConfigRoutesFor",
   "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
+  "createInstitutionReadRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createLegalHoldRoutesFor",
   "createStudentDataExportRoutesFor",
@@ -1612,6 +1632,7 @@ const MOUNTED = [
   ...createInstitutionConfigRoutesFor(databases.main),
   createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
+  ...createInstitutionReadRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createLegalHoldRoutesFor(databases.main),
   ...createStudentDataExportRoutesFor(databases.main, ENV, ROOT),

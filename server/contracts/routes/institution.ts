@@ -503,6 +503,118 @@ export const enrollmentCodeStateGet = defineRoute({
   errors: [...READ_ERRORS],
 });
 
+// LOK-SRV-2 (Ductus#1091 c.6692590206 and c.6674850230, screens A-02 and
+// A-03): the administrator's reads over institution.institution_courses,
+// institution_academic_years and teacher_roles (server/institution). The
+// database answers only a confirmed, unrevoked administrator of the session's
+// institution; everyone else is the same 403. Handler:
+// server/http/institution-reads.ts.
+
+const AcademicYear = Type.String({ pattern: `^[0-9]{4}/[0-9]{4}${END}` });
+const PersonName = Type.Union([closed({ givenName: Name, familyName: Name }), Type.Null()]);
+const CoursePerson = closed({ personId: LowerUuid, name: PersonName });
+const Students = Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER });
+const ADMIN_READ_ERRORS = [
+  error(401, "unauthorized"),
+  error(403, "forbidden"),
+  error(422, "invalid_input"),
+  error(503, "unavailable"),
+];
+
+export const adminCoursesGet = defineRoute({
+  id: "institution.admin-courses.get",
+  method: "GET",
+  path: "/api/v1/institution/admin/courses",
+  inventory: "app/api/institution/admin/courses/route.ts",
+  access: "institution_admin",
+  summary:
+    "The courses of the session's institution in one academic year (exactly one academicYear=YYYY/YYYY, the second year the first plus one), for its administrator: by name (hr collation), then id, each with its number of open students, its holder, its team and its groups (each with its open students and teachers); people by family and given name (hr collation), then id, those without a name last. No student is named. Any other query is 422; anyone who is not a confirmed administrator is 403.",
+  request: {
+    query: closed({ academicYear: AcademicYear }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the courses, possibly none",
+      body: closed({
+        academicYear: AcademicYear,
+        courses: Type.Array(
+          closed({
+            courseId: LowerUuid,
+            name: Type.String({ minLength: 1 }),
+            students: Students,
+            holder: Type.Union([CoursePerson, Type.Null()]),
+            team: Type.Array(CoursePerson),
+            groups: Type.Array(
+              closed({
+                groupId: LowerUuid,
+                name: Type.String({ minLength: 1 }),
+                students: Students,
+                teachers: Type.Array(CoursePerson),
+              }),
+            ),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: ADMIN_READ_ERRORS,
+});
+
+export const academicYearsGet = defineRoute({
+  id: "institution.academic-years.get",
+  method: "GET",
+  path: "/api/v1/institution/admin/academic-years",
+  inventory: "app/api/institution/admin/academic-years/route.ts",
+  access: "institution_admin",
+  summary:
+    "The academic years in which the session's institution has a course, newest first, for its administrator. No query; any query is 422. Anyone who is not a confirmed administrator is 403.",
+  request: { query: Type.Object({}, { maxProperties: 0 }) },
+  responses: [
+    {
+      status: 200,
+      description: "the years, possibly none",
+      body: closed({ years: Type.Array(AcademicYear) }),
+    },
+  ],
+  errors: ADMIN_READ_ERRORS,
+});
+
+export const teacherRolesGet = defineRoute({
+  id: "institution.teacher-roles.get",
+  method: "GET",
+  path: "/api/v1/institution/teachers",
+  inventory: "app/api/institution/teachers/route.ts",
+  access: "institution_admin",
+  summary:
+    "The teacher roles of the session's institution, for its administrator: pending (whom a role confirmation would confirm, with the time of an earlier revocation or null) and confirmed (with the time of confirmation and forReview, no current teacher right at the last login, D-200), each by family and given name (hr collation), then id, those without a name last. No time of the last login. No query; any query is 422. Anyone who is not a confirmed administrator is 403.",
+  request: { query: Type.Object({}, { maxProperties: 0 }) },
+  responses: [
+    {
+      status: 200,
+      description: "the two lists, possibly empty",
+      body: closed({
+        pending: Type.Array(
+          closed({
+            personId: LowerUuid,
+            name: PersonName,
+            revokedAt: Type.Union([Instant, Type.Null()]),
+          }),
+        ),
+        confirmed: Type.Array(
+          closed({
+            personId: LowerUuid,
+            name: PersonName,
+            confirmedAt: Instant,
+            forReview: Type.Boolean(),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: ADMIN_READ_ERRORS,
+});
+
 export const institutionRoutes = [
   coursesPost,
   assignmentVersionsPost,
@@ -520,4 +632,7 @@ export const institutionRoutes = [
   assignmentGet,
   assignmentGradeGet,
   enrollmentCodeStateGet,
+  adminCoursesGet,
+  academicYearsGet,
+  teacherRolesGet,
 ] as const;

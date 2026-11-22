@@ -113,12 +113,26 @@ export type Operations = {
     success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
   };
+  "institution.academic-years.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "years": (string)[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.acknowledgment.post": {
     params: { "assignmentId": string };
     query: undefined;
     body: { "versionNo": number; "fingerprint": string };
     success: { status: 200; body: { "acknowledgedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_assignment_id" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "notice_changed" | "unavailable";
+  };
+  "institution.admin-courses.get": {
+    params: undefined;
+    query: { "academicYear": string };
+    body: undefined;
+    success: { status: 200; body: { "academicYear": string; "courses": ({ "courseId": string; "name": string; "students": number; "holder": { "personId": string; "name": { "givenName": string; "familyName": string } | null } | null; "team": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null })[]; "groups": ({ "groupId": string; "name": string; "students": number; "teachers": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null })[] })[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
   };
   "institution.admin-courses.post": {
     params: undefined;
@@ -336,6 +350,13 @@ export type Operations = {
     body: { "language": "hr" | "en" | null };
     success: { status: 200; body: { "language": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
+  };
+  "institution.teacher-roles.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "pending": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null; "revokedAt": string | null })[]; "confirmed": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null; "confirmedAt": string; "forReview": boolean })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
   };
   "institution.teaching-group-members.put": {
     params: { "id": string; "groupId": string };
