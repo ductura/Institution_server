@@ -894,6 +894,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions/1`, as: "student" },
   },
+  "work.compare.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      const document = work?.versionSnapshots.get(1);
+      if (work !== undefined && document !== undefined) {
+        work.revision = 2;
+        work.versionSnapshots.set(2, document);
+      }
+    },
+    request: { path: `/api/v1/works/${IDS.document}/compare?from=1&to=2`, as: "student" },
+  },
   "work.messages.get": {
     before: [
       {
@@ -1019,6 +1031,24 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         citationStyle: "fpzg",
         workLanguages: ["hr", "en"],
         defaultWorkLanguage: "hr",
+      },
+    },
+  },
+  "institution.faculty-rules.get": {
+    request: { path: "/api/v1/institution/faculty-rules", as: "administrator" },
+  },
+  "institution.faculty-rules.post": {
+    request: {
+      path: "/api/v1/institution/faculty-rules",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        workType: "essay",
+        basedOnVersionNo: null,
+        aiPolicy: "partially_allowed",
+        aiPurposes: ["formatting"],
+        evidenceProfile: "basic",
+        importAllowed: false,
       },
     },
   },
@@ -1215,6 +1245,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "student",
       method: "POST",
       headers: ORIGIN,
+    },
+  },
+  "student.submission-withdrawal.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission/withdrawal`,
+      as: "student",
+      method: "GET",
     },
   },
   "student.submission-history.get": {

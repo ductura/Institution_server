@@ -36,6 +36,7 @@ export {
   notificationsRoutes,
 } from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
+export { workCompareRoutes } from "./work-compare.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { importRoutes } from "./import.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
@@ -54,6 +55,7 @@ export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
+export { facultyRulesRoutes } from "./faculty-rules.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {
   courseAggregateGet,

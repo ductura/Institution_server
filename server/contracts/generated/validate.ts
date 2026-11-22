@@ -510,6 +510,26 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.faculty-rules.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.faculty-rules.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      (((typeof value['basedOnVersionNo'] === 'number' && Number.isInteger(value['basedOnVersionNo'])) && value['basedOnVersionNo'] <= 2147483647 && value['basedOnVersionNo'] >= 1) || ((value['basedOnVersionNo'] === null))) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      Array.isArray(value['aiPurposes']) &&
+      value['aiPurposes'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'formatting')) || ((value === 'proofreading')) || ((value === 'literature_search')) || ((value === 'transcription')) || ((value === 'translation')))))) { return false }; return true; })(value['aiPurposes']) &&
+      (((value['evidenceProfile'] === 'basic')) || ((value['evidenceProfile'] === 'extended'))) &&
+      (typeof value['importAllowed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 6
+    )
+  }),
   "institution.legal-hold-release.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1317,6 +1337,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.submission-withdrawal.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.submission-withdrawal.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1912,6 +1940,31 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['documentId'] === 'string') &&
       local0.test(value['documentId']) &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.compare.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.compare.get:query": (() => {
+  const local0 = /^[1-9][0-9]{0,15}(?![\s\S])/;
+  const local1 = /^[1-9][0-9]{0,15}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['from'] === 'string') &&
+      local0.test(value['from']) &&
+      (typeof value['to'] === 'string') &&
+      local1.test(value['to']) &&
+      Object.getOwnPropertyNames(value).length === 2
     )
   }
   })(),

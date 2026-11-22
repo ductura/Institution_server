@@ -109,6 +109,38 @@ export const studentSubmissionWithdrawalPost = defineRoute({
   ],
 });
 
+const WithdrawalReceiptSummary = closed({
+  withdrawalId: Uuid,
+  assignmentId: Uuid,
+  revision: Positive,
+  withdrawnAt: Microsecond,
+  /** The Ed25519 signature of the signed receipt, base64url. */
+  signature: Type.String({ minLength: 1, maxLength: 512 }),
+});
+
+export const studentSubmissionWithdrawalGet = defineRoute({
+  id: "student.submission-withdrawal.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission/withdrawal",
+  inventory: "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts",
+  access: "student_enrolled",
+  summary:
+    "Whether the caller may withdraw the own submission of the assignment now, and the signed withdrawals so far (WEB-1903). withdrawable is the server's decision: the teacher has not switched withdrawal off, the deadline in force has not passed and the last event is a confirmed submission whose receipt is bound; the client never compares a time with a deadline. receipts lists the bound withdrawal receipts, oldest first (the full receipts are in student.submission-history.get). An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: AssignmentParams },
+  responses: [
+    {
+      status: 200,
+      description: "the state, with no receipts before a first withdrawal",
+      body: closed({
+        withdrawable: Type.Boolean(),
+        receipts: Type.Array(WithdrawalReceiptSummary, { maxItems: 1000 }),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
+});
+
 export const studentSubmissionHistoryGet = defineRoute({
   id: "student.submission-history.get",
   method: "GET",
@@ -206,6 +238,7 @@ export const teacherSubmissionWithdrawalPost = defineRoute({
 
 export const submissionsRoutes = [
   studentSubmissionWithdrawalPost,
+  studentSubmissionWithdrawalGet,
   studentSubmissionHistoryGet,
   teacherSubmissionHistoryGet,
   teacherSubmissionWithdrawalGet,
