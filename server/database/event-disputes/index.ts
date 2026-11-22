@@ -5,6 +5,7 @@ export {
   type EventDisputeAdd,
   type EventDisputeInput,
   type EventDisputeKind,
+  type EventDisputeWorkInput,
   type EventDisputeList,
   type EventDisputes,
 } from "./event-disputes.ts";

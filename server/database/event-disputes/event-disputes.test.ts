@@ -170,3 +170,52 @@ describe("list", () => {
     await expect(port(sqlError("57014")).port.list(TOKEN, A)).rejects.toThrow();
   });
 });
+
+describe("by work (SRV-1315)", () => {
+  const work = { kind: "dispute", eventId: "pastes/0", text: "Lijepljenje je iz mojih bilješki." };
+  it("adds through the work-keyed function and confirms the row", async () => {
+    const { port: p, seen } = port([row()]);
+    const answer = await p.addToWork(TOKEN, "izmisljeni-rad-0001", work);
+    expect(answer).toMatchObject({ status: "added", record: { id: D, kind: "dispute" } });
+    expect(seen[0]?.text).toContain("app.add_work_event_dispute");
+    expect(seen[0]?.values).toEqual(["izmisljeni-rad-0001", "dispute", "pastes/0", work.text]);
+  });
+  it("refuses bad input before the database", async () => {
+    const { port: p, seen } = port([row()]);
+    for (const bad of [
+      { ...work, kind: "note" },
+      { ...work, eventId: "Pastes/0" },
+      { ...work, text: " " },
+    ]) {
+      expect(await p.addToWork(TOKEN, "izmisljeni-rad-0001", bad)).toEqual({
+        status: "invalid_input",
+      });
+    }
+    expect(seen).toEqual([]);
+  });
+  it("maps ZD403, ZD401 and ZD422, throws the rest and rejects another row", async () => {
+    expect(await port(sqlError("ZD403")).port.addToWork(TOKEN, "x", work)).toEqual({
+      status: "not_found",
+    });
+    expect(await port(sqlError("ZD401")).port.addToWork(TOKEN, "x", work)).toEqual({
+      status: "unauthorized",
+    });
+    expect(await port(sqlError("ZD422")).port.addToWork(TOKEN, "x", work)).toEqual({
+      status: "invalid_input",
+    });
+    await expect(port(sqlError("XX000")).port.addToWork(TOKEN, "x", work)).rejects.toThrow();
+    await expect(
+      port([row({ text: "Drugi tekst" })]).port.addToWork(TOKEN, "x", work),
+    ).rejects.toThrow("unconfirmed");
+  });
+  it("lists the records of a work and maps the refusals", async () => {
+    const { port: p, seen } = port([row()]);
+    const answer = await p.listForWork(TOKEN, "izmisljeni-rad-0001");
+    expect(answer).toMatchObject({ status: "read", records: [{ id: D }] });
+    expect(seen[0]?.text).toContain("app.work_event_disputes");
+    expect(await port(sqlError("ZD403")).port.listForWork(TOKEN, "x")).toEqual({
+      status: "not_found",
+    });
+    await expect(port(sqlError("XX000")).port.listForWork(TOKEN, "x")).rejects.toThrow();
+  });
+});

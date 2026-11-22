@@ -52,6 +52,7 @@ export { institutionRoutes } from "./institution.ts";
 export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
+export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {
   courseAggregateGet,

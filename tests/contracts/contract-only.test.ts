@@ -57,6 +57,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createEventDisputeRoutesFor,
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -526,6 +527,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createEventDisputeRoutesFor(databases.main)",
+    ids: ["work.event-disputes.get", "work.event-disputes.post"],
+    routes: () => createEventDisputeRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
     ids: ["notifications.list.get", "notifications.read.post"],
     routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -847,6 +853,8 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "work.event-disputes.get",
+      "work.event-disputes.post",
       "notifications.list.get",
       "notifications.read.post",
       "work.attachments.post",
