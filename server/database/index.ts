@@ -414,6 +414,7 @@ export {
   type RecordInput,
 } from "./consultation-records/index.ts";
 export { createWorkMilestones } from "./work-milestones/index.ts";
+export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";

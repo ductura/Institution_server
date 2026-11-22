@@ -47,6 +47,11 @@ export {
   WorkMilestoneRevisionInput,
   workMilestonesRoutes,
 } from "./work-milestones.ts";
+export {
+  ReturnForRevisionInput,
+  ReturnForRevisionResult,
+  returnForRevisionRoutes,
+} from "./return-for-revision.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";

@@ -105,6 +105,7 @@ import {
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
+  createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
@@ -293,6 +294,8 @@ async function main(): Promise<void> {
       // SRV-1315: amendments and disputes of process summary events of a work.
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
+      // SRV-1606: the teacher returns the whole submitted work for revision.
+      ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).

@@ -28,6 +28,7 @@ export {
   studentDataExportStorage,
 } from "./student-data-export/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
+export { createReturnForRevisionRoutesFor } from "./return-for-revision/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkRoutesFor } from "./teacher-work/index.ts";
 export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";

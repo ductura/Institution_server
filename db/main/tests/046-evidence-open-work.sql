@@ -126,7 +126,8 @@ SELECT bag_eq(
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
             ('app.read_own_reconstruction_checkpoint(text,bigint)'),
             -- SRV-1903: the student's two steps of a withdrawal.
-            ('app.withdraw_submission(uuid,text,text)'), ('app.attach_withdrawal_receipt(uuid,text,jsonb)') $$,
+            ('app.withdraw_submission(uuid,text,text)'), ('app.attach_withdrawal_receipt(uuid,text,jsonb)'),
+            ('app.return_work_for_revision(text,text,timestamp with time zone)') $$,
   'the web role executes exactly the expected evidence RPCs');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p

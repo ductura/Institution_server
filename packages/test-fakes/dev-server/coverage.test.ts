@@ -1065,6 +1065,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { message: "Dobro." },
     },
   },
+  "work.return-for-revision.post": {
+    before: SUBMIT_STEPS,
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/return-for-revision`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { comment: "Doradi uvod.", revisionDueAt: "2026-12-10T12:00:00Z" },
+    },
+  },
   "work.milestones.delete": {
     request: {
       method: "DELETE",
@@ -1821,4 +1831,23 @@ describe("student submission on the dev fake server", () => {
     expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [JSON.parse(added.body)] });
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
   });
+});
+
+it("returns a submitted work for revision and lets the student submit anew (SRV-1606)", async () => {
+  const state = createState();
+  const scenario = SCENARIOS["work.return-for-revision.post"];
+  const read = SCENARIOS["student.submission.get"].request;
+  // Nothing is submitted yet: nothing to return.
+  expect((await run(state, scenario.request)).status).toBe(409);
+  for (const step of scenario.before ?? []) expect((await run(state, step)).status).toBe(200);
+  // The student owner may not, another student does not see the work.
+  expect((await run(state, { ...scenario.request, as: "student" })).status).toBe(403);
+  expect((await run(state, { ...scenario.request, as: "student-2" })).status).toBe(404);
+  expect((await run(state, { ...scenario.request, body: { comment: " " } })).status).toBe(422);
+  const returned = await run(state, scenario.request);
+  expect(returned.status).toBe(200);
+  expect(returned.json).toMatchObject({ state: "returned_for_revision", round: 1 });
+  expect(JSON.parse((await run(state, read)).body)).toEqual({ state: "none" });
+  expect((await run(state, scenario.request)).status).toBe(409);
+  expect((await run(state, SUBMIT)).status).toBe(200);
 });

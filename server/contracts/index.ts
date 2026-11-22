@@ -75,6 +75,7 @@ import {
   directEditRoutes,
   importRoutes,
   workMilestonesRoutes,
+  returnForRevisionRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -95,6 +96,11 @@ export {
   WorkMilestoneId,
   WorkMilestoneRevisionInput,
   workMilestonesRoutes,
+} from "./routes/index.ts";
+export {
+  ReturnForRevisionInput,
+  ReturnForRevisionResult,
+  returnForRevisionRoutes,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
@@ -228,6 +234,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...eventDisputesRoutes,
   ...facultyRulesRoutes,
   ...workMilestonesRoutes,
+  ...returnForRevisionRoutes,
 ];
 
 /**

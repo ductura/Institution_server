@@ -326,6 +326,8 @@ ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_att
 ALTER TABLE institution.submission_withdrawal_setting DISABLE TRIGGER submission_withdrawal_setting_no_truncate;
 ALTER TABLE evidence.submission_withdrawal DISABLE TRIGGER evidence_submission_withdrawal_no_truncate;
 ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_submission_withdrawal_receipt_no_truncate;
+-- SRV-1606: a return of a work references the submission; append-only.
+ALTER TABLE evidence.submission_return DISABLE TRIGGER evidence_submission_return_no_truncate;
 -- The record of an import (SRV-1803) references the assignment; it is append only.
 ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
