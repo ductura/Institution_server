@@ -15,14 +15,16 @@ import { CODE_POINT, END } from "./teacher.ts";
 // The list is not evidence: it is outside the document and its hash.
 
 /** A lowercase UUID, as PostgreSQL writes uuid. */
-const LowerUuid = Type.String({
+export const LowerUuid = Type.String({
   pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
 });
 /** The id of a source record: a version 4 UUID (v2 section 2.1). */
-const SourceId = Type.String({
+export const SourceId = Type.String({
   pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}${END}`,
 });
-const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
+export const Instant = Type.String({
+  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+});
 
 /**
  * The FORBIDDEN code points of the document schema (v2 section 3.2,
@@ -36,7 +38,7 @@ const FORBIDDEN =
  * A text field of a source record (v2 section 2.3): 1 to `max` code points, no
  * FORBIDDEN code point, no white space at either end. A lone surrogate is refused.
  */
-const Text = (max: number) =>
+export const Text = (max: number) =>
   Type.String({
     pattern: `^(?!\\s)(?:${CODE_POINT}|[^${FORBIDDEN}\\uD800-\\uDFFF]){1,${max}}(?<!\\s)${END}`,
   });
@@ -95,11 +97,14 @@ export const WorkSourceRecord = Type.Union([
 ]);
 
 /** One spelling each: a DOI in lowercase, an ISBN as its digits (ISBN-10 may end in X). */
-const Doi = Type.String({ pattern: `^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}${END}`, maxLength: 300 });
-const Isbn = Type.String({ pattern: `^(?:[0-9]{9}[0-9X]|97[89][0-9]{10})${END}` });
+export const Doi = Type.String({
+  pattern: `^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}${END}`,
+  maxLength: 300,
+});
+export const Isbn = Type.String({ pattern: `^(?:[0-9]{9}[0-9X]|97[89][0-9]{10})${END}` });
 
 /** What the student sends for one source: the record and what the record has no room for. */
-const SourceInput = closed({
+export const SourceInput = closed({
   /**
    * An object of the shape of the response's record (WorkSourceRecord). The
    * ahead-of-time input validator compiles one level of nesting only, so the
@@ -113,7 +118,7 @@ const SourceInput = closed({
   undated: Type.Optional(Type.Boolean()),
 });
 
-const WorkSource = closed({
+export const WorkSource = closed({
   id: SourceId,
   record: WorkSourceRecord,
   doi: Type.Union([Doi, Type.Null()]),

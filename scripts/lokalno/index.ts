@@ -20,6 +20,6 @@ export {
   stackOptions,
   TOKEN_FILE,
 } from "./config.ts";
-export type { AdminTarget, Env, LocalSecrets, StackOptions } from "./config.ts";
+export type { AdminTarget, Env, LocalEvidence, LocalSecrets, StackOptions } from "./config.ts";
 export { localLogins, provision } from "./database.ts";
 export { databaseUrl, LOCAL_DIR, parseFlags, startStack } from "./lokalno.ts";

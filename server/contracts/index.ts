@@ -57,7 +57,10 @@ import {
   problemReportsPost,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
+  teacherSourcesRoutes,
   teacherWorkRoutes,
+  originCompositionRoutes,
+  originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workExportDocxRoutes,
@@ -73,6 +76,7 @@ import {
   importRoutes,
   workMilestonesRoutes,
   milestoneTemplateRoutes,
+  returnForRevisionRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -98,6 +102,9 @@ export {
   MilestoneTemplateInput,
   WorkMilestoneAddInput,
   milestoneTemplateRoutes,
+  ReturnForRevisionInput,
+  ReturnForRevisionResult,
+  returnForRevisionRoutes,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
@@ -108,6 +115,7 @@ export {
   NotificationId,
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
+  RevisionNotificationsPage,
   notificationsRoutes,
 } from "./routes/index.ts";
 
@@ -172,7 +180,10 @@ export const ROUTES: readonly RouteContract[] = [
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
+  ...teacherSourcesRoutes,
   ...teacherWorkRoutes,
+  ...originCompositionRoutes,
+  ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
   pilotMetricsGet,
@@ -229,6 +240,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...facultyRulesRoutes,
   ...workMilestonesRoutes,
   ...milestoneTemplateRoutes,
+  ...returnForRevisionRoutes,
 ];
 
 /**

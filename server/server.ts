@@ -37,6 +37,9 @@ import {
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createOriginCompositionRoutesFor,
+  createFacultyThresholdRoutesFor,
+  createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
@@ -70,6 +73,7 @@ import {
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
+  createInstitutionReadRoutesFor,
   createDeadlineExtensionRoutesFor,
   createLegalHoldRoutesFor,
   createStudentDataExportRoutesFor,
@@ -102,6 +106,7 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
@@ -240,6 +245,12 @@ async function main(): Promise<void> {
       createTextCheckConfigRoute(databases.main),
       // The teacher's read of one work by its document id (SRV-2003).
       ...createTeacherWorkRoutesFor(databases.main),
+      // The composition of a work by the kind of origin (SRV-0910, P-1).
+      ...createOriginCompositionRoutesFor(databases.main),
+      // The thresholds of a faculty per kind of origin and the comparison of a work (SRV-1111, P-1).
+      ...createFacultyThresholdRoutesFor(databases.main),
+      // The guidance of a teacher on sources (SRV-1605, WEB-2133).
+      ...createTeacherSourceRoutesFor(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
@@ -285,6 +296,8 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-1606: the teacher returns the whole submitted work for revision.
+      ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
@@ -365,6 +378,7 @@ async function main(): Promise<void> {
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
+      ...createInstitutionReadRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       // SRV-1306 (plan M10.3): legal holds of the institution, for its administrators.

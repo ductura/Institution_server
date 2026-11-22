@@ -296,6 +296,8 @@ ALTER TABLE institution.notice_read DISABLE TRIGGER notice_read_no_truncate;
 ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate;
 -- A student's amendment or dispute of an event (SRV-1314) references the assignment and is append-only.
 ALTER TABLE evidence.event_dispute DISABLE TRIGGER event_dispute_no_truncate;
+-- The kind of origin of a change (SRV-0910) references the assignment and is append-only.
+ALTER TABLE evidence.origin_change DISABLE TRIGGER origin_change_no_truncate;
 -- A work's attachment (SRV-10B) references the assignment and is append-only.
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
@@ -324,6 +326,8 @@ ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_att
 ALTER TABLE institution.submission_withdrawal_setting DISABLE TRIGGER submission_withdrawal_setting_no_truncate;
 ALTER TABLE evidence.submission_withdrawal DISABLE TRIGGER evidence_submission_withdrawal_no_truncate;
 ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_submission_withdrawal_receipt_no_truncate;
+-- SRV-1606: a return of a work references the submission; append-only.
+ALTER TABLE evidence.submission_return DISABLE TRIGGER evidence_submission_return_no_truncate;
 -- The record of an import (SRV-1803) references the assignment; it is append only.
 ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
@@ -338,6 +342,7 @@ SELECT is(
 );
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
+ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;

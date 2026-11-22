@@ -29,6 +29,7 @@ const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
 const NAME = /[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_.-]*)?/y;
 const SPACE = /[ \t\r\n]*/y;
 const ONLY_SPACE = /^[ \t\r\n]*$/;
+const NOT_XML_CHAR = /[^\t\n\r\u0020-\ud7ff\ue000-\ufffd\u{10000}-\u{10ffff}]/u;
 const DECLARATION =
   /^<\?xml[ \t\r\n]+version[ \t\r\n]*=[ \t\r\n]*(["'])1\.[0-9]\1(?:[ \t\r\n]+encoding[ \t\r\n]*=[ \t\r\n]*(["'])([A-Za-z0-9._-]+)\2)?(?:[ \t\r\n]+standalone[ \t\r\n]*=[ \t\r\n]*(["'])(?:yes|no)\4)?[ \t\r\n]*\?>/;
 const PREDEFINED: Readonly<Record<string, string>> = {
@@ -109,6 +110,8 @@ function parse(text: string, limits: XmlLimits): XmlElement {
   }
   // A DOCTYPE or an entity declaration anywhere is refused before anything else (X1).
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Refusal("XML_DTD");
+  // A character outside the XML Char production is malformed wherever it stands (X1).
+  if (NOT_XML_CHAR.test(text)) throw new Refusal("XML_INVALID");
 
   const stack: { element: XmlElement; scope: ReadonlyMap<string, string> }[] = [];
   let root: XmlElement | null = null;
@@ -157,6 +160,9 @@ function parse(text: string, limits: XmlLimits): XmlElement {
     if (text.startsWith("<!--", at)) {
       const end = text.indexOf("-->", at + 4);
       if (end === -1) throw new Refusal("XML_INVALID");
+      // "--" never occurs inside a comment, and it does not end in "-" (XML 1.0 §2.5).
+      const body = text.slice(at + 4, end);
+      if (body.includes("--") || body.endsWith("-")) throw new Refusal("XML_INVALID");
       at = end + 3;
       continue;
     }
@@ -217,7 +223,12 @@ function parse(text: string, limits: XmlLimits): XmlElement {
       at = end + 1;
       if (pending.names.has(attributeName)) throw new Refusal("XML_INVALID");
       pending.names.add(attributeName);
-      pending.raw.push({ name: attributeName, value: decodeReferences(rawValue) });
+      // Attribute-value normalization (XML 1.0 §3.3.3): a literal tab or line
+      // break is one space, a character reference to one is kept as it is.
+      pending.raw.push({
+        name: attributeName,
+        value: decodeReferences(rawValue.replace(/\r\n|[\t\n\r]/g, " ")),
+      });
     }
 
     if (root !== null && stack.length === 0) throw new Refusal("XML_INVALID");
@@ -267,15 +278,21 @@ function build(
   // An element without declarations shares its parent's scope: no copy per element.
   const own = scope ?? parentScope;
   const attributes: XmlAttribute[] = [];
-  const seen = new Set<string>();
+  // Keyed by namespace and then by local name, never by their concatenation:
+  // a long namespace URI would be copied and hashed once per attribute (X7).
+  const seen = new Map<string, Set<string>>();
   for (const { name, value } of pending.raw) {
     if (name === "xmlns" || name.startsWith("xmlns:")) continue;
     const [prefix, local] = splitName(name);
     // An unprefixed attribute has no namespace, whatever the default is.
     const ns = prefix === "" ? "" : resolve(own, prefix);
-    const key = `${ns}|${local}`;
-    if (seen.has(key)) throw new Refusal("XML_INVALID");
-    seen.add(key);
+    let locals = seen.get(ns);
+    if (locals === undefined) {
+      locals = new Set();
+      seen.set(ns, locals);
+    }
+    if (locals.has(local)) throw new Refusal("XML_INVALID");
+    locals.add(local);
     attributes.push({ ns, local, value });
   }
   return {

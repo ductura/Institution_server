@@ -139,6 +139,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562265",
   },
+  // SRV-1607 (Ductus#2052): notifications of work returned for revision, a list of its own.
+  "app/api/notifications/returned-for-revision/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7082147227",
+  },
   "app/api/notifications/[id]/read/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562265",
@@ -322,6 +327,65 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7024185874",
   },
+  // SRV-1605 (Ductus#2052 c.7081590679, WEB-2133): the guidance of a teacher on sources (recommendations, required literature, proof requests, the literature mark, the proofs); Ductus has no such route.
+  "app/api/teacher/works/[documentId]/source-guidance/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/source-recommendations/[sourceId]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proof-request/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/literature-seen/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proofs/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/works/[documentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/courses/[courseId]/required-literature/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/teacher/courses/[courseId]/required-literature/[sourceId]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/student/courses/[courseId]/required-literature/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  "app/api/student/assignments/[assignmentId]/source-proof-requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081590679",
+  },
+  // SRV-1111 (Ductus#2052 c.7079306579, P-1 rule 12): the thresholds of a faculty per kind of origin and the comparison of a work; Ductus has no such route.
+  "app/api/institution/origin-thresholds/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/institution/origin-thresholds/[origin]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/origin-thresholds/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  // SRV-0910 (Ductus#2052 c.7079306579, P-1): the composition of a work by the kind of origin; Ductus has no such route.
+  "app/api/works/[documentId]/origin-composition/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
   // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
   "app/api/teacher/works/[documentId]/working-criteria/route.ts": {
     methods: ["GET"],
@@ -361,9 +425,20 @@ export const SERVER_SOURCES: Readonly<
   },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
+  // LOK-SRV-2: the administrator's reads of the courses (GET here), the
+  // academic years and the teacher roles; Ductus read them in its pages
+  // (DAN-313, DAN-581), the contracts are on #1091.
   "app/api/institution/admin/courses/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  "app/api/institution/admin/academic-years/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#1091:issuecomment-6692590206",
+  },
+  "app/api/institution/teachers/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#1091:issuecomment-6674850230",
   },
   "app/api/institution/courses/[courseId]/groups/route.ts": {
     methods: ["GET", "POST"],
@@ -547,6 +622,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/milestone-plan/apply-template/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
+  "app/api/works/[documentId]/return-for-revision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7081618556",
   },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],

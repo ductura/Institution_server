@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Handlers } from "./server.ts";
 import {
+  courseTeachers,
   parseInstant,
   teachesCourse,
   type Account,
@@ -35,7 +36,96 @@ const AI_POLICIES = ["prohibited", "partially_allowed", "encouraged"] as const;
 /** The retry key of each created assignment and the content it was created with. */
 const requests = new WeakMap<State, Map<string, { id: string; content: string }>>();
 
+/** Fake time of every role confirmation: the state keeps no history of roles. */
+const CONFIRMED_AT = "2026-09-01T08:00:00.000Z";
+
+/** A person by id for the administrator's reads; null name when the account is unknown. */
+function person(
+  state: State,
+  id: string,
+): { personId: string; name: { givenName: string; familyName: string } | null } {
+  const found = state.accounts.find((a) => a.id === id);
+  return {
+    personId: id,
+    name: found === undefined ? null : { givenName: found.givenName, familyName: found.familyName },
+  };
+}
+
+/** By family and given name (hr collation), then id, those without a name last. */
+function byPerson(a: ReturnType<typeof person>, b: ReturnType<typeof person>): number {
+  if (a.name === null || b.name === null) {
+    if (a.name !== b.name) return a.name === null ? 1 : -1;
+  } else {
+    const order =
+      byName.compare(a.name.familyName, b.name.familyName) ||
+      byName.compare(a.name.givenName, b.name.givenName);
+    if (order !== 0) return order;
+  }
+  return a.personId < b.personId ? -1 : a.personId > b.personId ? 1 : 0;
+}
+
+const people = (state: State, ids: readonly string[]): ReturnType<typeof person>[] =>
+  [...new Set(ids)].map((id) => person(state, id)).sort(byPerson);
+
+/** YYYY/YYYY with the second year the first plus one. */
+const isAcademicYear = (year: string): boolean => {
+  const match = /^(\d{4})\/(\d{4})$/u.exec(year);
+  return match !== null && Number(match[2]) === Number(match[1]) + 1;
+};
+
 export const COURSE_SETUP_HANDLERS: Handlers = {
+  // LOK-SRV-2: the administrator's reads of courses, years and teacher roles.
+  "institution.admin-courses.get": ({ state, account, query }) => {
+    if (!isAdmin(account)) return { error: "forbidden" };
+    if (!isAcademicYear(query.academicYear)) return { error: "invalid_input" };
+    const courses = state.courses
+      .filter((c) => c.academicYear === query.academicYear)
+      .sort((a, b) => byName.compare(a.name, b.name) || (a.id < b.id ? -1 : 1))
+      .map((c) => ({
+        courseId: c.id,
+        name: c.name,
+        students: c.studentIds.length,
+        holder: person(state, c.holderId),
+        team: people(
+          state,
+          courseTeachers(c).filter((id) => id !== c.holderId),
+        ),
+        groups: c.groups.map((g) => ({
+          groupId: g.id,
+          name: g.name,
+          students: g.studentIds.length,
+          teachers: people(state, g.teacherIds),
+        })),
+      }));
+    return { status: 200, body: { academicYear: query.academicYear, courses } };
+  },
+  "institution.academic-years.get": ({ state, account }) => {
+    if (!isAdmin(account)) return { error: "forbidden" };
+    const years = [...new Set(state.courses.map((c) => c.academicYear))].sort().reverse();
+    return { status: 200, body: { years } };
+  },
+  "institution.teacher-roles.get": ({ state, account }) => {
+    if (!isAdmin(account)) return { error: "forbidden" };
+    const teachers = state.accounts.filter((a) => a.roles.includes("teacher"));
+    const pending = state.accounts.filter((a) => a.roles.length === 0);
+    return {
+      status: 200,
+      body: {
+        pending: people(
+          state,
+          pending.map((a) => a.id),
+        ).map((p) => ({ ...p, revokedAt: null })),
+        confirmed: people(
+          state,
+          teachers.map((a) => a.id),
+        ).map((p) => ({
+          ...p,
+          confirmedAt: CONFIRMED_AT,
+          forReview: false,
+        })),
+      },
+    };
+  },
   "institution.admin-courses.post": ({ state, account, body }) => {
     if (account === null || !isAdmin(account)) return { error: "forbidden" };
     if (!isTeacher(state, body.holderId.toLowerCase())) return { error: "invalid_input" };

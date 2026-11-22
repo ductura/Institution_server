@@ -29,8 +29,12 @@ export {
 } from "./student-data-export/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createMilestoneTemplateRoutesFor } from "./milestone-template/index.ts";
+export { createReturnForRevisionRoutesFor } from "./return-for-revision/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkRoutesFor } from "./teacher-work/index.ts";
+export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";
+export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
+export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
@@ -319,6 +323,7 @@ export {
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
 export { createTeacherRosterRoutesFor } from "./teacher-roster.ts";
+export { createInstitutionReadRoutesFor } from "./institution-reads.ts";
 export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,

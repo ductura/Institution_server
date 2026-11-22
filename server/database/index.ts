@@ -306,6 +306,14 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export {
+  createTeacherSources,
+  type ProofImage,
+  type ProofRequestInput,
+  type RecommendationInput,
+  type SourceGuidanceInput,
+  type TeacherSources,
+} from "./teacher-sources/index.ts";
 export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
@@ -412,6 +420,7 @@ export {
   type MilestoneTemplateItem,
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
+export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
@@ -470,6 +479,30 @@ export {
   type TeacherWorkRead,
   type TeacherWorkState,
 } from "./teacher-work/index.ts";
+export {
+  createOriginKind,
+  type OriginCompositionOutcome,
+  type OriginExplainOutcome,
+  type OriginKind,
+  type OriginKindName,
+  type OriginPart,
+  type OriginRecordOutcome,
+} from "./origin-kind/index.ts";
+export {
+  createInputRhythm,
+  RHYTHM_MAX_GAPS_PER_BURST,
+  type InputRhythm,
+  type RhythmBurst,
+} from "./input-rhythm/index.ts";
+export {
+  createFacultyThresholds,
+  THRESHOLD_ORIGINS,
+  type FacultyThresholds,
+  type Threshold,
+  type ThresholdComparison,
+  type ThresholdOrigin,
+  type ThresholdState,
+} from "./faculty-thresholds/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
 export {
   createTeacherWorkingCriteria,
