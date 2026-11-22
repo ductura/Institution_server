@@ -56,6 +56,7 @@ export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
+export { assistantMatchRoutes } from "./assistant-match.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {

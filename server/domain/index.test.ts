@@ -64,6 +64,7 @@ describe("server/domain imports nothing outside itself", () => {
       "ai-match",
       "assignment",
       "assistant",
+      "assistant-match",
       "citation",
       "collaboration",
       "course-team",

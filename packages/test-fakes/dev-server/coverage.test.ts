@@ -58,6 +58,16 @@ const CREATE_CONSULTATION: Step = {
     agreement: "Dodati zaključak.",
   },
 };
+const ASSISTANT_MATCH_POST: Step = {
+  path: `/api/v1/works/${IDS.document}/assistant-match`,
+  as: "student",
+  headers: ORIGIN,
+  body: {
+    segmentRef: "blok-1",
+    text: "Izmišljeno: kišobrani na tramvajskoj stanici čuvaju putnike od kiše, i to je sve.",
+  },
+};
+
 const CREATE_EVENT_DISPUTE: Step = {
   path: `/api/v1/works/${IDS.document}/event-disputes`,
   as: "student",
@@ -923,6 +933,11 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0), CREATE_EVENT_DISPUTE],
     request: { path: `/api/v1/works/${IDS.document}/event-disputes`, as: "nastavnik" },
   },
+  "work.assistant-match.get": {
+    before: [ASSISTANT_MATCH_POST],
+    request: { path: `/api/v1/works/${IDS.document}/assistant-match`, as: "nastavnik" },
+  },
+  "work.assistant-match.post": { request: ASSISTANT_MATCH_POST },
   "work.origin-composition.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-composition`, as: "nastavnik" },
   },

@@ -479,6 +479,14 @@ export {
   type InputRhythm,
   type RhythmBurst,
 } from "./input-rhythm/index.ts";
+export {
+  createAssistantMatch,
+  type AssistantMatch,
+  type AssistantMatchCheckOutcome,
+  type AssistantMatchFinding,
+  type AssistantMatchFound,
+  type AssistantMatchListOutcome,
+} from "./assistant-match/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
 export {
   createTeacherWorkingCriteria,
