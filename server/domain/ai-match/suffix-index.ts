@@ -93,6 +93,17 @@ export class SuffixIndex {
         suffix.messageId = current.messageId;
       }
     }
+    // A start state can hold only strings longer than every match, while its
+    // longest matched prefix lives in a suffix-link ancestor. Links are
+    // shorter, so ascending order lets each state inherit the nearest match.
+    for (let i = 1; i < ordered.length; i++) {
+      const current = ordered[i]!;
+      const suffix = this.states[current.link]!;
+      if (current.matchedLength === 0 && suffix.matchedLength > 0) {
+        current.matchedLength = suffix.matchedLength;
+        current.messageId = suffix.messageId;
+      }
+    }
   }
 
   matchAt(start: number): { matchedLength: number; messageId: string } {
