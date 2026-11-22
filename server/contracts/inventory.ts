@@ -475,8 +475,29 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
   },
   "app/api/works/[documentId]/milestones/[milestoneId]/route.ts": {
-    methods: ["PATCH"],
+    methods: ["PATCH", "DELETE"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
+  // SRV-1520 (Ductus#2052, N-15 etape): the state of a milestone of one work; Ductus has no such route.
+  "app/api/works/[documentId]/milestone-states/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/details/route.ts": {
+    methods: ["PATCH"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/submit/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/request-revision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/approve/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],

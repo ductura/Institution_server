@@ -854,6 +854,68 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
   },
+  "work.milestone-states.get": {
+    request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
+  },
+  "work.milestones.details.patch": {
+    request: {
+      method: "PATCH",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/details`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { title: "Prvi nacrt", dueAt: "2026-12-03T15:30:00Z" },
+    },
+  },
+  "work.milestones.submit.post": {
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/submit`,
+      as: "student",
+      headers: ORIGIN,
+    },
+  },
+  "work.milestones.request-revision.post": {
+    before: [
+      {
+        method: "POST",
+        path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/submit`,
+        as: "student",
+        headers: ORIGIN,
+      },
+    ],
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/request-revision`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { comment: "Dopuni uvod.", revisionDueAt: "2026-12-10T12:00:00Z" },
+    },
+  },
+  "work.milestones.approve.post": {
+    before: [
+      {
+        method: "POST",
+        path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/submit`,
+        as: "student",
+        headers: ORIGIN,
+      },
+    ],
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}/approve`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { message: "Dobro." },
+    },
+  },
+  "work.milestones.delete": {
+    request: {
+      method: "DELETE",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}`,
+      as: "nastavnik",
+      headers: ORIGIN,
+    },
+  },
   "work.consultation-records.get": {
     before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
     request: { path: `/api/v1/works/${IDS.document}/consultation-records`, as: "student" },
@@ -1474,6 +1536,45 @@ it("shares the changed milestone deadline and refuses changes after submission",
     409,
   );
   expect((await run(state, read)).json).toEqual({ milestones: [updated.json] });
+});
+
+it("moves a milestone through submission, revision request and approval (SRV-1520)", async () => {
+  const state = createState();
+  const path = `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}`;
+  const post = (action: string, as: "student" | "nastavnik", body?: Record<string, unknown>) =>
+    run(state, {
+      method: "POST",
+      path: `${path}/${action}`,
+      as,
+      headers: ORIGIN,
+      ...(body && { body }),
+    });
+  expect((await post("submit", "nastavnik")).status).toBe(403);
+  expect((await post("approve", "nastavnik", {})).status).toBe(409);
+  expect((await post("submit", "student")).json).toMatchObject({
+    state: "submitted",
+    everSubmitted: true,
+  });
+  expect((await post("submit", "student")).status).toBe(409);
+  expect((await post("approve", "student", {})).status).toBe(403);
+  expect((await post("request-revision", "nastavnik", { comment: " " })).status).toBe(422);
+  const revised = await post("request-revision", "nastavnik", { comment: "Dopuni uvod." });
+  expect(revised.json).toMatchObject({
+    state: "revision_requested",
+    revisionComment: "Dopuni uvod.",
+  });
+  expect((await post("submit", "student")).json).toMatchObject({
+    state: "submitted",
+    revisionComment: null,
+  });
+  expect((await post("approve", "nastavnik", { message: "Dobro." })).json).toMatchObject({
+    state: "approved",
+    approvalMessage: "Dobro.",
+  });
+  const del = { method: "DELETE" as const, path, as: "nastavnik" as const, headers: ORIGIN };
+  expect((await run(state, del)).status).toBe(409);
+  const read = { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" as const };
+  expect((await run(state, read)).json).toMatchObject({ milestones: [{ state: "approved" }] });
 });
 
 describe("student submission on the dev fake server", () => {

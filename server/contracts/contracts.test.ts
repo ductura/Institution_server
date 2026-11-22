@@ -230,6 +230,12 @@ describe("route inventory", () => {
       "institution.faculty-rules.post: app/api/institution/faculty-rules/route.ts is not in the inventory",
       "work.milestones.get: app/api/works/[documentId]/milestones/route.ts is not in the inventory",
       "work.milestones.patch: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
+      "work.milestones.delete: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
+      "work.milestone-states.get: app/api/works/[documentId]/milestone-states/route.ts is not in the inventory",
+      "work.milestones.details.patch: app/api/works/[documentId]/milestones/[milestoneId]/details/route.ts is not in the inventory",
+      "work.milestones.submit.post: app/api/works/[documentId]/milestones/[milestoneId]/submit/route.ts is not in the inventory",
+      "work.milestones.request-revision.post: app/api/works/[documentId]/milestones/[milestoneId]/request-revision/route.ts is not in the inventory",
+      "work.milestones.approve.post: app/api/works/[documentId]/milestones/[milestoneId]/approve/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
