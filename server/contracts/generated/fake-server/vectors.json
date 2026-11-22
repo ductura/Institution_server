@@ -24022,7 +24022,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.80.0",
+        "apiVersion": "1.81.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -24038,7 +24038,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.80.0",
+        "apiVersion": "1.81.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -57352,6 +57352,142 @@
         "messageKey": "errors.conflict",
         "status": 409,
         "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "invited",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-razgovor-00000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "filename": "priprema-za-razgovor.pdf",
+        "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTgKPj4Kc3RyZWFtCnicJYrBCgIxEEPv+Yo5C+K0tpkWRFh1xYMXYX5AZBVFD4r4/W6VkPAC74mVQ6XldcFsN9w/w/t6Ok5Na0lFrVSJSfyMtnuEnxokq9hYf2CRqnXcsNqca3bM7BmimnJryWiR6f9Hyo2bsxS/wSfoHQd8AckqHOgKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvT2JqU3RtCi9OIDQKL0ZpcnN0IDIwCi9MZW5ndGggMjM4Cj4+CnN0cmVhbQp4nFWP3UoDMRCF7/MU8wI2yTbrZqEU2uIPiCitoCBepLvDEimJNFmpb+9MXCklN5lzzgzf0aCgAmNgDo0FA9X1HBYLIV9+vhDksxswCfng+wTvFFGwhQ8hN3EMGbRYLsU5u3HZHeIg/pZAc/gywQbbR+Tt4sstpjgeO1rg3G0khz/3ePjG7Dt31ajWGqsa2xLddFK+Pe0/sStRHm9O+W6XXcZJYO0Re+/W8UTcil7d1rPKgjV6RpeowyqEmLlV6RMyMfFUTx0vwBlLyN24z2VkUQu5dgkL8JmWUEIXex8GkK8+rELy/wJf/AUBOWQdCmVuZHN0cmVhbQplbmRvYmoKCjcgMCBvYmoKPDwKL1NpemUgOAovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDM5Ci9XIFsgMSAyIDIgXQovSW5kZXggWyAwIDggXQo+PgpzdHJlYW0KeJwVxLENACAIALCCibM/+P8tnITSoehOmymmnFY4hPrl5QFUagMsCmVuZHN0cmVhbQplbmRvYmoKCnN0YXJ0eHJlZgo1NDcKJSVFT0Y="
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "anonymous",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-razgovor-00000000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-razgovor-00000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "not-invited",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-razgovor-00000000000000000001"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "work.interview-pdf.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-razgovor-00000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001900"
       }
     }
   },

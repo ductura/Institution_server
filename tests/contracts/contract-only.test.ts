@@ -45,6 +45,7 @@ import {
   createAssignmentCopyRouteFor,
   createConsultationSlotRoutesFor,
   createWorkInterviewRoutesFor,
+  createWorkInterviewPdfRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -500,6 +501,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkInterviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createWorkInterviewPdfRouteFor(databases.main)",
+    ids: ["work.interview-pdf.get"],
+    routes: () => [createWorkInterviewPdfRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "...createMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_1407,
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -890,6 +896,7 @@ describe("routes the entry point mounts itself", () => {
       "work.interview-appointment.put",
       "work.interview-held.post",
       "work.interview-explanations.post",
+      "work.interview-pdf.get",
       ...SRV_1407,
       ...SRV_1414,
       ...SRV_1412,

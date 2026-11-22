@@ -19,6 +19,7 @@ export const CATALOGUES: Readonly<Record<string, Catalogue>> = {
   "en.ts": { lang: "en", table: "messagesEn" },
   "hr.json": { lang: "hr" },
   "receipt-pdf.ts": { lang: "hr", table: "receiptPdfHr" },
+  "interview-pdf.ts": { lang: "hr", table: "interviewPdfHr" },
   "merlin.ts": { lang: "hr", table: "merlinHr" },
   "work-export.ts": { lang: "hr", table: "workExportHr" },
 };
