@@ -17,6 +17,8 @@ describe("server/institution public interface", () => {
       "accessLogCursorOf",
       "createInstitutionService",
       "createStudentNotes",
+      // SRV-2001: the faculty rules of an institution (faculty-rules.ts).
+      "facultyRuleRefusal",
       // SRV-14: the content of an assignment version (assignment-input.ts).
       "isAssignmentVersion",
       "parseAcknowledgmentBody",
@@ -29,8 +31,10 @@ describe("server/institution public interface", () => {
       "parseNoticeReadBody",
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
+      "publishFacultyRule",
       "readAssignmentCurrentVersion",
       "readAssignmentOverview",
+      "readFacultyRules",
       "readStudentAccessLog",
       "readStudentRequirements",
       "readStudentSubmission",

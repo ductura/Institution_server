@@ -33,6 +33,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createFacultyRuleRoutesFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -64,6 +65,7 @@ import {
   createWorkMilestonesRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
+  createWorkCompareRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -343,6 +345,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createCourseAggregateRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "...createFacultyRuleRoutesFor(databases.main)",
+    ids: ["institution.faculty-rules.get", "institution.faculty-rules.post"],
+    routes: () => createFacultyRuleRoutesFor(NO_ACTOR).map((r) => r.contract.id),
+  },
+  {
     call: "...createInstitutionConfigRoutesFor(databases.main)",
     ids: ["institution.config.get", "institution.config-versions.post"],
     routes: () => createInstitutionConfigRoutesFor(NO_ACTOR).map((r) => r.contract.id),
@@ -412,6 +419,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps)",
     ids: [
       "student.submission-withdrawal.post",
+      "student.submission-withdrawal.get",
       "student.submission-history.get",
       "teacher.submission-history.get",
       "teacher.submission-withdrawal.get",
@@ -568,6 +576,13 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ids: ["work.version.get"],
     routes: () => [
       createWorkVersionRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).contract.id,
+    ],
+  },
+  {
+    call: "createWorkCompareRouteFor(databases.main, evidenceDeps)",
+    ids: ["work.compare.get"],
+    routes: () => [
+      createWorkCompareRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).contract.id,
     ],
   },
   {
@@ -811,6 +826,8 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
       "course.aggregate.get",
+      "institution.faculty-rules.get",
+      "institution.faculty-rules.post",
       "institution.config.get",
       "institution.config-versions.post",
       "ops.pilot-metrics.get",
@@ -829,6 +846,7 @@ describe("routes the entry point mounts itself", () => {
       "student.data-export.get",
       "student.deadline-history.get",
       "student.submission-withdrawal.post",
+      "student.submission-withdrawal.get",
       "student.submission-history.get",
       "teacher.submission-history.get",
       "teacher.submission-withdrawal.get",
@@ -874,6 +892,7 @@ describe("routes the entry point mounts itself", () => {
       "work.source-notes.patch",
       "work.source-notes.delete",
       "work.version.get",
+      "work.compare.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",

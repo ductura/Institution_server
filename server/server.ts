@@ -47,6 +47,7 @@ import {
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
   createWorkVersionRouteFor,
+  createWorkCompareRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
@@ -62,6 +63,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createFacultyRuleRoutesFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -299,6 +301,8 @@ async function main(): Promise<void> {
         databases.main,
       ),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
+      // SRV-2004: the comparison of two revisions of a work, rebuilt from the record.
+      createWorkCompareRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
@@ -344,6 +348,8 @@ async function main(): Promise<void> {
       // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run.
       createRetentionRouteFor(databases.main),
       // SRV-1406: the versioned rules of the institution, for its administrator.
+      // SRV-2001: faculty rules of the institution, read and published by its administrator.
+      ...createFacultyRuleRoutesFor(databases.main),
       ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
