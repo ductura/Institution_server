@@ -96,6 +96,8 @@ export function healthTargets(options: StogOptions): HealthTarget[] {
       status: 200,
     },
     { name: "server", url: `http://127.0.0.1:${PORTS.server}/api/v1/health`, status: 200 },
+    // The local S3 answers only signed requests, so it counts as up when it listens (INT-08).
+    { name: "s3", port: PORTS.s3 },
     { name: "front", url: `http://127.0.0.1:${options.frontPort}/`, status: 200 },
     {
       name: "front→server",
