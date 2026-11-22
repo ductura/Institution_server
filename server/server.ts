@@ -70,6 +70,7 @@ import {
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
+  createInstitutionReadRoutesFor,
   createDeadlineExtensionRoutesFor,
   createLegalHoldRoutesFor,
   createStudentDataExportRoutesFor,
@@ -363,6 +364,7 @@ async function main(): Promise<void> {
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
+      ...createInstitutionReadRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       // SRV-1306 (plan M10.3): legal holds of the institution, for its administrators.

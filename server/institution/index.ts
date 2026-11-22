@@ -65,3 +65,6 @@ export {
   parseAssignmentInput,
   parseAssignmentVersionBody,
 } from "./assignment-input.ts";
+// LOK-SRV-2: the administrator's reads of courses, academic years and teacher roles.
+export { readAcademicYears, readInstitutionCourses } from "./institution-courses.ts";
+export { readTeacherRoles } from "./teacher-roles.ts";

@@ -581,6 +581,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "institution.admin-courses.get": {
+    request: {
+      path: "/api/v1/institution/admin/courses",
+      as: "administrator",
+      query: "?academicYear=2026/2027",
+    },
+  },
+  "institution.academic-years.get": {
+    request: { path: "/api/v1/institution/admin/academic-years", as: "administrator" },
+  },
+  "institution.teacher-roles.get": {
+    request: { path: "/api/v1/institution/teachers", as: "administrator" },
+  },
   "institution.course-assignments.post": {
     request: {
       path: `${C}/assignments`,

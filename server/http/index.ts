@@ -318,6 +318,7 @@ export {
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
 export { createTeacherRosterRoutesFor } from "./teacher-roster.ts";
+export { createInstitutionReadRoutesFor } from "./institution-reads.ts";
 export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,

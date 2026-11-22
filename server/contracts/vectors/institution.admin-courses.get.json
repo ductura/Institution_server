@@ -1,0 +1,190 @@
+{
+  "route": "institution.admin-courses.get",
+  "vectors": [
+    {
+      "name": "courses",
+      "kind": "success",
+      "request": {
+        "query": {
+          "academicYear": "2026/2027"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "academicYear": "2026/2027",
+          "courses": [
+            {
+              "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f611",
+              "name": "Metodologija",
+              "students": 3,
+              "holder": {
+                "personId": "5b1c2d3e-4f50-4a61-8b72-c3d4e5f60711",
+                "name": {
+                  "givenName": "Ana",
+                  "familyName": "Horvat"
+                }
+              },
+              "team": [
+                {
+                  "personId": "5b1c2d3e-4f50-4a61-8b72-c3d4e5f60711",
+                  "name": {
+                    "givenName": "Ana",
+                    "familyName": "Horvat"
+                  }
+                },
+                {
+                  "personId": "5b1c2d3e-4f50-4a61-8b72-c3d4e5f60712",
+                  "name": {
+                    "givenName": "Ivo",
+                    "familyName": "Kovač"
+                  }
+                }
+              ],
+              "groups": [
+                {
+                  "groupId": "9a3c4d5e-6f70-4b82-8c93-d4e5f6071811",
+                  "name": "Grupa A",
+                  "students": 2,
+                  "teachers": [
+                    {
+                      "personId": "5b1c2d3e-4f50-4a61-8b72-c3d4e5f60712",
+                      "name": {
+                        "givenName": "Ivo",
+                        "familyName": "Kovač"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-courses",
+      "kind": "success",
+      "request": {
+        "query": {
+          "academicYear": "2025/2026"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "academicYear": "2025/2026",
+          "courses": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "query": {
+          "academicYear": "2026/2027"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000200801"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "query": {
+          "academicYear": "2026/2027"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000200802"
+        }
+      }
+    },
+    {
+      "name": "invalid-input",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "query": {
+          "academicYear": "2026/2028"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000200803"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "query": {
+          "academicYear": "2026/2027"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000200804"
+        }
+      }
+    }
+  ]
+}
