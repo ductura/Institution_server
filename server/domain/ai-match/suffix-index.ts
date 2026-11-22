@@ -93,6 +93,17 @@ export class SuffixIndex {
         suffix.messageId = current.messageId;
       }
     }
+    // A state holds only lengths above its suffix link's maxLength. When the
+    // best match at a start is shorter, it lives on an ancestor, so pass the
+    // ancestor's match down to every longer state that has none of its own.
+    for (let i = 1; i < ordered.length; i++) {
+      const current = ordered[i]!;
+      const suffix = this.states[current.link]!;
+      if (suffix.matchedLength > current.matchedLength) {
+        current.matchedLength = suffix.matchedLength;
+        current.messageId = suffix.messageId;
+      }
+    }
   }
 
   matchAt(start: number): { matchedLength: number; messageId: string } {

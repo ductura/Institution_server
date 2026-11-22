@@ -135,6 +135,23 @@ describe("provenance-share-v1 AI match", () => {
     ]);
   });
 
+  it("finds a match at a start whose repeated text also occurs later in the block", () => {
+    // The suffix state for the whole block holds only lengths above 90 here,
+    // so the 83-point match from offset 0 lives on its suffix link.
+    const text = Array.from({ length: 14 }, () => "biljka").join(" ");
+    const answer = `${"biljka ".repeat(12)}cvijet biljka`;
+    const result = compare(text, answer);
+    expect(result.aiMatch.spans).toEqual([{ blockId: "demo-block", from: 0, to: 97 }]);
+    expect(result.witnesses).toEqual(
+      [0, 7, 14].map((from) => ({
+        blockId: "demo-block",
+        normalizedFrom: from,
+        normalizedTo: from + 83,
+        messageId: "demo-message-0",
+      })),
+    );
+  });
+
   it("includes skipped interior points, retains punctuation and accents, and always carries the notice", () => {
     const text = `🪴 ${PASSAGE.replace("organske", "organ\u200bske").replace("tvari uz", "tvari\t  uz")}.`;
     expect(compare(text, PASSAGE).aiMatch.spans).toEqual([
