@@ -508,6 +508,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  "institution.teaching-team-view.get": {
+    method: "GET",
+    path: `/api/v1/courses/${randomUUID()}/team/view`,
+    body: () => undefined,
+    live: 403,
+  },
   "institution.teaching-team.post": {
     path: `/api/v1/courses/${randomUUID()}/team`,
     body: () => ({ assistantIds: [] }),

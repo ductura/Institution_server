@@ -80,6 +80,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
   },
+  "app/api/courses/[id]/team/view/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7076689558",
+  },
   "app/api/courses/[id]/groups/[groupId]/members/route.ts": {
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
