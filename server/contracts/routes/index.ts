@@ -39,7 +39,14 @@ export { commentsRoutes } from "./comments.ts";
 export { workCompareRoutes } from "./work-compare.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { importRoutes } from "./import.ts";
-export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
+export {
+  WorkMilestoneApprovalInput,
+  WorkMilestoneChangeInput,
+  WorkMilestoneDueInput,
+  WorkMilestoneId,
+  WorkMilestoneRevisionInput,
+  workMilestonesRoutes,
+} from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
@@ -55,6 +62,8 @@ export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
+export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
+export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {

@@ -114,6 +114,11 @@ describe("route inventory", () => {
       "student.source-proof-image.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts is not in the inventory",
       "student.text-check-config.get: app/api/student/assignments/[assignmentId]/text-check-config/route.ts is not in the inventory",
       "teacher.work.get: app/api/teacher/works/[documentId]/route.ts is not in the inventory",
+      "work.origin-composition.get: app/api/works/[documentId]/origin-composition/route.ts is not in the inventory",
+      "institution.origin-thresholds.get: app/api/institution/origin-thresholds/route.ts is not in the inventory",
+      "institution.origin-threshold.put: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",
+      "institution.origin-threshold.delete: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",
+      "work.origin-thresholds.get: app/api/works/[documentId]/origin-thresholds/route.ts is not in the inventory",
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
@@ -241,6 +246,12 @@ describe("route inventory", () => {
       "institution.faculty-rules.post: app/api/institution/faculty-rules/route.ts is not in the inventory",
       "work.milestones.get: app/api/works/[documentId]/milestones/route.ts is not in the inventory",
       "work.milestones.patch: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
+      "work.milestones.delete: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
+      "work.milestone-states.get: app/api/works/[documentId]/milestone-states/route.ts is not in the inventory",
+      "work.milestones.details.patch: app/api/works/[documentId]/milestones/[milestoneId]/details/route.ts is not in the inventory",
+      "work.milestones.submit.post: app/api/works/[documentId]/milestones/[milestoneId]/submit/route.ts is not in the inventory",
+      "work.milestones.request-revision.post: app/api/works/[documentId]/milestones/[milestoneId]/request-revision/route.ts is not in the inventory",
+      "work.milestones.approve.post: app/api/works/[documentId]/milestones/[milestoneId]/approve/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

@@ -464,6 +464,30 @@ export {
   type TeacherWorkRead,
   type TeacherWorkState,
 } from "./teacher-work/index.ts";
+export {
+  createOriginKind,
+  type OriginCompositionOutcome,
+  type OriginExplainOutcome,
+  type OriginKind,
+  type OriginKindName,
+  type OriginPart,
+  type OriginRecordOutcome,
+} from "./origin-kind/index.ts";
+export {
+  createInputRhythm,
+  RHYTHM_MAX_GAPS_PER_BURST,
+  type InputRhythm,
+  type RhythmBurst,
+} from "./input-rhythm/index.ts";
+export {
+  createFacultyThresholds,
+  THRESHOLD_ORIGINS,
+  type FacultyThresholds,
+  type Threshold,
+  type ThresholdComparison,
+  type ThresholdOrigin,
+  type ThresholdState,
+} from "./faculty-thresholds/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
 export {
   createTeacherWorkingCriteria,

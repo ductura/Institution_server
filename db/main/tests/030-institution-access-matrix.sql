@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3122);
+SELECT plan(3256);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -177,8 +177,8 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting',
-        'work_interview', 'work_interview_question', 'work_interview_explanation'],
+        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'mentor_note', 'submission_withdrawal_setting',
+        'work_interview', 'work_interview_question', 'work_interview_explanation', 'origin_threshold'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -282,6 +282,7 @@ SELECT bag_eq(
     'mentorship_request: mentorship_request_read SELECT to ductus_app',
     'faculty_rule_version: faculty_rule_version_owner ALL to ductus_identity',
     'faculty_rule_version: faculty_rule_version_read SELECT to ductus_app',
+    'origin_threshold: origin_threshold_owner ALL to ductus_identity',
     'work_language_override: work_language_override_owner ALL to ductus_identity',
     'work_language_override: work_language_override_read SELECT to ductus_app',
     'work_accommodation: work_accommodation_owner ALL to ductus_identity',
@@ -298,6 +299,8 @@ SELECT bag_eq(
     'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
     'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity',
+    'work_milestone_progress: work_milestone_progress_owner ALL to ductus_identity',
+    'work_milestone_event: work_milestone_event_owner ALL to ductus_identity',
     'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity',
     'work_interview: work_interview_owner ALL to ductus_identity',
     'work_interview_question: work_interview_question_owner ALL to ductus_identity',
@@ -322,6 +325,7 @@ SELECT bag_eq(
         'assignment_version: assignment_version_default_language 7 O',
         'assignment_version: assignment_version_purpose_catalog 7 O',
         'course_enrollment_code: course_enrollment_code_institution_fill 7 O',
+        'work_milestone_event: work_milestone_event_append_only 27 O', 'work_milestone_event: work_milestone_event_no_truncate 34 O',
         'faculty_rule_version: faculty_rule_version_immutable 27 O', 'faculty_rule_version: faculty_rule_version_no_truncate 34 O',
         'faculty_rule_version: faculty_rule_version_has_event 5 O',
         'institution_role: institution_role_admin_appointed 5 O', 'institution_role: institution_role_admin_reappointed 17 O',
@@ -512,6 +516,8 @@ SELECT bag_eq(
     'withdrawal_setting_of(p_assignment_id uuid)',
     'submission_withdrawal_setting(p_assignment_id uuid) definer app',
     'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app',
+    'reject_work_milestone_event_change()',
+    'work_milestone_context(p_document_id text, OUT o_institution_id uuid, OUT o_assignment_id uuid, OUT o_user_id uuid, OUT o_role text, OUT o_mentor boolean)',
     'work_interview_draft_days()',
     'work_interview_context(p_document_id text, OUT actor_id uuid, OUT role text, OUT institution_id uuid, OUT assignment_id uuid, OUT student_id uuid, OUT interview_id uuid, OUT invited boolean)',
     'work_interview_read(p_document_id text, p_actor_id uuid, p_role text, p_interview_id uuid)',
@@ -721,6 +727,40 @@ FROM (VALUES
   ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Osporavam tom'),
   ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
 ) AS c (actor, assignment, student, result);
+
+-- 1c3. SRV-0910: the kind of origin and the rhythm of typing (evidence.origin_change,
+-- evidence.input_rhythm, evidence.input_rhythm_setting) only through the RPCs;
+-- the cells per actor are in 223-origin-rhythm.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_evidence'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-0910: ' || t.name || ' has forced RLS, the evidence owner and no privilege for another role')
+  FROM (VALUES ('origin_change'), ('input_rhythm'), ('input_rhythm_setting')) AS t (name)
+  JOIN pg_class c ON c.oid = ('evidence.' || t.name)::regclass;
+
+-- 1c4. SRV-1111: the thresholds of a faculty per kind of origin
+-- (institution.origin_threshold, audit.origin_threshold_event) only through the
+-- RPCs; the web role executes only them, and the cells per actor are in
+-- 224-faculty-thresholds.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-1111: ' || t.nsp || '.' || t.rel || ' has forced RLS, the identity owner and no privilege for another role')
+  FROM (VALUES ('institution', 'origin_threshold'), ('audit', 'origin_threshold_event')) AS t (nsp, rel)
+  JOIN pg_class c ON c.oid = (t.nsp || '.' || t.rel)::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.origin_thresholds_read()', 'app.origin_threshold_put(text,numeric,text)',
+       'app.origin_threshold_clear(text)', 'app.work_origin_threshold_status(text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1111: only the web role (and the owner) execute the threshold RPCs');
 
 -- 1d. SRV-28: the decline of a mentorship request and the overview of an
 -- assignment, one cell per actor; the rest of their matrix (states, reason,
@@ -1347,7 +1387,10 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['app.read_work_milestones(text)', 'app.set_work_milestone_due(text,uuid,timestamptz)']) f
+     CROSS JOIN unnest(ARRAY['app.read_work_milestones(text)', 'app.set_work_milestone_due(text,uuid,timestamptz)',
+       'app.read_work_milestone_states(text)', 'app.submit_work_milestone(text,uuid)',
+       'app.request_work_milestone_revision(text,uuid,text,timestamptz)', 'app.approve_work_milestone(text,uuid,text)',
+       'app.change_work_milestone(text,uuid,text,timestamptz)', 'app.delete_work_milestone(text,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-1103: only ductus_app and the owner execute the milestone RPCs'
 );
@@ -1392,14 +1435,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting',
+                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

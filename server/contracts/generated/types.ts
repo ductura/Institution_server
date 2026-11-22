@@ -267,6 +267,27 @@ export type Operations = {
     success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
   };
+  "institution.origin-threshold.delete": {
+    params: { "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown" };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.origin-threshold.put": {
+    params: { "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown" };
+    query: undefined;
+    body: { "thresholdPercent": number; "strictness": "hard" | "soft" };
+    success: { status: 200; body: { "changed": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.origin-thresholds.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "thresholds": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "thresholdPercent": number; "strictness": "hard" | "soft" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.retention.get": {
     params: undefined;
     query: { [key: string]: unknown };
@@ -1310,6 +1331,34 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "senderRole": "student" | "teacher"; "text": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.milestone-states.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "milestones": ({ "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.milestones.approve.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "message"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.delete": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "work.milestones.details.patch": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "dueAt"?: string; "title"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
   "work.milestones.get": {
     params: { "documentId": string };
     query: undefined;
@@ -1323,6 +1372,34 @@ export type Operations = {
     body: { "dueAt": string };
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "open" | "submitted" | "approved" | "returned" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.request-revision.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "comment": string; "revisionDueAt"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.submit.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "work.origin-composition.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "parts": ({ "kind": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "percent": number })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.origin-thresholds.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.review.post": {
     params: { "documentId": string };
