@@ -424,6 +424,15 @@ export {
   type LegalHolds,
   type LegalHoldSubjectType,
 } from "./legal-hold/index.ts";
+export {
+  createStudentDataExports,
+  createStudentDataExportWorker,
+  type StudentDataExportContents,
+  type StudentDataExportRow,
+  type StudentDataExports,
+  type StudentDataExportState,
+  type StudentDataExportWorkerPort,
+} from "./student-data-export/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";

@@ -270,6 +270,14 @@ export type State = {
   })[];
   /** SRV-1306: the institution's legal holds, oldest first. */
   legalHolds: Operations["institution.legal-holds.get"]["success"]["body"]["holds"];
+  /** SRV-1308: the clerks of the registry office (account ids); the fake's clerk is the account without a role. */
+  registryClerks: string[];
+  /** SRV-1308: the student data exports; the link token is kept only as its SHA-256 (hex). */
+  studentDataExports: (Operations["institution.student-data-exports.get"]["success"]["body"]["exports"][number] & {
+    studentId: string;
+    requestedBy: string;
+    tokenHash: string | null;
+  })[];
   /** SRV-1903: each withdrawn submission with its withdrawal receipt, oldest first. */
   submissionWithdrawals: {
     assignmentId: string;
@@ -491,6 +499,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionNotes: [],
     deadlineExtensions: [],
     legalHolds: [],
+    registryClerks: [IDS.noRole],
+    studentDataExports: [],
     submissionWithdrawals: [],
     withdrawalSettings: new Map(),
     workSources: [],

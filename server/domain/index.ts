@@ -17,6 +17,8 @@ export * from "./export-snapshot/index.ts";
 export * from "./provenance-share/index.ts";
 export * from "./retention/index.ts";
 export { zagrebWall, type ZagrebWall } from "./time/index.ts";
+// SRV-1308: the student data export lists the access log by day, as the student reads it.
+export { accessLogDaysOf, type AccessLogDay } from "./privacy/index.ts";
 // Both document and evidence name a `SourceId` (Ductus keeps them in separate
 // folders): the document's is the source of a citation, the evidence one the
 // source of an evidence basis. The explicit exports settle which is which.

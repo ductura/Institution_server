@@ -34,6 +34,7 @@ import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.t
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
 import { LEGAL_HOLD_HANDLERS } from "./legal-hold-routes.ts";
+import { STUDENT_DATA_EXPORT_HANDLERS } from "./student-data-export-routes.ts";
 import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
@@ -113,6 +114,7 @@ export const DEV_HANDLERS: Handlers = {
   ...OPS_HANDLERS,
   ...RETENTION_HANDLERS,
   ...LEGAL_HOLD_HANDLERS,
+  ...STUDENT_DATA_EXPORT_HANDLERS,
   ...INSTITUTION_CONFIG_HANDLERS,
   ...ACCESS_LOG_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {

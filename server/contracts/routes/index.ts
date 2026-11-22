@@ -97,3 +97,4 @@ export {
   WORK_ACCESS_SURFACES,
   workAccessGet,
 } from "./access-log.ts";
+export { IDENTITY_CHECKS, studentDataExportRoutes } from "./student-data-export.ts";

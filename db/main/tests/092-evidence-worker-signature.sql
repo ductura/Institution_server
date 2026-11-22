@@ -106,8 +106,10 @@ SELECT bag_eq(
             ('pgboss.job_now()'), ('pgboss.create_queue(text,jsonb)'),
             ('assistant.sweep_and_settle(uuid)'), ('assistant.sweep_due(integer)'),
             ('app.worker_student_data_exports_to_prepare()'),
-            ('app.worker_mark_student_data_export_ready(uuid,bytea)'), ('app.worker_expire_student_data_exports()') $$,
-  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the reconstruction checkpoint write and read (195-reconstruction-checkpoint.sql), the two pg-boss functions of its queue (DAN-517), the assistant sweep (171-assistant-rpcs.sql), its listing of due requests (172-assistant-sweep-due.sql) and the three steps of the student data export (184-student-data-export.sql)');
+            ('app.worker_mark_student_data_export_ready(uuid,bytea)'), ('app.worker_expire_student_data_exports()'),
+            ('app.worker_student_data_export_submissions(uuid)'), ('app.worker_student_data_export_notes(uuid)'),
+            ('app.worker_student_data_export_access_log(uuid)') $$,
+  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the reconstruction checkpoint write and read (195-reconstruction-checkpoint.sql), the two pg-boss functions of its queue (DAN-517), the assistant sweep (171-assistant-rpcs.sql), its listing of due requests (172-assistant-sweep-due.sql) the three steps of the student data export (184-student-data-export.sql) and the three reads of its package (185-student-data-export-contents.sql)');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_retention', 'ductus_auth', 'ductus_identity', 'ductus_test_stranger']) AS r
