@@ -128,6 +128,8 @@ describe("route inventory", () => {
       "student.source-proof-requests.get: app/api/student/assignments/[assignmentId]/source-proof-requests/route.ts is not in the inventory",
       "teacher.work.get: app/api/teacher/works/[documentId]/route.ts is not in the inventory",
       "work.origin-composition.get: app/api/works/[documentId]/origin-composition/route.ts is not in the inventory",
+      "work.assistant-match.get: app/api/works/[documentId]/assistant-match/route.ts is not in the inventory",
+      "work.assistant-match.post: app/api/works/[documentId]/assistant-match/route.ts is not in the inventory",
       "institution.origin-thresholds.get: app/api/institution/origin-thresholds/route.ts is not in the inventory",
       "institution.origin-threshold.put: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",
       "institution.origin-threshold.delete: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",

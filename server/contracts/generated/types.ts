@@ -1219,6 +1219,20 @@ export type Operations = {
     success: { status: 200; body: { "days": ({ "date": string; "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "declaration" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[] })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "work.assistant-match.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "findings": ({ "segmentRef": string; "conversationId": string; "messageId": string; "runWords": number; "recordedAt": string; "attachedAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.assistant-match.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "segmentRef": string; "text": string };
+    success: { status: 200; body: { "matches": ({ "messageId": string; "conversationId": string; "runWords": number })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.attachments.get": {
     params: { "attachmentId": string };
     query: undefined;
