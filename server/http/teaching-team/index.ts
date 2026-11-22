@@ -15,7 +15,7 @@ import {
   type Route,
 } from "../index.ts";
 
-const [READ_TEAM, REPLACE_TEAM, REPLACE_GROUP] = teachingTeamRoutes;
+const [READ_TEAM, READ_VIEW, REPLACE_TEAM, REPLACE_GROUP] = teachingTeamRoutes;
 const REFUSALS = new Map<string, readonly [number, string]>([
   ["ZD401", [401, "unauthorized"]],
   ["ZD403", [403, "forbidden"]],
@@ -36,7 +36,7 @@ export function createTeachingTeamRoutesFor({ withActor }: { withActor: WithActo
       const courseId = decodeOnce(params?.id);
       const groupId = decodeOnce(params?.groupId);
       try {
-        if (contract.id === READ_TEAM.id) {
+        if (contract.id === READ_TEAM.id || contract.id === READ_VIEW.id) {
           const site = request.headersDistinct["sec-fetch-site"];
           if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
             return sendProblem(response, 403, "forbidden");
@@ -45,6 +45,13 @@ export function createTeachingTeamRoutesFor({ withActor }: { withActor: WithActo
           if (token === undefined) return sendProblem(response, 401, "unauthorized");
           if (!Value.Check(READ_TEAM.request.params, { id: courseId })) {
             return sendProblem(response, 422, "invalid_input");
+          }
+          if (contract.id === READ_VIEW.id) {
+            const view = await team.readView(token, courseId);
+            if (!Value.Check(READ_VIEW.responses[0].body, view)) {
+              throw new Error("Invalid teaching team view answer");
+            }
+            return sendJson(response, 200, view);
           }
           const result = await team.read(token, courseId);
           if (!Value.Check(READ_TEAM.responses[0].body, result)) {

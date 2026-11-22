@@ -1,0 +1,170 @@
+{
+  "route": "institution.teaching-team-view.get",
+  "vectors": [
+    {
+      "name": "success-holder",
+      "kind": "success",
+      "request": {
+        "params": {
+          "id": "c0000000-0000-4000-8000-000000000001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "role": "holder",
+          "holderId": "7e000000-0000-4000-8000-000000000001",
+          "assistants": [
+            {
+              "id": "7e000000-0000-4000-8000-000000000002",
+              "name": "Izmišljena Asistentica"
+            }
+          ],
+          "students": [
+            {
+              "id": "5a000000-0000-4000-8000-000000000001",
+              "name": "Izmišljen Student",
+              "groupId": "9a000000-0000-4000-8000-00000000000a"
+            }
+          ],
+          "groups": [
+            {
+              "id": "9a000000-0000-4000-8000-00000000000a",
+              "name": "Grupa A",
+              "assistantIds": ["7e000000-0000-4000-8000-000000000002"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "success-assistant",
+      "kind": "success",
+      "request": {
+        "params": {
+          "id": "c0000000-0000-4000-8000-000000000001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "role": "assistant",
+          "groups": [
+            {
+              "id": "9a000000-0000-4000-8000-00000000000a",
+              "name": "Grupa A",
+              "students": [
+                {
+                  "id": "5a000000-0000-4000-8000-000000000001",
+                  "name": "Izmišljen Student"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "id": "c0000000-0000-4000-8000-000000000001"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000200701"
+        }
+      }
+    },
+    {
+      "name": "invalid-input",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "id": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000200702"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "id": "c0000000-0000-4000-8000-000000000001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000200703"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "id": "c0000000-0000-4000-8000-000000000001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000200704"
+        }
+      }
+    }
+  ]
+}
