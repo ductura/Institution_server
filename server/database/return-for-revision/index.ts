@@ -1,7 +1,7 @@
 import type { WithActor } from "../index.ts";
 
 // SRV-1606: the teacher returns a whole submitted work for revision.
-// app.return_work_for_revision (20261213100500) decides; this only asks.
+// app.return_work_for_revision (20261213100600) decides; this only asks.
 
 export type WorkReturn = {
   id: string;

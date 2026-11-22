@@ -231,6 +231,6 @@ REVOKE ductus_evidence FROM ductus_identity;
 -- A local database is made again with db:up instead.
 DO $$
 BEGIN
-  RAISE EXCEPTION 'SRV-1606 (20261213100500) does not go down; recreate the local database';
+  RAISE EXCEPTION 'SRV-1606 (20261213100600) does not go down; recreate the local database';
 END
 $$;

@@ -33,6 +33,7 @@ import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { EVENT_DISPUTE_HANDLERS } from "./event-dispute-routes.ts";
 import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
+import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
@@ -119,6 +120,7 @@ export const DEV_HANDLERS: Handlers = {
   ...EVENT_DISPUTE_HANDLERS,
   ...ORIGIN_HANDLERS,
   ...FACULTY_THRESHOLD_HANDLERS,
+  ...TEACHER_SOURCE_HANDLERS,
   ...MILESTONE_HANDLERS,
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,

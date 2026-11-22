@@ -178,7 +178,8 @@ SELECT bag_eq(
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'mentor_note', 'submission_withdrawal_setting',
-        'work_interview', 'work_interview_question', 'work_interview_explanation', 'origin_threshold'],
+        'work_interview', 'work_interview_question', 'work_interview_explanation', 'origin_threshold',
+        'course_required_source', 'source_proof_request', 'work_literature_seen'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -290,6 +291,9 @@ SELECT bag_eq(
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
+    'course_required_source: course_required_source_owner ALL to ductus_identity',
+    'source_proof_request: source_proof_request_owner ALL to ductus_identity',
+    'work_literature_seen: work_literature_seen_owner ALL to ductus_identity',
     'source_note: source_note_owner ALL to ductus_identity',
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
@@ -478,6 +482,12 @@ SELECT bag_eq(
     'work_source_record_valid(p_id uuid, p_record jsonb)',
     'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
+    'guidance_work_role(p_assignment_id uuid, p_student_id uuid)',
+    'guidance_course_role(p_course_id uuid)',
+    'guidance_instant(p_at timestamp with time zone)',
+    'guidance_request_json(r institution.source_proof_request)',
+    'guidance_work_of(p_document_id text, p_writer boolean)',
+    'guidance_source_json(p_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean, p_requirement text, p_created timestamp with time zone, p_updated timestamp with time zone)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
     'work_sources(p_assignment_id uuid, p_student_id uuid) definer app',
