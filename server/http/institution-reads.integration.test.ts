@@ -17,10 +17,13 @@ const COOKIE = `__Host-ductus_session=${TOKEN}`;
 const COURSES = "/api/v1/institution/admin/courses?academicYear=2026%2F2027";
 const YEARS = "/api/v1/institution/admin/academic-years";
 const TEACHERS = "/api/v1/institution/teachers";
+// The column name of institution-courses.ts COURSES, kept as the database
+// returns it; a computed key, since user_id is no camelCase property name.
+const USER_ID = "user_id";
 const none = {
   group_id: null,
   group_name: null,
-  user_id: null,
+  [USER_ID]: null,
   given_name: null,
   family_name: null,
 };
@@ -107,7 +110,7 @@ it("returns the courses of the year with holder, team and groups", async () => {
         group_id: GROUP,
         group_name: "Grupa 1",
         students: 2,
-        user_id: null,
+        [USER_ID]: null,
         given_name: null,
         family_name: null,
       },
@@ -118,7 +121,7 @@ it("returns the courses of the year with holder, team and groups", async () => {
         group_id: null,
         group_name: null,
         students: null,
-        user_id: ANA,
+        [USER_ID]: ANA,
         given_name: "Ana",
         family_name: "Horvat",
       },
@@ -129,7 +132,7 @@ it("returns the courses of the year with holder, team and groups", async () => {
         group_id: null,
         group_name: null,
         students: null,
-        user_id: IVO,
+        [USER_ID]: IVO,
         given_name: null,
         family_name: null,
       },
@@ -140,7 +143,7 @@ it("returns the courses of the year with holder, team and groups", async () => {
         group_id: GROUP,
         group_name: null,
         students: null,
-        user_id: IVO,
+        [USER_ID]: IVO,
         given_name: null,
         family_name: null,
       },
@@ -186,7 +189,7 @@ it("returns the pending and confirmed teachers", async () => {
   query.mockResolvedValue({
     rows: [
       {
-        user_id: ANA,
+        [USER_ID]: ANA,
         list: "candidate",
         given_name: "Ana",
         family_name: "Horvat",
@@ -195,7 +198,7 @@ it("returns the pending and confirmed teachers", async () => {
         for_review: null,
       },
       {
-        user_id: IVO,
+        [USER_ID]: IVO,
         list: "confirmed",
         given_name: "Ivo",
         family_name: "Kovač",

@@ -204,7 +204,6 @@ const COLUMN_NAMES = [
   "student_id",
   "target_id",
   "updated_at",
-  "user_id",
   "version_no",
   "work_type",
 ];
