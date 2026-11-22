@@ -715,6 +715,13 @@ export type Operations = {
     success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "not_allowed" | "unavailable";
   };
+  "student.submission-withdrawal.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "withdrawable": boolean; "receipts": ({ "withdrawalId": string; "assignmentId": string; "revision": number; "withdrawnAt": string; "signature": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.submission-withdrawal.post": {
     params: { "assignmentId": string };
     query: undefined;

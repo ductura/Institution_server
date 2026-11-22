@@ -50,6 +50,7 @@ const WITHDRAW = vectorsOf("student.submission-withdrawal.post").filter(
   (v) => !FRAMING.has(v.code ?? ""),
 );
 const MY_HISTORY = vectorsOf("student.submission-history.get");
+const STATE = vectorsOf("student.submission-withdrawal.get");
 const THEIR_HISTORY = vectorsOf("teacher.submission-history.get");
 const SETTING_GET = vectorsOf("teacher.submission-withdrawal.get");
 const SETTING_POST = vectorsOf("teacher.submission-withdrawal.post").filter(
@@ -112,6 +113,8 @@ const SIGNER: SigningKeyProvider = {
 };
 
 let running: Running | undefined;
+/** The process clock of the state route: an hour before the history vector's deadline. */
+let clockAt = "2026-12-20T21:59:00.000Z";
 const calls: unknown[][] = [];
 const port: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
 const reply = (name: string, answer: (...args: unknown[]) => unknown) => {
@@ -139,7 +142,11 @@ async function start(): Promise<string> {
     port: 0,
     databases: createDatabases(),
     layers: createLayers({ expectedOrigin: ORIGIN }),
-    routes: createSubmissionWithdrawalRoutes(port as unknown as SubmissionWithdrawals, SIGNER),
+    routes: createSubmissionWithdrawalRoutes(
+      port as unknown as SubmissionWithdrawals,
+      SIGNER,
+      () => new Date(clockAt),
+    ),
   });
   return `http://127.0.0.1:${running.port}/api/v1`;
 }
@@ -351,6 +358,56 @@ describe("the histories", () => {
       { headers: v.request.headers ?? {} },
     );
     await expectAnswer(got, v);
+  });
+
+  const stateOf = (v: Vector, patch: { allowed?: boolean; take?: number } = {}) => {
+    reply("studentHistory", () => {
+      if (v.response.status === 503) throw new Error("izmisljena greska");
+      if (v.response.status !== 200) return { status: v.code };
+      const events = (MY_HISTORY[0]!.response.body.events as Record<string, unknown>[]).map(
+        portEvent,
+      );
+      return {
+        status: "read",
+        withdrawalAllowed: patch.allowed ?? true,
+        dueAt: MY_HISTORY[0]!.response.body.dueAt,
+        events: events.slice(0, patch.take ?? (v.response.body?.withdrawable ? 1 : 2)),
+      };
+    });
+  };
+  const readState = async (assignmentId: string, headers: Record<string, string>) =>
+    fetch(`${await start()}/student/assignments/${assignmentId}/submission/withdrawal`, {
+      headers,
+    });
+
+  it.each(STATE.map((v) => [v.name, v] as const))("withdrawal state vector %s", async (_n, v) => {
+    stateOf(v);
+    await expectAnswer(
+      await readState(v.request.params.assignmentId ?? A, v.request.headers ?? {}),
+      v,
+    );
+  });
+
+  it("is not withdrawable when the teacher switched it off, after the deadline, or while the last receipt is unbound", async () => {
+    const open = STATE.find((v) => v.name === "withdrawable")!;
+    const ask = async () =>
+      (await (await readState(A, { cookie: COOKIE })).json()) as { withdrawable: boolean };
+    stateOf(open, { allowed: false });
+    expect((await ask()).withdrawable).toBe(false);
+    stateOf(open);
+    expect((await ask()).withdrawable).toBe(true);
+    clockAt = "2026-12-20T23:00:00.000Z";
+    expect((await ask()).withdrawable).toBe(false);
+    clockAt = "2026-12-20T21:59:00.000Z";
+    // Events 1..3: the history vector ends in a submission whose receipt is not bound yet.
+    stateOf(open, { take: 3 });
+    expect((await ask()).withdrawable).toBe(false);
+  });
+
+  it("a malformed assignment id is 404 before the port for the state route", async () => {
+    const got = await readState("ne-postoji", { cookie: COOKIE });
+    expect(got.status).toBe(404);
+    expect(calls).toEqual([]);
   });
 
   it("a bound withdrawal receipt that does not match its text is 503, never a partial list", async () => {

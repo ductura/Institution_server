@@ -7,6 +7,7 @@
 // throw is reported, never a partial answer.
 //
 //   POST student/assignments/{a}/submission/withdrawal   the student withdraws
+//   GET  student/assignments/{a}/submission/withdrawal   may they now, and the receipts
 //   GET  student/assignments/{a}/submission/history      the student's history
 //   GET  teacher/assignments/{a}/students/{s}/submission-history
 //   GET, POST teacher/assignments/{a}/submission-withdrawal   the switch
@@ -164,6 +165,72 @@ function withdrawalRoute(port: SubmissionWithdrawals, signer: SigningKeyProvider
   };
 }
 
+/**
+ * The state on the wire (WEB-1903). withdrawable mirrors the database's rule for
+ * app.withdraw_submission: allowed, before the deadline in force, and the last
+ * event a submission with a bound receipt. The clock is the process's (an
+ * approximation of the database's; the POST decides), injected for tests.
+ */
+export function withdrawalStateOf(
+  history: {
+    readonly withdrawalAllowed: boolean;
+    readonly dueAt: string;
+    readonly events: readonly SubmissionHistoryEvent[];
+  },
+  now: Date,
+): unknown {
+  const last = history.events.at(-1);
+  const receipts = history.events.flatMap((event) => {
+    if (event.kind !== "withdrawal" || event.signature === null) return [];
+    const receipt = signedWithdrawalReceipt(
+      event.receiptPayload,
+      event.payloadDigestSha256,
+      event.signature,
+      event.id,
+    );
+    if (receipt === null) throw new Error("malformed withdrawal receipt");
+    return [
+      {
+        withdrawalId: event.id,
+        assignmentId: receipt.payload.assignmentId,
+        revision: event.revision,
+        withdrawnAt: receipt.payload.withdrawnAt,
+        signature: receipt.signature.signatureBase64Url,
+      },
+    ];
+  });
+  return {
+    withdrawable:
+      history.withdrawalAllowed &&
+      now.getTime() <= new Date(history.dueAt).getTime() &&
+      last?.kind === "submission" &&
+      last.signature !== null,
+    receipts,
+  };
+}
+
+function withdrawalStateRoute(port: SubmissionWithdrawals, clock: () => Date): Route {
+  const { contract, body } = contractOf("student.submission-withdrawal.get");
+  return {
+    contract,
+    async handle(request, response, params) {
+      const token = readerToken(request, response);
+      if (token === null) return;
+      const assignmentId = idOf(params?.assignmentId);
+      if (assignmentId === null) return sendProblem(response, 404, "not_found");
+      try {
+        const result = await port.studentHistory(token, assignmentId);
+        if (result.status === "unauthorized") return sendProblem(response, 401, "unauthorized");
+        if (result.status !== "read") return sendProblem(response, 404, "not_found");
+        return sendChecked(response, contract, body, withdrawalStateOf(result, clock()));
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), contract.id);
+        return sendProblem(response, 503, "unavailable");
+      }
+    },
+  };
+}
+
 function studentHistoryRoute(port: SubmissionWithdrawals): Route {
   const { contract, body } = contractOf("student.submission-history.get");
   return {
@@ -279,13 +346,15 @@ function settingPostRoute(port: SubmissionWithdrawals): Route {
   };
 }
 
-/** The five routes over one port and the process's signer. */
+/** The six routes over one port and the process's signer. */
 export function createSubmissionWithdrawalRoutes(
   port: SubmissionWithdrawals,
   signer: SigningKeyProvider,
+  clock: () => Date = () => new Date(),
 ): Route[] {
   return [
     withdrawalRoute(port, signer),
+    withdrawalStateRoute(port, clock),
     studentHistoryRoute(port),
     teacherHistoryRoute(port),
     settingGetRoute(port),

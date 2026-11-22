@@ -22895,7 +22895,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.75.0",
+        "apiVersion": "1.76.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -22911,7 +22911,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.75.0",
+        "apiVersion": "1.76.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -34230,6 +34230,126 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000715"
+      }
+    }
+  },
+  {
+    "route": "student.submission-withdrawal.get",
+    "name": "withdrawable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "withdrawable": true,
+        "receipts": []
+      }
+    }
+  },
+  {
+    "route": "student.submission-withdrawal.get",
+    "name": "closed-after-withdrawal",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "withdrawable": false,
+        "receipts": [
+          {
+            "withdrawalId": "6c1d4f3b-8e25-4a7c-8b9f-2d3e4f5a6b02",
+            "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+            "revision": 7,
+            "withdrawnAt": "2026-12-20T21:40:00.654321Z",
+            "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.submission-withdrawal.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000190340"
+      }
+    }
+  },
+  {
+    "route": "student.submission-withdrawal.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000190341"
+      }
+    }
+  },
+  {
+    "route": "student.submission-withdrawal.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000190342"
       }
     }
   },

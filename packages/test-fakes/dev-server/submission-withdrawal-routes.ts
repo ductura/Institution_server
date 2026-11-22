@@ -154,6 +154,39 @@ export const SUBMISSION_WITHDRAWAL_HANDLERS: Handlers = {
     work.submittedDocument = null;
     return { status: 200, body: { status: "withdrawn", receipt } };
   },
+  "student.submission-withdrawal.get": ({ state, account, params, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = studentAssignments(state, account).find(
+      (a) => a.id === params.assignmentId.toLowerCase(),
+    );
+    if (assignment === undefined) return { error: "not_found" };
+    const work = state.works.find(
+      (w) => w.assignmentId === assignment.id && w.studentId === account.id,
+    );
+    const dueAt = dueAtOf(state, assignment.id, account.id, assignment.content.dueAt);
+    return {
+      status: 200,
+      body: {
+        withdrawable:
+          settingOf(state, assignment.id).allowed &&
+          now.toISOString() <= dueAt &&
+          work?.state === "submitted" &&
+          work.submissionReceipt !== null &&
+          work.submissionReceipt !== undefined,
+        receipts: state.submissionWithdrawals
+          .filter((r) => r.assignmentId === assignment.id && r.studentId === account.id)
+          .map(({ withdrawal: { payload, signature } }, index) => ({
+            withdrawalId: payload.withdrawalId,
+            assignmentId: payload.assignmentId,
+            revision: historyOf(state, assignment.id, account.id).filter(
+              (e) => e.kind === "withdrawal",
+            )[index]!.revision,
+            withdrawnAt: payload.withdrawnAt,
+            signature: signature.signatureBase64Url,
+          })),
+      },
+    };
+  },
   "student.submission-history.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = studentAssignments(state, account).find(
