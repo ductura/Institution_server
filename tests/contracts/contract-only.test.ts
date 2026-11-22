@@ -65,6 +65,7 @@ import {
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createReturnForRevisionRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
   createWorkCompareRouteFor,
@@ -570,7 +571,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   },
   {
     call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
-    ids: ["notifications.list.get", "notifications.read.post"],
+    ids: [
+      "notifications.list.get",
+      "notifications.returned-for-revision.list.get",
+      "notifications.read.post",
+    ],
     routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -592,6 +597,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.milestones.approve.post",
     ],
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createReturnForRevisionRoutesFor(databases.main)",
+    ids: ["work.return-for-revision.post"],
+    routes: () => createReturnForRevisionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "createSourceNotebookRoutesFor(databases.main)",
@@ -922,6 +932,7 @@ describe("routes the entry point mounts itself", () => {
       "work.event-disputes.get",
       "work.event-disputes.post",
       "notifications.list.get",
+      "notifications.returned-for-revision.list.get",
       "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",
@@ -933,6 +944,7 @@ describe("routes the entry point mounts itself", () => {
       "work.milestones.submit.post",
       "work.milestones.request-revision.post",
       "work.milestones.approve.post",
+      "work.return-for-revision.post",
       "work.source-notes.get",
       "work.source-notes.post",
       "work.source-notes.patch",

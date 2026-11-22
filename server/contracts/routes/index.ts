@@ -32,6 +32,7 @@ export { workMessagesRoutes } from "./work-messages.ts";
 export {
   NotificationId,
   NotificationsPage,
+  RevisionNotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
   notificationsRoutes,
 } from "./notifications.ts";
@@ -47,6 +48,11 @@ export {
   WorkMilestoneRevisionInput,
   workMilestonesRoutes,
 } from "./work-milestones.ts";
+export {
+  ReturnForRevisionInput,
+  ReturnForRevisionResult,
+  returnForRevisionRoutes,
+} from "./return-for-revision.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
@@ -61,9 +67,11 @@ export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
+export { teacherSourcesRoutes } from "./teacher-sources.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
 export { assistantMatchRoutes } from "./assistant-match.ts";
+export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {

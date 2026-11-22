@@ -122,8 +122,16 @@ export async function renderInterviewPdf(
         if (current !== "" && !fits(`${current} ${rest}`)) flush();
         // A word wider than a line is broken where the line ends.
         while (!fits(current === "" ? rest : `${current} ${rest}`) && rest.length > 1) {
-          let cut = rest.length - 1;
-          while (cut > 1 && !fits(rest.slice(0, cut))) cut -= 1;
+          // Binary search for the longest prefix that fits: measuring (shaping) each
+          // candidate one by one made a long unbroken word take seconds.
+          let low = 1;
+          let high = rest.length - 1;
+          while (low < high) {
+            const middle = Math.ceil((low + high) / 2);
+            if (fits(rest.slice(0, middle))) low = middle;
+            else high = middle - 1;
+          }
+          const cut = low;
           current = current === "" ? rest.slice(0, cut) : `${current} ${rest.slice(0, cut)}`;
           rest = rest.slice(cut);
           flush();

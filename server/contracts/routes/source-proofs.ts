@@ -25,8 +25,8 @@ const ProofText = (max: number, lines: boolean) =>
     pattern: `^(?!\\s)(?:${CODE_POINT}|${lines ? "\\n|" : ""}[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,${max}}(?<!\\s)${END}`,
   });
 /** The page of the source the excerpt shows ("14", "xii", "14-15"). */
-const Page = ProofText(30, false);
-const Note = ProofText(2000, true);
+export const Page = ProofText(30, false);
+export const Note = ProofText(2000, true);
 
 const PATH = "/api/v1/student/assignments/{assignmentId}/sources/{sourceId}/proofs";
 const INVENTORY = "app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs";

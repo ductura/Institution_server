@@ -57,9 +57,11 @@ import {
   problemReportsPost,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
+  teacherSourcesRoutes,
   teacherWorkRoutes,
   originCompositionRoutes,
   assistantMatchRoutes,
+  originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workExportDocxRoutes,
@@ -74,6 +76,7 @@ import {
   directEditRoutes,
   importRoutes,
   workMilestonesRoutes,
+  returnForRevisionRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -95,6 +98,11 @@ export {
   WorkMilestoneRevisionInput,
   workMilestonesRoutes,
 } from "./routes/index.ts";
+export {
+  ReturnForRevisionInput,
+  ReturnForRevisionResult,
+  returnForRevisionRoutes,
+} from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
@@ -104,6 +112,7 @@ export {
   NotificationId,
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
+  RevisionNotificationsPage,
   notificationsRoutes,
 } from "./routes/index.ts";
 
@@ -168,9 +177,11 @@ export const ROUTES: readonly RouteContract[] = [
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
+  ...teacherSourcesRoutes,
   ...teacherWorkRoutes,
   ...originCompositionRoutes,
   ...assistantMatchRoutes,
+  ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
   pilotMetricsGet,
@@ -226,6 +237,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...eventDisputesRoutes,
   ...facultyRulesRoutes,
   ...workMilestonesRoutes,
+  ...returnForRevisionRoutes,
 ];
 
 /**

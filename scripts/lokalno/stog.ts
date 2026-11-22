@@ -114,7 +114,7 @@ async function gore(): Promise<void> {
     throw new Error(`run pnpm install in ${options.frontDir} first`);
   if (!options.composeDatabase && databaseFor(options, process.env) === undefined)
     throw new Error("STOG_BAZA=vanjska needs DATABASE_URL (docs/lokalno/STOG.md)");
-  for (const port of [PORTS.server, PORTS.oidc, options.frontPort]) {
+  for (const port of [PORTS.server, PORTS.oidc, PORTS.s3, options.frontPort]) {
     if (await tcpOpen(port)) throw new Error(`port ${port} is in use; run pnpm stog:dolje`);
   }
 
@@ -158,6 +158,7 @@ async function gore(): Promise<void> {
       `  Prijava:   ${loginLink(options)}`,
       `  Server:    http://localhost:${PORTS.server}/api/v1/health`,
       `  Simulator: http://localhost:${PORTS.oidc}`,
+      `  Dokazi:    lokalni S3 :${PORTS.s3} i razvojni ključ za potpis (samo lokalno)`,
       "  Provjera:  pnpm stog:zdravlje   Gašenje: Ctrl+C ili pnpm stog:dolje",
       "",
     ].join("\n"),

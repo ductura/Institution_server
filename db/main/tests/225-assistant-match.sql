@@ -1,5 +1,5 @@
 -- SRV-1230 (Ductus#2052; P-1, rule 13): the match of a segment with an answer of
--- the assistant (20261213100500). The student owner reads the answers and
+-- the assistant (20261213100800). The student owner reads the answers and
 -- records a finding; the owner and a reader of the work read the same findings;
 -- nobody else gets anything but ZD403. While the switch of the institution is off
 -- nothing is returned and nothing is saved. Findings hold ids and a number, never

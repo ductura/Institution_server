@@ -17,7 +17,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // returned. A finding says "podudara se s odgovorom pomoćnika", never that
 // anything was copied, and it is not evidence of authorship. Database:
 // app.assistant_match_responses, app.assistant_match_record,
-// app.assistant_match_read (20261213100500).
+// app.assistant_match_read (20261213100800).
 
 const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",

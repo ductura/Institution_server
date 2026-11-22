@@ -252,6 +252,33 @@ const ADD_PROOF: Step = {
   raw: PROOF_FORM,
 };
 
+// SRV-1605: the guidance of a teacher on sources. The holder of the course writes.
+const TEACHER_WORK = `/api/v1/teacher/works/${IDS.document}`;
+const TEACHER_LITERATURE = `/api/v1/teacher/courses/${IDS.course}/required-literature`;
+const GUIDANCE_RECORD = { ...WORK_SOURCE, id: "00000000-0000-4000-8000-00000000c5a1" };
+const GUIDANCE_DUE = "2099-01-01T10:00:00.000Z";
+const RECOMMEND: Step = {
+  path: `${TEACHER_WORK}/source-recommendations/${GUIDANCE_RECORD.id}`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { record: GUIDANCE_RECORD, requirement: "recommended" },
+};
+const REQUEST_PROOF: Step = {
+  path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proof-request`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { instruction: "Priložite stranicu 14.", dueAt: GUIDANCE_DUE },
+};
+const ADD_LITERATURE: Step = {
+  path: `${TEACHER_LITERATURE}/${GUIDANCE_RECORD.id}`,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { record: GUIDANCE_RECORD, doi: "10.1000/izmisljeno-1" },
+};
+
 const PNG_BASE64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]).toString(
   "base64",
 );
@@ -591,6 +618,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "institution.admin-courses.get": {
+    request: {
+      path: "/api/v1/institution/admin/courses",
+      as: "administrator",
+      query: "?academicYear=2026/2027",
+    },
+  },
+  "institution.academic-years.get": {
+    request: { path: "/api/v1/institution/admin/academic-years", as: "administrator" },
+  },
+  "institution.teacher-roles.get": {
+    request: { path: "/api/v1/institution/teachers", as: "administrator" },
+  },
   "institution.course-assignments.post": {
     request: {
       path: `${C}/assignments`,
@@ -885,6 +925,71 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  "teacher.source-guidance.get": {
+    before: [SAVE_SOURCE],
+    request: { path: `${TEACHER_WORK}/source-guidance`, as: "nastavnik" },
+  },
+  "teacher.source-recommendation.put": { request: RECOMMEND },
+  "teacher.source-recommendation.delete": {
+    before: [RECOMMEND],
+    request: {
+      path: `${TEACHER_WORK}/source-recommendations/${GUIDANCE_RECORD.id}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.source-proof-request.put": { before: [SAVE_SOURCE], request: REQUEST_PROOF },
+  "teacher.source-proof-request.delete": {
+    before: [SAVE_SOURCE, REQUEST_PROOF],
+    request: {
+      path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proof-request`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.literature-seen.put": {
+    request: {
+      path: `${TEACHER_WORK}/literature-seen`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.source-proofs.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: { path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proofs`, as: "nastavnik" },
+  },
+  "teacher.source-proof-image.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: {
+      path: `${TEACHER_WORK}/sources/${WORK_SOURCE.id}/proofs/00000000-0000-4000-8000-d00000000001/image`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.course-literature.get": {
+    before: [ADD_LITERATURE],
+    request: { path: TEACHER_LITERATURE, as: "nastavnik" },
+  },
+  "teacher.course-literature.put": { request: ADD_LITERATURE },
+  "teacher.course-literature.delete": {
+    before: [ADD_LITERATURE],
+    request: {
+      path: `${TEACHER_LITERATURE}/${GUIDANCE_RECORD.id}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "student.course-literature.get": {
+    before: [ADD_LITERATURE],
+    request: { path: `/api/v1/student/courses/${IDS.course}/required-literature`, as: "student" },
+  },
+  "student.source-proof-requests.get": {
+    before: [SAVE_SOURCE, REQUEST_PROOF],
+    request: { path: `${STUDENT_ASSIGNMENT}/source-proof-requests`, as: "student" },
+  },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: SUBMIT,
@@ -970,6 +1075,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { message: "Dobro." },
     },
   },
+  "work.return-for-revision.post": {
+    before: SUBMIT_STEPS,
+    request: {
+      method: "POST",
+      path: `/api/v1/works/${IDS.document}/return-for-revision`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { comment: "Doradi uvod.", revisionDueAt: "2026-12-10T12:00:00Z" },
+    },
+  },
   "work.milestones.delete": {
     request: {
       method: "DELETE",
@@ -1004,6 +1119,47 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `/api/v1/works/${IDS.document}/assistant-match`, as: "nastavnik" },
   },
   "work.assistant-match.post": { request: ASSISTANT_MATCH_POST },
+  "institution.origin-thresholds.get": {
+    request: { path: "/api/v1/institution/origin-thresholds", as: "administrator" },
+  },
+  "institution.origin-threshold.put": {
+    request: {
+      path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+      method: "PUT",
+      as: "administrator",
+      headers: ORIGIN,
+      body: { thresholdPercent: 5, strictness: "hard" },
+    },
+  },
+  "institution.origin-threshold.delete": {
+    before: [
+      {
+        path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+        method: "PUT",
+        as: "administrator",
+        headers: ORIGIN,
+        body: { thresholdPercent: 5, strictness: "hard" },
+      },
+    ],
+    request: {
+      path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+      method: "DELETE",
+      as: "administrator",
+      headers: ORIGIN,
+    },
+  },
+  "work.origin-thresholds.get": {
+    before: [
+      {
+        path: "/api/v1/institution/origin-thresholds/assistant_inserted",
+        method: "PUT",
+        as: "administrator",
+        headers: ORIGIN,
+        body: { thresholdPercent: 5, strictness: "hard" },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/origin-thresholds`, as: "nastavnik" },
+  },
   "work.origin-composition.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-composition`, as: "nastavnik" },
   },
@@ -1054,6 +1210,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "notifications.list.get": {
     request: { path: "/api/v1/notifications", as: "student" },
+  },
+  "notifications.returned-for-revision.list.get": {
+    request: { path: "/api/v1/notifications/returned-for-revision", as: "student" },
   },
   "notifications.read.post": {
     request: {
@@ -1690,4 +1849,23 @@ describe("student submission on the dev fake server", () => {
     expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [JSON.parse(added.body)] });
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
   });
+});
+
+it("returns a submitted work for revision and lets the student submit anew (SRV-1606)", async () => {
+  const state = createState();
+  const scenario = SCENARIOS["work.return-for-revision.post"];
+  const read = SCENARIOS["student.submission.get"].request;
+  // Nothing is submitted yet: nothing to return.
+  expect((await run(state, scenario.request)).status).toBe(409);
+  for (const step of scenario.before ?? []) expect((await run(state, step)).status).toBe(200);
+  // The student owner may not, another student does not see the work.
+  expect((await run(state, { ...scenario.request, as: "student" })).status).toBe(403);
+  expect((await run(state, { ...scenario.request, as: "student-2" })).status).toBe(404);
+  expect((await run(state, { ...scenario.request, body: { comment: " " } })).status).toBe(422);
+  const returned = await run(state, scenario.request);
+  expect(returned.status).toBe(200);
+  expect(returned.json).toMatchObject({ state: "returned_for_revision", round: 1 });
+  expect(JSON.parse((await run(state, read)).body)).toEqual({ state: "none" });
+  expect((await run(state, scenario.request)).status).toBe(409);
+  expect((await run(state, SUBMIT)).status).toBe(200);
 });

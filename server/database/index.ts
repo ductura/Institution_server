@@ -306,6 +306,14 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export {
+  createTeacherSources,
+  type ProofImage,
+  type ProofRequestInput,
+  type RecommendationInput,
+  type SourceGuidanceInput,
+  type TeacherSources,
+} from "./teacher-sources/index.ts";
 export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
@@ -406,6 +414,7 @@ export {
   type RecordInput,
 } from "./consultation-records/index.ts";
 export { createWorkMilestones } from "./work-milestones/index.ts";
+export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
@@ -487,6 +496,15 @@ export {
   type AssistantMatchFound,
   type AssistantMatchListOutcome,
 } from "./assistant-match/index.ts";
+export {
+  createFacultyThresholds,
+  THRESHOLD_ORIGINS,
+  type FacultyThresholds,
+  type Threshold,
+  type ThresholdComparison,
+  type ThresholdOrigin,
+  type ThresholdState,
+} from "./faculty-thresholds/index.ts";
 export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
 export {
   createTeacherWorkingCriteria,
