@@ -170,3 +170,131 @@ export async function readFacultyRules(
   }
   return { kind: "ok", rules };
 }
+
+/** The body a publication carries; the institution, the author and the time come from the session. */
+export type FacultyRuleInput = {
+  workType: WorkType;
+  /** The latest version the administrator saw, null when none was published. */
+  basedOnVersionNo: number | null;
+  aiPolicy: AiPolicy;
+  aiPurposes: AiPurpose[];
+  evidenceProfile: (typeof EVIDENCE_PROFILES)[number];
+  importAllowed: boolean;
+};
+
+export type FacultyRulePublication =
+  | { kind: "ok"; versionNo: number; publishedAt: string }
+  | {
+      kind: "unauthorized" | "forbidden" | "conflict" | "invalid" | "unavailable";
+    };
+
+/** The 422 code that names the field a body is refused for. */
+export type FacultyRuleRefusal =
+  | "invalid_input"
+  | "invalid_work_type"
+  | "invalid_ai_policy"
+  | "invalid_ai_purposes"
+  | "invalid_evidence_profile";
+
+const INPUT_KEYS = [
+  "workType",
+  "basedOnVersionNo",
+  "aiPolicy",
+  "aiPurposes",
+  "evidenceProfile",
+  "importAllowed",
+] as const;
+
+/**
+ * Why a decoded body is not a publication, as the code the field is refused
+ * with, or null when it is one. A wrong shape (a key missing or added, a
+ * number or boolean of the wrong type) is invalid_input; a value outside the
+ * closed list of its field names that field; purposes that repeat or come
+ * with the policy prohibited are invalid_ai_purposes.
+ */
+export function facultyRuleRefusal(value: unknown): FacultyRuleRefusal | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return "invalid_input";
+  const body = value as Record<string, unknown>;
+  const keys = Object.keys(body);
+  if (keys.length !== INPUT_KEYS.length || !INPUT_KEYS.every((key) => keys.includes(key)))
+    return "invalid_input";
+  const based = body.basedOnVersionNo;
+  if (
+    based !== null &&
+    (typeof based !== "number" ||
+      !Number.isSafeInteger(based) ||
+      based < 1 ||
+      based > 2_147_483_647)
+  )
+    return "invalid_input";
+  if (typeof body.importAllowed !== "boolean") return "invalid_input";
+  if (!oneOf(WORK_TYPES, body.workType)) return "invalid_work_type";
+  if (!oneOf(AI_POLICIES, body.aiPolicy)) return "invalid_ai_policy";
+  if (!oneOf(EVIDENCE_PROFILES, body.evidenceProfile)) return "invalid_evidence_profile";
+  return purposesOf(body.aiPurposes, body.aiPolicy) === null ? "invalid_ai_purposes" : null;
+}
+
+/**
+ * Publishes the next version of one work type for the administrator of the
+ * session: the RPC publish_faculty_rule_version (DAN-315) decides who may,
+ * whether the expected version is the latest (409) and the content (422); the
+ * time is read back in the same transaction, after the insert it follows.
+ */
+export async function publishFacultyRule(
+  sessionToken: string | undefined,
+  input: FacultyRuleInput,
+  withActor: WithActor,
+): Promise<FacultyRulePublication> {
+  if (sessionToken === undefined || !TOKEN.test(sessionToken)) return { kind: "unauthorized" };
+  let row: Row | undefined;
+  try {
+    row = await withActor(sessionToken, async (tx) => {
+      const published = (
+        await tx.query<Row>(
+          "SELECT institution.publish_faculty_rule_version($1, $2, $3, $4::text[], $5, $6) AS version_no",
+          [
+            input.workType,
+            input.basedOnVersionNo ?? 0,
+            input.aiPolicy,
+            input.aiPurposes,
+            input.evidenceProfile,
+            input.importAllowed,
+          ],
+        )
+      ).rows[0];
+      const versionNo = published?.version_no;
+      if (typeof versionNo !== "number") return undefined;
+      return (
+        await tx.query<Row>(
+          `SELECT version_no, published_at FROM institution.faculty_rule_version
+            WHERE work_type = $1 AND version_no = $2`,
+          [input.workType, versionNo],
+        )
+      ).rows[0];
+    });
+  } catch (error) {
+    const code = codeOf(error);
+    if (code === "ZD401") return { kind: "unauthorized" };
+    if (code === "ZD403") return { kind: "forbidden" };
+    if (code === "ZD409") return { kind: "conflict" };
+    if (code === "ZD422") return { kind: "invalid" };
+    console.error(
+      "faculty rule publication failed",
+      code !== undefined && SQLSTATE.test(code) ? code : "unknown",
+    );
+    return { kind: "unavailable" };
+  }
+  const versionNo = row?.version_no;
+  const publishedAt = row?.published_at;
+  if (
+    typeof versionNo !== "number" ||
+    !Number.isSafeInteger(versionNo) ||
+    versionNo < 1 ||
+    !(publishedAt instanceof Date) ||
+    !Number.isFinite(publishedAt.getTime())
+  ) {
+    console.error("faculty rule publication failed", "row_malformed");
+    return { kind: "unavailable" };
+  }
+  return { kind: "ok", versionNo, publishedAt: publishedAt.toISOString() };
+}

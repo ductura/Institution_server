@@ -81,6 +81,7 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
+  createFacultyRuleRoutesFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -1218,6 +1219,25 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  // SRV-2001: the faculty rules; not an administrator, so 403.
+  "institution.faculty-rules.get": {
+    method: "GET",
+    path: "/api/v1/institution/faculty-rules",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.faculty-rules.post": {
+    path: "/api/v1/institution/faculty-rules",
+    body: () => ({
+      workType: "essay",
+      basedOnVersionNo: null,
+      aiPolicy: "prohibited",
+      aiPurposes: [],
+      evidenceProfile: "basic",
+      importAllowed: false,
+    }),
+    live: 403,
+  },
   // SRV-1406: the rules of the institution; not an administrator, so 403.
   "institution.config.get": {
     method: "GET",
@@ -1332,6 +1352,7 @@ const FACTORIES = [
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
   "createRetentionRouteFor",
+  "createFacultyRuleRoutesFor",
   "createInstitutionConfigRoutesFor",
   "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
@@ -1433,6 +1454,7 @@ const MOUNTED = [
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
   createRetentionRouteFor(databases.main),
+  ...createFacultyRuleRoutesFor(databases.main),
   ...createInstitutionConfigRoutesFor(databases.main),
   createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
