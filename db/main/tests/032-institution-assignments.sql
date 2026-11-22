@@ -327,6 +327,8 @@ ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_subm
 -- The record of an import (SRV-1803) references the assignment; it is append only.
 ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
+-- The events of a milestone (SRV-1520) reference the assignment through work_milestone; append only.
+ALTER TABLE institution.work_milestone_event DISABLE TRIGGER work_milestone_event_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
