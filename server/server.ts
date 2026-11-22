@@ -37,6 +37,7 @@ import {
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createOriginCompositionRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
@@ -237,6 +238,8 @@ async function main(): Promise<void> {
       createTextCheckConfigRoute(databases.main),
       // The teacher's read of one work by its document id (SRV-2003).
       ...createTeacherWorkRoutesFor(databases.main),
+      // The composition of a work by the kind of origin (SRV-0910, P-1).
+      ...createOriginCompositionRoutesFor(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),

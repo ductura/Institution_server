@@ -1,0 +1,162 @@
+{
+  "route": "work.origin-composition.get",
+  "vectors": [
+    {
+      "name": "composed",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "parts": [
+            {
+              "kind": "typed",
+              "percent": 60.0
+            },
+            {
+              "kind": "assistant_inserted",
+              "percent": 20.0
+            },
+            {
+              "kind": "assistant_match",
+              "percent": 0
+            },
+            {
+              "kind": "imported_file",
+              "percent": 10.0
+            },
+            {
+              "kind": "pasted_known",
+              "percent": 0
+            },
+            {
+              "kind": "pasted_unknown",
+              "percent": 10.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "nothing-recorded",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "parts": [
+            {
+              "kind": "typed",
+              "percent": 0
+            },
+            {
+              "kind": "assistant_inserted",
+              "percent": 0
+            },
+            {
+              "kind": "assistant_match",
+              "percent": 0
+            },
+            {
+              "kind": "imported_file",
+              "percent": 0
+            },
+            {
+              "kind": "pasted_known",
+              "percent": 0
+            },
+            {
+              "kind": "pasted_unknown",
+              "percent": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002020"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "nepoznati-rad"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002021"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002022"
+        }
+      }
+    }
+  ]
+}
