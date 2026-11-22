@@ -433,6 +433,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
+  // SRV-2004 (Faza 3; Ductus#2052 c.7074315040): the comparison of two revisions of a work; Ductus has no such route.
+  "app/api/works/[documentId]/compare/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7074315040",
+  },
   // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
   "app/api/works/[documentId]/direct-edit/route.ts": {
     methods: ["GET", "PUT"],
@@ -476,6 +481,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/event-disputes/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7070817702",
+  },
+  // SRV-2001 (Ductus#2052; phase 3 web-server alignment): the faculty rules of an institution, read and published by its administrator; Ductus has no such route.
+  "app/api/institution/faculty-rules/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7074314666",
   },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {
@@ -535,7 +545,7 @@ export const SERVER_SOURCES: Readonly<
   },
   // SRV-1903 (P-D3): withdrawal of a submission and the history; Ductus has no such route.
   "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
   },
   "app/api/student/assignments/[assignmentId]/submission/history/route.ts": {

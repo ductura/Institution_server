@@ -30,6 +30,7 @@ export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteri
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export { createRetentionRouteFor } from "./retention/index.ts";
+export { createFacultyRuleRoutesFor } from "./faculty-rules/index.ts";
 export { createInstitutionConfigRoutesFor } from "./institution-config/index.ts";
 export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
@@ -334,6 +335,7 @@ export {
   createPortableRecordRouteFor,
 } from "./portable-record/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
+export { createWorkCompareRoute, createWorkCompareRouteFor } from "./work-compare/index.ts";
 export {
   createCommentBankRoutes,
   createCommentDraftRoutes,

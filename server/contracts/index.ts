@@ -65,11 +65,13 @@ import {
   workMessagesRoutes,
   notificationsRoutes,
   commentsRoutes,
+  workCompareRoutes,
   directEditRoutes,
   importRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
+  facultyRulesRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -200,10 +202,12 @@ export const ROUTES: readonly RouteContract[] = [
   ...workMessagesRoutes,
   ...notificationsRoutes,
   ...commentsRoutes,
+  ...workCompareRoutes,
   ...directEditRoutes,
   ...importRoutes,
   ...consultationRecordsRoutes,
   ...eventDisputesRoutes,
+  ...facultyRulesRoutes,
   ...workMilestonesRoutes,
 ];
 

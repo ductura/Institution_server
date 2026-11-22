@@ -218,6 +218,20 @@ export type Operations = {
     success: { status: 200; body: { "courseId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "refused" | "too_many_attempts" | "forbidden" | "unavailable";
   };
+  "institution.faculty-rules.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "rules": ({ "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "versions": ({ "versionNo": number; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "origin": "operator" | "administrator"; "publishedAt": string })[] })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.faculty-rules.post": {
+    params: undefined;
+    query: undefined;
+    body: { "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "basedOnVersionNo": number | null; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean };
+    success: { status: 201; body: { "versionNo": number; "publishedAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "invalid_work_type" | "invalid_ai_policy" | "invalid_ai_purposes" | "invalid_evidence_profile" | "conflict" | "unavailable";
+  };
   "institution.legal-hold-release.post": {
     params: { "holdId": string };
     query: undefined;
@@ -722,6 +736,13 @@ export type Operations = {
     success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "not_allowed" | "unavailable";
   };
+  "student.submission-withdrawal.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "withdrawable": boolean; "receipts": ({ "withdrawalId": string; "assignmentId": string; "revision": number; "withdrawnAt": string; "signature": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.submission-withdrawal.post": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1078,6 +1099,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "published": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.compare.get": {
+    params: { "documentId": string };
+    query: { "from": string; "to": string };
+    body: undefined;
+    success: { status: 200; body: { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.consultation-additions.post": {
     params: { "documentId": string; "recordId": string };

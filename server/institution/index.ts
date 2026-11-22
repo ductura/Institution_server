@@ -1,4 +1,10 @@
 // Public interface of server/institution; other areas import only this file.
+export {
+  facultyRuleRefusal,
+  publishFacultyRule,
+  readFacultyRules,
+  type FacultyRuleInput,
+} from "./faculty-rules.ts";
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
 export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
 export {
