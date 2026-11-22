@@ -151,7 +151,8 @@ describe("fake server over HTTP", () => {
     // SRV-1521: five framing vectors each for the milestone template PUT and the plan POST (add), and five for apply-template.
     // SRV-1530: work.interview-* have eight framing vectors in all (the bodies of five mutations).
     // SRV-1606: five framing vectors for work.return-for-revision.post.
-    expect(VECTORS.length - overHttp.length).toBe(522);
+    // SRV-1230: work.assistant-match.post five.
+    expect(VECTORS.length - overHttp.length).toBe(527);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

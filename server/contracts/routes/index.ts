@@ -75,6 +75,7 @@ export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherSourcesRoutes } from "./teacher-sources.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
+export { assistantMatchRoutes } from "./assistant-match.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";

@@ -495,6 +495,14 @@ export {
   type RhythmBurst,
 } from "./input-rhythm/index.ts";
 export {
+  createAssistantMatch,
+  type AssistantMatch,
+  type AssistantMatchCheckOutcome,
+  type AssistantMatchFinding,
+  type AssistantMatchFound,
+  type AssistantMatchListOutcome,
+} from "./assistant-match/index.ts";
+export {
   createFacultyThresholds,
   THRESHOLD_ORIGINS,
   type FacultyThresholds,
