@@ -30,7 +30,9 @@ import {
   createHealthRoute,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
+  createInternalInstitutionRoutes,
   createLayers,
+  createMeRouteFor,
   createOperatorDenialLog,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
@@ -408,6 +410,8 @@ const ENTRY_ROUTES: Readonly<Record<string, () => readonly Route[]>> = {
     createWebAuthnRoutesFor({ withActor: STAND_IN, webauthnCredentials: STAND_IN }, null),
   createEvidenceCommitRouteFor: () => [createEvidenceCommitRouteFor(STAND_IN, STAND_IN)],
   createEvidenceReplayRouteFor: () => [createEvidenceReplayRouteFor(STAND_IN, STAND_IN)],
+  createMeRouteFor: () => [createMeRouteFor(STAND_IN)],
+  createInternalInstitutionRoutes: () => createInternalInstitutionRoutes({ env: {} }),
   createAuthRoutes: () => createAuthRoutes({}),
   routesOf: () => routesOf(AREA_NAMES),
 };
