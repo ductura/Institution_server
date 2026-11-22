@@ -59,6 +59,7 @@ export {
   PROVIDER_TIMEOUT_SECONDS,
   ProviderUnavailableError,
   SCOPES,
+  type AuthorizationOptions,
   type LoginChecks,
   type LogoutProvider,
   type OidcClient,

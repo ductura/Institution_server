@@ -2,7 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadAuthConfig } from "../external/srce-auth/index.ts";
-import { finishLogin, LOGIN_COOKIE_NAME, startLogin, type AuthDeps } from "./auth-flow.ts";
+import {
+  finishLogin,
+  LOGIN_COOKIE_NAME,
+  SIGNED_OUT_COOKIE_NAME,
+  startLogin,
+  type AuthDeps,
+} from "./auth-flow.ts";
 import { createOidcClient, MAX_PROVIDER_RESPONSE_BYTES } from "../external/srce-auth/index.ts";
 import { hashSessionToken, SESSION_COOKIE_NAME } from "../session/index.ts";
 
@@ -395,5 +401,66 @@ describe("login", () => {
       }),
     ).rejects.toThrow("discovered issuer does not match OIDC_ISSUER");
     expect(deps.openSession).not.toHaveBeenCalled();
+  });
+});
+
+// INT-20b: after an explicit sign-out the next login asks the provider to
+// sign in again (prompt=login), until a login succeeds.
+describe("the first login after a sign-out", () => {
+  const MARK = `${SIGNED_OUT_COOKIE_NAME}=1`;
+  const CLEARED_MARK = `${SIGNED_OUT_COOKIE_NAME}=; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  const start = (cookie?: string) =>
+    startLogin(
+      new Request(`${APP}/api/v1/auth/login`, { headers: cookie ? { cookie } : {} }),
+      deps,
+    );
+
+  it("sends prompt=login when the sign-out mark is there", async () => {
+    const response = await start(`other=x; ${MARK}`);
+    expect(response.status).toBe(303);
+    const authorize = new URL(response.headers.get("location")!);
+    expect(authorize.searchParams.getAll("prompt")).toEqual(["login"]);
+  });
+
+  it.each([
+    ["no cookie", undefined],
+    ["another cookie", "other=1"],
+    ["a mark with another value", `${SIGNED_OUT_COOKIE_NAME}=0`],
+    ["an empty mark", `${SIGNED_OUT_COOKIE_NAME}=`],
+  ])("sends no prompt with %s", async (_n, cookie) => {
+    const response = await start(cookie);
+    expect(response.status).toBe(303);
+    expect(new URL(response.headers.get("location")!).searchParams.has("prompt")).toBe(false);
+  });
+
+  it("leaves the mark in place when the login only starts", async () => {
+    const response = await start(MARK);
+    expect(setCookies(response).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it("clears the mark once the login succeeds", async () => {
+    const response = await start(MARK);
+    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
+    const authorize = new URL(response.headers.get("location")!);
+    const done = await callback(
+      idp.approve(authorize, `${APP}/api/v1/auth/callback`),
+      `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}; ${MARK}`,
+    );
+    expect(done.status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+    expect(setCookies(done).get(SIGNED_OUT_COOKIE_NAME)).toBe(CLEARED_MARK);
+  });
+
+  it("keeps the mark when the callback fails, so the next attempt asks again", async () => {
+    const { authorize } = await begin();
+    const failed = await callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), MARK);
+    expect(failed.status).toBe(400);
+    expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it("does not touch the mark on a login without one", async () => {
+    const response = await login();
+    expect(response.status).toBe(303);
+    expect(setCookies(response).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
   });
 });

@@ -34,6 +34,14 @@ afterEach(async () => {
   provider = undefined;
 });
 
+async function freePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((done) => probe.listen(0, "127.0.0.1", done));
+  const { port } = probe.address() as AddressInfo;
+  await new Promise<void>((done) => probe.close(() => done()));
+  return port;
+}
+
 type Stack = {
   origin: string;
   opened: OpenSessionInput[];
@@ -78,14 +86,16 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
       closeAllSessions: async () => undefined,
     };
   };
+  // A port known first, so the origin check of POST routes knows its origin.
+  const port = await freePort();
+  const origin = `http://127.0.0.1:${port}`;
   app = await startServer({
     host: "127.0.0.1",
-    port: 0,
-    layers: createLayers({ expectedOrigin: null }),
+    port,
+    layers: createLayers({ expectedOrigin: origin }),
     databases: createDatabases(),
     routes: createAuthRoutes(env, load),
   });
-  const origin = `http://127.0.0.1:${app.port}`;
   const callback = `${origin}/api/v1/auth/callback`;
 
   const server = createServer();
@@ -117,7 +127,7 @@ function browser() {
   const jar = new Map<string, string>();
   const get = async (
     url: string,
-    init: { method?: string; form?: Record<string, string> } = {},
+    init: { method?: string; form?: Record<string, string>; headers?: Record<string, string> } = {},
   ) => {
     const response = await fetch(url, {
       method: init.method ?? "GET",
@@ -125,6 +135,7 @@ function browser() {
       headers: {
         cookie: [...jar].map(([name, value]) => `${name}=${value}`).join("; "),
         ...(init.form ? { "content-type": "application/x-www-form-urlencoded" } : {}),
+        ...init.headers,
       },
       ...(init.form ? { body: new URLSearchParams(init.form).toString() } : {}),
     });
@@ -132,7 +143,7 @@ function browser() {
       const [pair = ""] = cookie.split(";");
       const at = pair.indexOf("=");
       const name = pair.slice(0, at);
-      if (/Max-Age=0/u.test(cookie)) jar.delete(name);
+      if (/Max-Age=0|expires=Thu, 01 Jan 1970/iu.test(cookie)) jar.delete(name);
       else jar.set(name, pair.slice(at + 1));
     }
     return response;
@@ -160,7 +171,7 @@ async function signIn(origin: string, account = "demo-student") {
   );
   const back = location(await b.get(resume), resume);
   expect(back.startsWith(`${origin}/api/v1/auth/callback?`)).toBe(true);
-  return { answer: await b.get(back), jar: b.jar };
+  return { answer: await b.get(back), jar: b.jar, browser: b };
 }
 
 /** The neutral page: the contract's HTML error, no cache, the attempt cleared, no session. */
@@ -301,6 +312,105 @@ describe("the login routes over HTTP", () => {
     expect(answer.status).toBe(303);
     expect(opened).toHaveLength(1);
   });
+});
+
+// INT-20b: signing out of Ductura also ends the session at the provider, and
+// the first login after it asks the provider to sign in again.
+describe("signing out against the fake OIDC provider", () => {
+  type Browser = ReturnType<typeof browser>;
+  const signOut = (b: Browser, origin: string) =>
+    b.get(`${origin}/api/v1/auth/logout`, {
+      method: "POST",
+      headers: { origin, "sec-fetch-site": "same-origin" },
+    });
+  /** Starts a login; the authorize URL and where the provider sends the browser from it. */
+  async function startAgain(b: Browser, origin: string) {
+    const start = await b.get(`${origin}/api/v1/auth/login`);
+    expect(start.status).toBe(303);
+    const authorize = new URL(location(start, origin));
+    const next = location(await b.get(authorize.href), authorize.href);
+    return { authorize, next };
+  }
+  const silent = (origin: string, next: string) =>
+    next.startsWith(`${origin}/api/v1/auth/callback?`);
+
+  it("signing in twice without a sign-out is silent the second time", async () => {
+    const { origin } = await stack("success");
+    const { answer, browser: b } = await signIn(origin);
+    expect(answer.status).toBe(303);
+    const { authorize, next } = await startAgain(b, origin);
+    expect(authorize.searchParams.has("prompt")).toBe(false);
+    expect(silent(origin, next)).toBe(true);
+  });
+
+  it("the sign-out goes on to end the provider session, so the next login asks again", async () => {
+    const { origin, closed } = await stack("success");
+    const { browser: b, issuer } = await signedIn(origin);
+    const out = await signOut(b, origin);
+    expect(out.status).toBe(303);
+    expect(closed).toHaveLength(1);
+    const end = new URL(location(out, origin));
+    expect(end.origin).toBe(issuer);
+    expect(end.searchParams.get("post_logout_redirect_uri")).toBe(`${origin}/`);
+    expect(end.searchParams.get("client_id")).toBe("ductus-local");
+
+    // The provider's confirmation page, answered as its own script would.
+    const page = await b.get(end.href);
+    const html = await page.text();
+    const action = /<form[^>]*action="([^"]+)"/u.exec(html)?.[1];
+    expect(action).toBeDefined();
+    const inputs = Object.fromEntries(
+      [...html.matchAll(/<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"/gu)].map((m) => [
+        m[1]!,
+        m[2]!,
+      ]),
+    );
+    let step = await b.get(new URL(action!, issuer).href, {
+      method: "POST",
+      form: { ...inputs, logout: "yes" },
+    });
+    let target = location(step, issuer);
+    while (target.startsWith(issuer)) {
+      step = await b.get(target);
+      target = location(step, issuer);
+    }
+    expect(target).toBe(`${origin}/`);
+
+    const { next } = await startAgain(b, origin);
+    expect(silent(origin, next)).toBe(false);
+    expect(new URL(next).pathname).toMatch(/^\/interaction\//u);
+  });
+
+  it("a sign-out that never reaches the provider still makes the next login ask again, once", async () => {
+    const { origin, opened } = await stack("success");
+    const { browser: b } = await signedIn(origin);
+    expect((await signOut(b, origin)).status).toBe(303);
+
+    const { authorize, next } = await startAgain(b, origin);
+    expect(authorize.searchParams.getAll("prompt")).toEqual(["login"]);
+    expect(silent(origin, next)).toBe(false);
+    const resume = location(
+      await b.get(`${next}/login`, { method: "POST", form: { account: "demo-student" } }),
+      next,
+    );
+    const back = location(await b.get(resume), resume);
+    const answer = await b.get(back);
+    expect(answer.status).toBe(303);
+    expect(opened).toHaveLength(2);
+
+    // That login cleared the mark: the one after it is silent again.
+    const after = await startAgain(b, origin);
+    expect(after.authorize.searchParams.has("prompt")).toBe(false);
+    expect(silent(origin, after.next)).toBe(true);
+  });
+
+  async function signedIn(origin: string) {
+    const { answer, browser: b } = await signIn(origin);
+    expect(answer.status).toBe(303);
+    const start = await b.get(`${origin}/api/v1/auth/login`);
+    const issuer = new URL(location(start, origin)).origin;
+    return { browser: b, issuer };
+  }
 });
 
 describe("a login configuration that does not load", () => {
