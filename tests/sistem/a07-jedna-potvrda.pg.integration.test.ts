@@ -157,10 +157,13 @@ async function answered(promise: Promise<Answer | "lost">): Promise<Answer> {
   return answer;
 }
 
-/** Open Z1 over HTTP and build revision 1's segment and snapshot for it. */
+/**
+ * Open Z1 over HTTP (open speaks protocol 1 only) and build revision 1's segment
+ * and snapshot for it; `protocol` names the commit's transaction.
+ */
 async function firstRevision(port: number, protocol: string) {
   const opened = await answered(
-    post(port, "/api/v1/evidence/open", { assignmentId: Z1, start: true }, protocol),
+    post(port, "/api/v1/evidence/open", { assignmentId: Z1, start: true }, "1"),
   );
   expect(opened.status).toBe(200);
   const { documentId, documentHash, evidenceProfileId, receiptKeys } = opened.body as {
