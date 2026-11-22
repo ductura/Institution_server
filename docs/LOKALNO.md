@@ -34,8 +34,9 @@ Umjesto varijable `DATABASE_URL` može se jedan redak s istom adresom upisati u 
 2. `db/main/local/migrator.sql` (uloga migratora i grupne uloge), zatim sve migracije kroz `scripts/db/migrate-locked.ts` (dbmate pod advisory lockom).
 3. Prijave `ductus_app_local` (član `ductus_app`) i `ductus_auth_local` (član `ductus_auth`), s istim atributima kao `db/main/local/app-login.sql` i `auth-login.sql`, ali s generiranim lozinkama.
 4. Izmišljene ustanove iz `db/main/local/seed.sql` (`demo.ductus.test`, `b.demo.ductus.test`) s issuerom `http://localhost:8090`.
-5. `pnpm build` (`dist/server.js`).
-6. Pokreće simulator na 8090 i server na 4000 i čeka da oba odgovore. Izlaz oba procesa ide u isti terminal s oznakom `[oidc]` ili `[server]`. Ctrl+C gasi oba; ako jedan stane, skripta gasi i drugi.
+5. Dokazi (LOK-SRV-1): razvojni ključ potpisa potvrda (sjeme u `~/.ductura/lokalno-<sažetak putanje>/signing-seed`, izvan repoa, nastaje jednom) upisuje se u `evidence.signing_key` za izmišljenu ustanovu `demo-fakultet` istim blokom kao `db/main/local/evidence-signing-key.sql`, a lokalni S3 (`scripts/stack/local-s3.ts`) diže se na 8095 s novim pristupnim ključem pri svakom pokretanju.
+6. `pnpm build` (`dist/server.js`).
+7. Pokreće simulator na 8090 i server na 4000 i čeka da oba odgovore. Izlaz oba procesa ide u isti terminal s oznakom `[oidc]` ili `[server]`. Ctrl+C gasi oba; ako jedan stane, skripta gasi i drugi.
 
 Ponovno pokretanje je sigurno: primjenjuju se samo nove migracije, a lozinke prijava vraćaju se na one iz `.local/`.
 
@@ -46,6 +47,7 @@ Ponovno pokretanje je sigurno: primjenjuju se samo nove migracije, a lozinke pri
 | edge proxy (Preloader)           | `http://localhost:8000` |
 | Institution_server               | `http://localhost:4000` |
 | simulator AAI@EduHr (lažni OIDC) | `http://localhost:8090` |
+| lokalni S3 (spremište dokaza)    | `http://127.0.0.1:8095` |
 | PostgreSQL                       | iz `DATABASE_URL`       |
 
 Preglednik sve otvara preko edge proxyja na 8000 (Preloader `deploy/edge/dev-proxy.mjs`): `/api/v1/*` ide na server. Povratna adresa prijave je zato `http://localhost:8000/api/v1/auth/callback`, a `APP_ORIGIN` je `http://localhost:8000`.
@@ -56,18 +58,21 @@ Bez edge proxyja: `pnpm lokalno --izravno`. Tada je podrijetlo sam server (`http
 
 Server dobiva samo ove varijable (iz pozivateljeve okoline ne nasljeđuje ništa što upravlja bazom, prijavom ili portom):
 
-| Varijabla                    | Vrijednost                                           |
-| ---------------------------- | ---------------------------------------------------- |
-| `NODE_ENV`                   | `development`                                        |
-| `HOST`, `PORT`               | `127.0.0.1`, `4000`                                  |
-| `APP_ORIGIN`                 | `http://localhost:8000` (`--izravno`: `:4000`)       |
-| `APP_DATABASE_URL`           | `ductus_app_local` na bazu `ductus`                  |
-| `AUTH_DATABASE_URL`          | `ductus_auth_local` na bazu `ductus`                 |
-| `DUCTUS_AUTH_PROVIDER`       | `fake-oidc`                                          |
-| `OIDC_ISSUER`                | `http://localhost:8090`                              |
-| `OIDC_CLIENT_ID`, `_SECRET`  | `ductus-local`, `ductus-local-only` (javne, lokalne) |
-| `OIDC_REDIRECT_URI`          | `http://localhost:8000/api/v1/auth/callback`         |
-| `DUCTURA_PROVISIONING_TOKEN` | iz `.local/`                                         |
+| Varijabla                           | Vrijednost                                           |
+| ----------------------------------- | ---------------------------------------------------- |
+| `NODE_ENV`                          | `development`                                        |
+| `HOST`, `PORT`                      | `127.0.0.1`, `4000`                                  |
+| `APP_ORIGIN`                        | `http://localhost:8000` (`--izravno`: `:4000`)       |
+| `APP_DATABASE_URL`                  | `ductus_app_local` na bazu `ductus`                  |
+| `AUTH_DATABASE_URL`                 | `ductus_auth_local` na bazu `ductus`                 |
+| `DUCTUS_AUTH_PROVIDER`              | `fake-oidc`                                          |
+| `OIDC_ISSUER`                       | `http://localhost:8090`                              |
+| `OIDC_CLIENT_ID`, `_SECRET`         | `ductus-local`, `ductus-local-only` (javne, lokalne) |
+| `OIDC_REDIRECT_URI`                 | `http://localhost:8000/api/v1/auth/callback`         |
+| `DUCTURA_PROVISIONING_TOKEN`        | iz `.local/`                                         |
+| `DUCTUS_DEV_SIGNING_KEY_FILE`       | sjeme ključa potvrda izvan repoa (gore, korak 5)     |
+| `EVIDENCE_STORAGE_DOMAINS`          | jedna domena: `demo-fakultet` na lokalnom S3         |
+| `EVIDENCE_S3_VS1_KEY_ID`, `_SECRET` | novi pri svakom pokretanju, samo u memoriji          |
 
 Baze logova i pravnih tekstova (`LOGS_DATABASE_URL`, `LEGAL_DATABASE_URL`) nisu dio ovog pokretanja; `/api/v1/health` ih javlja kao `nije_konfigurirano`, a prijava ih ne treba.
 

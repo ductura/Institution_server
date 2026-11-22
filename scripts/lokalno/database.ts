@@ -18,6 +18,7 @@ import {
   loginUrl,
   seedStatements,
 } from "./config.ts";
+import { registrationBlock, REGISTRATION_SETTINGS, type SigningKey } from "./evidence.ts";
 
 type Client = Awaited<ReturnType<typeof connectLockClient>>;
 
@@ -122,5 +123,44 @@ export async function provision(options: {
     }
     log("db/main/local/seed.sql (invented institutions).");
     await client.query(seedStatements(local("seed.sql")));
+  });
+}
+
+/**
+ * Registers the development signing key as the receipt key of the
+ * institution's evidence domain (LOK-SRV-1), with the DO block of
+ * db/main/local/evidence-signing-key.sql in one transaction, and returns the
+ * institution's id. A second run with the same key changes no row.
+ */
+export async function registerSigningKey(options: {
+  root: string;
+  target: AdminTarget;
+  slug: string;
+  key: SigningKey;
+}): Promise<string> {
+  const { root, target, slug, key } = options;
+  const sql = readFileSync(join(root, "db/main/local/evidence-signing-key.sql"), "utf8");
+  return withClient(target, DATABASE, async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query(REGISTRATION_SETTINGS, [
+        slug,
+        key.keyId,
+        key.keyVersion,
+        key.keyBase64Url,
+      ]);
+      await client.query(registrationBlock(sql));
+      const { rows } = await client.query<{ id: string }>(
+        "SELECT id::text AS id FROM identity.institution WHERE slug = $1",
+        [slug],
+      );
+      await client.query("COMMIT");
+      const id = rows[0]?.id;
+      if (id === undefined) throw new Error(`no institution ${slug} after the seed`);
+      return id;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
   });
 }

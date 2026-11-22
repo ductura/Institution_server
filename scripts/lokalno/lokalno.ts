@@ -5,11 +5,13 @@
 //   pnpm lokalno              origin http://localhost:8000 (the Preloader's edge proxy)
 //   pnpm lokalno --izravno    origin http://localhost:4000 (no edge; the server itself)
 //
-// Steps: migrations and the seed on DATABASE_URL, `pnpm build`, the fake OIDC
+// Steps: migrations and the seed on DATABASE_URL, the development signing key
+// and the local S3 on 8095 (LOK-SRV-1), `pnpm build`, the fake OIDC
 // provider on 8090, the server on 4000. Both run in the foreground with their
 // output prefixed; Ctrl+C stops both, and so does either one ending.
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { createServer } from "node:net";
 import { join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -26,7 +28,14 @@ import {
   type StackOptions,
   TOKEN_FILE,
 } from "./config.ts";
-import { provision } from "./database.ts";
+import { provision, registerSigningKey } from "./database.ts";
+import {
+  developmentKey,
+  EVIDENCE_INSTITUTION,
+  evidenceDir,
+  LOCAL_S3_PORT,
+  startEvidenceStore,
+} from "./evidence.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 /** Local files of this checkout, never committed (.gitignore). */
@@ -147,6 +156,17 @@ async function main(): Promise<void> {
   const base = baseEnv(process.env);
 
   await provision({ root: ROOT, target, secrets, env: base });
+  const dir = evidenceDir(ROOT, homedir());
+  const { seed, key } = await developmentKey(ROOT, dir);
+  const institutionId = await registerSigningKey({
+    root: ROOT,
+    target,
+    slug: EVIDENCE_INSTITUTION,
+    key,
+  });
+  console.log(
+    `Evidence: receipt key ${key.keyId} of ${EVIDENCE_INSTITUTION}, seed outside the checkout.`,
+  );
 
   console.log("Building dist/server.js.");
   if ((await runOnce([join(ROOT, "scripts", "build", "server.ts")], base)) !== 0)
@@ -156,10 +176,20 @@ async function main(): Promise<void> {
   for (const [name, port] of [
     ["server", options.serverPort],
     ["oidc", options.oidcPort],
+    ["s3", LOCAL_S3_PORT],
   ] as const) {
     if (!(await portFree(port))) throw new Error(`port ${port} (${name}) is in use`);
   }
-  const children = await startStack(options, serverEnv(options, target, secrets), base);
+  const evidence = await startEvidenceStore(dir, institutionId, seed);
+  console.log(`Local S3 (evidence store) on 127.0.0.1:${LOCAL_S3_PORT}.`);
+  const children = await startStack(
+    options,
+    { ...serverEnv(options, target, secrets), ...evidence.env },
+    base,
+  ).catch((error: unknown) => {
+    evidence.s3.close();
+    throw error;
+  });
 
   console.log(
     [
@@ -183,6 +213,7 @@ async function main(): Promise<void> {
     if (stopping) return;
     stopping = true;
     for (const child of children) if (child.exitCode === null) child.kill();
+    evidence.s3.close();
     process.exitCode = code;
   };
   process.once("SIGINT", () => stop(0));
