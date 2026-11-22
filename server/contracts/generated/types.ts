@@ -260,6 +260,27 @@ export type Operations = {
     success: { status: 200; body: { "revoked": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable";
   };
+  "institution.student-data-exports-approve.post": {
+    params: { "exportId": string };
+    query: undefined;
+    body: { "reference": string };
+    success: { status: 200; body: { "exportId": string; "state": "approved" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "conflict" | "unavailable";
+  };
+  "institution.student-data-exports.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "exports": ({ "exportId": string; "state": "requested" | "approved" | "ready" | "downloaded" | "expired"; "requestedAt": string; "expiresAt": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "institution.student-data-exports.post": {
+    params: undefined;
+    query: undefined;
+    body: { "studentId": string; "identityCheckedBy": "identity_card" | "passport" | "student_card"; "note": string };
+    success: { status: 201; body: { "exportId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "conflict" | "unavailable";
+  };
   "institution.student-removal.post": {
     params: { "courseId": string; "studentId": string };
     query: undefined;
@@ -567,6 +588,13 @@ export type Operations = {
     body: { "assignmentId": string; "conversationId": string | null; "purposeCatalogVersion": number; "purposeKey": string; "paragraph": string };
     success: { status: 200; body: { "outcome": "completed"; "requestId": string; "conversationId": string; "response": { "id": string; "text": string } } | { "outcome": "idempotency_conflict" | "forbidden" | "ai_disabled" | "purpose_not_allowed" | "budget_exceeded" | "in_progress" | "request_outcome_unknown" | "provider_failed"; "requestId": string | null; "conversationId": string | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "precondition_required" | "invalid_input" | "unavailable";
+  };
+  "student.data-export.get": {
+    params: { "token": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
+    errorCode: "not_allowed" | "unavailable";
   };
   "student.deadline-history.get": {
     params: { "assignmentId": string };

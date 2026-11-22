@@ -19,6 +19,11 @@ export {
 } from "./consultation-records/index.ts";
 export { createEventDisputeRoutes, createEventDisputeRoutesFor } from "./event-disputes/index.ts";
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
+export {
+  createStudentDataExportRoutes,
+  createStudentDataExportRoutesFor,
+  studentDataExportStorage,
+} from "./student-data-export/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";

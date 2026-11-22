@@ -38,6 +38,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createLegalHoldRoutesFor,
+  createStudentDataExportRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
@@ -385,6 +386,20 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "institution.legal-hold-release.post",
     ],
     routes: () => createLegalHoldRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-1308: the student data export through the registry office over the main database.
+    call: "...createStudentDataExportRoutesFor(databases.main, process.env, process.cwd())",
+    ids: [
+      "institution.student-data-exports.get",
+      "institution.student-data-exports.post",
+      "institution.student-data-exports-approve.post",
+      "student.data-export.get",
+    ],
+    routes: () =>
+      createStudentDataExportRoutesFor(NO_ACTOR as never, {}, ".").map(
+        (route) => route.contract.id,
+      ),
   },
   {
     call: "createStudentDeadlineHistoryRouteFor(databases.main)",
@@ -801,6 +816,10 @@ describe("routes the entry point mounts itself", () => {
       "institution.legal-holds.get",
       "institution.legal-holds.post",
       "institution.legal-hold-release.post",
+      "institution.student-data-exports.get",
+      "institution.student-data-exports.post",
+      "institution.student-data-exports-approve.post",
+      "student.data-export.get",
       "student.deadline-history.get",
       "student.submission-withdrawal.post",
       "student.submission-history.get",

@@ -1,0 +1,64 @@
+{
+  "route": "student.data-export.get",
+  "vectors": [
+    {
+      "name": "zip",
+      "kind": "success",
+      "request": {
+        "params": {
+          "token": "IzmisljeniTokenPoveznice0123456789abcdefghi"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-disposition": "attachment; filename=\"izvoz-mojih-podataka.zip\"",
+          "cache-control": "private, no-store",
+          "x-content-sha256": "3c9d1f0a5b7e2c4d6f8a0b1c3d5e7f9a1b2c3d4e5f60718293a4b5c6d7e8f9a0"
+        }
+      }
+    },
+    {
+      "name": "used",
+      "kind": "error",
+      "code": "not_allowed",
+      "request": {
+        "params": {
+          "token": "IzmisljeniTokenPoveznice0123456789abcdefghi"
+        }
+      },
+      "response": {
+        "status": 410,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_allowed",
+          "code": "not_allowed",
+          "messageKey": "errors.notAllowed",
+          "status": 410,
+          "requestId": "00000000-0000-4000-8000-0000000013a7"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "token": "IzmisljeniTokenPoveznice0123456789abcdefghi"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-0000000013a8"
+        }
+      }
+    }
+  ]
+}

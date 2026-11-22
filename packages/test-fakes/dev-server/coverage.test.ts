@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
@@ -1096,6 +1097,54 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         caseReference: "IZMISLJENI-SLUCAJ-2026-01",
       },
     },
+  },
+  "institution.student-data-exports.get": {
+    request: { path: "/api/v1/institution/student-data-exports", as: "bez-uloge" },
+  },
+  "institution.student-data-exports.post": {
+    request: {
+      path: "/api/v1/institution/student-data-exports",
+      as: "bez-uloge",
+      body: {
+        studentId: IDS.student,
+        identityCheckedBy: "identity_card",
+        note: "IZMISLJENA-PROVJERA-2026-01",
+      },
+    },
+  },
+  "institution.student-data-exports-approve.post": {
+    // A request the clerk made: the administrator, who did not request it, approves.
+    prepare: (state) => {
+      state.studentDataExports.push({
+        exportId: "00000000-0000-4000-8000-0000000001f1",
+        studentId: IDS.student,
+        requestedBy: IDS.noRole,
+        state: "requested",
+        requestedAt: "2026-11-21T09:15:00.000Z",
+        expiresAt: null,
+        tokenHash: null,
+      });
+    },
+    request: {
+      path: "/api/v1/institution/student-data-exports/00000000-0000-4000-8000-0000000001f1/approve",
+      as: "administrator",
+      body: { reference: "IZMISLJENI-POSAO-2026-01" },
+    },
+  },
+  "student.data-export.get": {
+    // A ready export whose link is the token below; the fake has no worker.
+    prepare: (state) => {
+      state.studentDataExports.push({
+        exportId: "00000000-0000-4000-8000-0000000001f1",
+        studentId: IDS.student,
+        requestedBy: IDS.noRole,
+        state: "ready",
+        requestedAt: "2026-11-21T09:15:00.000Z",
+        expiresAt: "2999-01-01T00:00:00.000Z",
+        tokenHash: studentDataExportTokenHashOf("IzmisljeniTokenPoveznice0123456789abcdefghi"),
+      });
+    },
+    request: { path: "/api/v1/student/data-export/IzmisljeniTokenPoveznice0123456789abcdefghi" },
   },
   "institution.legal-hold-release.post": {
     // A hold another administrator placed: the one who placed it may not release it.

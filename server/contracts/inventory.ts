@@ -519,6 +519,19 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-1308 (plan M10.5): the student data export through the registry office; Ductus has no such route.
+  "app/api/institution/student-data-exports/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
+  "app/api/institution/student-data-exports/[exportId]/approve/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
+  "app/api/student/data-export/[token]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
   // SRV-1903 (P-D3): withdrawal of a submission and the history; Ductus has no such route.
   "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts": {
     methods: ["POST"],

@@ -61,9 +61,14 @@ SELECT is(
   || 'app.revoke_registry_clerk(uuid,text) ductus_identity false true, '
   || 'app.student_data_export_actor() ductus_identity false true, '
   || 'app.student_data_export_forward_only() ductus_identity false true, '
+  -- SRV-1308: the reads of the package (185-student-data-export-contents.sql).
+  || 'app.student_data_export_subject(uuid) ductus_identity true true, '
   || 'app.student_data_exports() ductus_identity true true, '
   || 'app.worker_expire_student_data_exports() ductus_identity true true, '
   || 'app.worker_mark_student_data_export_ready(uuid,bytea) ductus_identity true true, '
+  || 'app.worker_student_data_export_access_log(uuid) ductus_identity true true, '
+  || 'app.worker_student_data_export_notes(uuid) ductus_evidence true true, '
+  || 'app.worker_student_data_export_submissions(uuid) ductus_evidence true true, '
   || 'app.worker_student_data_exports_to_prepare() ductus_identity true true',
   'owners, SECURITY DEFINER only for the RPCs, and an empty search_path');
 SELECT bag_eq(
@@ -79,7 +84,15 @@ SELECT bag_eq(
         'ductus_app app.consume_student_data_export(bytea)',
         'ductus_worker app.worker_student_data_exports_to_prepare()',
         'ductus_worker app.worker_mark_student_data_export_ready(uuid,bytea)',
-        'ductus_worker app.worker_expire_student_data_exports()'],
+        'ductus_worker app.worker_expire_student_data_exports()',
+        -- SRV-1308 (185-student-data-export-contents.sql): the worker's reads of
+        -- the package; the evidence role owns two of them and runs the subject step.
+        'ductus_worker app.worker_student_data_export_submissions(uuid)',
+        'ductus_worker app.worker_student_data_export_notes(uuid)',
+        'ductus_worker app.worker_student_data_export_access_log(uuid)',
+        'ductus_evidence app.student_data_export_subject(uuid)',
+        'ductus_evidence app.worker_student_data_export_submissions(uuid)',
+        'ductus_evidence app.worker_student_data_export_notes(uuid)'],
   'the web role runs the four RPCs, the worker its three steps, nobody else anything');
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
     AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),

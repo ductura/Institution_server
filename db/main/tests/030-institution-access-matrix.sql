@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2917);
+SELECT plan(2930);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -922,6 +922,35 @@ FROM (VALUES
   ('ductus_auth', '42501: permission denied for schema app'),
   ('ductus_worker', '42501: permission denied for function consume_student_data_export')
 ) AS c (role, result);
+-- SRV-1308 (M10.5): the worker's reads of the package of an approved export.
+-- Only the worker runs them; the fixture has no export, so they read nothing.
+-- The private subject step is the evidence role's alone. The rest is in
+-- 185-student-data-export-contents.sql.
+SELECT is(pg_temp.ask_as(c.role, 'anon', format('SELECT count(*)::text FROM app.%s(%L)', c.fn,
+    '00000000-0000-4000-8000-0000000001ff')), c.result,
+  format('SRV-1308: %s reads %s: %s', c.role, c.fn, c.result))
+FROM (VALUES
+  ('ductus_app', 'worker_student_data_export_submissions', '42501: permission denied for function worker_student_data_export_submissions'),
+  ('ductus_retention', 'worker_student_data_export_submissions', '42501: permission denied for function worker_student_data_export_submissions'),
+  ('ductus_auth', 'worker_student_data_export_submissions', '42501: permission denied for schema app'),
+  ('ductus_worker', 'worker_student_data_export_submissions', '0'),
+  ('ductus_app', 'worker_student_data_export_notes', '42501: permission denied for function worker_student_data_export_notes'),
+  ('ductus_retention', 'worker_student_data_export_notes', '42501: permission denied for function worker_student_data_export_notes'),
+  ('ductus_auth', 'worker_student_data_export_notes', '42501: permission denied for schema app'),
+  ('ductus_worker', 'worker_student_data_export_notes', '0'),
+  ('ductus_app', 'worker_student_data_export_access_log', '42501: permission denied for function worker_student_data_export_access_log'),
+  ('ductus_retention', 'worker_student_data_export_access_log', '42501: permission denied for function worker_student_data_export_access_log'),
+  ('ductus_auth', 'worker_student_data_export_access_log', '42501: permission denied for schema app'),
+  ('ductus_worker', 'worker_student_data_export_access_log', '0')
+) AS c (role, fn, result);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute app.student_data_export_subject(uuid)'
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     WHERE has_function_privilege(r.rolname, 'app.student_data_export_subject(uuid)', 'EXECUTE') $$,
+  'SRV-1308: only the identity owner and the evidence reads execute the private subject step'
+);
 INSERT INTO ref VALUES ('rq',pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(
