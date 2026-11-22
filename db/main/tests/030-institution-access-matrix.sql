@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2909);
+SELECT plan(2929);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -637,6 +637,63 @@ FROM (VALUES
   ('ana', '{z1}', '{ana}', 'Napomena ana'), ('vesna', '{z1}', '{ana}', 'Napomena ana'),
   ('dora', '{z1}', '{ana}', 'ZD403: forbid'), ('marko', '{z1}', '{ana}', 'ZD403: forbid'),
   ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Napomena tomo'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
+) AS c (actor, assignment, student, result);
+
+-- 1c2. SRV-1314: a student's amendment or dispute of a summary event
+-- (evidence.event_dispute) only through the two RPCs; the writer and the
+-- reader of the table are never the web role's. One cell per actor of the
+-- fixture on Z1 of K1 and Z3 of fak-b; the rest of the matrix (seminar group,
+-- collaborator, mentor, removal, input, append-only) is in 186-event-dispute.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_evidence'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-1314: event_dispute has forced RLS, the evidence owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'evidence.event_dispute'::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.event_dispute_append(uuid,uuid,text,text,text)', 'app.event_disputes_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1314: only their owner and the identity role execute the writer and the reader of the event records'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.add_event_dispute(uuid,text,text,text)', 'app.event_disputes(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1314: only ductus_app and the owner execute the two event record RPCs'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT ''ok'' FROM app.add_event_dispute(%s, ''dispute'', ''pastes/0'', %L)',
+                                     c.assignment, 'Osporavam ' || c.actor)), 1, 5),
+  c.outcome, format('SRV-1314: %s disputes an event of %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'ok'), ('dora', '{z1}', 'ok'), ('vesna', '{z1}', 'ZD403'), ('marko', '{z1}', 'ZD403'),
+  ('boris', '{z1}', 'ZD403'), ('iva', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'),
+  ('petra', '{z3}', 'ZD403')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask('ana', format('SELECT ''ok'' FROM app.add_event_dispute({z1}, ''dispute'', ''pastes/0'', %L)',
+                                   repeat('a', 1001))), 1, 5), 'ZD422',
+  'SRV-1314: a record of 1001 characters is refused'
+);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT string_agg(text, ''|'') FROM app.event_disputes(%s, %s)',
+                                              c.assignment, c.student)), 1, 13), 'NULL'), c.result,
+  format('SRV-1314: %s reads the event records of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', '{ana}', 'Osporavam ana'), ('vesna', '{z1}', '{ana}', 'Osporavam ana'),
+  ('dora', '{z1}', '{ana}', 'ZD403: forbid'), ('marko', '{z1}', '{ana}', 'ZD403: forbid'),
+  ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Osporavam tom'),
   ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
 ) AS c (actor, assignment, student, result);
 
