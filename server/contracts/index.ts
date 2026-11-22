@@ -87,7 +87,14 @@ export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
-export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export {
+  WorkMilestoneApprovalInput,
+  WorkMilestoneChangeInput,
+  WorkMilestoneDueInput,
+  WorkMilestoneId,
+  WorkMilestoneRevisionInput,
+  workMilestonesRoutes,
+} from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
