@@ -67,6 +67,12 @@ const ASSISTANT_MATCH_POST: Step = {
     text: "Izmišljeno: kišobrani na tramvajskoj stanici čuvaju putnike od kiše, i to je sve.",
   },
 };
+const RHYTHM_POST: Step = {
+  path: `/api/v1/works/${IDS.document}/input-rhythm`,
+  as: "student",
+  headers: ORIGIN,
+  body: { gapsMs: [120, 80, 4000] },
+};
 
 const CREATE_EVENT_DISPUTE: Step = {
   path: `/api/v1/works/${IDS.document}/event-disputes`,
@@ -1171,6 +1177,39 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `/api/v1/works/${IDS.document}/assistant-match`, as: "nastavnik" },
   },
   "work.assistant-match.post": { request: ASSISTANT_MATCH_POST },
+  "work.input-rhythm.post": { request: RHYTHM_POST },
+  "work.input-rhythm.get": {
+    before: [RHYTHM_POST],
+    request: { path: `/api/v1/works/${IDS.document}/input-rhythm`, as: "nastavnik", method: "GET" },
+  },
+  "work.input-rhythm.delete": {
+    before: [RHYTHM_POST],
+    request: {
+      path: `/api/v1/works/${IDS.document}/input-rhythm`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "work.input-rhythm-setting.get": {
+    request: { path: `/api/v1/works/${IDS.document}/input-rhythm/setting`, as: "student" },
+  },
+  "teacher.input-rhythm.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/input-rhythm`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.input-rhythm.put": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/input-rhythm`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { enabled: false },
+    },
+  },
   "institution.origin-thresholds.get": {
     request: { path: "/api/v1/institution/origin-thresholds", as: "administrator" },
   },

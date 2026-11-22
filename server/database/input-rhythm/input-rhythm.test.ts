@@ -70,7 +70,34 @@ describe("input rhythm port", () => {
   ])("maps %s to %s", async (code, status) => {
     const { port: rhythm } = port(sqlError(code));
     expect(await rhythm.remove(TOKEN, "izmisljeni-rad-0001")).toEqual({ status });
-    expect(await rhythm.setEnabled(TOKEN, false)).toEqual({ status });
+    expect(await rhythm.setEnabled(TOKEN, ID, false)).toEqual({ status });
+    expect(await rhythm.readEnabled(TOKEN, ID)).toEqual({ status });
+    expect(await rhythm.state(TOKEN, "izmisljeni-rad-0001")).toEqual({ status });
+  });
+
+  it("the teacher's switch and the state answer one boolean", async () => {
+    const set = port([{ enabled: false }]);
+    expect(await set.port.setEnabled(TOKEN, ID, false)).toEqual({ status: "ok", enabled: false });
+    expect(set.seen[0]!.text).toContain("app.input_rhythm_switch(");
+    expect(set.seen[0]!.values).toEqual([ID, false]);
+    const read = port([{ enabled: true }]);
+    expect(await read.port.readEnabled(TOKEN, ID)).toEqual({ status: "ok", enabled: true });
+    expect(read.seen[0]!.text).toContain("app.input_rhythm_switch_read(");
+    const state = port([{ enabled: true }]);
+    expect(await state.port.state(TOKEN, "izmisljeni-rad-0001")).toEqual({
+      status: "ok",
+      enabled: true,
+    });
+    expect(state.seen[0]!.values).toEqual(["izmisljeni-rad-0001"]);
+    expect(await port([{ enabled: "da" }]).port.state(TOKEN, "x")).toEqual({
+      status: "unavailable",
+    });
+    expect(await port([]).port.readEnabled(TOKEN, ID)).toEqual({ status: "unavailable" });
+  });
+
+  it("the student's own switch is never called", () => {
+    const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+    expect(source).not.toMatch(/app\.input_rhythm_set\(/);
   });
 
   it("deletes on request and counts what went", async () => {
@@ -86,9 +113,12 @@ describe("no key and no derived measure of speed (P-1 rule 4)", () => {
   const FORBIDDEN =
     /key(code|stroke|name)?\b|keys\b|speed|wpm|cpm|average|mean\b|median|rate\b|velocity|profile|typing_?speed|stddev|variance/i;
 
-  it("the SQL of the class computes no average, spread or speed and names no key", () => {
+  it.each([
+    "20261213100300_origin_kind_rhythm.sql",
+    "20261213110100_input_rhythm_teacher_switch.sql",
+  ])("the SQL of %s computes no average, spread or speed and names no key", (file) => {
     const sql = readFileSync(
-      new URL("../../../db/main/migrations/20261213100300_origin_kind_rhythm.sql", import.meta.url),
+      new URL(`../../../db/main/migrations/${file}`, import.meta.url),
       "utf8",
     )
       .split("\n")

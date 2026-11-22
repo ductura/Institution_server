@@ -110,6 +110,7 @@ import {
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
+  createInputRhythmRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -930,6 +931,43 @@ const SESSION_ROUTES = {
     body: () => ({ segmentRef: "blok-1", text: "izmišljeni tekst odlomka" }),
     live: 404,
   },
+  // PIL-P1-RITAM-SRV: a live session that has no such work or assignment gets 404 on each rhythm route.
+  "work.input-rhythm.post": {
+    method: "POST",
+    path: "/api/v1/works/izmisljeni-rad-0001/input-rhythm",
+    body: () => ({ gapsMs: [120, 80] }),
+    live: 404,
+  },
+  "work.input-rhythm.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/input-rhythm",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.input-rhythm.delete": {
+    method: "DELETE",
+    path: "/api/v1/works/izmisljeni-rad-0001/input-rhythm",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.input-rhythm-setting.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/input-rhythm/setting",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.input-rhythm.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/input-rhythm`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.input-rhythm.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/input-rhythm`,
+    body: () => ({ enabled: false }),
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -1614,6 +1652,7 @@ const FACTORIES = [
   "createTeacherWorkRoutesFor",
   "createOriginCompositionRoutesFor",
   "createAssistantMatchRoutesFor",
+  "createInputRhythmRoutesFor",
   "createFacultyThresholdRoutesFor",
   "createTeacherSourceRoutesFor",
   "createTeacherWorkingCriteriaRoutesFor",
@@ -1727,6 +1766,7 @@ const MOUNTED = [
   ...createTeacherWorkRoutesFor(databases.main),
   ...createOriginCompositionRoutesFor(databases.main),
   ...createAssistantMatchRoutesFor(databases.main),
+  ...createInputRhythmRoutesFor(databases.main),
   ...createFacultyThresholdRoutesFor(databases.main),
   ...createTeacherSourceRoutesFor(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),

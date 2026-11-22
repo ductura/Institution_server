@@ -3,8 +3,10 @@
 // between inputs inside one burst and nothing else: no key, no content. This
 // port holds no function that sums, averages or compares gaps, and none that
 // returns anything but the stored gaps (a test fails on any derived measure).
-// The recording is on by default; the student's switch holds from the moment of
-// switching off. Every refusal of access is one not_found (C-23).
+// The recording is on by default; the switch is the teacher's, per assignment
+// (20261213110100, Daniel 22. 11. 2026.), and holds from the moment of
+// switching off; the student only reads its state. Every refusal of access is
+// one not_found (C-23).
 import type { WithActor } from "../index.ts";
 
 /** The most values the server keeps of one burst; longer bursts are thinned. */
@@ -25,8 +27,22 @@ export type InputRhythm = {
     documentId: string,
     gapsMs: readonly number[],
   ): Promise<{ readonly status: "ok"; readonly recorded: boolean } | Failure>;
-  /** The student's switch of the recording. */
-  setEnabled(token: string, enabled: boolean): Promise<{ readonly status: "ok" } | Failure>;
+  /** The teacher of the assignment switches the recording; answers the new state. */
+  setEnabled(
+    token: string,
+    assignmentId: string,
+    enabled: boolean,
+  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
+  /** The teacher of the assignment reads the switch. */
+  readEnabled(
+    token: string,
+    assignmentId: string,
+  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
+  /** The owner and the readers of a work read the state of the switch of its assignment. */
+  state(
+    token: string,
+    documentId: string,
+  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
   /** The student deletes the recorded rhythm of a work on request. */
   remove(
     token: string,
@@ -77,6 +93,22 @@ function toBurst(row: Record<string, unknown>): RhythmBurst {
 }
 
 export function createInputRhythm(withActor: WithActor): InputRhythm {
+  async function oneBoolean(
+    token: string,
+    text: string,
+    values: readonly unknown[],
+  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure> {
+    try {
+      return await withActor(token, async (tx) => {
+        const rows = (await tx.query<Record<string, unknown>>(text, [...values])).rows;
+        const enabled = rows[0]?.enabled;
+        if (rows.length !== 1 || typeof enabled !== "boolean") throw new Malformed();
+        return { status: "ok" as const, enabled };
+      });
+    } catch (thrown) {
+      return failureOf(thrown);
+    }
+  }
   return {
     async record(token, documentId, gapsMs) {
       try {
@@ -95,16 +127,15 @@ export function createInputRhythm(withActor: WithActor): InputRhythm {
         return failureOf(thrown);
       }
     },
-    async setEnabled(token, enabled) {
-      try {
-        return await withActor(token, async (tx) => {
-          await tx.query("SELECT app.input_rhythm_set($1)", [enabled]);
-          return { status: "ok" as const };
-        });
-      } catch (thrown) {
-        return failureOf(thrown);
-      }
-    },
+    setEnabled: (token, assignmentId, enabled) =>
+      oneBoolean(token, "SELECT app.input_rhythm_switch($1, $2) AS enabled", [
+        assignmentId,
+        enabled,
+      ]),
+    readEnabled: (token, assignmentId) =>
+      oneBoolean(token, "SELECT app.input_rhythm_switch_read($1) AS enabled", [assignmentId]),
+    state: (token, documentId) =>
+      oneBoolean(token, "SELECT app.input_rhythm_state($1) AS enabled", [documentId]),
     async remove(token, documentId) {
       try {
         return await withActor(token, async (tx) => {
