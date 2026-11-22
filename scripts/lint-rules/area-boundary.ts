@@ -127,6 +127,11 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../../locales/index.ts",
     name: "merlinHr",
   }),
+  // SRV-1531: the PDF of the interview preparation of a work.
+  "server/http/work-interview/pdf/index.ts": Object.freeze({
+    specifier: "../../../../locales/index.ts",
+    name: "interviewPdfHr",
+  }),
   // SRV-1312: the receipt PDF inside the portable record has the same labels.
   "server/http/portable-record/index.ts": Object.freeze({
     specifier: "../../../locales/index.ts",

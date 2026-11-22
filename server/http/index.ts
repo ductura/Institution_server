@@ -9,6 +9,7 @@ export { createCollaborationCommentsRouteFor } from "./collaboration-comments/in
 export { createRevisionRequestsRouteFor } from "./revision-requests/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createWorkInterviewRoutesFor } from "./work-interview/index.ts";
+export { createWorkInterviewPdfRouteFor } from "./work-interview/pdf/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
 export { createMentorshipStudentRoutesFor } from "./mentorship/index.ts";
 export { createStudentWorkRoutesFor } from "./student-work/index.ts";
