@@ -1128,6 +1128,20 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "applied" | "unchanged"; "mode": "suggestions" | "direct"; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.event-disputes.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "disputes": ({ "disputeId": string; "kind": "amendment" | "dispute"; "eventId": string; "text": string; "createdAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.event-disputes.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "kind": "amendment" | "dispute"; "eventId": string; "text": string };
+    success: { status: 201; body: { "disputeId": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.export-pdf.get": {
     params: { "assignmentId": string; "documentId": string };
     query: undefined;

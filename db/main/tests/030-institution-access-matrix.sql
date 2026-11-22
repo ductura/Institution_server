@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2929);
+SELECT plan(2930);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -680,6 +680,15 @@ FROM (VALUES
   ('boris', '{z1}', 'ZD403'), ('iva', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'),
   ('petra', '{z3}', 'ZD403')
 ) AS c (actor, assignment, outcome);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.add_work_event_dispute(text,text,text,text)', 'app.work_event_disputes(text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1315: only ductus_app and the owner execute the two work-keyed event record RPCs (cells in 187-event-dispute-by-work.sql)'
+);
 SELECT is(
   substr(pg_temp.ask('ana', format('SELECT ''ok'' FROM app.add_event_dispute({z1}, ''dispute'', ''pastes/0'', %L)',
                                    repeat('a', 1001))), 1, 5), 'ZD422',

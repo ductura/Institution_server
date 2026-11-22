@@ -48,6 +48,9 @@ const FIELDS = 'id, kind, event_id AS "eventId", text, created_at AS "createdAt"
 const ADD_SQL = `SELECT ${FIELDS} FROM app.add_event_dispute($1::uuid, $2::text, $3::text, $4::text)`;
 const LIST_SQL = `SELECT ${FIELDS} FROM app.event_disputes($1::uuid, $2::uuid) ORDER BY created_at, id`;
 
+const ADD_WORK_SQL = `SELECT ${FIELDS} FROM app.add_work_event_dispute($1::text, $2::text, $3::text, $4::text)`;
+const LIST_WORK_SQL = `SELECT ${FIELDS} FROM app.work_event_disputes($1::text) ORDER BY created_at, id`;
+
 type Row = { id: unknown; kind: unknown; eventId: unknown; text: unknown; createdAt: unknown };
 
 const isId = (value: unknown): value is string =>
@@ -97,8 +100,65 @@ function refusalOf(code: unknown): Refusal | undefined {
   return undefined;
 }
 
+export type EventDisputeWorkInput = {
+  readonly kind: string;
+  readonly eventId: string;
+  readonly text: string;
+};
+
 export function createEventDisputes(withActor: WithActor) {
+  async function add(token: string, sql: string, args: string[], input: EventDisputeWorkInput) {
+    try {
+      return await withActor(token, async (tx): Promise<EventDisputeAdd> => {
+        const { rows } = await tx.query<Row>(sql, args);
+        const row = rows[0];
+        if (rows.length !== 1 || row === undefined) throw new Error("unconfirmed event dispute");
+        const record = recordOf(row);
+        if (
+          record.kind !== input.kind ||
+          record.eventId !== input.eventId ||
+          record.text !== input.text
+        ) {
+          throw new Error("unconfirmed event dispute");
+        }
+        return { status: "added", record };
+      });
+    } catch (error) {
+      const code = codeOf(error);
+      if (code === "ZD422") return { status: "invalid_input" } as const;
+      const refusal = refusalOf(code);
+      if (refusal !== undefined) return refusal;
+      throw error;
+    }
+  }
   return {
+    /**
+     * The owner of the work (named by its document id) adds a record; a reader
+     * of the work who is not its owner, and anyone else, is not_found.
+     */
+    async addToWork(
+      token: string,
+      documentId: string,
+      input: EventDisputeWorkInput,
+    ): Promise<EventDisputeAdd> {
+      if (!isKind(input.kind) || !isEventId(input.eventId) || !isText(input.text)) {
+        return { status: "invalid_input" };
+      }
+      return add(token, ADD_WORK_SQL, [documentId, input.kind, input.eventId, input.text], input);
+    },
+    /** The records of a work for its owner or a reader of it, oldest first. */
+    async listForWork(token: string, documentId: string): Promise<EventDisputeList> {
+      try {
+        return await withActor(token, async (tx): Promise<EventDisputeList> => {
+          const { rows } = await tx.query<Row>(LIST_WORK_SQL, [documentId]);
+          return { status: "read", records: rows.map(recordOf) };
+        });
+      } catch (error) {
+        const refusal = refusalOf(codeOf(error));
+        if (refusal !== undefined) return refusal;
+        throw error;
+      }
+    },
     /** The student who owns the work amends or disputes an event of its summary. */
     async add(token: string, input: EventDisputeInput): Promise<EventDisputeAdd> {
       if (

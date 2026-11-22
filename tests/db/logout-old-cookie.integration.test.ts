@@ -19,6 +19,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createEventDisputeRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
@@ -204,6 +205,18 @@ const SESSION_ROUTES = {
   "work.consultation-additions.post": {
     path: `/api/v1/works/${randomUUID()}/consultation-records/${randomUUID()}/additions`,
     body: () => ({ text: "Dopuna." }),
+    live: 404,
+  },
+  // SRV-1315: a work it may not read is 404 for the list and for the write.
+  "work.event-disputes.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/event-disputes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.event-disputes.post": {
+    path: `/api/v1/works/${randomUUID()}/event-disputes`,
+    body: () => ({ kind: "dispute", eventId: "pastes/0", text: "Opis." }),
     live: 404,
   },
   // SRV-1106: a work it may not read is 404 for the conversation and for a message.
@@ -1268,6 +1281,7 @@ const FACTORIES = [
   "createDirectEditRoutesFor",
   "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
+  "createEventDisputeRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
@@ -1367,6 +1381,7 @@ const MOUNTED = [
   ...createDirectEditRoutesFor(databases.main),
   ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
+  ...createEventDisputeRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
@@ -1568,6 +1583,10 @@ beforeAll(async () => {
       expectedOrigin: ORIGIN,
       operators: async () => "listed",
       secondFactor: async () => "confirmed",
+      // The test sends one session token to every route twice (live, then old),
+      // which is near the per-account limit of 300 a minute and grows with each
+      // route; the limit is tested in server/http/rate-limit.integration.test.ts.
+      rateLimiter: { check: () => ({ allowed: true, limitClass: "default" }) },
     }),
     databases,
     routes: MOUNTED,

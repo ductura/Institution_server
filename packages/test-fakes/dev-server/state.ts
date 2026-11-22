@@ -139,6 +139,16 @@ export type Consultation = {
   additions: { id: string; text: string; createdAt: string }[];
 };
 
+/** An amendment or dispute of a summary event (SRV-1315); only ever added. */
+export type EventDispute = {
+  disputeId: string;
+  documentId: string;
+  kind: "amendment" | "dispute";
+  eventId: string;
+  text: string;
+  createdAt: string;
+};
+
 export type WorkMilestone = {
   id: string;
   title: string;
@@ -323,6 +333,8 @@ export type State = {
   revisionRequests: RevisionRequest[];
   /** The consultation records of the works (SRV-1105), additions in the order made. */
   consultations: Consultation[];
+  /** The amendments and disputes of summary events of the works (SRV-1315). */
+  eventDisputes: EventDispute[];
   milestones: Map<string, WorkMilestone[]>;
 };
 
@@ -540,6 +552,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     threads: new Map(),
     revisionRequests: [],
     consultations: [],
+    eventDisputes: [],
     milestones: new Map([
       [
         IDS.document,

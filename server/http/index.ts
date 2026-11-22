@@ -17,6 +17,7 @@ export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
 } from "./consultation-records/index.ts";
+export { createEventDisputeRoutes, createEventDisputeRoutesFor } from "./event-disputes/index.ts";
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export {
   createStudentDataExportRoutes,

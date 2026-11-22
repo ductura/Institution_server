@@ -220,6 +220,8 @@ describe("route inventory", () => {
       "work.consultation-records.get: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
       "work.consultation-records.post: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
       "work.consultation-additions.post: app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts is not in the inventory",
+      "work.event-disputes.get: app/api/works/[documentId]/event-disputes/route.ts is not in the inventory",
+      "work.event-disputes.post: app/api/works/[documentId]/event-disputes/route.ts is not in the inventory",
       "work.milestones.get: app/api/works/[documentId]/milestones/route.ts is not in the inventory",
       "work.milestones.patch: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
     ]);
