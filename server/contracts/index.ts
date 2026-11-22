@@ -111,6 +111,7 @@ export {
   NotificationId,
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
+  RevisionNotificationsPage,
   notificationsRoutes,
 } from "./routes/index.ts";
 

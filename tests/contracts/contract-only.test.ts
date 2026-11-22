@@ -571,7 +571,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   },
   {
     call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
-    ids: ["notifications.list.get", "notifications.read.post"],
+    ids: [
+      "notifications.list.get",
+      "notifications.returned-for-revision.list.get",
+      "notifications.read.post",
+    ],
     routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -928,6 +932,7 @@ describe("routes the entry point mounts itself", () => {
       "work.event-disputes.get",
       "work.event-disputes.post",
       "notifications.list.get",
+      "notifications.returned-for-revision.list.get",
       "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",

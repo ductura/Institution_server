@@ -32,6 +32,7 @@ export { workMessagesRoutes } from "./work-messages.ts";
 export {
   NotificationId,
   NotificationsPage,
+  RevisionNotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
   notificationsRoutes,
 } from "./notifications.ts";
