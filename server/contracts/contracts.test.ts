@@ -132,6 +132,7 @@ describe("route inventory", () => {
       "institution.student-data-exports-approve.post: app/api/institution/student-data-exports/[exportId]/approve/route.ts is not in the inventory",
       "student.data-export.get: app/api/student/data-export/[token]/route.ts is not in the inventory",
       "student.submission-withdrawal.post: app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts is not in the inventory",
+      "student.submission-withdrawal.get: app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts is not in the inventory",
       "student.submission-history.get: app/api/student/assignments/[assignmentId]/submission/history/route.ts is not in the inventory",
       "teacher.submission-history.get: app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-history/route.ts is not in the inventory",
       "teacher.submission-withdrawal.get: app/api/teacher/assignments/[assignmentId]/submission-withdrawal/route.ts is not in the inventory",

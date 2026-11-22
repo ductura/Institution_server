@@ -412,6 +412,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps)",
     ids: [
       "student.submission-withdrawal.post",
+      "student.submission-withdrawal.get",
       "student.submission-history.get",
       "teacher.submission-history.get",
       "teacher.submission-withdrawal.get",
@@ -830,6 +831,7 @@ describe("routes the entry point mounts itself", () => {
       "student.data-export.get",
       "student.deadline-history.get",
       "student.submission-withdrawal.post",
+      "student.submission-withdrawal.get",
       "student.submission-history.get",
       "teacher.submission-history.get",
       "teacher.submission-withdrawal.get",

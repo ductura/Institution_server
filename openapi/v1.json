@@ -50368,6 +50368,216 @@
       }
     },
     "/api/v1/student/assignments/{assignmentId}/submission/withdrawal": {
+      "get": {
+        "operationId": "student.submission-withdrawal.get",
+        "summary": "Whether the caller may withdraw the own submission of the assignment now, and the signed withdrawals so far (WEB-1903). withdrawable is the server's decision: the teacher has not switched withdrawal off, the deadline in force has not passed and the last event is a confirmed submission whose receipt is bound; the client never compares a time with a deadline. receipts lists the bound withdrawal receipts, oldest first (the full receipts are in student.submission-history.get). An inaccessible, unknown or malformed assignment id returns 404.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the state, with no receipts before a first withdrawal",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "withdrawable",
+                    "receipts"
+                  ],
+                  "properties": {
+                    "withdrawable": {
+                      "type": "boolean"
+                    },
+                    "receipts": {
+                      "maxItems": 1000,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "withdrawalId",
+                          "assignmentId",
+                          "revision",
+                          "withdrawnAt",
+                          "signature"
+                        ],
+                        "properties": {
+                          "withdrawalId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "assignmentId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "revision": {
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "type": "integer"
+                          },
+                          "withdrawnAt": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                            "type": "string"
+                          },
+                          "signature": {
+                            "minLength": 1,
+                            "maxLength": 512,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
       "post": {
         "operationId": "student.submission-withdrawal.post",
         "summary": "The student withdraws the own confirmed submission of the assignment and gets the signed receipt of the withdrawal; nothing is deleted, and the work can be submitted again (submission.submit.post). No body. A retry returns the same withdrawal. 409 not_allowed: the teacher switched withdrawal off; 409 refused: the deadline in force has passed (an extension counts); 409 not_started: no recorded submission to withdraw; 409 conflict: the submission's receipt is not bound yet or a newer submission is in progress. An inaccessible, unknown or malformed assignment id returns 404. 503 when the receipt cannot be signed; a retry signs the same frozen receipt.",
