@@ -2656,7 +2656,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Array.isArray(value['gapsMs']) &&
       value['gapsMs'].length <= 130 &&
       value['gapsMs'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array) if(!((Number.isInteger(value)))) { return false }; return true; })(value['gapsMs']) &&
+      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'number' && Number.isInteger(value)) && value <= 3600000 && value >= 0))) { return false }; return true; })(value['gapsMs']) &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

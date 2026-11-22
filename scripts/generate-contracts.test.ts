@@ -49,6 +49,20 @@ describe("compileValidator", () => {
     expect(check({ n: 0, list: ["a", "a"] })).toBe(false);
     expect(check({ n: 0, list: ["a"], extra: 1 })).toBe(false);
   });
+  it("checks bounded integer items of an array, typed before the bounds are read", () => {
+    const schema = Type.Object(
+      { gaps: Type.Array(Type.Integer({ minimum: 0, maximum: 9 }), { minItems: 1 }) },
+      { additionalProperties: false },
+    );
+    const code = compileValidator(schema, "test:body");
+    expect(code).toContain("(typeof value === 'number' && Number.isInteger(value))");
+    const check = run(code);
+    expect(check({ gaps: [0, 9] })).toBe(true);
+    expect(check({ gaps: [10] })).toBe(false);
+    expect(check({ gaps: [-1] })).toBe(false);
+    expect(check({ gaps: [1.5] })).toBe(false);
+    expect(check({ gaps: ["1"] })).toBe(false);
+  });
   it("checks a closed object one level inside the body without reading past a failed test", () => {
     const inner = Type.Object(
       {

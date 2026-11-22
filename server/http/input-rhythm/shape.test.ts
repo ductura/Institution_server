@@ -4,7 +4,7 @@
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
-import { ROUTES } from "../../contracts/index.ts";
+import { RHYTHM_MAX_GAP_MS, ROUTES } from "../../contracts/index.ts";
 
 const IDS = [
   "work.input-rhythm.post",
@@ -36,6 +36,15 @@ describe("input rhythm contracts", () => {
     expect(Value.Check(body, { gapsMs: [5], keyCode: 65 })).toBe(false);
     expect(Value.Check(body, { gapsMs: [5], key: "a" })).toBe(false);
     expect(Value.Check(body, { gapsMs: ["a"] })).toBe(false);
+  });
+
+  it("each gap is bounded in the contract itself, 0 to one hour", () => {
+    const body = routeOf("work.input-rhythm.post").request.body!;
+    expect(Value.Check(body, { gapsMs: [0, RHYTHM_MAX_GAP_MS] })).toBe(true);
+    expect(Value.Check(body, { gapsMs: [-1] })).toBe(false);
+    expect(Value.Check(body, { gapsMs: [RHYTHM_MAX_GAP_MS + 1] })).toBe(false);
+    expect(JSON.stringify(body)).toContain(`"maximum":${RHYTHM_MAX_GAP_MS}`);
+    expect(JSON.stringify(body)).toContain('"minimum":0');
   });
 
   it("the answers hold no key and no derived speed", () => {

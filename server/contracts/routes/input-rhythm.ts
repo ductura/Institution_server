@@ -27,12 +27,12 @@ const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
 });
 const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
-/**
- * A whole number of milliseconds. The bounds 0..RHYTHM_MAX_GAP_MS are the
- * route's and the database's (422): the validator compiler cannot type a
- * bounded number inside an array, so the schema carries the integer only.
- */
-const Gap = Type.Integer({ description: "a gap in milliseconds, 0 to 3600000" });
+/** A whole number of milliseconds, 0 to one hour; the database checks the same bounds (422). */
+const Gap = Type.Integer({
+  minimum: 0,
+  maximum: RHYTHM_MAX_GAP_MS,
+  description: "a gap in milliseconds, 0 to 3600000",
+});
 const Gaps = Type.Array(Gap, {
   minItems: 1,
   maxItems: RHYTHM_MAX_GAPS,

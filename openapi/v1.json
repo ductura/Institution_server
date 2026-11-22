@@ -97708,6 +97708,8 @@
                             "maxItems": 130,
                             "type": "array",
                             "items": {
+                              "minimum": 0,
+                              "maximum": 3600000,
                               "description": "a gap in milliseconds, 0 to 3600000",
                               "type": "integer"
                             }
@@ -97883,6 +97885,8 @@
                     "maxItems": 130,
                     "type": "array",
                     "items": {
+                      "minimum": 0,
+                      "maximum": 3600000,
                       "description": "a gap in milliseconds, 0 to 3600000",
                       "type": "integer"
                     }
