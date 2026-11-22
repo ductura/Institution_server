@@ -22,7 +22,12 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "enabled": false
+          "enabled": false,
+          "changedBy": {
+            "role": "teacher",
+            "name": "Izmišljena Nastavnica"
+          },
+          "changedAt": "2026-11-22T10:00:00.000Z"
         }
       }
     },
@@ -47,7 +52,12 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "enabled": true
+          "enabled": true,
+          "changedBy": {
+            "role": "teacher",
+            "name": "Izmišljena Nastavnica"
+          },
+          "changedAt": "2026-11-22T10:05:00.000Z"
         }
       }
     },

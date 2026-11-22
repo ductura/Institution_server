@@ -1013,14 +1013,14 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabled": boolean }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "teacher.input-rhythm.put": {
     params: { "assignmentId": string };
     query: undefined;
     body: { "enabled": boolean };
-    success: { status: 200; body: { "enabled": boolean }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
   "teacher.literature-seen.put": {
@@ -1405,7 +1405,7 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabled": boolean }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.input-rhythm.delete": {

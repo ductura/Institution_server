@@ -75,23 +75,48 @@ describe("input rhythm port", () => {
     expect(await rhythm.state(TOKEN, "izmisljeni-rad-0001")).toEqual({ status });
   });
 
-  it("the teacher's switch and the state answer one boolean", async () => {
-    const set = port([{ enabled: false }]);
-    expect(await set.port.setEnabled(TOKEN, ID, false)).toEqual({ status: "ok", enabled: false });
+  it("the switch answers the state, who changed it last and when", async () => {
+    const at = new Date("2026-11-22T09:15:00.000Z");
+    const row = (role: unknown, name: unknown, when: unknown) =>
+      Object.fromEntries([
+        ["enabled", false],
+        ["changed_by_role", role],
+        ["changed_by_name", name],
+        ["changed_at", when],
+      ]);
+    const set = port([row("teacher", "Izmišljena Nastavnica", at)]);
+    expect(await set.port.setEnabled(TOKEN, ID, false)).toEqual({
+      status: "ok",
+      enabled: false,
+      changedBy: { role: "teacher", name: "Izmišljena Nastavnica" },
+      changedAt: at.toISOString(),
+    });
     expect(set.seen[0]!.text).toContain("app.input_rhythm_switch(");
     expect(set.seen[0]!.values).toEqual([ID, false]);
-    const read = port([{ enabled: true }]);
-    expect(await read.port.readEnabled(TOKEN, ID)).toEqual({ status: "ok", enabled: true });
+    const read = port([row("mentor", null, at)]);
+    expect(await read.port.readEnabled(TOKEN, ID)).toEqual({
+      status: "ok",
+      enabled: false,
+      changedBy: { role: "mentor", name: null },
+      changedAt: at.toISOString(),
+    });
     expect(read.seen[0]!.text).toContain("app.input_rhythm_switch_read(");
-    const state = port([{ enabled: true }]);
+    const state = port([{ ...row(null, null, null), enabled: true }]);
     expect(await state.port.state(TOKEN, "izmisljeni-rad-0001")).toEqual({
       status: "ok",
       enabled: true,
+      changedBy: null,
+      changedAt: null,
     });
     expect(state.seen[0]!.values).toEqual(["izmisljeni-rad-0001"]);
-    expect(await port([{ enabled: "da" }]).port.state(TOKEN, "x")).toEqual({
-      status: "unavailable",
-    });
+    for (const bad of [
+      { ...row(null, null, null), enabled: "da" },
+      row("student", null, at),
+      row("teacher", null, null),
+      row("teacher", 7, at),
+    ]) {
+      expect(await port([bad]).port.state(TOKEN, "x")).toEqual({ status: "unavailable" });
+    }
     expect(await port([]).port.readEnabled(TOKEN, ID)).toEqual({ status: "unavailable" });
   });
 

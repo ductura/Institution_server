@@ -46676,7 +46676,7 @@
   },
   {
     "route": "teacher.input-rhythm.get",
-    "name": "on",
+    "name": "default",
     "request": {
       "params": {
         "assignmentId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
@@ -46689,7 +46689,9 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": true
+        "enabled": true,
+        "changedBy": null,
+        "changedAt": null
       }
     }
   },
@@ -46708,7 +46710,12 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": false
+        "enabled": false,
+        "changedBy": {
+          "role": "mentor",
+          "name": null
+        },
+        "changedAt": "2026-11-22T10:00:00.000Z"
       }
     }
   },
@@ -46799,7 +46806,12 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": false
+        "enabled": false,
+        "changedBy": {
+          "role": "teacher",
+          "name": "Izmišljena Nastavnica"
+        },
+        "changedAt": "2026-11-22T10:00:00.000Z"
       }
     }
   },
@@ -46824,7 +46836,12 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": true
+        "enabled": true,
+        "changedBy": {
+          "role": "teacher",
+          "name": "Izmišljena Nastavnica"
+        },
+        "changedAt": "2026-11-22T10:05:00.000Z"
       }
     }
   },
@@ -62877,7 +62894,7 @@
   },
   {
     "route": "work.input-rhythm-setting.get",
-    "name": "on",
+    "name": "default",
     "request": {
       "params": {
         "documentId": "izmisljeni-rad-0001"
@@ -62890,7 +62907,9 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": true
+        "enabled": true,
+        "changedBy": null,
+        "changedAt": null
       }
     }
   },
@@ -62909,7 +62928,12 @@
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "enabled": false
+        "enabled": false,
+        "changedBy": {
+          "role": "teacher",
+          "name": "Izmišljena Nastavnica"
+        },
+        "changedAt": "2026-11-22T10:00:00.000Z"
       }
     }
   },

@@ -114,6 +114,12 @@ async function bodyOf(
   return { ok: true, value: json.value };
 }
 
+const switchOf = (ok: Record<string, unknown>) => ({
+  enabled: ok.enabled,
+  changedBy: ok.changedBy,
+  changedAt: ok.changedAt,
+});
+
 export function createInputRhythmRoutes(rhythm: InputRhythm): Route[] {
   return [
     {
@@ -163,7 +169,7 @@ export function createInputRhythmRoutes(rhythm: InputRhythm): Route[] {
         const documentId = workOf(params?.documentId);
         if (documentId === null) return sendProblem(response, 404, "not_found");
         const result = await rhythm.state(token, documentId);
-        answer(response, STATE, result, (ok) => ({ enabled: ok.enabled }), 404);
+        answer(response, STATE, result, switchOf, 404);
       },
     },
     {
@@ -174,7 +180,7 @@ export function createInputRhythmRoutes(rhythm: InputRhythm): Route[] {
         const assignmentId = assignmentOf(params?.assignmentId);
         if (assignmentId === null) return sendProblem(response, 404, "not_found");
         const result = await rhythm.readEnabled(token, assignmentId);
-        answer(response, SWITCH_READ, result, (ok) => ({ enabled: ok.enabled }), 404);
+        answer(response, SWITCH_READ, result, switchOf, 404);
       },
     },
     {
@@ -188,7 +194,7 @@ export function createInputRhythmRoutes(rhythm: InputRhythm): Route[] {
         if (assignmentId === null) return sendProblem(response, 404, "not_found");
         const { enabled } = parsed.value as { enabled: boolean };
         const result = await rhythm.setEnabled(token, assignmentId, enabled);
-        answer(response, SWITCH, result, (ok) => ({ enabled: ok.enabled }), 422);
+        answer(response, SWITCH, result, switchOf, 422);
       },
     },
   ];

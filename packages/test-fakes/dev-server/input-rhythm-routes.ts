@@ -12,13 +12,21 @@ import { readerOf, teachesCourse, type Account, type State } from "./state.ts";
 
 type Burst = { id: string; gapsMs: number[]; recordedAt: string; documentId: string };
 const BURSTS = new WeakMap<object, Burst[]>();
-const OFF = new WeakMap<object, Set<string>>();
-
-const offOf = (state: State): Set<string> => {
-  const set = OFF.get(state) ?? new Set<string>();
-  OFF.set(state, set);
-  return set;
+type Switch = {
+  enabled: boolean;
+  changedBy: { role: "teacher" | "mentor"; name: string | null } | null;
+  changedAt: string | null;
 };
+const SWITCHES = new WeakMap<object, Map<string, Switch>>();
+const DEFAULT: Switch = { enabled: true, changedBy: null, changedAt: null };
+
+const switchesOf = (state: State): Map<string, Switch> => {
+  const map = SWITCHES.get(state) ?? new Map<string, Switch>();
+  SWITCHES.set(state, map);
+  return map;
+};
+const switchOf = (state: State, assignmentId: string): Switch =>
+  switchesOf(state).get(assignmentId) ?? DEFAULT;
 
 function taught(state: State, account: Account | null, assignmentId: string): string | null {
   const assignment = state.assignments.find((a) => a.id === assignmentId);
@@ -43,7 +51,8 @@ export const INPUT_RHYTHM_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const work = workOf(state, account, params.documentId, true);
     if (work === null) return { error: "not_found" };
-    if (offOf(state).has(work.assignmentId)) return { status: 200, body: { recorded: false } };
+    if (!switchOf(state, work.assignmentId).enabled)
+      return { status: 200, body: { recorded: false } };
     const list = BURSTS.get(state) ?? [];
     BURSTS.set(state, list);
     list.push({
@@ -58,7 +67,7 @@ export const INPUT_RHYTHM_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const work = workOf(state, account, params.documentId, false);
     if (work === null) return { error: "not_found" };
-    const bursts = offOf(state).has(work.assignmentId)
+    const bursts = !switchOf(state, work.assignmentId).enabled
       ? []
       : (BURSTS.get(state) ?? [])
           .filter((b) => b.documentId === work.documentId)
@@ -78,20 +87,24 @@ export const INPUT_RHYTHM_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const work = workOf(state, account, params.documentId, false);
     if (work === null) return { error: "not_found" };
-    return { status: 200, body: { enabled: !offOf(state).has(work.assignmentId) } };
+    return { status: 200, body: switchOf(state, work.assignmentId) };
   },
   "teacher.input-rhythm.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignmentId = taught(state, account, params.assignmentId);
     if (assignmentId === null) return { error: "not_found" };
-    return { status: 200, body: { enabled: !offOf(state).has(assignmentId) } };
+    return { status: 200, body: switchOf(state, assignmentId) };
   },
-  "teacher.input-rhythm.put": ({ state, account, params, body }) => {
+  "teacher.input-rhythm.put": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     const assignmentId = taught(state, account, params.assignmentId);
     if (assignmentId === null) return { error: "not_found" };
-    if (body.enabled) offOf(state).delete(assignmentId);
-    else offOf(state).add(assignmentId);
-    return { status: 200, body: { enabled: body.enabled } };
+    const next: Switch = {
+      enabled: body.enabled,
+      changedBy: { role: "teacher", name: `${account.givenName} ${account.familyName}` },
+      changedAt: now.toISOString(),
+    };
+    switchesOf(state).set(assignmentId, next);
+    return { status: 200, body: next };
   },
 };

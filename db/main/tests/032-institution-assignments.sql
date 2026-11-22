@@ -338,6 +338,8 @@ ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmatio
 ALTER TABLE institution.work_milestone_event DISABLE TRIGGER work_milestone_event_no_truncate;
 -- The trail of an interview preparation (SRV-1530) references the assignment through the interview; it is append only.
 ALTER TABLE audit.work_interview_event DISABLE TRIGGER work_interview_event_no_truncate;
+-- The trail of the teacher's switch of the rhythm (PIL-P1-RITAM-SRV) references the assignment; it is append only.
+ALTER TABLE audit.input_rhythm_switch_event DISABLE TRIGGER input_rhythm_switch_event_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -361,6 +363,7 @@ ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_atta
 ALTER TABLE collaboration.import_event ENABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation_no_truncate;
 ALTER TABLE audit.work_interview_event ENABLE TRIGGER work_interview_event_no_truncate;
+ALTER TABLE audit.input_rhythm_switch_event ENABLE TRIGGER input_rhythm_switch_event_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;

@@ -39,6 +39,22 @@ const Gaps = Type.Array(Gap, {
 });
 const Burst = closed({ id: Uuid, gapsMs: Gaps, recordedAt: Instant });
 const Switch = closed({ enabled: Type.Boolean() });
+/**
+ * The state of the teacher's switch, as the student and the teacher read it:
+ * who changed it last (the role in the assignment and the name, null when no
+ * name is known) and when; both null while the default holds.
+ */
+const SwitchState = closed({
+  enabled: Type.Boolean(),
+  changedBy: Type.Union([
+    closed({
+      role: Type.Union([Type.Literal("teacher"), Type.Literal("mentor")]),
+      name: Type.Union([Type.String({ minLength: 1, maxLength: 511 }), Type.Null()]),
+    }),
+    Type.Null(),
+  ]),
+  changedAt: Type.Union([Instant, Type.Null()]),
+});
 
 const WorkParams = closed({ documentId: WorkId });
 const AssignmentParams = closed({ assignmentId: Uuid });
@@ -130,9 +146,9 @@ export const inputRhythmSettingGet = defineRoute({
   inventory: "app/api/works/[documentId]/input-rhythm/setting/route.ts",
   access: "owner_or_course_teacher",
   summary:
-    "Whether the rhythm of typing is recorded for this work: the state of the teacher's switch of its assignment, on by default. The student reads it and cannot change it. The same answer for the owner and the readers of the work. Another's, an unknown or a malformed work returns 404.",
+    "Whether the rhythm of typing is recorded for this work: the state of the teacher's switch of its assignment, on by default, with who changed it last (teacher or mentor, and the name when known) and when, both null while the default holds. The student reads it and cannot change it. The same answer for the owner and the readers of the work. Another's, an unknown or a malformed work returns 404.",
   request: { params: WorkParams },
-  responses: [{ status: 200, description: "the state of the switch", body: Switch }],
+  responses: [{ status: 200, description: "the state of the switch", body: SwitchState }],
   errors: READ_ERRORS,
 });
 
@@ -143,9 +159,9 @@ export const teacherInputRhythmGet = defineRoute({
   inventory: TEACHER_INVENTORY,
   access: "course_teacher",
   summary:
-    "The teacher of the assignment (of its course, or its mentor) reads the switch of the rhythm of typing, on by default. A student, another teacher, an unknown or a malformed assignment returns 404.",
+    "The teacher of the assignment (of its course, or its mentor) reads the switch of the rhythm of typing, on by default, with who changed it last and when. A student, another teacher, an unknown or a malformed assignment returns 404.",
   request: { params: AssignmentParams },
-  responses: [{ status: 200, description: "the state of the switch", body: Switch }],
+  responses: [{ status: 200, description: "the state of the switch", body: SwitchState }],
   errors: READ_ERRORS,
 });
 
@@ -156,14 +172,14 @@ export const teacherInputRhythmPut = defineRoute({
   inventory: TEACHER_INVENTORY,
   access: "course_teacher",
   summary:
-    "Only the teacher of the assignment (of its course, or its mentor) switches the recording of the rhythm of typing off or on for every work of it, exactly {enabled}. Switching off holds from that moment: nothing is recorded and nothing is read while it is off; what was recorded stays until it is deleted or due. Answers 200 with the new state. A body that is not exactly this is 422. A student, another teacher, an unknown or a malformed assignment returns 404.",
+    "Only the teacher of the assignment (of its course, or its mentor) switches the recording of the rhythm of typing off or on for every work of it, exactly {enabled}. Switching off holds from that moment: nothing is recorded and nothing is read while it is off; what was recorded stays until it is deleted or due. Answers 200 with the new state and who changed it. Every switch is recorded in the audit trail in the same transaction. A body that is not exactly this is 422. A student, another teacher, an unknown or a malformed assignment returns 404.",
   request: {
     params: AssignmentParams,
     contentType: "application/json",
     maxBodyBytes: 1024,
     body: Switch,
   },
-  responses: [{ status: 200, description: "the new state of the switch", body: Switch }],
+  responses: [{ status: 200, description: "the new state of the switch", body: SwitchState }],
   errors: [...WRITE_ERRORS, ...BODY_ERRORS],
 });
 

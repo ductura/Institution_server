@@ -71576,7 +71576,7 @@
     "/api/v1/teacher/assignments/{assignmentId}/input-rhythm": {
       "get": {
         "operationId": "teacher.input-rhythm.get",
-        "summary": "The teacher of the assignment (of its course, or its mentor) reads the switch of the rhythm of typing, on by default. A student, another teacher, an unknown or a malformed assignment returns 404.",
+        "summary": "The teacher of the assignment (of its course, or its mentor) reads the switch of the rhythm of typing, on by default, with who changed it last and when. A student, another teacher, an unknown or a malformed assignment returns 404.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/input-rhythm/route.ts",
         "parameters": [
@@ -71599,11 +71599,65 @@
                   "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "enabled"
+                    "enabled",
+                    "changedBy",
+                    "changedAt"
                   ],
                   "properties": {
                     "enabled": {
                       "type": "boolean"
+                    },
+                    "changedBy": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "role",
+                            "name"
+                          ],
+                          "properties": {
+                            "role": {
+                              "anyOf": [
+                                {
+                                  "const": "teacher",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "mentor",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "maxLength": 511,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -71739,7 +71793,7 @@
       },
       "put": {
         "operationId": "teacher.input-rhythm.put",
-        "summary": "Only the teacher of the assignment (of its course, or its mentor) switches the recording of the rhythm of typing off or on for every work of it, exactly {enabled}. Switching off holds from that moment: nothing is recorded and nothing is read while it is off; what was recorded stays until it is deleted or due. Answers 200 with the new state. A body that is not exactly this is 422. A student, another teacher, an unknown or a malformed assignment returns 404.",
+        "summary": "Only the teacher of the assignment (of its course, or its mentor) switches the recording of the rhythm of typing off or on for every work of it, exactly {enabled}. Switching off holds from that moment: nothing is recorded and nothing is read while it is off; what was recorded stays until it is deleted or due. Answers 200 with the new state and who changed it. Every switch is recorded in the audit trail in the same transaction. A body that is not exactly this is 422. A student, another teacher, an unknown or a malformed assignment returns 404.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/input-rhythm/route.ts",
         "parameters": [
@@ -71782,11 +71836,65 @@
                   "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "enabled"
+                    "enabled",
+                    "changedBy",
+                    "changedAt"
                   ],
                   "properties": {
                     "enabled": {
                       "type": "boolean"
+                    },
+                    "changedBy": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "role",
+                            "name"
+                          ],
+                          "properties": {
+                            "role": {
+                              "anyOf": [
+                                {
+                                  "const": "teacher",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "mentor",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "maxLength": 511,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -96862,7 +96970,7 @@
     "/api/v1/works/{documentId}/input-rhythm/setting": {
       "get": {
         "operationId": "work.input-rhythm-setting.get",
-        "summary": "Whether the rhythm of typing is recorded for this work: the state of the teacher's switch of its assignment, on by default. The student reads it and cannot change it. The same answer for the owner and the readers of the work. Another's, an unknown or a malformed work returns 404.",
+        "summary": "Whether the rhythm of typing is recorded for this work: the state of the teacher's switch of its assignment, on by default, with who changed it last (teacher or mentor, and the name when known) and when, both null while the default holds. The student reads it and cannot change it. The same answer for the owner and the readers of the work. Another's, an unknown or a malformed work returns 404.",
         "x-access": "owner_or_course_teacher",
         "x-inventory": "app/api/works/[documentId]/input-rhythm/setting/route.ts",
         "parameters": [
@@ -96885,11 +96993,65 @@
                   "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "enabled"
+                    "enabled",
+                    "changedBy",
+                    "changedAt"
                   ],
                   "properties": {
                     "enabled": {
                       "type": "boolean"
+                    },
+                    "changedBy": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "role",
+                            "name"
+                          ],
+                          "properties": {
+                            "role": {
+                              "anyOf": [
+                                {
+                                  "const": "teacher",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "mentor",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "minLength": 1,
+                                  "maxLength": 511,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }

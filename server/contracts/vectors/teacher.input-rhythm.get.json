@@ -2,7 +2,7 @@
   "route": "teacher.input-rhythm.get",
   "vectors": [
     {
-      "name": "on",
+      "name": "default",
       "kind": "success",
       "request": {
         "params": {
@@ -16,7 +16,9 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "enabled": true
+          "enabled": true,
+          "changedBy": null,
+          "changedAt": null
         }
       }
     },
@@ -35,7 +37,12 @@
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "enabled": false
+          "enabled": false,
+          "changedBy": {
+            "role": "mentor",
+            "name": null
+          },
+          "changedAt": "2026-11-22T10:00:00.000Z"
         }
       }
     },

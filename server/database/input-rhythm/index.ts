@@ -20,6 +20,21 @@ export type RhythmBurst = {
   readonly recordedAt: string;
 };
 
+/** Who changed the switch last: the role in the assignment and the name, if known. */
+export type RhythmSwitchChanger = {
+  readonly role: "teacher" | "mentor";
+  readonly name: string | null;
+};
+
+/** The state of the teacher's switch; changedBy and changedAt are null while the default holds. */
+export type RhythmSwitch = {
+  readonly enabled: boolean;
+  readonly changedBy: RhythmSwitchChanger | null;
+  readonly changedAt: string | null;
+};
+
+type SwitchOutcome = ({ readonly status: "ok" } & RhythmSwitch) | Failure;
+
 export type InputRhythm = {
   /** The student owner records a burst; recorded is false while the switch is off. */
   record(
@@ -28,21 +43,11 @@ export type InputRhythm = {
     gapsMs: readonly number[],
   ): Promise<{ readonly status: "ok"; readonly recorded: boolean } | Failure>;
   /** The teacher of the assignment switches the recording; answers the new state. */
-  setEnabled(
-    token: string,
-    assignmentId: string,
-    enabled: boolean,
-  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
+  setEnabled(token: string, assignmentId: string, enabled: boolean): Promise<SwitchOutcome>;
   /** The teacher of the assignment reads the switch. */
-  readEnabled(
-    token: string,
-    assignmentId: string,
-  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
+  readEnabled(token: string, assignmentId: string): Promise<SwitchOutcome>;
   /** The owner and the readers of a work read the state of the switch of its assignment. */
-  state(
-    token: string,
-    documentId: string,
-  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure>;
+  state(token: string, documentId: string): Promise<SwitchOutcome>;
   /** The student deletes the recorded rhythm of a work on request. */
   remove(
     token: string,
@@ -92,18 +97,35 @@ function toBurst(row: Record<string, unknown>): RhythmBurst {
   return { id, gapsMs: gaps as number[], recordedAt: at.toISOString() };
 }
 
+const SWITCH_COLUMNS = "enabled, changed_by_role, changed_by_name, changed_at";
+
+function toSwitch(row: Record<string, unknown>): RhythmSwitch {
+  const { enabled, changed_by_role: role, changed_by_name: name, changed_at: at } = row;
+  if (typeof enabled !== "boolean") throw new Malformed();
+  if (role === null && name === null && at === null) {
+    return { enabled, changedBy: null, changedAt: null };
+  }
+  if (
+    (role !== "teacher" && role !== "mentor") ||
+    (name !== null && (typeof name !== "string" || name.length < 1 || name.length > 511)) ||
+    !(at instanceof Date)
+  ) {
+    throw new Malformed();
+  }
+  return { enabled, changedBy: { role, name }, changedAt: at.toISOString() };
+}
+
 export function createInputRhythm(withActor: WithActor): InputRhythm {
-  async function oneBoolean(
+  async function oneSwitch(
     token: string,
     text: string,
     values: readonly unknown[],
-  ): Promise<{ readonly status: "ok"; readonly enabled: boolean } | Failure> {
+  ): Promise<SwitchOutcome> {
     try {
       return await withActor(token, async (tx) => {
         const rows = (await tx.query<Record<string, unknown>>(text, [...values])).rows;
-        const enabled = rows[0]?.enabled;
-        if (rows.length !== 1 || typeof enabled !== "boolean") throw new Malformed();
-        return { status: "ok" as const, enabled };
+        if (rows.length !== 1) throw new Malformed();
+        return { status: "ok" as const, ...toSwitch(rows[0]!) };
       });
     } catch (thrown) {
       return failureOf(thrown);
@@ -128,14 +150,16 @@ export function createInputRhythm(withActor: WithActor): InputRhythm {
       }
     },
     setEnabled: (token, assignmentId, enabled) =>
-      oneBoolean(token, "SELECT app.input_rhythm_switch($1, $2) AS enabled", [
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_switch($1, $2)`, [
         assignmentId,
         enabled,
       ]),
     readEnabled: (token, assignmentId) =>
-      oneBoolean(token, "SELECT app.input_rhythm_switch_read($1) AS enabled", [assignmentId]),
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_switch_read($1)`, [
+        assignmentId,
+      ]),
     state: (token, documentId) =>
-      oneBoolean(token, "SELECT app.input_rhythm_state($1) AS enabled", [documentId]),
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_state($1)`, [documentId]),
     async remove(token, documentId) {
       try {
         return await withActor(token, async (tx) => {
