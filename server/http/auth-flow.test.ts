@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadAuthConfig } from "../external/srce-auth/index.ts";
 import {
+  authTimeRefusal,
   finishLogin,
   LOGIN_COOKIE_NAME,
   SIGNED_OUT_COOKIE_NAME,
@@ -507,6 +508,77 @@ describe("the first login after a sign-out", () => {
     await expectRefused(failed);
     expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
     expect(errors).toHaveBeenCalledWith("login failed", "auth_time", code);
+  });
+
+  // INT-20e: auth_time is bounded above as iat is, by this clock plus the skew.
+  describe("with the clock held still", () => {
+    const START = Date.UTC(2030, 0, 1, 12, 0, 0);
+    beforeEach(() => vi.useFakeTimers({ toFake: ["Date"], now: START }));
+    afterEach(() => vi.useRealTimers());
+
+    it("accepts an auth_time at the clock plus the tolerance", async () => {
+      const done = await afterSignOut(() => now() + config.clockToleranceSeconds);
+      expect(done.status).toBe(303);
+      expect(deps.openSession).toHaveBeenCalledTimes(1);
+      expect(setCookies(done).get(SIGNED_OUT_COOKIE_NAME)).toBe(CLEARED_MARK);
+    });
+
+    it("refuses an auth_time one second past the clock plus the tolerance, and keeps the mark", async () => {
+      const failed = await afterSignOut(() => now() + config.clockToleranceSeconds + 1);
+      await expectRefused(failed);
+      expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+      expect(errors).toHaveBeenCalledWith("login failed", "auth_time", "future");
+    });
+
+    it("asks nothing of auth_time on a login without the mark, a later one included", async () => {
+      idp.state.next = { claims: (c) => ({ ...c, auth_time: now() + 3600 }) };
+      expect((await login()).status).toBe(303);
+      expect(errors).not.toHaveBeenCalled();
+    });
+  });
+
+  it("names why an auth_time does not count", () => {
+    const since = 1_900_000_000;
+    const at = (authTime: unknown, nowSeconds = since) =>
+      authTimeRefusal(authTime, since, 60, nowSeconds);
+    expect(at(since)).toBeUndefined();
+    expect(at(since - 60)).toBeUndefined();
+    expect(at(since - 61)).toBe("stale");
+    expect(at(since + 60)).toBeUndefined();
+    expect(at(since + 61)).toBe("future");
+    expect(at(since + 100, since + 40)).toBeUndefined();
+    expect(at(since + 101, since + 40)).toBe("future");
+    for (const value of [undefined, null, "1900000000", 1.5, 0, -1]) {
+      expect(at(value)).toBe("missing");
+    }
+  });
+
+  // INT-20e: while the mark is there, an attempt started without it does not
+  // sign in and does not clear the mark.
+  it("refuses an attempt started without the mark while the mark is there, and keeps it", async () => {
+    const { authorize, cookie } = await begin();
+    const url = idp.approve(authorize, CALLBACK);
+    const refused = await callback(url, `${cookie}; ${MARK}`);
+    await expectRefused(refused);
+    expect(setCookies(refused).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+    expect(idp.tokenRequests).toHaveLength(0);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "attempt_without_start");
+
+    // The same callback without the mark signs in and touches no mark.
+    const done = await callback(url, cookie);
+    expect(done.status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+    expect(setCookies(done).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it.each([
+    ["a mark with another value", `${SIGNED_OUT_COOKIE_NAME}=0`],
+    ["an empty mark", `${SIGNED_OUT_COOKIE_NAME}=`],
+  ])("lets an attempt without the mark through with %s, as startLogin does", async (_n, mark) => {
+    const { authorize, cookie } = await begin();
+    const done = await callback(idp.approve(authorize, CALLBACK), `${cookie}; ${mark}`);
+    expect(done.status).toBe(303);
+    expect(setCookies(done).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
   });
 
   it("refuses an auth_time that is not a whole number of seconds, as a missing one", async () => {

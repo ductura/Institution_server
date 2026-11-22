@@ -394,7 +394,10 @@ describe("signing out against the fake OIDC provider", () => {
   it("a sign-out that never reaches the provider still makes the next login ask again, once", async () => {
     const { origin, opened } = await stack("success", 0, { checkOrigin: true });
     const { browser: b } = await signedIn(origin);
+    // INT-20e: the login attempt signedIn left in the jar goes with the sign-out.
+    expect(b.jar.has(LOGIN_COOKIE_NAME)).toBe(true);
     expect((await signOut(b, origin)).status).toBe(303);
+    expect(b.jar.has(LOGIN_COOKIE_NAME)).toBe(false);
 
     const { authorize, next } = await startAgain(b, origin);
     expect(authorize.searchParams.getAll("prompt")).toEqual(["login"]);

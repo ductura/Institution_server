@@ -177,16 +177,23 @@ function redirect(location: string, cookies: string[]): Response {
 }
 
 /**
- * The provider signed the person in at or after `sinceSeconds` (INT-20d):
- * `auth_time` is present, a whole number of seconds, and not earlier than
- * that, less the allowed clock skew.
+ * Why `auth_time` does not show a sign-in at the provider made at or after
+ * `sinceSeconds` (INT-20d), or undefined when it does: it must be present, a
+ * whole number of seconds, not earlier than that less the allowed clock skew
+ * ("stale"), and not later than this clock plus the same skew ("future",
+ * INT-20e), as `iat` is bounded by `issuedWithinSkew`.
  */
-export function authenticatedSince(
+export function authTimeRefusal(
   authTime: unknown,
   sinceSeconds: number,
   toleranceSeconds: number,
-): boolean {
-  return isEpochSeconds(authTime) && authTime >= sinceSeconds - toleranceSeconds;
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): "missing" | "stale" | "future" | undefined {
+  // "missing" also covers a value that is no time at all.
+  if (!isEpochSeconds(authTime)) return "missing";
+  if (authTime < sinceSeconds - toleranceSeconds) return "stale";
+  if (authTime > nowSeconds + toleranceSeconds) return "future";
+  return undefined;
 }
 
 /** GET /api/v1/auth/login?returnTo=/path */
@@ -234,6 +241,14 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     logFailure("callback", "no_attempt");
     return failurePage(400, cleared);
   }
+  // While the sign-out mark is there, only an attempt started with it counts
+  // (INT-20e): an attempt without its start is refused before the provider
+  // is asked, and the mark stays for the next attempt.
+  const signedOut = readCookie(request, SIGNED_OUT_COOKIE_NAME) === SIGNED_OUT_VALUE;
+  if (signedOut && attempt.freshSince === undefined) {
+    logFailure("callback", "attempt_without_start");
+    return failurePage(400, cleared);
+  }
 
   let verified;
   try {
@@ -244,19 +259,18 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   }
 
   // An attempt started after a sign-out (INT-20d) counts only a sign-in at
-  // the provider made after the attempt began; the sign-out mark stays when
-  // it fails.
-  if (
-    attempt.freshSince !== undefined &&
-    !authenticatedSince(
+  // the provider made after the attempt began and not after now; the
+  // sign-out mark stays when it fails.
+  if (attempt.freshSince !== undefined) {
+    const refusal = authTimeRefusal(
       verified.idToken.auth_time,
       attempt.freshSince,
       deps.config.clockToleranceSeconds,
-    )
-  ) {
-    // "missing" also covers a value that is no time at all.
-    logFailure("auth_time", isEpochSeconds(verified.idToken.auth_time) ? "stale" : "missing");
-    return failurePage(400, cleared);
+    );
+    if (refusal) {
+      logFailure("auth_time", refusal);
+      return failurePage(400, cleared);
+    }
   }
 
   const claims = identityFromClaims(verified.idToken, verified.userinfo);
@@ -290,11 +304,12 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   return redirect(new URL(attempt.returnTo, deps.config.redirectUri.origin).href, [
     clearedLoginCookie(),
     sessionSetCookie(token, opened.expires),
-    // The sign-out mark has done its work once a login succeeded; a failed
-    // callback keeps it for the next attempt.
-    ...(readCookie(request, SIGNED_OUT_COOKIE_NAME) === undefined
-      ? []
-      : [clearedSignedOutSetCookie()]),
+    // The sign-out mark has done its work once an attempt started with it
+    // succeeded (INT-20e); a failed callback keeps it for the next attempt.
+    ...(attempt.freshSince !== undefined &&
+    readCookie(request, SIGNED_OUT_COOKIE_NAME) !== undefined
+      ? [clearedSignedOutSetCookie()]
+      : []),
   ]);
 }
 
@@ -352,7 +367,8 @@ async function endSessions(
   // Only then the provider (DAN-212), also without a live session: its own
   // may still be open (D-200 P2). Without an endpoint, or when the provider
   // fails, the local sign-out stands and "/" follows. Either way the next
-  // login asks the provider to sign in again (INT-20b).
+  // login asks the provider to sign in again (INT-20b), and a login attempt
+  // started before the sign-out is dropped with its cookie (INT-20e).
   let location = new URL(DEFAULT_RETURN_TO, deps.config.redirectUri.origin).href;
   try {
     const endSession = await deps.oidc.endSessionUrl();
@@ -360,5 +376,9 @@ async function endSessions(
   } catch (error) {
     logFailure("end_session", errorCode(error));
   }
-  return redirect(location, [clearedSessionSetCookie(), signedOutSetCookie()]);
+  return redirect(location, [
+    clearedSessionSetCookie(),
+    signedOutSetCookie(),
+    clearedLoginCookie(),
+  ]);
 }
