@@ -305,6 +305,42 @@ export const TEACHER_HANDLERS: Handlers = {
         .map((m) => mentorshipWork(state, m)),
     },
   }),
+  // SRV-2003: one work by its document id and its neighbours in the assignment, among the works the caller may read.
+  "teacher.work.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (!taughtWork(state, account, params.documentId)) return { error: "not_found" };
+    const work = state.works.find((w) => w.documentId === params.documentId)!;
+    const ordered = state.works
+      .filter(
+        (w) => w.assignmentId === work.assignmentId && taughtWork(state, account, w.documentId),
+      )
+      .sort((a, b) => (a.studentId + a.documentId < b.studentId + b.documentId ? -1 : 1));
+    const index = ordered.findIndex((w) => w.documentId === work.documentId);
+    const assignment = state.assignments.find((a) => a.id === work.assignmentId);
+    const { givenName, familyName } = names(state, work.studentId);
+    const submitted = work.submittedAt !== null;
+    const late =
+      submitted && assignment !== undefined && work.submittedAt! > assignment.content.dueAt;
+    return {
+      status: 200,
+      body: {
+        documentId: work.documentId,
+        studentId: work.studentId,
+        studentName:
+          givenName === null || familyName === null ? null : `${givenName} ${familyName}`,
+        assignmentId: work.assignmentId,
+        state: !submitted
+          ? ("nije_predano" as const)
+          : late
+            ? ("nakon_roka" as const)
+            : work.submissionReceipt === null
+              ? ("ceka" as const)
+              : ("predano" as const),
+        prevDocumentId: ordered[index - 1]?.documentId ?? null,
+        nextDocumentId: ordered[index + 1]?.documentId ?? null,
+      },
+    };
+  },
   "teacher.working-criteria.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     if (!taughtWork(state, account, params.documentId)) return { error: "not_found" };

@@ -24022,7 +24022,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.78.0",
+        "apiVersion": "1.79.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -24038,7 +24038,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.78.0",
+        "apiVersion": "1.79.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -47270,6 +47270,184 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "middle-work",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "documentId": "izmisljeni-rad-0001",
+        "studentId": "aaaaaaaa-0000-4000-8000-000000000001",
+        "studentName": "Ivana Izmišljena",
+        "assignmentId": "bbbbbbbb-0000-4000-8000-000000000002",
+        "state": "predano",
+        "prevDocumentId": "izmisljeni-rad-0000",
+        "nextDocumentId": "izmisljeni-rad-0002"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "late-first-no-name",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "documentId": "izmisljeni-rad-0001",
+        "studentId": "aaaaaaaa-0000-4000-8000-000000000001",
+        "studentName": null,
+        "assignmentId": "bbbbbbbb-0000-4000-8000-000000000002",
+        "state": "nakon_roka",
+        "prevDocumentId": null,
+        "nextDocumentId": "izmisljeni-rad-0002"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "waiting-last",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "documentId": "izmisljeni-rad-0001",
+        "studentId": "aaaaaaaa-0000-4000-8000-000000000001",
+        "studentName": "Ivana Izmišljena",
+        "assignmentId": "bbbbbbbb-0000-4000-8000-000000000002",
+        "state": "ceka",
+        "prevDocumentId": "izmisljeni-rad-0000",
+        "nextDocumentId": null
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "not-submitted-alone",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "documentId": "izmisljeni-rad-0001",
+        "studentId": "aaaaaaaa-0000-4000-8000-000000000001",
+        "studentName": "Ivana Izmišljena",
+        "assignmentId": "bbbbbbbb-0000-4000-8000-000000000002",
+        "state": "nije_predano",
+        "prevDocumentId": null,
+        "nextDocumentId": null
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002010"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nema"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002011"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002012"
       }
     }
   },

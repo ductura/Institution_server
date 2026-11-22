@@ -1070,6 +1070,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assignmentId: IDS.assignment },
     },
   },
+  "teacher.work.get": {
+    request: { path: `/api/v1/teacher/works/${IDS.document}`, as: "nastavnik" },
+  },
   "teacher.working-criteria.get": {
     request: { path: `/api/v1/teacher/works/${IDS.document}/working-criteria`, as: "nastavnik" },
   },

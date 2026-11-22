@@ -62,8 +62,10 @@ SELECT bag_eq(
        -- Each owner may execute its own function; no other grant is allowed.
        AND (r, f) NOT IN (('ductus_evidence', 'app.assignment_works(uuid)'),
                           ('ductus_identity', 'app.teacher_assignment_students(uuid)')) $$,
-  $$ VALUES ('ductus_app app.assignment_works(uuid)'), ('ductus_evidence app.teacher_assignment_students(uuid)') $$,
-  'the web role executes the list, only the evidence role the helper');
+  -- SRV-2003: app.teacher_work_get (identity role) names the neighbours of a work from the list.
+  $$ VALUES ('ductus_app app.assignment_works(uuid)'), ('ductus_identity app.assignment_works(uuid)'),
+            ('ductus_evidence app.teacher_assignment_students(uuid)') $$,
+  'the web role executes the list, the identity role only for app.teacher_work_get, only the evidence role the helper');
 SELECT is(pg_get_function_result('app.assignment_works(uuid)'::regprocedure),
   'TABLE(student_id uuid, document_id text)', 'the list returns a student and a document, nothing else');
 SELECT is((SELECT proargnames[1:pronargs]::text FROM pg_proc WHERE oid = 'app.assignment_works(uuid)'::regprocedure),

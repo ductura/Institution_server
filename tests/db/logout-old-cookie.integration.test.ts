@@ -102,6 +102,7 @@ import {
   createWorkSourceRoutesFor,
   createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
+  createTeacherWorkRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -643,6 +644,13 @@ const SESSION_ROUTES = {
   "student.text-check-config.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/text-check-config`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-2003: a live session that teaches no such work gets 404 on the read of the work.
+  "teacher.work.get": {
+    method: "GET",
+    path: "/api/v1/teacher/works/izmisljeni-rad-0001",
     body: () => undefined,
     live: 404,
   },
@@ -1309,6 +1317,7 @@ const FACTORIES = [
   "createSourceNotebookRoutesFor",
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
+  "createTeacherWorkRoutesFor",
   "createTeacherWorkingCriteriaRoutesFor",
   "createSourceLookupRouteFor",
   "createPublicVerificationRouteFor",
@@ -1412,6 +1421,7 @@ const MOUNTED = [
   ...createSourceNotebookRoutesFor(databases.main),
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
+  ...createTeacherWorkRoutesFor(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createPublicVerificationRouteFor(databases.main),
