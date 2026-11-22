@@ -1,3 +1,8 @@
+# Every text file is LF in the index and in the checkout, on every platform.
+# With core.autocrlf=true on Windows, check-breaking and the manifest checks
+# compared CRLF bytes and failed locally only. Binary files are detected by git.
+* text=auto eol=lf
+
 # The migrations of the main database and their ledger are checked out with LF
 # on every platform: db/main/migrations.sum holds the SHA-256 of the raw bytes,
 # so a CRLF checkout (core.autocrlf=true on Windows) would not match it (D-91;
