@@ -35,6 +35,7 @@ describe("server/downloads public interface", () => {
       "localPdfConverter",
       "merlinRosterCsv",
       "renderDocx",
+      "renderInterviewPdf",
       "renderReceiptPdf",
       "renderWorkDocx",
       "verifyPortableRecord",

@@ -39,7 +39,14 @@ export { commentsRoutes } from "./comments.ts";
 export { workCompareRoutes } from "./work-compare.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { importRoutes } from "./import.ts";
-export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
+export {
+  WorkMilestoneApprovalInput,
+  WorkMilestoneChangeInput,
+  WorkMilestoneDueInput,
+  WorkMilestoneId,
+  WorkMilestoneRevisionInput,
+  workMilestonesRoutes,
+} from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
@@ -81,6 +88,7 @@ export {
 } from "./institution-config.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { WORK_INTERVIEW_DRAFT_DAYS, workInterviewRoutes } from "./work-interview.ts";
+export { workInterviewPdfRoutes } from "./work-interview-pdf.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
 export { StudentWork, studentWorkRoutes } from "./student-work.ts";

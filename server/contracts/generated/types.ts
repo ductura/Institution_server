@@ -1247,6 +1247,13 @@ export type Operations = {
     success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "conflict";
   };
+  "work.interview-pdf.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "filename": "priprema-za-razgovor.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "conflict" | "unavailable";
+  };
   "work.interview-questions.delete": {
     params: { "documentId": string; "questionId": string };
     query: undefined;
@@ -1282,6 +1289,34 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "senderRole": "student" | "teacher"; "text": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.milestone-states.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "milestones": ({ "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.milestones.approve.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "message"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.delete": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "work.milestones.details.patch": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "dueAt"?: string; "title"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
   "work.milestones.get": {
     params: { "documentId": string };
     query: undefined;
@@ -1295,6 +1330,20 @@ export type Operations = {
     body: { "dueAt": string };
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "open" | "submitted" | "approved" | "returned" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.request-revision.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: { "comment": string; "revisionDueAt"?: string };
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.milestones.submit.post": {
+    params: { "documentId": string; "milestoneId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "not_submitted" | "submitted" | "revision_requested" | "approved"; "everSubmitted": boolean; "submittedRevisionId": number | null; "submittedAt": string | null; "revisionComment": string | null; "revisionDueAt": string | null; "revisionRequestedAt": string | null; "approvedAt": string | null; "approvalMessage": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "forbidden" | "conflict";
   };
   "work.origin-composition.get": {
     params: { "documentId": string };

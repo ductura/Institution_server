@@ -2,8 +2,11 @@ import { Value } from "@sinclair/typebox/value";
 
 import {
   workIdFromPath,
+  WorkMilestoneApprovalInput,
+  WorkMilestoneChangeInput,
   WorkMilestoneDueInput,
   WorkMilestoneId,
+  WorkMilestoneRevisionInput,
   workMilestonesRoutes,
 } from "../../contracts/index.ts";
 import { createWorkMilestones, type WithActor } from "../../database/index.ts";
@@ -40,12 +43,26 @@ export function createWorkMilestonesRoutesFor(main: { withActor: WithActor }): R
       const documentId = workIdFromPath(params?.documentId ?? "");
       if (documentId === null) return refuse(response, 404, "not_found");
       try {
-        if (contract.method === "GET") {
+        if (contract.id === "work.milestones.get") {
           return sendJson(response, 200, { milestones: await store.list(token, documentId) });
+        }
+        if (contract.id === "work.milestone-states.get") {
+          return sendJson(response, 200, { milestones: await store.listStates(token, documentId) });
         }
 
         const milestoneId = workIdFromPath(params?.milestoneId ?? "");
         if (!Value.Check(WorkMilestoneId, milestoneId)) return refuse(response, 404, "not_found");
+        if (contract.request.maxBodyBytes === 0) {
+          const empty = await readBodyWithLimit(request, 0, 5_000);
+          if (!empty.ok) return refuse(response, empty.status, empty.reason);
+          if (contract.method === "DELETE") {
+            await store.remove(token, documentId, milestoneId);
+            response.writeHead(204, { "cache-control": "no-store" });
+            response.end();
+            return;
+          }
+          return sendJson(response, 200, await store.submit(token, documentId, milestoneId));
+        }
         const types = request.headersDistinct["content-type"];
         if (
           types?.length !== 1 ||
@@ -57,6 +74,37 @@ export function createWorkMilestonesRoutesFor(main: { withActor: WithActor }): R
         if (!raw.ok) return refuse(response, raw.status, raw.reason);
         const json = parseJson(raw.bytes);
         if (!json.ok) return sendProblem(response, 400, "invalid_json");
+        if (contract.id === "work.milestones.request-revision.post") {
+          if (!Value.Check(WorkMilestoneRevisionInput, json.value)) {
+            return sendProblem(response, 422, "invalid_input");
+          }
+          const { comment, revisionDueAt } = json.value;
+          return sendJson(
+            response,
+            200,
+            await store.requestRevision(token, documentId, milestoneId, comment, revisionDueAt),
+          );
+        }
+        if (contract.id === "work.milestones.approve.post") {
+          if (!Value.Check(WorkMilestoneApprovalInput, json.value)) {
+            return sendProblem(response, 422, "invalid_input");
+          }
+          return sendJson(
+            response,
+            200,
+            await store.approve(token, documentId, milestoneId, json.value.message),
+          );
+        }
+        if (contract.id === "work.milestones.details.patch") {
+          if (!Value.Check(WorkMilestoneChangeInput, json.value)) {
+            return sendProblem(response, 422, "invalid_input");
+          }
+          return sendJson(
+            response,
+            200,
+            await store.change(token, documentId, milestoneId, json.value),
+          );
+        }
         if (!Value.Check(WorkMilestoneDueInput, json.value)) {
           return sendProblem(response, 422, "invalid_input");
         }

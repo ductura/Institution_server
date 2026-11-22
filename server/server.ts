@@ -52,6 +52,7 @@ import {
   createWorkCompareRouteFor,
   createConsultationSlotRoutesFor,
   createWorkInterviewRoutesFor,
+  createWorkInterviewPdfRouteFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
   createStudentWorkRoutesFor,
@@ -313,6 +314,8 @@ async function main(): Promise<void> {
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1530: the interview preparation of a work (N-14).
       ...createWorkInterviewRoutesFor(databases.main),
+      // SRV-1531: the same preparation as a PDF.
+      createWorkInterviewPdfRouteFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
       // SRV-1414: the student's own requests and the teachers they may ask.
