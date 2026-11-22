@@ -2270,6 +2270,129 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.interview-appointment.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-appointment.put:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['consultationSlotId'] === 'string') && local0.test(value['consultationSlotId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['place'] === 'string') && value['place'].length <= 200 && value['place'].length >= 1 && (typeof value['at'] === 'string') && local1.test(value['at']) && Object.getOwnPropertyNames(value).length === 2))
+    )
+  }
+  })(),
+  "work.interview-explanations.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-explanations.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['questionId'] !== undefined ? ((((typeof value['questionId'] === 'string') && local0.test(value['questionId'])) || ((value['questionId'] === null)))) : true) &&
+      (typeof value['text'] === 'string') &&
+      value['text'].length <= 2000 &&
+      value['text'].length >= 1 &&
+      Object.getOwnPropertyNames(value).every(key => ['questionId', 'text'].includes(key))
+    )
+  }
+  })(),
+  "work.interview-held.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-held.post:body": (() => {
+  const local0 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['date'] === 'string') &&
+      local0.test(value['date']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-invite.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-questions.delete:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['questionId'] === 'string') &&
+      local1.test(value['questionId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.interview-questions.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-questions.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['paragraphRef'] !== undefined ? ((((typeof value['paragraphRef'] === 'string') && value['paragraphRef'].length <= 256 && value['paragraphRef'].length >= 1) || ((value['paragraphRef'] === null)))) : true) &&
+      (typeof value['questionText'] === 'string') &&
+      value['questionText'].length <= 2000 &&
+      value['questionText'].length >= 1 &&
+      Object.getOwnPropertyNames(value).every(key => ['paragraphRef', 'questionText'].includes(key))
+    )
+  }),
+  "work.interview.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "work.messages.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
