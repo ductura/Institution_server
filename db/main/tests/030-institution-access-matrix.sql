@@ -508,6 +508,7 @@ SELECT bag_eq(
     'student_deadline_history(p_assignment_id uuid) definer app',
     'copy_assignment(p_assignment_id uuid, p_course_id uuid, p_request_id uuid, p_opens_at timestamp with time zone, p_due_at timestamp with time zone) definer app',
       'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
+      'list_revision_notifications(p_before uuid) definer app',
       'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
