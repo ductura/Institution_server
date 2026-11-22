@@ -386,6 +386,19 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // PIL-P1-RITAM-SRV (Ductus#2052 c.7086920979, P-1 rule 4): the rhythm of typing and the teacher's switch; Ductus has no such route.
+  "app/api/works/[documentId]/input-rhythm/route.ts": {
+    methods: ["GET", "POST", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
+  },
+  "app/api/works/[documentId]/input-rhythm/setting/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
+  },
+  "app/api/teacher/assignments/[assignmentId]/input-rhythm/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
+  },
   // SRV-0910 (Ductus#2052 c.7079306579, P-1): the composition of a work by the kind of origin; Ductus has no such route.
   "app/api/works/[documentId]/origin-composition/route.ts": {
     methods: ["GET"],

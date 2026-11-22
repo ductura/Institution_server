@@ -61,6 +61,7 @@ import {
   teacherWorkRoutes,
   originCompositionRoutes,
   assistantMatchRoutes,
+  inputRhythmRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -90,6 +91,7 @@ export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from 
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
+export { RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export {
   WorkMilestoneApprovalInput,
@@ -185,6 +187,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkRoutes,
   ...originCompositionRoutes,
   ...assistantMatchRoutes,
+  ...inputRhythmRoutes,
   ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
