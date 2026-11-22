@@ -510,6 +510,26 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.faculty-rules.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.faculty-rules.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      (((typeof value['basedOnVersionNo'] === 'number' && Number.isInteger(value['basedOnVersionNo'])) && value['basedOnVersionNo'] <= 2147483647 && value['basedOnVersionNo'] >= 1) || ((value['basedOnVersionNo'] === null))) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      Array.isArray(value['aiPurposes']) &&
+      value['aiPurposes'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'formatting')) || ((value === 'proofreading')) || ((value === 'literature_search')) || ((value === 'transcription')) || ((value === 'translation')))))) { return false }; return true; })(value['aiPurposes']) &&
+      (((value['evidenceProfile'] === 'basic')) || ((value['evidenceProfile'] === 'extended'))) &&
+      (typeof value['importAllowed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 6
+    )
+  }),
   "institution.legal-hold-release.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

@@ -1022,6 +1022,24 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "institution.faculty-rules.get": {
+    request: { path: "/api/v1/institution/faculty-rules", as: "administrator" },
+  },
+  "institution.faculty-rules.post": {
+    request: {
+      path: "/api/v1/institution/faculty-rules",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        workType: "essay",
+        basedOnVersionNo: null,
+        aiPolicy: "partially_allowed",
+        aiPurposes: ["formatting"],
+        evidenceProfile: "basic",
+        importAllowed: false,
+      },
+    },
+  },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
   "institution.retention.get": {
     request: { path: "/api/v1/institution/retention", as: "administrator" },

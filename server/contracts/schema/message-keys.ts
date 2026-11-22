@@ -79,6 +79,10 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["invalid_attachment", "errors.invalidAttachment"],
   ["mandatory_attachment_missing", "errors.mandatoryAttachmentMissing"],
   ["too_many_attachments", "errors.tooManyAttachments"],
+  ["invalid_work_type", "errors.invalidWorkType"],
+  ["invalid_ai_policy", "errors.invalidAiPolicy"],
+  ["invalid_ai_purposes", "errors.invalidAiPurposes"],
+  ["invalid_evidence_profile", "errors.invalidEvidenceProfile"],
 ]);
 
 /** The message key of a code; throws for a code the table does not have. */

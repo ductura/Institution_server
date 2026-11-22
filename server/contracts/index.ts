@@ -70,6 +70,7 @@ import {
   workMilestonesRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
+  facultyRulesRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -204,6 +205,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...importRoutes,
   ...consultationRecordsRoutes,
   ...eventDisputesRoutes,
+  ...facultyRulesRoutes,
   ...workMilestonesRoutes,
 ];
 
