@@ -32,10 +32,13 @@ export type VerifiedLogin = {
 /**
  * What the authorization request may add beside the checks (INT-20b):
  * `prompt: "login"` asks the provider to sign the person in again even when
- * its own session is still open.
+ * its own session is still open. `maxAge: 0` (INT-20d) sends `max_age=0`,
+ * which also makes the provider put `auth_time` in the ID token; the flow
+ * checks that time against the start of the attempt.
  */
 export type AuthorizationOptions = {
   prompt?: "login";
+  maxAge?: 0;
 };
 
 export type OidcClient = {
@@ -236,6 +239,7 @@ export function createOidcClient(
     async authorizationUrl(checks, options = {}) {
       return client.buildAuthorizationUrl(await configuration(), {
         ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
+        ...(options.maxAge === undefined ? {} : { max_age: String(options.maxAge) }),
         redirect_uri: config.redirectUri.href,
         scope: SCOPES[config.provider],
         state: checks.state,

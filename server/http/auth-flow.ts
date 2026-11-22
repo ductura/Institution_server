@@ -90,11 +90,22 @@ function readCookie(request: Request, name: string): string | undefined {
 
 type Attempt = LoginChecks & {
   returnTo: string;
+  /**
+   * Set only for an attempt started with the sign-out mark (INT-20d): the
+   * second the attempt started. Its callback then needs an ID token whose
+   * `auth_time` is not before it (within the clock tolerance). An attempt
+   * without the mark carries no such field and is read as before.
+   */
+  freshSince?: number;
 };
 
 function encodeAttempt(attempt: Attempt): string {
   return Buffer.from(JSON.stringify({ v: 1, ...attempt })).toString("base64url");
 }
+
+/** A whole number of seconds since the epoch, as `auth_time` and `iat` are. */
+const isEpochSeconds = (value: unknown): value is number =>
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
 // The cookie is not signed: it is __Host- and HttpOnly, so whoever can write
 // it already controls this origin. It is still parsed as untrusted input.
@@ -103,16 +114,18 @@ function decodeAttempt(value: string | undefined): Attempt | undefined {
   try {
     const raw: unknown = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
     if (typeof raw !== "object" || raw === null) return undefined;
-    const { v, state, nonce, codeVerifier, returnTo } = raw as Record<string, unknown>;
+    const { v, state, nonce, codeVerifier, returnTo, freshSince } = raw as Record<string, unknown>;
     if (v !== 1) return undefined;
     for (const random of [state, nonce, codeVerifier]) {
       if (typeof random !== "string" || !RANDOM_VALUE.test(random)) return undefined;
     }
+    if (freshSince !== undefined && !isEpochSeconds(freshSince)) return undefined;
     return {
       state: state as string,
       nonce: nonce as string,
       codeVerifier: codeVerifier as string,
       returnTo: safeReturnTo(returnTo),
+      ...(freshSince === undefined ? {} : { freshSince }),
     };
   } catch {
     return undefined;
@@ -163,17 +176,35 @@ function redirect(location: string, cookies: string[]): Response {
   return new Response(null, { status: 303, headers });
 }
 
+/**
+ * The provider signed the person in at or after `sinceSeconds` (INT-20d):
+ * `auth_time` is present, a whole number of seconds, and not earlier than
+ * that, less the allowed clock skew.
+ */
+export function authenticatedSince(
+  authTime: unknown,
+  sinceSeconds: number,
+  toleranceSeconds: number,
+): boolean {
+  return isEpochSeconds(authTime) && authTime >= sinceSeconds - toleranceSeconds;
+}
+
 /** GET /api/v1/auth/login?returnTo=/path */
 export async function startLogin(request: Request, deps: AuthDeps): Promise<Response> {
   const returnTo = safeReturnTo(new URL(request.url).searchParams.get("returnTo"));
   const checks = newLoginChecks();
   // After an explicit sign-out the provider is asked to sign in again. The
   // mark stays until a login succeeds, so an abandoned attempt does not
-  // spend it.
+  // spend it. `max_age=0` (INT-20d) makes the provider report when the
+  // person signed in, and the attempt keeps its start to compare (finishLogin).
   const signedOut = readCookie(request, SIGNED_OUT_COOKIE_NAME) === SIGNED_OUT_VALUE;
+  const fresh = signedOut ? { freshSince: Math.floor(Date.now() / 1000) } : {};
   let location: URL;
   try {
-    location = await deps.oidc.authorizationUrl(checks, signedOut ? { prompt: "login" } : {});
+    location = await deps.oidc.authorizationUrl(
+      checks,
+      signedOut ? { prompt: "login", maxAge: 0 } : {},
+    );
   } catch (error) {
     logFailure("authorize", errorCode(error));
     return failurePage(503);
@@ -182,9 +213,9 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   // non-ASCII path, percent-encoded by URL) would give an attempt that
   // finishLogin refuses; such an attempt returns to the default page instead
   // (Codex on #104; the same gap is in Ductus flow.ts at 078c780).
-  let attempt = encodeAttempt({ ...checks, returnTo });
+  let attempt = encodeAttempt({ ...checks, returnTo, ...fresh });
   if (attempt.length > MAX_ATTEMPT_CHARS) {
-    attempt = encodeAttempt({ ...checks, returnTo: DEFAULT_RETURN_TO });
+    attempt = encodeAttempt({ ...checks, returnTo: DEFAULT_RETURN_TO, ...fresh });
   }
   return redirect(location.href, [
     cookie(LOGIN_COOKIE_NAME, attempt, `Max-Age=${LOGIN_COOKIE_MAX_AGE}`),
@@ -210,6 +241,22 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   } catch (error) {
     logFailure("verify", errorCode(error));
     return failurePage(isProviderUnavailable(error) ? 503 : 400, cleared);
+  }
+
+  // An attempt started after a sign-out (INT-20d) counts only a sign-in at
+  // the provider made after the attempt began; the sign-out mark stays when
+  // it fails.
+  if (
+    attempt.freshSince !== undefined &&
+    !authenticatedSince(
+      verified.idToken.auth_time,
+      attempt.freshSince,
+      deps.config.clockToleranceSeconds,
+    )
+  ) {
+    // "missing" also covers a value that is no time at all.
+    logFailure("auth_time", isEpochSeconds(verified.idToken.auth_time) ? "stale" : "missing");
+    return failurePage(400, cleared);
   }
 
   const claims = identityFromClaims(verified.idToken, verified.userinfo);

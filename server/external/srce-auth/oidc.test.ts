@@ -250,6 +250,21 @@ describe("createOidcClient", () => {
     expect([...again.searchParams].sort()).toEqual([...plain.searchParams].sort());
   });
 
+  it("sends max_age=0 only when told to (INT-20d)", async () => {
+    const checks = newLoginChecks();
+    const plain = await oidc.authorizationUrl(checks);
+    expect(plain.searchParams.has("max_age")).toBe(false);
+    expect(
+      (await oidc.authorizationUrl(checks, { prompt: "login" })).searchParams.has("max_age"),
+    ).toBe(false);
+    const fresh = await oidc.authorizationUrl(checks, { prompt: "login", maxAge: 0 });
+    expect(fresh.searchParams.getAll("max_age")).toEqual(["0"]);
+    expect(fresh.searchParams.getAll("prompt")).toEqual(["login"]);
+    fresh.searchParams.delete("max_age");
+    fresh.searchParams.delete("prompt");
+    expect([...fresh.searchParams].sort()).toEqual([...plain.searchParams].sort());
+  });
+
   it("discovers once for many logins", async () => {
     for (let i = 0; i < 3; i++) {
       const { checks, url } = await approved();

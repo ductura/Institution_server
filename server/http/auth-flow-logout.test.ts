@@ -208,6 +208,27 @@ describe("POST /api/v1/auth/logout", () => {
     expect(errors).toHaveBeenCalledWith("login failed", "logout", "Error:ECONNREFUSED");
   });
 
+  // INT-20d: after a confirmed sign-out by fetch, the web posts the form again
+  // as a plain navigation; the session cookie is already gone by then.
+  it.each([
+    ["the provider's end_session address", ENDPOINT, PROVIDER_LOGOUT],
+    ["/ without an end_session_endpoint", undefined, HOME],
+  ])(
+    "INT-20d: a second POST without the session cookie still goes to %s and sets the mark",
+    async (_n, endpoint, target) => {
+      idp.state.next = endpoint === undefined ? {} : { endSessionEndpoint: endpoint };
+      const first = await post();
+      const second = await post(SAME_ORIGIN, null);
+      for (const response of [first, second]) {
+        expect(response.status).toBe(303);
+        expect(response.headers.get("location")).toBe(target);
+        expect(response.headers.getSetCookie()).toEqual([CLEARED, MARK]);
+      }
+      expect(deps.closeSession).toHaveBeenCalledExactlyOnceWith(TOKEN);
+      expect(errors).not.toHaveBeenCalled();
+    },
+  );
+
   it("B2: without an end_session_endpoint the local logout stands and / follows", async () => {
     idp.state.next = {};
     const response = await post();

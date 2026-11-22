@@ -405,21 +405,47 @@ describe("login", () => {
 });
 
 // INT-20b: after an explicit sign-out the next login asks the provider to
-// sign in again (prompt=login), until a login succeeds.
+// sign in again (prompt=login), until a login succeeds. INT-20d: it also
+// sends max_age=0 and needs an auth_time from after the attempt began.
 describe("the first login after a sign-out", () => {
   const MARK = `${SIGNED_OUT_COOKIE_NAME}=1`;
   const CLEARED_MARK = `${SIGNED_OUT_COOKIE_NAME}=; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  const CALLBACK = `${APP}/api/v1/auth/callback`;
   const start = (cookie?: string) =>
     startLogin(
       new Request(`${APP}/api/v1/auth/login`, { headers: cookie ? { cookie } : {} }),
       deps,
     );
+  /** The attempt record as stored in its cookie. */
+  const attemptOf = (response: Response): Record<string, unknown> =>
+    JSON.parse(
+      Buffer.from(cookieValue(setCookies(response).get(LOGIN_COOKIE_NAME)!), "base64url").toString(
+        "utf8",
+      ),
+    ) as Record<string, unknown>;
+  const now = () => Math.floor(Date.now() / 1000);
+  /** Starts a login with the mark; the provider answers with this auth_time (or none). */
+  async function afterSignOut(authTime: (freshSince: number) => unknown) {
+    const response = await start(MARK);
+    const freshSince = attemptOf(response).freshSince as number;
+    const value = authTime(freshSince);
+    idp.state.next = {
+      claims: (c) => (value === undefined ? without(c, "auth_time") : { ...c, auth_time: value }),
+    };
+    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
+    const authorize = new URL(response.headers.get("location")!);
+    return callback(
+      idp.approve(authorize, CALLBACK),
+      `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}; ${MARK}`,
+    );
+  }
 
-  it("sends prompt=login when the sign-out mark is there", async () => {
+  it("sends prompt=login and max_age=0 when the sign-out mark is there", async () => {
     const response = await start(`other=x; ${MARK}`);
     expect(response.status).toBe(303);
     const authorize = new URL(response.headers.get("location")!);
     expect(authorize.searchParams.getAll("prompt")).toEqual(["login"]);
+    expect(authorize.searchParams.getAll("max_age")).toEqual(["0"]);
   });
 
   it.each([
@@ -427,10 +453,25 @@ describe("the first login after a sign-out", () => {
     ["another cookie", "other=1"],
     ["a mark with another value", `${SIGNED_OUT_COOKIE_NAME}=0`],
     ["an empty mark", `${SIGNED_OUT_COOKIE_NAME}=`],
-  ])("sends no prompt with %s", async (_n, cookie) => {
+  ])("sends no prompt and no max_age with %s", async (_n, cookie) => {
     const response = await start(cookie);
     expect(response.status).toBe(303);
-    expect(new URL(response.headers.get("location")!).searchParams.has("prompt")).toBe(false);
+    const authorize = new URL(response.headers.get("location")!);
+    expect(authorize.searchParams.has("prompt")).toBe(false);
+    expect(authorize.searchParams.has("max_age")).toBe(false);
+    // The attempt record is the one from before INT-20d.
+    expect(Object.keys(attemptOf(response)).sort()).toEqual(
+      ["codeVerifier", "nonce", "returnTo", "state", "v"].sort(),
+    );
+  });
+
+  it("keeps the start of the attempt on the attempt record, not in a cookie of its own", async () => {
+    const before = now();
+    const response = await start(MARK);
+    const record = attemptOf(response);
+    expect(record.freshSince).toBeGreaterThanOrEqual(before);
+    expect(record.freshSince).toBeLessThanOrEqual(now());
+    expect([...setCookies(response).keys()]).toEqual([LOGIN_COOKIE_NAME]);
   });
 
   it("leaves the mark in place when the login only starts", async () => {
@@ -438,29 +479,114 @@ describe("the first login after a sign-out", () => {
     expect(setCookies(response).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
   });
 
-  it("clears the mark once the login succeeds", async () => {
-    const response = await start(MARK);
-    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
-    const authorize = new URL(response.headers.get("location")!);
-    const done = await callback(
-      idp.approve(authorize, `${APP}/api/v1/auth/callback`),
-      `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}; ${MARK}`,
-    );
+  it("clears the mark once the login succeeds with a fresh auth_time", async () => {
+    const done = await afterSignOut(() => now());
     expect(done.status).toBe(303);
     expect(deps.openSession).toHaveBeenCalledTimes(1);
     expect(setCookies(done).get(SIGNED_OUT_COOKIE_NAME)).toBe(CLEARED_MARK);
   });
 
-  it("keeps the mark when the callback fails, so the next attempt asks again", async () => {
+  it("accepts an auth_time a little before the attempt, within the clock tolerance", async () => {
+    const skew = config.clockToleranceSeconds;
+    expect(skew).toBeGreaterThan(0);
+    const done = await afterSignOut((since) => since - skew);
+    expect(done.status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["no auth_time", () => undefined, "missing"],
+    ["an auth_time from before the attempt", (since: number) => since - 3600, "stale"],
+    [
+      "an auth_time just past the clock tolerance",
+      (since: number) => since - config.clockToleranceSeconds - 1,
+      "stale",
+    ],
+  ])("refuses a callback with %s and keeps the mark", async (_n, authTime, code) => {
+    const failed = await afterSignOut(authTime);
+    await expectRefused(failed);
+    expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+    expect(errors).toHaveBeenCalledWith("login failed", "auth_time", code);
+  });
+
+  it("refuses an auth_time that is not a whole number of seconds, as a missing one", async () => {
+    // The library itself refuses a non-numeric auth_time, so a verified login
+    // carrying one is made here, behind the real verification.
+    const real = deps.oidc;
+    deps.oidc = {
+      ...real,
+      verify: async (url, checks) => {
+        const verified = await real.verify(url, checks);
+        return { ...verified, idToken: { ...verified.idToken, auth_time: String(now()) } };
+      },
+    };
+    const failed = await afterSignOut(() => undefined);
+    await expectRefused(failed);
+    expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+    expect(errors).toHaveBeenCalledWith("login failed", "auth_time", "missing");
+  });
+
+  it("keeps the mark when the callback has no attempt, so the next attempt asks again", async () => {
     const { authorize } = await begin();
-    const failed = await callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), MARK);
+    const failed = await callback(idp.approve(authorize, CALLBACK), MARK);
     expect(failed.status).toBe(400);
     expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it("keeps the mark when the provider's answer fails verification", async () => {
+    const response = await start(MARK);
+    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
+    // The ID token carries another nonce, though its auth_time is fresh.
+    idp.state.next = { claims: (c) => ({ ...c, nonce: "n".repeat(43), auth_time: now() }) };
+    const refused = await callback(
+      idp.approve(new URL(response.headers.get("location")!), CALLBACK),
+      `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}; ${MARK}`,
+    );
+    await expectRefused(refused);
+    expect(setCookies(refused).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+    expect(errors).toHaveBeenCalledWith("login failed", "verify", expect.any(String));
+    expect(errors).not.toHaveBeenCalledWith("login failed", "auth_time", expect.anything());
+  });
+
+  it("keeps the mark when the provider is down at the callback", async () => {
+    const response = await start(MARK);
+    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
+    const url = idp.approve(new URL(response.headers.get("location")!), CALLBACK);
+    idp.state.next = { down: true };
+    const failed = await callback(url, `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}; ${MARK}`);
+    await expectRefused(failed, 503);
+    expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it("refuses an attempt record whose start is not a whole number of seconds", async () => {
+    const { authorize, cookie } = await begin();
+    const record = JSON.parse(
+      Buffer.from(cookie.slice(cookie.indexOf("=") + 1), "base64url").toString("utf8"),
+    ) as Record<string, unknown>;
+    for (const freshSince of ["1", 1.5, -1, 0, null]) {
+      const forged = Buffer.from(JSON.stringify({ ...record, freshSince })).toString("base64url");
+      const response = await callback(
+        idp.approve(authorize, CALLBACK),
+        `${LOGIN_COOKIE_NAME}=${forged}`,
+      );
+      await expectRefused(response);
+    }
+    expect(idp.tokenRequests).toHaveLength(0);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "no_attempt");
   });
 
   it("does not touch the mark on a login without one", async () => {
     const response = await login();
     expect(response.status).toBe(303);
     expect(setCookies(response).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  it("asks nothing of auth_time on a login without the mark", async () => {
+    // The default ID token of the test provider has no auth_time at all.
+    expect((await login()).status).toBe(303);
+    idp.state.next = { claims: (c) => ({ ...c, auth_time: now() - 3600 }) };
+    expect((await login()).status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(2);
+    expect(errors).not.toHaveBeenCalled();
   });
 });
