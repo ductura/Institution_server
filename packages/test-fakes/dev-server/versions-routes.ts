@@ -92,4 +92,28 @@ export const VERSIONS_HANDLERS: Handlers = {
     }
     return { status: 200, body: { from, to: revision, blocks: diffBlocks(before, after) } };
   },
+  // SRV-2004: the owner and the teacher get the same difference; only the teacher is held to sent revisions.
+  "work.compare.get": ({ state, account, params, query }) => {
+    if (account === null) return { error: "unauthorized" };
+    const from = Number(query.from);
+    const to = Number(query.to);
+    if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || from < 1 || from >= to) {
+      return { error: "invalid_input" };
+    }
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || !mayRead(state, work, account)) return { error: "not_found" };
+    if (account.id !== work.studentId && !(isSent(state, work, from) && isSent(state, work, to))) {
+      return { error: "not_found" };
+    }
+    const earlier = work.versionSnapshots.get(from);
+    const later = work.versionSnapshots.get(to);
+    if (earlier === undefined || later === undefined) return { error: "not_found" };
+    const before = blocksOf(Buffer.from(earlier, "base64").toString("utf8"));
+    const after = blocksOf(Buffer.from(later, "base64").toString("utf8"));
+    if (before === null || after === null) return { error: "unavailable" };
+    if (before.length > MAX_COMPARE_BLOCKS || after.length > MAX_COMPARE_BLOCKS) {
+      return { error: "unavailable" };
+    }
+    return { status: 200, body: { from, to, blocks: diffBlocks(before, after) } };
+  },
 };

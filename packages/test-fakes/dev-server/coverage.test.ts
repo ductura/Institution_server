@@ -894,6 +894,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions/1`, as: "student" },
   },
+  "work.compare.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      const document = work?.versionSnapshots.get(1);
+      if (work !== undefined && document !== undefined) {
+        work.revision = 2;
+        work.versionSnapshots.set(2, document);
+      }
+    },
+    request: { path: `/api/v1/works/${IDS.document}/compare?from=1&to=2`, as: "student" },
+  },
   "work.messages.get": {
     before: [
       {

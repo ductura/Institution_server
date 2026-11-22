@@ -432,6 +432,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
+  // SRV-2004 (Faza 3; Ductus#2052 c.7074315040): the comparison of two revisions of a work; Ductus has no such route.
+  "app/api/works/[documentId]/compare/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7074315040",
+  },
   // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
   "app/api/works/[documentId]/direct-edit/route.ts": {
     methods: ["GET", "PUT"],
