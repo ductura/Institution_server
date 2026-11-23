@@ -94,7 +94,7 @@ async function expectRefused(response: Response, status = 400) {
 describe("startLogin", () => {
   it("keeps in the attempt cookie exactly the values sent to the provider", async () => {
     const { authorize, header, value } = await begin("/api/v1/auth/login?returnTo=%2Frad");
-    expect(header).toMatch(/; Max-Age=600$/);
+    expect(header).toMatch(/; Max-Age=300$/);
     const attempt = decode(value);
     expect(Object.keys(attempt).sort()).toEqual([
       "codeVerifier",

@@ -7,6 +7,7 @@ import {
   finishLogin,
   LOGIN_COOKIE_NAME,
   SIGNED_OUT_COOKIE_NAME,
+  signedOutSetCookie,
   startLogin,
   type AuthDeps,
 } from "./auth-flow.ts";
@@ -478,6 +479,44 @@ describe("the first login after a sign-out", () => {
   it("leaves the mark in place when the login only starts", async () => {
     const response = await start(MARK);
     expect(setCookies(response).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
+  });
+
+  // INT-20f: an attempt started before a sign-out must not outlive the mark
+  // that refuses it, or it would sign in once the mark has expired.
+  it("lets the attempt cookie live no longer than the sign-out mark", async () => {
+    const maxAge = (header: string) => Number(/; Max-Age=(\d+)$/.exec(header)![1]);
+    const header = setCookies(await start()).get(LOGIN_COOKIE_NAME)!;
+    expect(maxAge(header)).toBeGreaterThan(0);
+    expect(maxAge(header)).toBeLessThanOrEqual(maxAge(signedOutSetCookie()));
+  });
+
+  // INT-20f: another cookie of the mark's name sent first does not hide it.
+  it("finds the mark behind another cookie of the same name", async () => {
+    const response = await start(`${SIGNED_OUT_COOKIE_NAME}=0; ${MARK}`);
+    expect(new URL(response.headers.get("location")!).searchParams.get("prompt")).toBe("login");
+
+    const { authorize, cookie } = await begin();
+    const refused = await callback(
+      idp.approve(authorize, CALLBACK),
+      `${cookie}; ${SIGNED_OUT_COOKIE_NAME}=0; ${MARK}`,
+    );
+    await expectRefused(refused);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "attempt_without_start");
+  });
+
+  // INT-20f: a fresh attempt whose callback no longer carries the mark signs
+  // in and sends no Set-Cookie for a mark that is not there.
+  it("signs in a fresh attempt without the mark at the callback and leaves the mark alone", async () => {
+    const response = await start(MARK);
+    idp.state.next = { claims: (c) => ({ ...c, auth_time: now() }) };
+    const attempt = setCookies(response).get(LOGIN_COOKIE_NAME)!;
+    const done = await callback(
+      idp.approve(new URL(response.headers.get("location")!), CALLBACK),
+      `${LOGIN_COOKIE_NAME}=${cookieValue(attempt)}`,
+    );
+    expect(done.status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+    expect(setCookies(done).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
   });
 
   it("clears the mark once the login succeeds with a fresh auth_time", async () => {
