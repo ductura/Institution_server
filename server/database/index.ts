@@ -503,6 +503,13 @@ export {
   type RhythmBurst,
 } from "./input-rhythm/index.ts";
 export {
+  createRevisionRestore,
+  RESTORE_MAX_FROM,
+  type RestoreOutcome,
+  type RestoreRecord,
+  type RevisionRestore,
+} from "./revision-restore/index.ts";
+export {
   createAssistantMatch,
   type AssistantMatch,
   type AssistantMatchCheckOutcome,

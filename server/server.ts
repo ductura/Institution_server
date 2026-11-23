@@ -40,6 +40,7 @@ import {
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createInputRhythmRoutesFor,
+  createRevisionRestoreRouteFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -254,6 +255,7 @@ async function main(): Promise<void> {
       ...createAssistantMatchRoutesFor(databases.main),
       // The rhythm of typing and the teacher's switch of it (PIL-P1-RITAM-SRV, P-1 rule 4).
       ...createInputRhythmRoutesFor(databases.main),
+      createRevisionRestoreRouteFor(databases.main),
       // The thresholds of a faculty per kind of origin and the comparison of a work (SRV-1111, P-1).
       ...createFacultyThresholdRoutesFor(databases.main),
       // The guidance of a teacher on sources (SRV-1605, WEB-2133).

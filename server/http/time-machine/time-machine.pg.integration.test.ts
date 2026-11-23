@@ -89,13 +89,24 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
     });
     expect(await store.read("marko", "doc-m1", [1])).toEqual({ status: "not_found" });
     expect(await store.read("ana", "doc-m1", [1, 2])).toEqual({ status: "not_found" });
+    // Someone else's work, for the one version (work.version.get) and for the
+    // list (work.versions.get): the same not_found as a work that does not
+    // exist, so neither read tells whether the work is there.
+    expect(await list("ana", "doc-m1", null)).toMatchObject({ status: "found" });
+    expect(await list("ana", "doc-nepostojeci", null)).toEqual({ status: "not_found" });
     for (const [actor, work] of [
-      ["vesna", "doc-a"],
       ["vesna", "doc-m1"],
       ["tomo", "doc-m1"],
+      ["marko", "doc-a"],
+      ["petra", "doc-a"],
     ] as const) {
       expect(await store.read(actor, work, [1])).toEqual({ status: "not_found" });
+      expect(await list(actor, work, null)).toEqual({ status: "not_found" });
     }
+    // Vesna teaches the course of doc-a: the contract lets her read its list
+    // (pgTAP 152), while the one version stays not_found for her.
+    expect(await store.read("vesna", "doc-a", [1])).toEqual({ status: "not_found" });
+    expect(await list("vesna", "doc-a", null)).toMatchObject({ status: "found" });
 
     const requested = await db.query<{ outcome: string }>(
       `SELECT pg_temp.ask('ana', 'SELECT outcome FROM app.request_submission(''doc-m1'', 1)') AS outcome`,
@@ -121,6 +132,7 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
       "UPDATE institution.mentorship SET ended_at = now() WHERE id = pg_temp.id('ms1')",
     );
     expect(await store.read("marko", "doc-m1", [1])).toEqual({ status: "not_found" });
+    expect(await list("marko", "doc-m1", null)).toEqual({ status: "not_found" });
   } finally {
     await db.close();
   }
