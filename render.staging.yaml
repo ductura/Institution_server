@@ -1,0 +1,71 @@
+# Render Blueprint for the STAGING of Institution_server (docs/STAGING.md).
+# Created in Render by hand (New -> Blueprint, Blueprint path
+# render.staging.yaml); production stays in render.yaml. Staging is built from
+# the migration branch, not from main (owner decision 23. 11. 2026., Ductus#2055
+# c.7101552311). The image is the same production stage of infra/web/Dockerfile:
+# no target, so the test-server stage never reaches Render (D-09). Only names are
+# here: every value is entered by hand in the Render Dashboard (sync: false).
+# Spec: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ductura-institution-server-staging
+    runtime: docker
+    region: frankfurt
+    branch: migracija/kopija-ductus-backend
+    # A push to the branch never deploys by itself: the migrations are run by
+    # hand first (docs/STAGING.md), and every deploy is Daniel's word.
+    autoDeployTrigger: "off"
+    dockerfilePath: ./infra/web/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      # The staging switch of STG-PRIJAVA: the only way the production build
+      # takes the fake OIDC provider, and never with a production APP_ORIGIN.
+      - key: DUCTURA_DEPLOYMENT
+        sync: false
+      # Origin of the staging front on Vercel (never ductura.org).
+      - key: APP_ORIGIN
+        sync: false
+      # Logins made by hand (docs/STAGING.md), never the owner URL Render shows.
+      - key: APP_DATABASE_URL
+        sync: false
+      - key: AUTH_DATABASE_URL
+        sync: false
+      - key: LOGS_DATABASE_URL
+        sync: false
+      # Left empty on staging until the legal database can be provisioned
+      # without a superuser (docs/STAGING.md, "Otvoreno").
+      - key: LEGAL_DATABASE_URL
+        sync: false
+      - key: TRUSTED_PROXIES
+        sync: false
+      - key: DUCTUS_AUTH_PROVIDER
+        sync: false
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_CLIENT_ID
+        sync: false
+      - key: OIDC_CLIENT_SECRET
+        sync: false
+      - key: OIDC_REDIRECT_URI
+        sync: false
+      - key: OIDC_POST_LOGOUT_REDIRECT_URI
+        sync: false
+      # Its own value, never the one of production.
+      - key: DUCTURA_PROVISIONING_TOKEN
+        sync: false
+      # Left empty on staging: no storage provider is chosen (D-08).
+      - key: EVIDENCE_STORAGE_DOMAINS
+        sync: false
+
+databases:
+  # Main database (ductus). ductus_legal would live in this instance too
+  # (db/legal/local/create-database.sql).
+  - name: ductura-institution-db-staging
+    region: frankfurt
+    databaseName: ductus
+    postgresMajorVersion: "17"
+  - name: ductura-institution-logs-db-staging
+    region: frankfurt
+    databaseName: ductus_logs
+    postgresMajorVersion: "17"
