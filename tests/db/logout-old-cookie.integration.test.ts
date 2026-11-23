@@ -383,6 +383,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // INT-21 C: a restore on a work it does not own is 404, as a missing work.
+  "work.restore.post": {
+    method: "POST",
+    path: `/api/v1/works/${randomUUID()}/restores`,
+    body: () => ({ fromRevision: 1 }),
+    live: 404,
+  },
   // SRV-1310: the export of a work it may not read is 404, as a missing work.
   "work.export.get": {
     method: "GET",

@@ -1262,6 +1262,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.restore.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: {
+      path: `/api/v1/works/${IDS.document}/restores`,
+      as: "student",
+      headers: ORIGIN,
+      body: { fromRevision: 1 },
+    },
+  },
   "work.export.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
