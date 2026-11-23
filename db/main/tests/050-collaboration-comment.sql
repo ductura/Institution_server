@@ -76,6 +76,7 @@ SELECT bag_eq(
             ('collaboration.resolve_thread(uuid)'), ('collaboration.reopen_thread(uuid)'),
             ('collaboration.list_comments(text)'), ('collaboration.delete_comment(uuid)'),
             ('collaboration.create_general_comment(text,text)'),
+            ('collaboration.create_comment(text,text,jsonb,bigint)'), ('collaboration.create_general_comment(text,text,bigint)'),
             ('collaboration.list_consultation_records(text)'),
             ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
             ('collaboration.add_consultation_addition(text,uuid,text)'),
@@ -135,7 +136,7 @@ SELECT ok(NOT has_schema_privilege('ductus_evidence', 'collaboration', 'USAGE')
 SELECT is(pg_get_function_arguments('collaboration.create_comment(text,text,jsonb)'::regprocedure),
   'p_document_id text, p_body text, p_anchor jsonb', 'no RPC takes an author: it comes from the session (attack 3)');
 SELECT is(pg_get_function_result('collaboration.list_comments(text)'::regprocedure),
-  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone)',
+  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint)',
   'list_comments returns no person id, exact time or document content (attack 8)');
 
 -- Creating a thread: the teacher of the assignment's course and, since

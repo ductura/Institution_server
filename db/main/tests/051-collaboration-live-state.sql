@@ -101,6 +101,7 @@ SELECT bag_eq(
             ('collaboration.resolve_thread(uuid)'), ('collaboration.reopen_thread(uuid)'),
             ('collaboration.list_comments(text)'), ('collaboration.delete_comment(uuid)'),
             ('collaboration.create_general_comment(text,text)'),
+            ('collaboration.create_comment(text,text,jsonb,bigint)'), ('collaboration.create_general_comment(text,text,bigint)'),
             ('collaboration.list_consultation_records(text)'),
             ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
             ('collaboration.add_consultation_addition(text,uuid,text)'),
