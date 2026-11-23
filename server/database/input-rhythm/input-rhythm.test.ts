@@ -73,13 +73,17 @@ describe("input rhythm port", () => {
     expect(await rhythm.setEnabled(TOKEN, ID, false)).toEqual({ status });
     expect(await rhythm.readEnabled(TOKEN, ID)).toEqual({ status });
     expect(await rhythm.state(TOKEN, "izmisljeni-rad-0001")).toEqual({ status });
+    expect(await rhythm.clearEnabled(TOKEN, ID)).toEqual({ status });
+    expect(await rhythm.setCourseEnabled(TOKEN, ID, false)).toEqual({ status });
+    expect(await rhythm.readCourseEnabled(TOKEN, ID)).toEqual({ status });
   });
 
   it("the switch answers the state, who changed it last and when", async () => {
     const at = new Date("2026-11-22T09:15:00.000Z");
-    const row = (role: unknown, name: unknown, when: unknown) =>
+    const row = (role: unknown, name: unknown, when: unknown, source: unknown = "assignment") =>
       Object.fromEntries([
         ["enabled", false],
+        ["source", source],
         ["changed_by_role", role],
         ["changed_by_name", name],
         ["changed_at", when],
@@ -88,6 +92,7 @@ describe("input rhythm port", () => {
     expect(await set.port.setEnabled(TOKEN, ID, false)).toEqual({
       status: "ok",
       enabled: false,
+      source: "assignment",
       changedBy: { role: "teacher", name: "Izmišljena Nastavnica" },
       changedAt: at.toISOString(),
     });
@@ -97,20 +102,27 @@ describe("input rhythm port", () => {
     expect(await read.port.readEnabled(TOKEN, ID)).toEqual({
       status: "ok",
       enabled: false,
+      source: "assignment",
       changedBy: { role: "mentor", name: null },
       changedAt: at.toISOString(),
     });
     expect(read.seen[0]!.text).toContain("app.input_rhythm_switch_read(");
-    const state = port([{ ...row(null, null, null), enabled: true }]);
+    const state = port([{ ...row(null, null, null, "default"), enabled: true }]);
     expect(await state.port.state(TOKEN, "izmisljeni-rad-0001")).toEqual({
       status: "ok",
       enabled: true,
+      source: "default",
       changedBy: null,
       changedAt: null,
     });
     expect(state.seen[0]!.values).toEqual(["izmisljeni-rad-0001"]);
     for (const bad of [
-      { ...row(null, null, null), enabled: "da" },
+      { ...row(null, null, null, "default"), enabled: "da" },
+      row(null, null, null),
+      row(null, null, null, "default"),
+      row("teacher", null, at, "default"),
+      row("teacher", null, at, "student"),
+      row("teacher", null, at, null),
       row("student", null, at),
       row("teacher", null, null),
       row("teacher", 7, at),
@@ -118,6 +130,35 @@ describe("input rhythm port", () => {
       expect(await port([bad]).port.state(TOKEN, "x")).toEqual({ status: "unavailable" });
     }
     expect(await port([]).port.readEnabled(TOKEN, ID)).toEqual({ status: "unavailable" });
+  });
+
+  it("the course's switch and the clearing call their RPCs and answer the source", async () => {
+    const at = new Date("2026-11-23T09:15:00.000Z");
+    const course = Object.fromEntries([
+      ["enabled", false],
+      ["source", "course"],
+      ["changed_by_role", "teacher"],
+      ["changed_by_name", null],
+      ["changed_at", at],
+    ]);
+    const expected = {
+      status: "ok",
+      enabled: false,
+      source: "course",
+      changedBy: { role: "teacher", name: null },
+      changedAt: at.toISOString(),
+    };
+    const set = port([course]);
+    expect(await set.port.setCourseEnabled(TOKEN, ID, false)).toEqual(expected);
+    expect(set.seen[0]!.text).toContain("app.input_rhythm_course_switch(");
+    expect(set.seen[0]!.values).toEqual([ID, false]);
+    const read = port([course]);
+    expect(await read.port.readCourseEnabled(TOKEN, ID)).toEqual(expected);
+    expect(read.seen[0]!.text).toContain("app.input_rhythm_course_switch_read(");
+    const clear = port([course]);
+    expect(await clear.port.clearEnabled(TOKEN, ID)).toEqual(expected);
+    expect(clear.seen[0]!.text).toContain("app.input_rhythm_switch_clear(");
+    expect(clear.seen[0]!.values).toEqual([ID]);
   });
 
   it("the student's own switch is never called", () => {

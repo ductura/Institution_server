@@ -77,6 +77,24 @@ const ROUTES = [
     call: "setEnabled",
     path: (p: Record<string, string>) => `/teacher/assignments/${p.assignmentId}/input-rhythm`,
   },
+  {
+    id: "teacher.input-rhythm.delete",
+    method: "DELETE",
+    call: "clearEnabled",
+    path: (p: Record<string, string>) => `/teacher/assignments/${p.assignmentId}/input-rhythm`,
+  },
+  {
+    id: "teacher.course-input-rhythm.get",
+    method: "GET",
+    call: "readCourseEnabled",
+    path: (p: Record<string, string>) => `/teacher/courses/${p.courseId}/input-rhythm`,
+  },
+  {
+    id: "teacher.course-input-rhythm.put",
+    method: "PUT",
+    call: "setCourseEnabled",
+    path: (p: Record<string, string>) => `/teacher/courses/${p.courseId}/input-rhythm`,
+  },
 ] as const;
 
 let running: Running | undefined;
@@ -85,7 +103,7 @@ let reply: () => Promise<unknown> = async () => ({ status: "not_found" });
 
 async function start(): Promise<string> {
   const port = Object.fromEntries(
-    ["record", "read", "remove", "state", "readEnabled", "setEnabled"].map((name) => [
+    ROUTES.map((route) => route.call).map((name) => [
       name,
       (...args: unknown[]) => (calls.push([name, ...args]), reply()),
     ]),
@@ -211,5 +229,42 @@ describe("no key and no derived measure leaves the server", () => {
     expect(calls).toHaveLength(1);
     expect((await put("nije-uuid")).status).toBe(404);
     expect(calls).toHaveLength(1);
+  });
+
+  it("the course's switch reaches the port with the course and a malformed course never does", async () => {
+    reply = async () => ({ status: "not_found" });
+    const base = await start();
+    const put = (course: string) =>
+      fetch(`${base}/teacher/courses/${course}/input-rhythm`, {
+        method: "PUT",
+        headers: student,
+        body: JSON.stringify({ enabled: false }),
+      });
+    expect((await put("1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e")).status).toBe(404);
+    expect(calls).toEqual([
+      [
+        "setCourseEnabled",
+        "izmisljeni-token-rada-000000000000000000001",
+        "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+        false,
+      ],
+    ]);
+    expect((await put("nije-uuid")).status).toBe(404);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("a state without a valid source is 503, never sent", async () => {
+    reply = async () => ({
+      status: "ok",
+      enabled: false,
+      source: "student",
+      changedBy: null,
+      changedAt: null,
+    });
+    const base = await start();
+    const got = await fetch(`${base}/works/izmisljeni-rad-0001/input-rhythm/setting`, {
+      headers: student,
+    });
+    expect(got.status).toBe(503);
   });
 });

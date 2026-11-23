@@ -7,6 +7,9 @@
 // (20261213110100, Daniel 22. 11. 2026.), and holds from the moment of
 // switching off; the student only reads its state. Every refusal of access is
 // one not_found (C-23).
+// PIL-P1-RITAM-PREDMET-SRV (20261214120000): the switch also exists per course;
+// the assignment's, if set, holds before the course's, else the course's, else
+// on. Every state names the level it comes from (source).
 import type { WithActor } from "../index.ts";
 
 /** The most values the server keeps of one burst; longer bursts are thinned. */
@@ -26,9 +29,13 @@ export type RhythmSwitchChanger = {
   readonly name: string | null;
 };
 
+/** The level a state comes from. */
+export type RhythmSwitchSource = "assignment" | "course" | "default";
+
 /** The state of the teacher's switch; changedBy and changedAt are null while the default holds. */
 export type RhythmSwitch = {
   readonly enabled: boolean;
+  readonly source: RhythmSwitchSource;
   readonly changedBy: RhythmSwitchChanger | null;
   readonly changedAt: string | null;
 };
@@ -46,7 +53,13 @@ export type InputRhythm = {
   setEnabled(token: string, assignmentId: string, enabled: boolean): Promise<SwitchOutcome>;
   /** The teacher of the assignment reads the switch. */
   readEnabled(token: string, assignmentId: string): Promise<SwitchOutcome>;
-  /** The owner and the readers of a work read the state of the switch of its assignment. */
+  /** The teacher of the assignment clears its own switch; answers the state that now holds. */
+  clearEnabled(token: string, assignmentId: string): Promise<SwitchOutcome>;
+  /** A teacher of the course switches the course's recording; answers the new state. */
+  setCourseEnabled(token: string, courseId: string, enabled: boolean): Promise<SwitchOutcome>;
+  /** A teacher of the course reads the course's switch. */
+  readCourseEnabled(token: string, courseId: string): Promise<SwitchOutcome>;
+  /** The owner and the readers of a work read the state that holds for its assignment. */
   state(token: string, documentId: string): Promise<SwitchOutcome>;
   /** The student deletes the recorded rhythm of a work on request. */
   remove(
@@ -97,13 +110,16 @@ function toBurst(row: Record<string, unknown>): RhythmBurst {
   return { id, gapsMs: gaps as number[], recordedAt: at.toISOString() };
 }
 
-const SWITCH_COLUMNS = "enabled, changed_by_role, changed_by_name, changed_at";
+const SWITCH_COLUMNS = "enabled, source, changed_by_role, changed_by_name, changed_at";
+const SOURCES: readonly unknown[] = ["assignment", "course", "default"];
 
 function toSwitch(row: Record<string, unknown>): RhythmSwitch {
-  const { enabled, changed_by_role: role, changed_by_name: name, changed_at: at } = row;
-  if (typeof enabled !== "boolean") throw new Malformed();
-  if (role === null && name === null && at === null) {
-    return { enabled, changedBy: null, changedAt: null };
+  const { enabled, source, changed_by_role: role, changed_by_name: name, changed_at: at } = row;
+  if (typeof enabled !== "boolean" || !SOURCES.includes(source)) throw new Malformed();
+  const level = source as RhythmSwitchSource;
+  if (level === "default") {
+    if (!enabled || role !== null || name !== null || at !== null) throw new Malformed();
+    return { enabled, source: level, changedBy: null, changedAt: null };
   }
   if (
     (role !== "teacher" && role !== "mentor") ||
@@ -112,7 +128,7 @@ function toSwitch(row: Record<string, unknown>): RhythmSwitch {
   ) {
     throw new Malformed();
   }
-  return { enabled, changedBy: { role, name }, changedAt: at.toISOString() };
+  return { enabled, source: level, changedBy: { role, name }, changedAt: at.toISOString() };
 }
 
 export function createInputRhythm(withActor: WithActor): InputRhythm {
@@ -157,6 +173,19 @@ export function createInputRhythm(withActor: WithActor): InputRhythm {
     readEnabled: (token, assignmentId) =>
       oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_switch_read($1)`, [
         assignmentId,
+      ]),
+    clearEnabled: (token, assignmentId) =>
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_switch_clear($1)`, [
+        assignmentId,
+      ]),
+    setCourseEnabled: (token, courseId, enabled) =>
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_course_switch($1, $2)`, [
+        courseId,
+        enabled,
+      ]),
+    readCourseEnabled: (token, courseId) =>
+      oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_course_switch_read($1)`, [
+        courseId,
       ]),
     state: (token, documentId) =>
       oneSwitch(token, `SELECT ${SWITCH_COLUMNS} FROM app.input_rhythm_state($1)`, [documentId]),

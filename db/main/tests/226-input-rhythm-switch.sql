@@ -57,8 +57,8 @@ SELECT ok(NOT has_schema_privilege('ductus_identity', 'app', 'CREATE') AND NOT h
 
 -- 2. On by default, nobody changed it; the teacher reads it, the owner and the readers read the state.
 SELECT is(pg_temp.ask('vesna', format($$ SELECT row(s.*)::text FROM app.input_rhythm_switch_read(%L) s $$, pg_temp.id('z1'))),
-  '(t,,,)', 'on by default for the teacher, with nobody who changed it');
-SELECT is(pg_temp.ask('ana', $$ SELECT row(s.*)::text FROM app.input_rhythm_state('doc-a') s $$), '(t,,,)', 'Ana reads the default state of her work');
+  '(t,default,,,)', 'on by default for the teacher, with nobody who changed it');
+SELECT is(pg_temp.ask('ana', $$ SELECT row(s.*)::text FROM app.input_rhythm_state('doc-a') s $$), '(t,default,,,)', 'Ana reads the default state of her work');
 SELECT is(pg_temp.ask('vesna', $$ SELECT enabled FROM app.input_rhythm_state('doc-a') $$), 'true', 'the teacher reads it through the work');
 
 -- 3. Only the teacher of the assignment sets it.

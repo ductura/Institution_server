@@ -1227,6 +1227,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { enabled: false },
     },
   },
+  "teacher.input-rhythm.delete": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/input-rhythm`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.course-input-rhythm.get": {
+    request: { path: `/api/v1/teacher/courses/${IDS.course}/input-rhythm`, as: "nastavnik" },
+  },
+  "teacher.course-input-rhythm.put": {
+    request: {
+      path: `/api/v1/teacher/courses/${IDS.course}/input-rhythm`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { enabled: false },
+    },
+  },
   "institution.origin-thresholds.get": {
     request: { path: "/api/v1/institution/origin-thresholds", as: "administrator" },
   },

@@ -19,7 +19,8 @@ import {
 // The rhythm of typing over HTTP (PIL-P1-RITAM-SRV, P-1 rule 4):
 //   POST, GET, DELETE /api/v1/works/{documentId}/input-rhythm
 //   GET /api/v1/works/{documentId}/input-rhythm/setting
-//   GET, PUT /api/v1/teacher/assignments/{assignmentId}/input-rhythm
+//   GET, PUT, DELETE /api/v1/teacher/assignments/{assignmentId}/input-rhythm
+//   GET, PUT /api/v1/teacher/courses/{courseId}/input-rhythm (PIL-P1-RITAM-PREDMET-SRV)
 // The session decides who asks; app.input_rhythm_* decide whether the caller
 // owns or reads the work, or teaches the assignment. Another's, an unknown and
 // a malformed work or assignment, and a caller without the relation, read the
@@ -38,6 +39,9 @@ const REMOVE = contract("work.input-rhythm.delete");
 const STATE = contract("work.input-rhythm-setting.get");
 const SWITCH_READ = contract("teacher.input-rhythm.get");
 const SWITCH = contract("teacher.input-rhythm.put");
+const CLEAR = contract("teacher.input-rhythm.delete");
+const COURSE_READ = contract("teacher.course-input-rhythm.get");
+const COURSE_SWITCH = contract("teacher.course-input-rhythm.put");
 
 const BODY_TIMEOUT_MS = 5_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
@@ -50,6 +54,7 @@ function workOf(segment: string | undefined): string | null {
   return id !== null && isWorkId(id) ? id : null;
 }
 
+/** A UUID path segment (assignment or course), or null. */
 function assignmentOf(segment: string | undefined): string | null {
   return segment !== undefined && UUID.test(segment) ? segment : null;
 }
@@ -116,6 +121,7 @@ async function bodyOf(
 
 const switchOf = (ok: Record<string, unknown>) => ({
   enabled: ok.enabled,
+  source: ok.source,
   changedBy: ok.changedBy,
   changedAt: ok.changedAt,
 });
@@ -195,6 +201,42 @@ export function createInputRhythmRoutes(rhythm: InputRhythm): Route[] {
         const { enabled } = parsed.value as { enabled: boolean };
         const result = await rhythm.setEnabled(token, assignmentId, enabled);
         answer(response, SWITCH, result, switchOf, 422);
+      },
+    },
+    {
+      contract: CLEAR.route,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        const assignmentId = assignmentOf(params?.assignmentId);
+        if (assignmentId === null) return sendProblem(response, 404, "not_found");
+        const result = await rhythm.clearEnabled(token, assignmentId);
+        answer(response, CLEAR, result, switchOf, 404);
+      },
+    },
+    {
+      contract: COURSE_READ.route,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const courseId = assignmentOf(params?.courseId);
+        if (courseId === null) return sendProblem(response, 404, "not_found");
+        const result = await rhythm.readCourseEnabled(token, courseId);
+        answer(response, COURSE_READ, result, switchOf, 404);
+      },
+    },
+    {
+      contract: COURSE_SWITCH.route,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        const parsed = await bodyOf(request, response, COURSE_SWITCH);
+        if (!parsed.ok) return;
+        const courseId = assignmentOf(params?.courseId);
+        if (courseId === null) return sendProblem(response, 404, "not_found");
+        const { enabled } = parsed.value as { enabled: boolean };
+        const result = await rhythm.setCourseEnabled(token, courseId, enabled);
+        answer(response, COURSE_SWITCH, result, switchOf, 422);
       },
     },
   ];

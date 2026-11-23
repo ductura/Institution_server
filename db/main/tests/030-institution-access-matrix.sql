@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3423);
+SELECT plan(3425);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -759,16 +759,18 @@ FROM (VALUES
 
 -- 1c3. SRV-0910: the kind of origin and the rhythm of typing (evidence.origin_change,
 -- evidence.input_rhythm, evidence.input_rhythm_setting) and the teacher's switch
--- of the rhythm (evidence.input_rhythm_assignment_setting, PIL-P1-RITAM-SRV) only
--- through the RPCs; the cells per actor are in 223-origin-rhythm.sql and
--- 226-input-rhythm-switch.sql.
+-- of the rhythm (evidence.input_rhythm_assignment_setting, PIL-P1-RITAM-SRV; per
+-- course evidence.input_rhythm_course_setting, PIL-P1-RITAM-PREDMET-SRV) only
+-- through the RPCs; the cells per actor are in 223-origin-rhythm.sql,
+-- 226-input-rhythm-switch.sql and 229-input-rhythm-course-switch.sql.
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT EXISTS (
       SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_evidence'
         AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'SRV-0910: ' || t.name || ' has forced RLS, the evidence owner and no privilege for another role')
-  FROM (VALUES ('origin_change'), ('input_rhythm'), ('input_rhythm_setting'), ('input_rhythm_assignment_setting')) AS t (name)
+  FROM (VALUES ('origin_change'), ('input_rhythm'), ('input_rhythm_setting'), ('input_rhythm_assignment_setting'),
+    ('input_rhythm_course_setting')) AS t (name)
   JOIN pg_class c ON c.oid = ('evidence.' || t.name)::regclass;
 -- The trail of the teacher's switch (audit.input_rhythm_switch_event), PIL-P1-RITAM-SRV.
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
@@ -778,6 +780,14 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'PIL-P1-RITAM-SRV: audit.input_rhythm_switch_event has forced RLS, the identity owner and no privilege for another role')
   FROM pg_class c WHERE c.oid = 'audit.input_rhythm_switch_event'::regclass;
+-- The trail of the course's switch (audit.input_rhythm_course_switch_event), PIL-P1-RITAM-PREDMET-SRV.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'PIL-P1-RITAM-PREDMET-SRV: audit.input_rhythm_course_switch_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.input_rhythm_course_switch_event'::regclass;
 -- The trail of the declaration switch (audit.declaration_required_event), PIL-K-IZJAVA-SRV.
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
     AND NOT EXISTS (

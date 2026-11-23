@@ -13,6 +13,9 @@ const IDS = [
   "work.input-rhythm-setting.get",
   "teacher.input-rhythm.get",
   "teacher.input-rhythm.put",
+  "teacher.input-rhythm.delete",
+  "teacher.course-input-rhythm.get",
+  "teacher.course-input-rhythm.put",
 ];
 const routeOf = (id: string) => ROUTES.find((route) => route.id === id)!;
 const FORBIDDEN =
@@ -71,6 +74,29 @@ describe("input rhythm contracts", () => {
       ROUTES.filter((route) => route.path.includes("input-rhythm") && route.method !== "GET").map(
         (route) => route.id,
       ),
-    ).toEqual(["work.input-rhythm.post", "work.input-rhythm.delete", "teacher.input-rhythm.put"]);
+    ).toEqual([
+      "work.input-rhythm.post",
+      "work.input-rhythm.delete",
+      "teacher.input-rhythm.put",
+      "teacher.input-rhythm.delete",
+      "teacher.course-input-rhythm.put",
+    ]);
+    expect(routeOf("teacher.input-rhythm.delete").access).toBe("course_teacher");
+    expect(routeOf("teacher.course-input-rhythm.put").access).toBe("course_teacher");
+  });
+
+  it("the state names its level, and nothing else is added", () => {
+    const state = routeOf("work.input-rhythm-setting.get").responses[0]!.body!;
+    const base = { enabled: false, changedBy: { role: "teacher", name: null } };
+    const at = { changedAt: "2026-11-23T10:00:00.000Z" };
+    for (const source of ["assignment", "course"]) {
+      expect(Value.Check(state, { ...base, ...at, source })).toBe(true);
+    }
+    expect(
+      Value.Check(state, { enabled: true, source: "default", changedBy: null, changedAt: null }),
+    ).toBe(true);
+    expect(Value.Check(state, { ...base, ...at })).toBe(true);
+    expect(Value.Check(state, { ...base, ...at, source: "student" })).toBe(false);
+    expect(Value.Check(state, { ...base, ...at, source: "course", courseId: "x" })).toBe(false);
   });
 });
