@@ -1,5 +1,7 @@
 # Objava: Render
 
+Ovo je produkcija (`render.yaml`, grana `main`). Staging se diže s migracijske grane iz zasebnog Blueprinta `render.staging.yaml`; koraci, vrijednosti i otvorene stavke su u [STAGING.md](STAGING.md).
+
 Institution_server ide na **Render** kao Docker web usluga. Slika je postojeći `infra/web/Dockerfile` (završna, produkcijska faza), bez izmjena. `render.yaml` ga samo koristi. Na Vercelu nije: proces stalno drži veze na tri baze i pozadinske poslove.
 
 ## Datoteke
