@@ -6,6 +6,12 @@
 //   pnpm db:up:native     start or check PostgreSQL, provision, migrate
 //   pnpm test:db:native   pg_prove over db/main/tests, as pnpm test:db does in compose
 //
+// ZEL-CI-SRV: with SHARD=i/n (the leg of a CI matrix), test:db:native runs
+// only leg i of n of the test files (shardTestFiles, balanced by size and the
+// measured cost of the slow files in TEST_FILE_COST). Every leg computes the
+// whole split from the same files and refuses to run unless each file is in
+// exactly one leg, so the legs together run each file exactly once.
+//
 // The compose path (db:up, db:migrate, test:db) is unchanged. The same files
 // run in the same order as `pnpm db:migrate`: db/main/local/migrator.sql,
 // dbmate up --strict as ductus_migrator, db/main/local/app-login.sql,
@@ -30,7 +36,7 @@
 // and the types changed.
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -236,8 +242,95 @@ export function adminPsql(
     : { command: "psql", args: psql.slice(1) };
 }
 
-export function pgProveArgs(config: NativeConfig): string[] {
-  return [...tcp(config), "--recurse", "--ext", ".sql", TESTS_DIR];
+/**
+ * pg_prove over the whole of TESTS_DIR (--recurse --ext .sql), or, with
+ * `files`, over exactly those files (relative to the repository root).
+ */
+export function pgProveArgs(config: NativeConfig, files?: readonly string[]): string[] {
+  if (files === undefined) return [...tcp(config), "--recurse", "--ext", ".sql", TESTS_DIR];
+  return [...tcp(config), ...files];
+}
+
+export type Shard = { index: number; total: number };
+export type TestFile = { path: string; size: number };
+
+const SHARD = /^([1-9][0-9]*)\/([1-9][0-9]*)$/;
+
+/**
+ * Test files whose run time is far above their size, with the cost the split
+ * counts for them, in bytes of an ordinary test file. Measured in CI (run
+ * 45107612314, leg 1/2): 118-actor-scope-initplan.sql took 27 of the 68
+ * seconds of all files, the other files about 14.4 s per MB, so it counts as
+ * 1.9 MB. Every path must exist (native-db.test.ts), so a rename cannot drop it.
+ */
+export const TEST_FILE_COST: ReadonlyMap<string, number> = new Map([
+  [`${TESTS_DIR}/118-actor-scope-initplan.sql`, 1_900_000],
+]);
+
+/** What the split counts for a file: its measured cost, else its size. */
+export const testFileCost = (file: TestFile): number => TEST_FILE_COST.get(file.path) ?? file.size;
+
+/** SHARD=i/n of a CI leg; unset or empty means the whole suite. */
+export function parseShard(value: string | undefined): Shard | null {
+  if (value === undefined || value === "") return null;
+  const match = SHARD.exec(value);
+  const index = Number(match?.[1]);
+  const total = Number(match?.[2]);
+  if (match === null || index > total) throw new Error("SHARD must be i/n with 1 <= i <= n");
+  return { index, total };
+}
+
+/**
+ * The files pg_prove --recurse --ext .sql finds under TESTS_DIR (relative to
+ * `root`), sorted, each with its size in bytes.
+ */
+export function listTestFiles(root: string = ROOT): TestFile[] {
+  const found: TestFile[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path);
+      else if (entry.isFile() && entry.name.endsWith(".sql"))
+        found.push({ path, size: statSync(join(root, path)).size });
+    }
+  };
+  walk(TESTS_DIR);
+  return found.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+/**
+ * Splits the files into `total` legs, balanced by cost (testFileCost; largest
+ * first, each to the lightest leg, ties to the lower leg and the earlier
+ * path), each leg in path order. Deterministic: every leg computes the same split.
+ */
+export function shardTestFiles(files: readonly TestFile[], total: number): string[][] {
+  const legs = Array.from({ length: total }, () => ({ cost: 0, paths: [] as string[] }));
+  const cost = (file: TestFile): number => testFileCost(file);
+  const order = [...files].sort((a, b) => cost(b) - cost(a) || (a.path < b.path ? -1 : 1));
+  for (const file of order) {
+    const lightest = legs.reduce((best, leg) => (leg.cost < best.cost ? leg : best));
+    lightest.cost += cost(file);
+    lightest.paths.push(file.path);
+  }
+  return legs.map((leg) => leg.paths.sort());
+}
+
+/**
+ * The files of leg `shard.index`, after checking that the legs together hold
+ * each file exactly once and that no leg is empty.
+ */
+export function filesOfShard(files: readonly TestFile[], shard: Shard): string[] {
+  const legs = shardTestFiles(files, shard.total);
+  const seen = legs.flat();
+  const all = files.map((file) => file.path);
+  if (seen.length !== all.length || new Set(seen).size !== all.length)
+    throw new Error("the pgTAP legs do not run each test file exactly once");
+  for (const path of all) {
+    if (!seen.includes(path)) throw new Error(`the pgTAP legs leave out ${path}`);
+  }
+  if (legs.some((leg) => leg.length === 0))
+    throw new Error(`fewer pgTAP test files than legs (${all.length} < ${shard.total})`);
+  return legs[shard.index - 1] as string[];
 }
 
 /** A local login password from `name`, or a random one per run when it is unset. */
@@ -344,18 +437,35 @@ export async function up({
   );
 }
 
-export type TestDbOptions = { env: Env; run: Run; store?: PasswordStore };
+export type TestDbOptions = {
+  env: Env;
+  run: Run;
+  store?: PasswordStore;
+  list?: () => TestFile[];
+  log?: (line: string) => void;
+};
 
-/** test:db:native: the pg_prove of test:db, over loopback instead of docker compose exec. */
+/**
+ * test:db:native: the pg_prove of test:db, over loopback instead of docker
+ * compose exec; with SHARD=i/n only leg i of the files (filesOfShard).
+ */
 export async function testDb({
   env,
   run,
   store = fileStore(passwordFile(env)),
+  list = listTestFiles,
+  log = console.log,
 }: TestDbOptions): Promise<number> {
   const config = nativeConfig(env);
-  return run("pg_prove", pgProveArgs(config), {
-    env: childEnv(env, loginPassword(env, store, { create: false })),
-  });
+  const shard = parseShard(env["SHARD"]);
+  const password = loginPassword(env, store, { create: false });
+  let files: string[] | undefined;
+  if (shard !== null) {
+    const all = list();
+    files = filesOfShard(all, shard);
+    log(`pgTAP leg ${shard.index}/${shard.total}: ${files.length} of ${all.length} test files.`);
+  }
+  return run("pg_prove", pgProveArgs(config, files), { env: childEnv(env, password) });
 }
 
 /** Runs `command` in the repository root; resolves to its exit code (Run). */

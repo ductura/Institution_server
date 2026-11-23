@@ -5,7 +5,7 @@
 // db/main/tests, the compose service is postgres-main, and the file runs in
 // the vitest unit project instead of Ductus `test:local`.
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,12 +18,19 @@ import {
   BOOTSTRAP_SQL,
   childEnv,
   dbmateUrl,
+  filesOfShard,
   fileStore,
+  listTestFiles,
   loginPassword,
   nativeConfig,
+  parseShard,
   pgProveArgs,
   READY_ATTEMPTS,
   ROLE_MARKER,
+  shardTestFiles,
+  TEST_FILE_COST,
+  testFileCost,
+  TESTS_DIR,
   testDb,
   up,
   WORKER_PASSWORD_VAR,
@@ -31,6 +38,7 @@ import {
   type NativeConfig,
   type PasswordStore,
   type RunOptions,
+  type TestFile,
 } from "./native-db.ts";
 
 const pkg = JSON.parse(
@@ -582,4 +590,180 @@ test("a second db:up:native runs the same idempotent steps and keeps the stored 
     ]);
   assert.deepEqual(shape(second.calls), shape(first.calls));
   assert.match(BOOTSTRAP_SQL, /%I.*%L/, "names and the password are quoted by format()");
+});
+
+// ZEL-CI-SRV: the pgTAP of the main database split across the legs of the CI
+// database job (SHARD=i/n), each file in exactly one leg.
+const REPO = fileURLToPath(new URL("../../", import.meta.url));
+// The variable CI sets on each leg (the env of the step in ci.yml).
+const SHARD_VAR = "SHARD";
+
+test("SHARD: unset or empty is the whole suite, i/n a leg, anything else is refused", () => {
+  assert.equal(parseShard(undefined), null);
+  assert.equal(parseShard(""), null);
+  assert.deepEqual(parseShard("1/1"), { index: 1, total: 1 });
+  assert.deepEqual(parseShard("2/2"), { index: 2, total: 2 });
+  assert.deepEqual(parseShard("3/12"), { index: 3, total: 12 });
+  for (const value of [
+    "0/2",
+    "3/2",
+    "1/0",
+    "1",
+    "1/",
+    "/2",
+    "a/b",
+    " 1/2",
+    "1/2 ",
+    "-1/2",
+    "01/2",
+    "1/2/3",
+  ]) {
+    assert.throws(() => parseShard(value), /SHARD must be i\/n/, value);
+  }
+});
+
+test("the test files are every .sql under db/main/tests, as pg_prove --recurse --ext .sql finds them", () => {
+  const files = listTestFiles();
+  const expected = (readdirSync(`${REPO}${TESTS_DIR}`, { recursive: true }) as string[])
+    .map((entry) => entry.replaceAll("\\", "/"))
+    .filter((entry) => entry.endsWith(".sql"))
+    .map((entry) => `${TESTS_DIR}/${entry}`)
+    .sort();
+  assert.ok(files.length > 10, "the matrix has its test files");
+  assert.deepEqual(
+    files.map((file) => file.path),
+    expected,
+  );
+  for (const file of files) assert.equal(file.size, statSync(`${REPO}${file.path}`).size);
+});
+
+test("every leg count runs each real test file exactly once, in path order, no leg empty", () => {
+  const files = listTestFiles();
+  const all = files.map((file) => file.path);
+  for (let total = 1; total <= 4; total += 1) {
+    const legs = shardTestFiles(files, total);
+    assert.equal(legs.length, total);
+    assert.deepEqual(legs.flat().sort(), all, `${total} legs cover every file once`);
+    for (const [at, leg] of legs.entries()) {
+      assert.ok(leg.length > 0, `leg ${at + 1}/${total} is not empty`);
+      assert.deepEqual(leg, [...leg].sort(), `leg ${at + 1}/${total} runs in path order`);
+      assert.deepEqual(filesOfShard(files, { index: at + 1, total }), leg);
+    }
+  }
+  assert.deepEqual(shardTestFiles(files, 1), [all]);
+  // Balanced by cost: no leg is heavier than an even share plus the largest file.
+  const size = new Map(files.map((file) => [file.path, testFileCost(file)]));
+  const sum = (paths: string[]) => paths.reduce((total, path) => total + (size.get(path) ?? 0), 0);
+  const largest = Math.max(...files.map((file) => testFileCost(file)));
+  for (const leg of shardTestFiles(files, 2)) {
+    assert.ok(sum(leg) <= sum(all) / 2 + largest, "the legs are balanced");
+  }
+});
+
+test("the split is deterministic: the same files in any order give the same legs", () => {
+  const files = listTestFiles();
+  assert.deepEqual(shardTestFiles([...files].reverse(), 2), shardTestFiles(files, 2));
+  const tied: TestFile[] = ["c", "a", "d", "b"].map((name) => ({ path: `t/${name}.sql`, size: 5 }));
+  assert.deepEqual(shardTestFiles(tied, 2), [
+    ["t/a.sql", "t/c.sql"],
+    ["t/b.sql", "t/d.sql"],
+  ]);
+});
+
+test("a leg refuses to run when the legs would not run each file exactly once", () => {
+  const one: TestFile = { path: "t/a.sql", size: 1 };
+  assert.throws(
+    () => filesOfShard([one, { ...one }], { index: 1, total: 2 }),
+    /exactly once/,
+    "a file listed twice",
+  );
+  assert.throws(
+    () => filesOfShard([one], { index: 1, total: 2 }),
+    /fewer pgTAP test files than legs/,
+  );
+});
+
+test("test:db:native with SHARD runs pg_prove over exactly the files of its leg", async () => {
+  const files: TestFile[] = [
+    { path: `${TESTS_DIR}/000-a.sql`, size: 10 },
+    { path: `${TESTS_DIR}/010-b.sql`, size: 40 },
+    { path: `${TESTS_DIR}/020-c.sql`, size: 20 },
+    { path: `${TESTS_DIR}/sub/030-d.sql`, size: 25 },
+  ];
+  const ran: string[] = [];
+  const lines: string[] = [];
+  for (const index of [1, 2]) {
+    const { calls, run } = recorder(() => 0);
+    assert.equal(
+      await testDb({
+        env: { [SHARD_VAR]: `${index}/2` },
+        run,
+        store: memoryStore(LOGIN),
+        list: () => files,
+        log: (line) => lines.push(line),
+      }),
+      0,
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.command, "pg_prove");
+    const args = calls[0]?.args ?? [];
+    assert.deepEqual(args.slice(0, 8), pgProveArgs(DEFAULT).slice(0, 8));
+    assert.ok(!args.includes("--recurse"), "only the leg's files, no directory");
+    assert.equal(envOf(calls[0])["PGPASSWORD"], LOGIN);
+    ran.push(...args.slice(8));
+  }
+  // Largest first to the lighter leg: b (40) to 1, d (25) and c (20) to 2, a (10) to 1.
+  assert.deepEqual(ran, [
+    `${TESTS_DIR}/000-a.sql`,
+    `${TESTS_DIR}/010-b.sql`,
+    `${TESTS_DIR}/020-c.sql`,
+    `${TESTS_DIR}/sub/030-d.sql`,
+  ]);
+  assert.deepEqual(lines, [
+    "pgTAP leg 1/2: 2 of 4 test files.",
+    "pgTAP leg 2/2: 2 of 4 test files.",
+  ]);
+  const bad = recorder();
+  await assert.rejects(
+    testDb({
+      env: { [SHARD_VAR]: "3/2" },
+      run: bad.run,
+      store: memoryStore(LOGIN),
+      list: () => files,
+    }),
+    /SHARD must be/,
+  );
+  await assert.rejects(
+    testDb({
+      env: { [SHARD_VAR]: "1/5" },
+      run: bad.run,
+      store: memoryStore(LOGIN),
+      list: () => files,
+      log: quiet,
+    }),
+    /fewer pgTAP test files than legs/,
+  );
+  assert.deepEqual(bad.calls, [], "pg_prove never runs on a refused split");
+});
+
+test("every measured cost names an existing test file and outweighs its size", () => {
+  const files = new Map(listTestFiles().map((file) => [file.path, file]));
+  assert.ok(TEST_FILE_COST.size > 0);
+  for (const [path, cost] of TEST_FILE_COST) {
+    const file = files.get(path);
+    assert.ok(file !== undefined, `${path} exists`);
+    assert.equal(testFileCost(file), cost);
+    assert.ok(cost > file.size, `${path} costs more than its size`);
+  }
+  // A slow file is counted by its cost: alone against a lighter rest, it gets its own leg.
+  const slow = [...TEST_FILE_COST.keys()][0]!;
+  const legs = shardTestFiles(
+    [
+      { path: slow, size: 1 },
+      { path: `${TESTS_DIR}/a.sql`, size: 10 },
+      { path: `${TESTS_DIR}/b.sql`, size: 10 },
+    ],
+    2,
+  );
+  assert.deepEqual(legs[0], [slow]);
 });
