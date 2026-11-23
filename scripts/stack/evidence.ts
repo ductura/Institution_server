@@ -103,8 +103,8 @@ export function ensureSeed(file: string, root: string): void {
   // Windows has no POSIX uid (process.getuid is undefined, lstat reports 0):
   // there only the uid comparison is skipped; the real-directory, regular-file,
   // no-link and outside-the-checkout checks still hold.
-  const uid = process.getuid?.();
-  if (!holder.isDirectory() || (uid !== undefined && holder.uid !== uid)) {
+  const holderUid = process.getuid?.();
+  if (!holder.isDirectory() || (holderUid !== undefined && holder.uid !== holderUid)) {
     throw new Error("the signing seed's directory is not this user's own directory");
   }
   chmodSync(dirname(file), 0o700);
@@ -116,7 +116,9 @@ export function ensureSeed(file: string, root: string): void {
   // The same for the seed itself, new or kept: a regular file of this user,
   // never a link, and 0600 at most.
   const seed = lstatSync(file);
-  if (!seed.isFile() || (uid !== undefined && seed.uid !== uid)) {
+  // Read again for this check, as each check asks for its own owner.
+  const seedUid = process.getuid?.();
+  if (!seed.isFile() || (seedUid !== undefined && seed.uid !== seedUid)) {
     throw new Error("the signing seed is not this user's own regular file");
   }
   if ((seed.mode & 0o777) !== 0o600) chmodSync(file, 0o600);
