@@ -1,4 +1,4 @@
-<!-- SNIMKA: ne uređuj ovdje. Izvor je ductura/.github, docs/plan/PLAN-MIGRACIJE.md na 1dd3e3a3; osvježava se s node _raspored/sinkro-plan.mjs --repo <ovaj repo>. -->
+<!-- SNIMKA: ne uređuj ovdje. Izvor je ductura/.github, docs/plan/PLAN-MIGRACIJE.md na 4499d36b; osvježava se s node _raspored/sinkro-plan.mjs --repo <ovaj repo>. -->
 # Ductura — kanonski plan razvoja, integracije i objave
 
 Ovo je glavni plan za cijeli proizvod. Redoslijed i uvjete prolaza određuju ovdje opisane faze. Linear vodi izvršne zadatke, GitHub nosi izmjene i dokaze, a `_raspored/red.json` služi postojećem orkestratoru za dodjele. Prihvaćene odluke, Ustav, ugovori, inventari ekrana i auditi ostaju izvori zahtjeva i dokaza. Datirani opisi u donjim poglavljima daju povijesni kontekst. Aktualne odluke i prilozi zadataka imaju prednost nad starijim procjenama i putanjama.
@@ -20,7 +20,7 @@ Radne kopije i artefakti nalaze se lokalno na stolnom računalu u `D:\Ductura`. 
 
 ## Kritični put i uvjeti prolaza
 
-1. **Faza 1 — kopija i osnovica.** Očuvati migracijsku osnovicu, evidenciju prenesenih migracija i testova, točne repozitorije, grane i commitove. Zasebno bilježiti rezultate povijesne arhive, `main` i migracijskih grana. Zapisnik osnovice: [OSNOVICA-FAZE-1.md](OSNOVICA-FAZE-1.md) (stanje 22. 11. 2026.; otvorena pitanja su na kraju zapisnika).
+1. **Faza 1 — kopija i osnovica.** Očuvati migracijsku osnovicu, evidenciju prenesenih migracija i testova, točne repozitorije, grane i commitove. Zasebno bilježiti rezultate povijesne arhive, `main` i migracijskih grana. Zapisnik osnovice: [OSNOVICA-FAZE-1.md](https://github.com/ductura/.github/blob/4499d36bac383479e805dc63252807c0397233a6/docs/plan/OSNOVICA-FAZE-1.md) (stanje 22. 11. 2026.; otvorena pitanja su na kraju zapisnika).
 2. **Faza 2 — osposobljavanje.** Svaki obuhvaćeni repo mora imati čist typecheck, gradnju i tražene zelene testove. Ugovori prethode klijentima. Shema, vektori uspjeha i grešaka, lažni poslužitelj, objavljeni paket i stvarni handler zasebni su dokazi. Za #350 i #352 evidentirati rezultate provjera aplikacije i DB testova, PostgreSQL/pgTAP i stvarni rezultat S3 provjere. ZEL paketi ulaze po vlastitom prihvatu i ovisnostima. Prije spajanja razlikovati ciljani lokalni test od cjelovitog CI-ja.
 3. **Faza 3 — lokalna integracija.** Jedan dokumentirani ulaz podiže stvarni API, PostgreSQL, lokalni OIDC, pohranu, Next.js front i preloader. Slijede VS-1, VS-1b, predaja i nastavnikov pregled, administracija i pristup, mobilni prolaz te zaseban oporavak povrata. Stog koristi sintetičke podatke. Kriteriji su u sljedećoj matrici.
 4. **Faza 4 — `main`, repo po repo.** Zeleni CI i jedan ciljani kritični pregled po repozitoriju obuhvaćaju autentikaciju, RLS, dokaze i predaju. Preloader ide posljednji, nakon provjere odredišta i odluke za javnu domenu. Produkcijski sustav i produkcijski AAI imaju vlastite dokaze spremnosti.
@@ -288,6 +288,8 @@ Ovaj odjeljak samo zapisuje odluke koje već vrijede u radu. Novo pravilo ne uvo
 Red ima 524 zadatka: 496 spojeno, 13 u PR-u, 11 čeka ovisnost, 4 zadržana.
 
 **Ispravak tablice faza:** faza 2 nije potpuno zatvorena za WEB. Baza `migracija/kopija-ductus-front` ima crveni CI (`client`, `ui`, pa i `ci-ok`). Bazu popravlja graditeljev PR #416 (CI i osnovne snimke kataloga). Faza 2 za WEB zatvara se kad je `ci-ok` na bazi zelen.
+
+**Zatvoreno 23. 11. 2026.:** faza 2 je zatvorena za svih devet repoa. Svi ZEL i LOK-WEB zadaci su spojeni, a CI na svakoj migracijskoj bazi je zelen: SRV `2f1c37f0`, WEB `a3a3b27c` (`ci-ok`), PRE `cd6128df`, WM `ae5f825c`, WO `66a34105`, APS `ba92b34f`, APF `a3d460ca`, DWIN `aefc1736`, DMAC `9d74e356`. Svaki novi commit na bazi mora zadržati zeleni CI.
 
 #### 1. Funkcije usporedno s fazom 3
 
