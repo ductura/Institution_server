@@ -24,6 +24,8 @@ Produkcija ostaje u `render.yaml` i [DEPLOY.md](DEPLOY.md); ovaj dokument je ne 
 
 Potrebno na računalu: repo `Institution_server` na grani `migracija/kopija-ductus-backend`, `pnpm install` (daje `dbmate`), `psql` 15 ili noviji (zbog `\getenv`) i `perl`. Naredbe su za bash (Git Bash ili WSL na Windowsu) i pokreću se u korijenu repoa.
 
+Koraci 3, 4 i 6 postoje i kao jedna skripta: `bash scripts/staging/baze.sh 3|4|6|sve`. Adrese baza i lozinke traži skriveno i smije se pokrenuti ponovno. Ako se skripta i ovaj dokument razlikuju, vrijedi dokument, a skripta se usklađuje u istom PR-u.
+
 ### 1. Render: Blueprint
 
 1. **New → Blueprint**, repo `ductura/Institution_server`, grana `migracija/kopija-ductus-backend`, **Blueprint Path** `render.staging.yaml`.
