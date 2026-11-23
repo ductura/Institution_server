@@ -76,7 +76,15 @@ SET ROLE :"kao";
 \endif
 SELECT format('CREATE ROLE %I LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', :'prijava')
  WHERE NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = :'prijava') \gexec
-SELECT format('ALTER ROLE %I LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L', :'prijava', :'lozinka') \gexec
+-- ALTER ROLE s NOSUPERUSER/NOCREATEDB/NOREPLICATION/NOBYPASSRLS traži superusera i kad se ništa ne mijenja,
+-- pa se ti atributi samo provjeravaju: prijava koja ih ima zaustavlja skriptu.
+SELECT rolsuper OR rolcreatedb OR rolreplication OR rolbypassrls AS presiroka
+  FROM pg_catalog.pg_roles WHERE rolname = :'prijava' \gset
+\if :presiroka
+\warn 'Prijava ' :'prijava' ' ima SUPERUSER, CREATEDB, REPLICATION ili BYPASSRLS: stani i javi orkestratoru.'
+SELECT 'prijava ima preširoke ovlasti'::int;
+\endif
+SELECT format('ALTER ROLE %I LOGIN INHERIT NOCREATEROLE PASSWORD %L', :'prijava', :'lozinka') \gexec
 GRANT :"grupa" TO :"prijava" WITH INHERIT TRUE, SET FALSE;
 RESET ROLE;
 SQL
