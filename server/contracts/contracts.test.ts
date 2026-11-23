@@ -233,6 +233,7 @@ describe("route inventory", () => {
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
+      "work.restore.post: app/api/works/[documentId]/restores/route.ts is not in the inventory",
       "work.export.get: app/api/works/[documentId]/export/route.ts is not in the inventory",
       "student.portable-record.get: app/api/student/submissions/[submissionId]/portable-record/route.ts is not in the inventory",
       "student.submission-package-link.post: app/api/student/submissions/[submissionId]/package-link/route.ts is not in the inventory",

@@ -51,6 +51,7 @@ describe("createWorkVersionsReader", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0]?.token).toBe(TOKEN);
     expect(seen[0]?.sql).toContain("FROM app.read_work_versions($1, $2::bigint)");
+    expect(seen[0]?.sql).toContain('restored_from_revision::text AS "restoredFromRevision"');
     expect(seen[0]?.values).toEqual([DOCUMENT, 9]);
     expect(page).toEqual({
       status: "found",
@@ -112,8 +113,38 @@ describe("versionOf", () => {
     ["a submission without one", { ...submission(2), afterDeadline: null }],
     ["an unknown kind", { ...checkpoint(2), kind: "draft" }],
     ["another outcome", { ...checkpoint(2), outcome: "empty" }],
+    ["a restore from the same revision", { ...checkpoint(3), restoredFromRevision: "3" }],
+    ["a restore from a later revision", { ...checkpoint(3), restoredFromRevision: "4" }],
+    ["a restore from revision 0", { ...checkpoint(3), restoredFromRevision: "0" }],
+    ["a restore that is a number", { ...checkpoint(3), restoredFromRevision: 1 }],
+    ["a restore with a leading zero", { ...checkpoint(3), restoredFromRevision: "01" }],
+    ["a restore on a submission", { ...submission(3), restoredFromRevision: "1" }],
   ])("refuses %s", (_name, row) => {
     expect(versionOf(row)).toBeNull();
+  });
+
+  it("names the revision a checkpoint restored, and omits it when there is none", () => {
+    expect(versionOf({ ...checkpoint(3), restoredFromRevision: "1" })).toEqual({
+      kind: "checkpoint",
+      revision: 3,
+      savedMinute: MINUTE.toISOString(),
+      restoredFromRevision: 1,
+    });
+    for (const absent of [null, undefined]) {
+      const version = versionOf({ ...checkpoint(3), restoredFromRevision: absent });
+      expect(version).toEqual({
+        kind: "checkpoint",
+        revision: 3,
+        savedMinute: MINUTE.toISOString(),
+      });
+      expect(version).not.toHaveProperty("restoredFromRevision");
+    }
+    expect(versionOf({ ...submission(3), restoredFromRevision: null })).toEqual({
+      kind: "submission",
+      revision: 3,
+      savedMinute: MINUTE.toISOString(),
+      afterDeadline: false,
+    });
   });
 });
 
