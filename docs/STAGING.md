@@ -24,6 +24,8 @@ Produkcija ostaje u `render.yaml` i [DEPLOY.md](DEPLOY.md); ovaj dokument je ne 
 
 Potrebno na računalu: repo `Institution_server` na grani `migracija/kopija-ductus-backend`, `pnpm install` (daje `dbmate`), `psql` 15 ili noviji (zbog `\getenv`) i `perl`. Naredbe su za bash (Git Bash ili WSL na Windowsu) i pokreću se u korijenu repoa.
 
+Koraci 3, 4 i 6 postoje i kao jedna skripta: `bash scripts/staging/baze.sh 3|4|6|sve`. Adrese baza i lozinke traži skriveno i smije se pokrenuti ponovno. Ako se skripta i ovaj dokument razlikuju, vrijedi dokument, a skripta se usklađuje u istom PR-u.
+
 ### 1. Render: Blueprint
 
 1. **New → Blueprint**, repo `ductura/Institution_server`, grana `migracija/kopija-ductus-backend`, **Blueprint Path** `render.staging.yaml`.
@@ -62,9 +64,10 @@ node scripts/db/migrate-locked.ts --url "$STG_MAIN_OWNER_URL&role=ductus_migrato
 
 ### 4. Prijave procesa i baza zapisa
 
-Lokalne datoteke prijava (`app-login.sql`, `auth-login.sql`, `worker-login.sql`) odbijaju TCP i nose lokalne lozinke, pa se na stagingu iste prijave rade ručno, s tvojim lozinkama (najmanje 16 znakova, generiraj ih npr. `openssl rand -base64 24`). Lozinke psql čita iz okoline (`\getenv`), pa ne ulaze u povijest naredbi ni u argumente procesa. Worker na stagingu ne postoji, pa ni njegova prijava.
+Lokalne datoteke prijava (`app-login.sql`, `auth-login.sql`, `worker-login.sql`) odbijaju TCP i nose lokalne lozinke, pa se na stagingu iste prijave rade ručno, s tvojim lozinkama (najmanje 16 znakova, generiraj ih npr. `openssl rand -base64 24`). Lozinke psql čita iz okoline (`\getenv`), pa ne ulaze u povijest naredbi ni u argumente procesa. Worker na stagingu ne postoji, pa ni njegova prijava. U Git Bashu `MSYS2_ENV_CONV_EXCL` sprječava da se lozinka koja počinje s `/` pretvori u Windows putanju prije psql-a.
 
 ```sh
+export MSYS2_ENV_CONV_EXCL='STG_APP_PASSWORD;STG_AUTH_PASSWORD;STG_LOGS_PASSWORD'
 read -rs STG_APP_PASSWORD && read -rs STG_AUTH_PASSWORD && export STG_APP_PASSWORD STG_AUTH_PASSWORD
 psql "$STG_MAIN_OWNER_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
 \getenv app_password STG_APP_PASSWORD
@@ -90,6 +93,7 @@ psql "$STG_LOGS_OWNER_URL" -v ON_ERROR_STOP=1 \
 psql "$STG_LOGS_OWNER_URL" -v ON_ERROR_STOP=1 -q -f db/logs/local/migrator.sql
 node scripts/db/migrate-locked.ts --database logs --url "$STG_LOGS_OWNER_URL&role=ductus_logs_migrator"
 
+export MSYS2_ENV_CONV_EXCL='STG_APP_PASSWORD;STG_AUTH_PASSWORD;STG_LOGS_PASSWORD'
 read -rs STG_LOGS_PASSWORD && export STG_LOGS_PASSWORD
 psql "$STG_LOGS_OWNER_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
 \getenv logs_password STG_LOGS_PASSWORD
