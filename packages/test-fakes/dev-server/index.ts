@@ -43,6 +43,7 @@ import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.t
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
+import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
 import { LEGAL_HOLD_HANDLERS } from "./legal-hold-routes.ts";
 import { STUDENT_DATA_EXPORT_HANDLERS } from "./student-data-export-routes.ts";
@@ -139,6 +140,7 @@ export const DEV_HANDLERS: Handlers = {
   ...DECLARATION_REQUIRED_HANDLERS,
   ...DECLARATION_QUESTION_HANDLERS,
   ...OPS_HANDLERS,
+  ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,
   ...LEGAL_HOLD_HANDLERS,
   ...STUDENT_DATA_EXPORT_HANDLERS,

@@ -55,6 +55,9 @@ import {
   merlinPackageRoutes,
   supportRoutes,
   problemReportsPost,
+  problemReportsGet,
+  problemReportStatusPost,
+  adminActionLogRoutes,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
   teacherSourcesRoutes,
@@ -147,6 +150,18 @@ export {
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
 export { ProblemReportInput, problemReportsPost } from "./routes/index.ts";
+export {
+  ADMIN_ACTION_KINDS,
+  ADMIN_ACTIONS_PAGE,
+  ADMIN_ACTOR_ROLES,
+  ADMIN_SUBJECT_ROLES,
+  AdminActionEntry,
+  adminActionsGet,
+  PROBLEM_REPORTS_PAGE,
+  problemReportStatusPost,
+  problemReportsGet,
+  RoutedProblemReport,
+} from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
@@ -212,6 +227,10 @@ export const ROUTES: readonly RouteContract[] = [
   ...merlinPackageRoutes,
   ...supportRoutes,
   problemReportsPost,
+  // SRV-ADMIN-1 (NF-7 OA-7, OA-3): reports routed by kind, their state, the action log.
+  problemReportsGet,
+  problemReportStatusPost,
+  ...adminActionLogRoutes,
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,

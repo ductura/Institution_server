@@ -795,6 +795,17 @@ export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
 export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";
 export {
+  createProblemReportInbox,
+  type ProblemReportInbox,
+  type ProblemReportStatus,
+  type RoutedProblemReportRow,
+} from "./problem-report-inbox/index.ts";
+export {
+  createAdminActionLog,
+  type AdminActionLog,
+  type AdminActionRow,
+} from "./admin-action-log/index.ts";
+export {
   classesAwaitingDecision,
   createRetentionDryRunReader,
   retentionPeriodStatus,

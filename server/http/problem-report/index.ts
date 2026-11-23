@@ -46,13 +46,16 @@ export function createProblemReportsRouteFor({ withActor }: { withActor: WithAct
       if (!Value.Check(ProblemReportInput, json.value))
         return sendProblem(response, 422, "invalid_input");
 
-      const submitted = await store.submit(token, {
-        ...json.value,
-        route: null,
-        browserFamily: "other",
-        browserMajor: null,
-        syncState: null,
-      });
+      // SRV-ADMIN-1 (OA-7): only a course report may name a course.
+      const { courseId, ...report } = json.value;
+      if (courseId !== undefined && report.category !== "course") {
+        return sendProblem(response, 422, "invalid_input");
+      }
+      const submitted = await store.submit(
+        token,
+        { ...report, route: null, browserFamily: "other", browserMajor: null, syncState: null },
+        courseId,
+      );
       if (!submitted.ok) {
         const { code } = submitted.error;
         if (code === PROBLEM_REPORT_UNAUTHENTICATED.code)

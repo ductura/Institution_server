@@ -60,7 +60,23 @@ export {
 } from "./return-for-revision.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
-export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
+export {
+  PROBLEM_REPORTS_PAGE,
+  ProblemReportInput,
+  problemReportStatusPost,
+  problemReportsGet,
+  problemReportsPost,
+  RoutedProblemReport,
+} from "./problem-report.ts";
+export {
+  ADMIN_ACTION_KINDS,
+  ADMIN_ACTIONS_PAGE,
+  ADMIN_ACTOR_ROLES,
+  ADMIN_SUBJECT_ROLES,
+  AdminActionEntry,
+  adminActionLogRoutes,
+  adminActionsGet,
+} from "./admin-action-log.ts";
 export { sourceLookupPost } from "./source-lookup.ts";
 export { publicVerificationPost, publicVerificationRoutes } from "./public-verification.ts";
 export { collaborationRoutes } from "./collaboration.ts";
