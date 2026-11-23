@@ -1,7 +1,8 @@
 // The consultation records of a work on the dev fake server
 // (work.consultation-records.get and .post, work.consultation-additions.post,
 // SRV-1105): the student of the work and the teachers of its course read the
-// same list (readerOf) and add to the same record. A record names a revision
+// same list (readerOf); since owner decision (1) of 23 Nov 2026 (SRV-MENTOR-1)
+// only the teacher writes records and additions. A record names a revision
 // of the same work (the fake keeps the current one, so 1 up to it); an empty
 // topic or addition and a date that does not exist are refused. Records and
 // additions are only added. The real rules are the functions of
@@ -46,7 +47,8 @@ export const CONSULTATION_HANDLERS: Handlers = {
   "work.consultation-records.post": ({ state, account, params, body }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find((w) => w.documentId === params.documentId);
-    if (work === undefined || readerOf(state, work, account) === null) {
+    // SRV-MENTOR-1, owner decision (1) of 23 Nov 2026: only the teacher of the work writes.
+    if (work === undefined || readerOf(state, work, account) !== "teacher") {
       return { error: "not_found" };
     }
     if (body.topic.trim() === "" || !isCalendarDate(body.heldOn) || body.revision > work.revision) {
@@ -66,7 +68,7 @@ export const CONSULTATION_HANDLERS: Handlers = {
   "work.consultation-additions.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find((w) => w.documentId === params.documentId);
-    if (work === undefined || readerOf(state, work, account) === null) {
+    if (work === undefined || readerOf(state, work, account) !== "teacher") {
       return { error: "not_found" };
     }
     const record = state.consultations.find(

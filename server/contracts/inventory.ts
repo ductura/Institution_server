@@ -68,6 +68,43 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  // SRV-MENTOR-1 (NF-6, MK-7, MK-3, MK-10, MK-5): opening, slot details and moves, agreed tasks.
+  "app/api/mentorships/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/student/mentorships/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/notifications/mentorship-opened/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-slot-details/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-slot-requests/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-slots/[slotId]/close/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-tasks/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-records/[recordId]/tasks/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
+  "app/api/works/[documentId]/consultation-tasks/[taskId]/mark/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
+  },
   "app/api/problem-reports/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064518328",

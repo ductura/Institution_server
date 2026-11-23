@@ -53,6 +53,7 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createMentorshipConsultationRoutesFor,
   createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
@@ -212,6 +213,17 @@ const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
 const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
 const SRV_1414 = ["mentorship.student-requests.get", "mentorship.student-mentor-candidates.get"];
+const SRV_MENTOR_1 = [
+  "mentorship.open.post",
+  "mentorship.student-mentorships.get",
+  "notifications.mentorship-opened.list.get",
+  "work.consultation-slot-details.get",
+  "work.consultation-slot-requests.post",
+  "work.consultation-slot-close.post",
+  "work.consultation-tasks.get",
+  "work.consultation-tasks.post",
+  "work.consultation-task-mark.post",
+];
 const SRV_1412 = ["student-work.start.post", "student-work.works.get"];
 const SRV_1407 = [
   "mentorship.requests.post",
@@ -517,6 +529,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipStudentRoutesFor(databases.main)",
     ids: SRV_1414,
     routes: () => createMentorshipStudentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createMentorshipConsultationRoutesFor(databases.main)",
+    ids: SRV_MENTOR_1,
+    routes: () => createMentorshipConsultationRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createStudentWorkRoutesFor(databases.main)",
@@ -932,6 +949,7 @@ describe("routes the entry point mounts itself", () => {
       "work.interview-pdf.get",
       ...SRV_1407,
       ...SRV_1414,
+      ...SRV_MENTOR_1,
       ...SRV_1412,
       "mentorship.key-dates.get",
       ...SRV_1408,

@@ -18,6 +18,10 @@ export { createWorkInterviewStore } from "./work-interview/index.ts";
 export { createMentorshipRequestStore } from "./mentorship/index.ts";
 export { createStudentMentorshipReader } from "./mentorship/index.ts";
 export {
+  createMentorshipConsultationStore,
+  type SlotPreparation,
+} from "./mentorship-consultations/index.ts";
+export {
   createStudentWorkStarter,
   createStudentWorksReader,
   type StartWorkOutcome,

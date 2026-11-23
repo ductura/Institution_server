@@ -10,6 +10,7 @@ import {
   workInterviewPdfRoutes,
   mentorshipRoutes,
   mentorshipStudentRoutes,
+  mentorshipConsultationRoutes,
   studentWorkRoutes,
   keyDatesGet,
   teachingTeamRoutes,
@@ -94,6 +95,7 @@ export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/in
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { RESTORE_MAX_FROM_REVISION, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
 export { WORK_INTERVIEW_NOTE_MAX_BYTES } from "./routes/index.ts";
+export { MentorshipNotificationsPage } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export {
   WorkMilestoneApprovalInput,
@@ -214,6 +216,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...workInterviewPdfRoutes,
   ...mentorshipRoutes,
   ...mentorshipStudentRoutes,
+  ...mentorshipConsultationRoutes,
   ...studentWorkRoutes,
   keyDatesGet,
   ...teachingTeamRoutes,
