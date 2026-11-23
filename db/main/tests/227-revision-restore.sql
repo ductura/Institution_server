@@ -1,7 +1,8 @@
 -- INT-21 C: the server records that a revision restored an earlier one. Only
 -- the owning student records, and only against a later revision of her own
 -- whose committed hash is that of the revision restored from; every other
--- caller gets not_found. The versions list shows the revision restored from.
+-- caller gets not_found. The answer names the revision the record is against
+-- (outcome@revision below). The versions list shows the revision restored from.
 -- Every person, document, text and hash below is invented.
 BEGIN;
 SET LOCAL lc_messages TO 'C';
@@ -11,7 +12,8 @@ SELECT no_plan();
 CREATE FUNCTION pg_temp.restore(p_actor text, p_from bigint, p_document text DEFAULT 'doc-a')
 RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask(p_actor, format(
-    $q$ SELECT string_agg(outcome, ',') FROM app.record_revision_restore(%L, %L::bigint) $q$,
+    $q$ SELECT string_agg(outcome || coalesce('@' || revision, ''), ',')
+          FROM app.record_revision_restore(%L, %L::bigint) $q$,
     p_document, p_from))
 $$;
 -- The versions as one line, newest first: c<revision> for a saved point,
@@ -51,10 +53,10 @@ SELECT is_empty(
       CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) AS p
       WHERE has_table_privilege(r, 'evidence.revision_restore', p) $$,
   'no runtime role reads or writes the record directly');
-SELECT results_eq(
-  $$ SELECT policyname::text, cmd::text, roles::text[] FROM pg_policies
-      WHERE schemaname = 'evidence' AND tablename = 'revision_restore' $$,
-  $$ VALUES ('evidence_revision_restore_owner', 'ALL', ARRAY['ductus_evidence']) $$,
+SELECT is(
+  (SELECT string_agg(format('%s %s %s', policyname, cmd, roles::text), ';')
+     FROM pg_policies WHERE schemaname = 'evidence' AND tablename = 'revision_restore'),
+  'evidence_revision_restore_owner ALL {ductus_evidence}',
   'the one policy is the owner''s');
 SELECT is(
   (SELECT format('%s %s %s %s', proowner::regrole, provolatile, prosecdef, 'search_path=""' = ANY (proconfig))
@@ -81,7 +83,7 @@ SELECT is(pg_get_function_arguments('app.record_revision_restore(text,bigint)'::
   'p_document_id text, p_from_revision bigint',
   'the client names the document and the revision restored from, never the new revision');
 SELECT is(pg_get_function_result('app.record_revision_restore(text,bigint)'::regprocedure),
-  'TABLE(outcome text)', 'the answer is one outcome');
+  'TABLE(outcome text, revision bigint)', 'the answer is one outcome and the revision it is against');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'app', 'CREATE')
   AND NOT has_schema_privilege('ductus_evidence', 'app', 'CREATE')
   AND NOT has_schema_privilege('ductus_evidence', 'evidence', 'CREATE')
@@ -100,9 +102,9 @@ SELECT is(pg_temp.records(), '', 'nothing is recorded');
 
 -- Ana restores revision 1: revision 3 is d again.
 SELECT is(pg_temp.commit(3, 'e', 'd', '7'), 'reserved', 'fixture: revision 3 is d, the text of 1');
-SELECT is(pg_temp.restore('ana', 1), 'recorded', 'Ana records that revision 3 restored revision 1');
+SELECT is(pg_temp.restore('ana', 1), 'recorded@3', 'Ana records that revision 3 restored revision 1');
 SELECT is(pg_temp.records(), '3<1', 'the record is against revision 3');
-SELECT is(pg_temp.restore('ana', 1), 'already_recorded', 'the same restore again changes nothing');
+SELECT is(pg_temp.restore('ana', 1), 'already_recorded@3', 'the same restore again changes nothing and names revision 3');
 SELECT is(pg_temp.records(), '3<1', 'still one record');
 SELECT is(pg_temp.restore('ana', 3), 'no_matching_revision', 'revision 3 is restored by nothing after it');
 
@@ -128,9 +130,10 @@ SELECT is(pg_temp.records(), '3<1', 'no refused call wrote a record');
 -- Revisions 4 (e) and 5 (d): a second restore of 1 lands on the lowest revision left.
 SELECT is(pg_temp.commit(4, 'd', 'e', '8'), 'reserved', 'fixture: revision 4 is e, the text of 2');
 SELECT is(pg_temp.commit(5, 'e', 'd', '9'), 'reserved', 'fixture: revision 5 is d again');
-SELECT is(pg_temp.restore('ana', 2), 'recorded', 'revision 4 restored revision 2');
-SELECT is(pg_temp.restore('ana', 1), 'recorded', 'revision 5 restored revision 1 once more');
-SELECT is(pg_temp.restore('ana', 1), 'already_recorded', 'no unrecorded d is left');
+SELECT is(pg_temp.restore('ana', 2), 'recorded@4', 'revision 4 restored revision 2');
+SELECT is(pg_temp.restore('ana', 1), 'recorded@5', 'revision 5 restored revision 1 once more');
+SELECT is(pg_temp.restore('ana', 1), 'already_recorded@5', 'no unrecorded d is left; the latest record is named');
+SELECT is(pg_temp.restore('ana', 2), 'already_recorded@4', 'a retry of the restore of 2 names revision 4, not 5');
 SELECT is(pg_temp.restore('ana', 3), 'no_matching_revision', 'revision 5 is taken, so 3 has no match');
 SELECT is(pg_temp.records(), '3<1,4<2,5<1', 'three records, each against its own revision');
 
@@ -139,15 +142,16 @@ SELECT is(pg_temp.versions(a.name), 'c5<1,c4<2,c3<1,c2,c1', a.name || ' reads wh
 FROM (VALUES ('ana'), ('vesna')) AS a (name);
 SELECT is(pg_temp.versions('dora'), 'not_found', 'another student still reads no list');
 
--- A revision of the same text by someone else is never taken as Ana's restore.
-SET CONSTRAINTS ALL DEFERRED;
-SET LOCAL ROLE ductus_evidence;
-INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
-VALUES ('doc-a', pg_temp.id('fak_a'), 6, 5, pg_temp.id('vesna'), pg_temp.h('e'));
-RESET ROLE;
+-- A revision of Ana's work written by someone else cannot exist: the key to
+-- the document refuses it, so the restore never meets one (it also asks for
+-- the actor as the author of the later revision).
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT is(pg_temp.restore('ana', 4), 'no_matching_revision', 'revision 6 holds e but is not Ana''s');
-SELECT is(pg_temp.records(), '3<1,4<2,5<1', 'nothing was recorded against revision 6');
+SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', format($$ INSERT INTO evidence.document_revision
+  (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+  VALUES ('doc-a', %L, 6, 5, %L, %L) $$, pg_temp.id('fak_a'), pg_temp.id('vesna'), pg_temp.h('e'))),
+  '^23503:', 'a revision of Ana''s work by Vesna is refused');
+SET CONSTRAINTS ALL DEFERRED;
+SELECT is(pg_temp.records(), '3<1,4<2,5<1', 'still three records');
 
 -- The record is append-only, even for its owner.
 SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', $$ UPDATE evidence.revision_restore

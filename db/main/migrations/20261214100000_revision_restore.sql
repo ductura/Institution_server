@@ -53,11 +53,12 @@ CREATE POLICY evidence_revision_restore_owner ON evidence.revision_restore
 
 -- The record of the actor's own document: identity and institution come from
 -- current_actor(), never a parameter. The caller has already checked that the
--- actor is the owning student. Outcomes: recorded, already_recorded (no
--- unrecorded match is left and the revision restored from already has one),
--- no_matching_revision.
-CREATE FUNCTION app.revision_restore_record(p_document_id text, p_from_revision bigint)
-RETURNS text
+-- actor is the owning student. Outcomes, each with the revision the record is
+-- against: recorded (the revision just recorded), already_recorded (no
+-- unrecorded match is left and the revision restored from already has one:
+-- the latest such record) and no_matching_revision (no revision).
+CREATE FUNCTION app.revision_restore_record(p_document_id text, p_from_revision bigint,
+                                            OUT o_outcome text, OUT o_revision bigint)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
@@ -72,7 +73,8 @@ BEGIN
    WHERE d.id = p_document_id AND d.institution_id = v_actor.institution_id
      AND d.principal_id = v_actor.user_id AND r.revision = p_from_revision;
   IF v_from_hash IS NULL THEN
-    RETURN 'no_matching_revision';
+    o_outcome := 'no_matching_revision';
+    RETURN;
   END IF;
   -- Lowest first, so two restores of the same revision land in their order;
   -- a concurrent record of the same revision waits on the key and moves on.
@@ -90,15 +92,15 @@ BEGIN
     VALUES (p_document_id, v_actor.institution_id, v_candidate, p_from_revision, v_actor.user_id)
     ON CONFLICT (document_id, institution_id, revision) DO NOTHING;
     IF FOUND THEN
-      RETURN 'recorded';
+      o_outcome := 'recorded';
+      o_revision := v_candidate;
+      RETURN;
     END IF;
   END LOOP;
-  IF EXISTS (SELECT 1 FROM evidence.revision_restore x
-              WHERE x.document_id = p_document_id AND x.institution_id = v_actor.institution_id
-                AND x.restored_from_revision = p_from_revision) THEN
-    RETURN 'already_recorded';
-  END IF;
-  RETURN 'no_matching_revision';
+  SELECT max(x.revision) INTO o_revision FROM evidence.revision_restore x
+   WHERE x.document_id = p_document_id AND x.institution_id = v_actor.institution_id
+     AND x.restored_from_revision = p_from_revision;
+  o_outcome := CASE WHEN o_revision IS NULL THEN 'no_matching_revision' ELSE 'already_recorded' END;
 END
 $$;
 REVOKE ALL ON FUNCTION app.revision_restore_record(text, bigint) FROM PUBLIC;
@@ -150,9 +152,10 @@ SET LOCAL ROLE ductus_identity;
 -- ZD401 without an open session, whatever is asked; ZD422 for a revision that
 -- cannot be one restored from. One row not_found for every refusal, a
 -- malformed id and a missing document alike (C-23): only the owning student
--- records.
+-- records. The revision is the one the record is against, so a caller binds
+-- its confirmation to that revision and never to a restore it cannot match.
 CREATE FUNCTION app.record_revision_restore(p_document_id text, p_from_revision bigint)
-RETURNS TABLE (outcome text)
+RETURNS TABLE (outcome text, revision bigint)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
@@ -164,17 +167,18 @@ BEGIN
   END IF;
   IF p_document_id IS NULL OR length(p_document_id) NOT BETWEEN 1 AND 256
      OR p_document_id ~ '[[:cntrl:]]' OR p_document_id <> pg_catalog.btrim(p_document_id) THEN
-    RETURN QUERY SELECT 'not_found'::text;
+    RETURN QUERY SELECT 'not_found'::text, NULL::bigint;
     RETURN;
   END IF;
   SELECT * INTO v_scope FROM collaboration.document_scope(p_document_id);
   IF v_scope.institution_id IS NULL
      OR collaboration.actor_role(v_scope.institution_id, v_scope.assignment_id, v_scope.principal_id)
         IS DISTINCT FROM 'student' THEN
-    RETURN QUERY SELECT 'not_found'::text;
+    RETURN QUERY SELECT 'not_found'::text, NULL::bigint;
     RETURN;
   END IF;
-  RETURN QUERY SELECT app.revision_restore_record(p_document_id, p_from_revision);
+  RETURN QUERY SELECT r.o_outcome, r.o_revision
+    FROM app.revision_restore_record(p_document_id, p_from_revision) r;
 END
 $$;
 REVOKE ALL ON FUNCTION app.record_revision_restore(text, bigint) FROM PUBLIC;
