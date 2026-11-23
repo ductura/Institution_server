@@ -4,7 +4,7 @@
 // of routes is closed against server/ by N2 and ended-mark-coverage.test.ts.
 // All values are invented.
 import { readdirSync, readFileSync } from "node:fs";
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { join } from "node:path";
 
@@ -144,11 +144,14 @@ describe("N2: the list of routes is closed", () => {
 
 let app: Running | undefined;
 let provider: Server | undefined;
+/** The session tokens the server closed, in order (INT-20g). */
+const closed: string[] = [];
 afterEach(async () => {
   vi.restoreAllMocks();
   await app?.close();
   if (provider) await new Promise<void>((done) => provider?.close(() => done()));
   app = provider = undefined;
+  closed.length = 0;
 });
 
 async function freePort(): Promise<number> {
@@ -192,7 +195,13 @@ async function stack(mode: FakeOidcMode, failing: "close" | null = null) {
       config,
       oidc: createOidcClient(config),
       openSession: async () => ({ ok: true, expires: EXPIRES }),
-      closeSession: failing === "close" ? fail : async () => true,
+      closeSession:
+        failing === "close"
+          ? fail
+          : async (token) => {
+              closed.push(token);
+              return true;
+            },
       closeAllSessions: failing === "close" ? fail : async () => undefined,
     };
   };
@@ -289,5 +298,61 @@ describe("P: every route that sets or clears the cookie sends exactly one valid 
     const out = await go(`${origin}${path}`, "POST");
     expect(out.status).toBe(303);
     expect(sessionCookies(out)).toEqual([CLEAR]);
+  });
+});
+
+/**
+ * A request whose Cookie is sent as separate header lines, as HTTP/1.1 allows
+ * a client to (RFC 6265 5.4 asks for one, so a proxy may still split it);
+ * fetch would fold them into one.
+ */
+function rawRequest(
+  url: string,
+  method: string,
+  cookies: string[],
+  headers: Record<string, string> = {},
+): Promise<{ status: number; location: string | undefined; setCookie: string[] }> {
+  return new Promise((done, fail) => {
+    const req = httpRequest(url, { method, headers: { ...headers, cookie: cookies } }, (res) => {
+      res.resume();
+      res.on("end", () =>
+        done({
+          status: res.statusCode ?? 0,
+          location: res.headers.location,
+          setCookie: res.headers["set-cookie"] ?? [],
+        }),
+      );
+    });
+    req.on("error", fail);
+    req.end();
+  });
+}
+
+// INT-20g: the flow reads a Cookie sent as several header lines the same as
+// one: the sign-out mark and the session cookie count on any line.
+describe("C: several Cookie header lines", () => {
+  const MARK = "__Secure-ductus_signed_out=1";
+
+  it("the sign-out mark on a later line asks the provider to sign in again", async () => {
+    const { origin } = await stack("success");
+    const login = `${origin}/api/v1/auth/login`;
+    const marked = await rawRequest(login, "GET", ["izmisljeni=1", MARK]);
+    expect(marked.status).toBe(303);
+    expect(new URL(marked.location!).searchParams.get("prompt")).toBe("login");
+    const plain = await rawRequest(login, "GET", ["izmisljeni=1", "drugi=2"]);
+    expect(new URL(plain.location!).searchParams.get("prompt")).toBeNull();
+  });
+
+  it("logout closes the session named on a later line", async () => {
+    const { origin } = await stack("success");
+    const out = await rawRequest(
+      `${origin}/api/v1/auth/logout`,
+      "POST",
+      ["izmisljeni=1", `${NAME}=${TOKEN}`],
+      { origin },
+    );
+    expect(out.status).toBe(303);
+    expect(closed).toEqual([TOKEN]);
+    expect(out.setCookie.filter((c) => c.startsWith(`${NAME}=`))).toEqual([CLEAR]);
   });
 });
