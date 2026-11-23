@@ -7656,6 +7656,152 @@
     }
   },
   {
+    "route": "institution.assistant-setting.get",
+    "name": "faculty-setting",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assistant": true,
+        "transcription": false,
+        "tools": false,
+        "settingVersion": 1,
+        "changeable": false
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "no-setting",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assistant": false,
+        "transcription": false,
+        "tools": false,
+        "settingVersion": null,
+        "changeable": false
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000161000001"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "teacher-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000161000002"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000161000003"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "invalid-input",
+    "request": {
+      "query": {
+        "faculty": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000161000004"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000161000005"
+      }
+    }
+  },
+  {
     "route": "institution.config-versions.post",
     "name": "publish-first",
     "request": {
@@ -15764,7 +15910,9 @@
             "retentionDays": 30,
             "mode": "execute",
             "candidates": 2,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "decided",
+            "periodStatusKey": "adminSettings.retentionPeriod.decided"
           },
           {
             "key": "live-state",
@@ -15772,7 +15920,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 1,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "versions",
@@ -15780,7 +15930,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 3,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "change-times",
@@ -15788,7 +15940,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "access-log",
@@ -15796,7 +15950,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 3,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "receipts",
@@ -15804,7 +15960,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "never_deleted",
+            "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
           }
         ]
       }
@@ -15832,7 +15990,9 @@
             "retentionDays": 30,
             "mode": "execute",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "decided",
+            "periodStatusKey": "adminSettings.retentionPeriod.decided"
           },
           {
             "key": "live-state",
@@ -15840,7 +16000,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "versions",
@@ -15848,7 +16010,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "change-times",
@@ -15856,7 +16020,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "access-log",
@@ -15864,7 +16030,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "receipts",
@@ -15872,7 +16040,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "never_deleted",
+            "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
           }
         ]
       }
@@ -18055,7 +18225,9 @@
         "code": "conflict",
         "messageKey": "errors.conflict",
         "status": 409,
-        "requestId": "00000000-0000-4000-8000-000000001391"
+        "requestId": "00000000-0000-4000-8000-000000001391",
+        "reason": "export_already_open",
+        "reasonKey": "adminSettings.exportAlreadyOpen"
       }
     }
   },
@@ -26338,7 +26510,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.97.0",
+        "apiVersion": "1.98.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -26354,7 +26526,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.97.0",
+        "apiVersion": "1.98.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

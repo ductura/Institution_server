@@ -7,6 +7,15 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // server/domain/retention/catalog.ts; the label is a message key.
 const Count = Type.Integer({ minimum: 0, maximum: 2_147_483_647 });
 
+export const RETENTION_PERIOD_STATUSES = ["decided", "awaiting_decision", "never_deleted"] as const;
+const RetentionPeriodStatus = Type.Union(
+  RETENTION_PERIOD_STATUSES.map((status) => Type.Literal(status)),
+  {
+    description:
+      "decided: retentionDays is a number; awaiting_decision: retentionDays is null because nobody has decided the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
+  },
+);
+
 export const RetentionClassReport = closed({
   key: Type.Union([
     Type.Literal("sessions"),
@@ -21,6 +30,20 @@ export const RetentionClassReport = closed({
   mode: Type.Union([Type.Literal("execute"), Type.Literal("dry-run")]),
   candidates: Type.Union([Count, Type.Null()]),
   lastRunAt: Type.Union([Type.String({ format: "date-time", maxLength: 24 }), Type.Null()]),
+  // SRV-ADMIN-3 (owner decision of 23. 11. 2026., item 5): why a period is what
+  // it is. decided: retentionDays is a number; awaiting_decision: retentionDays
+  // is null because nobody has decided it yet (never a made-up period);
+  // never_deleted: the class proves a submission and is never deleted.
+  // periodStatusKey is the text of the server's catalogue (locales,
+  // adminSettings.retentionPeriod). Optional in v1: new response fields.
+  periodStatus: Type.Optional(RetentionPeriodStatus),
+  periodStatusKey: Type.Optional(
+    Type.Union([
+      Type.Literal("adminSettings.retentionPeriod.decided"),
+      Type.Literal("adminSettings.retentionPeriod.awaitingDecision"),
+      Type.Literal("adminSettings.retentionPeriod.neverDeleted"),
+    ]),
+  ),
 });
 
 export const RetentionReport = closed({

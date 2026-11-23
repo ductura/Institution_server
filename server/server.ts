@@ -73,6 +73,7 @@ import {
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
   createFacultyRuleRoutesFor,
+  createAssistantSettingRouteFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -404,6 +405,8 @@ async function main(): Promise<void> {
       // SRV-1406: the versioned rules of the institution, for its administrator.
       // SRV-2001: faculty rules of the institution, read and published by its administrator.
       ...createFacultyRuleRoutesFor(databases.main),
+      // SRV-ADMIN-3 (NF-7 OA-9): the faculty's assistant setting, read only, for its administrator.
+      createAssistantSettingRouteFor(databases.main),
       ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),

@@ -276,6 +276,7 @@ describe("route inventory", () => {
       "work.event-disputes.post: app/api/works/[documentId]/event-disputes/route.ts is not in the inventory",
       "institution.faculty-rules.get: app/api/institution/faculty-rules/route.ts is not in the inventory",
       "institution.faculty-rules.post: app/api/institution/faculty-rules/route.ts is not in the inventory",
+      "institution.assistant-setting.get: app/api/institution/assistant-setting/route.ts is not in the inventory",
       "work.milestones.get: app/api/works/[documentId]/milestones/route.ts is not in the inventory",
       "work.milestones.patch: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
       "work.milestones.delete: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",

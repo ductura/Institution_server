@@ -532,7 +532,9 @@
           "code": "conflict",
           "messageKey": "errors.conflict",
           "status": 409,
-          "requestId": "00000000-0000-4000-8000-000000001391"
+          "requestId": "00000000-0000-4000-8000-000000001391",
+          "reason": "export_already_open",
+          "reasonKey": "adminSettings.exportAlreadyOpen"
         }
       }
     },
