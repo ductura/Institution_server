@@ -12,9 +12,7 @@ type RawInterview = {
   }[];
   explanations: { id: string; questionId: string | null; text: string; createdAt: string }[];
   appointment:
-    | { consultationSlotId: string; startsAt: string }
-    | { place: string; at: string }
-    | null;
+    { consultationSlotId: string; startsAt: string } | { place: string; at: string } | null;
   heldOn: string | null;
 };
 type RawQuestion = RawInterview["questions"][number];
@@ -29,8 +27,7 @@ type RawNote = {
   createdAt: string;
 };
 export type Appointment =
-  | { consultationSlotId: string; startsAt: string }
-  | { place: string; at: string };
+  { consultationSlotId: string; startsAt: string } | { place: string; at: string };
 type Interview = Omit<RawInterview, "appointment"> & { appointment: Appointment | null };
 
 const utc = (value: string): string => new Date(value).toISOString();
