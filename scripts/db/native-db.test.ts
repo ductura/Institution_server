@@ -28,6 +28,8 @@ import {
   READY_ATTEMPTS,
   ROLE_MARKER,
   shardTestFiles,
+  TEST_FILE_COST,
+  testFileCost,
   TESTS_DIR,
   testDb,
   up,
@@ -649,10 +651,10 @@ test("every leg count runs each real test file exactly once, in path order, no l
     }
   }
   assert.deepEqual(shardTestFiles(files, 1), [all]);
-  // Balanced by size: no leg is heavier than an even share plus the largest file.
-  const size = new Map(files.map((file) => [file.path, file.size]));
+  // Balanced by cost: no leg is heavier than an even share plus the largest file.
+  const size = new Map(files.map((file) => [file.path, testFileCost(file)]));
   const sum = (paths: string[]) => paths.reduce((total, path) => total + (size.get(path) ?? 0), 0);
-  const largest = Math.max(...files.map((file) => file.size));
+  const largest = Math.max(...files.map((file) => testFileCost(file)));
   for (const leg of shardTestFiles(files, 2)) {
     assert.ok(sum(leg) <= sum(all) / 2 + largest, "the legs are balanced");
   }
@@ -742,4 +744,26 @@ test("test:db:native with SHARD runs pg_prove over exactly the files of its leg"
     /fewer pgTAP test files than legs/,
   );
   assert.deepEqual(bad.calls, [], "pg_prove never runs on a refused split");
+});
+
+test("every measured cost names an existing test file and outweighs its size", () => {
+  const files = new Map(listTestFiles().map((file) => [file.path, file]));
+  assert.ok(TEST_FILE_COST.size > 0);
+  for (const [path, cost] of TEST_FILE_COST) {
+    const file = files.get(path);
+    assert.ok(file !== undefined, `${path} exists`);
+    assert.equal(testFileCost(file), cost);
+    assert.ok(cost > file.size, `${path} costs more than its size`);
+  }
+  // A slow file is counted by its cost: alone against a lighter rest, it gets its own leg.
+  const slow = [...TEST_FILE_COST.keys()][0]!;
+  const legs = shardTestFiles(
+    [
+      { path: slow, size: 1 },
+      { path: `${TESTS_DIR}/a.sql`, size: 10 },
+      { path: `${TESTS_DIR}/b.sql`, size: 10 },
+    ],
+    2,
+  );
+  assert.deepEqual(legs[0], [slow]);
 });

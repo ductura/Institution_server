@@ -7,7 +7,8 @@
 //   pnpm test:db:native   pg_prove over db/main/tests, as pnpm test:db does in compose
 //
 // ZEL-CI-SRV: with SHARD=i/n (the leg of a CI matrix), test:db:native runs
-// only leg i of n of the test files (shardTestFiles). Every leg computes the
+// only leg i of n of the test files (shardTestFiles, balanced by size and the
+// measured cost of the slow files in TEST_FILE_COST). Every leg computes the
 // whole split from the same files and refuses to run unless each file is in
 // exactly one leg, so the legs together run each file exactly once.
 //
@@ -255,6 +256,20 @@ export type TestFile = { path: string; size: number };
 
 const SHARD = /^([1-9][0-9]*)\/([1-9][0-9]*)$/;
 
+/**
+ * Test files whose run time is far above their size, with the cost the split
+ * counts for them, in bytes of an ordinary test file. Measured in CI (run
+ * 45107612314, leg 1/2): 118-actor-scope-initplan.sql took 27 of the 68
+ * seconds of all files, the other files about 14.4 s per MB, so it counts as
+ * 1.9 MB. Every path must exist (native-db.test.ts), so a rename cannot drop it.
+ */
+export const TEST_FILE_COST: ReadonlyMap<string, number> = new Map([
+  [`${TESTS_DIR}/118-actor-scope-initplan.sql`, 1_900_000],
+]);
+
+/** What the split counts for a file: its measured cost, else its size. */
+export const testFileCost = (file: TestFile): number => TEST_FILE_COST.get(file.path) ?? file.size;
+
 /** SHARD=i/n of a CI leg; unset or empty means the whole suite. */
 export function parseShard(value: string | undefined): Shard | null {
   if (value === undefined || value === "") return null;
@@ -284,16 +299,17 @@ export function listTestFiles(root: string = ROOT): TestFile[] {
 }
 
 /**
- * Splits the files into `total` legs, balanced by size (largest first, each to
- * the lightest leg, ties to the lower leg and the earlier path), each leg in
- * path order. Deterministic: every leg computes the same split.
+ * Splits the files into `total` legs, balanced by cost (testFileCost; largest
+ * first, each to the lightest leg, ties to the lower leg and the earlier
+ * path), each leg in path order. Deterministic: every leg computes the same split.
  */
 export function shardTestFiles(files: readonly TestFile[], total: number): string[][] {
-  const legs = Array.from({ length: total }, () => ({ size: 0, paths: [] as string[] }));
-  const order = [...files].sort((a, b) => b.size - a.size || (a.path < b.path ? -1 : 1));
+  const legs = Array.from({ length: total }, () => ({ cost: 0, paths: [] as string[] }));
+  const cost = (file: TestFile): number => testFileCost(file);
+  const order = [...files].sort((a, b) => cost(b) - cost(a) || (a.path < b.path ? -1 : 1));
   for (const file of order) {
-    const lightest = legs.reduce((best, leg) => (leg.size < best.size ? leg : best));
-    lightest.size += file.size;
+    const lightest = legs.reduce((best, leg) => (leg.cost < best.cost ? leg : best));
+    lightest.cost += cost(file);
     lightest.paths.push(file.path);
   }
   return legs.map((leg) => leg.paths.sort());
