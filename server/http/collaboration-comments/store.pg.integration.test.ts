@@ -68,15 +68,21 @@ it("stores shared comments under ductus_app without changing the work or its rev
       prefix: " ",
       suffix: "",
     };
-    const create = (value: typeof anchor | null, revision: number | undefined = 1) =>
+    // null leaves the revision out of the body.
+    const create = (value: typeof anchor | null, revision: number | null = 1) =>
       withActor(TEACHER, (tx) =>
-        execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: value, revision }),
+        execute(tx, "create", {
+          ...WORK,
+          body: "Dopuni izvor.",
+          anchor: value,
+          ...(revision === null ? {} : { revision }),
+        }),
       );
     expect(await create({ ...anchor, quote: "nacrt" })).toEqual({ status: 409 });
     expect((await create(anchor)).status).toBe(200);
     expect((await create(null)).status).toBe(200);
     // A teacher must name a revision that exists (INT-15-SRV).
-    for (const revision of [undefined, 2]) {
+    for (const revision of [null, 2]) {
       await expect(create(null, revision)).rejects.toMatchObject({ code: "ZD422" });
     }
 
