@@ -4,7 +4,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { Handlers } from "./server.ts";
-import { EMPTY_DOCUMENT } from "./state.ts";
+import { emptyDocumentOf } from "./state.ts";
 import { studentAssignments } from "./student-routes.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
@@ -35,7 +35,8 @@ export const STUDENT_WORK_HANDLERS: Handlers = {
         submittedAt: null,
         submissionReceipt: null,
         submittedDocument: null,
-        document: EMPTY_DOCUMENT,
+        document: emptyDocumentOf(state.workSchema),
+        revisionZero: emptyDocumentOf(state.workSchema),
         versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,

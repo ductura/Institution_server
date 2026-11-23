@@ -10,6 +10,10 @@ pnpm dev:lazni-server
 
 Sluša na `127.0.0.1`, port iz `DUCTURA_LAZNI_PORT` (zadano `4010`). Portovi 3000 do 3004 su rezervirani za web i ostale lokalne servere i odbijaju se. Stanje je u memoriji: ponovno pokretanje ili `POST /__lazni/ponovno` vraća početne podatke.
 
+## Radovi sheme 3
+
+Zadano su početni i novi radovi sheme 1. Uz `DUCTURA_LAZNI_SHEMA=3` dobivaju reviziju 0 koju pravi server piše za shemu 3 (`REVISION_ZERO_V3_JCS` iz `server/domain`), pa web otvara v3 uređivač. Druge vrijednosti osim `1` i `3` server odbija pri pokretanju. `evidence.open.post` za svaki rad šalje `schemaVersion` i `revisionZeroHash` (SHA-256 bajtova revizije 0), kao pravi server. Shema ostaje ista i nakon `POST /__lazni/ponovno`.
+
 ## Kako ga web koristi
 
 Bazni URL API-ja je `http://127.0.0.1:4010/api/v1`. Kolačić sesije (`ductura_lazna_sesija`) je vezan uz host, pa je najjednostavnije da web dev server prosljeđuje `/api/v1/*` i `/__lazni/*` na lažni server (npr. `rewrites` u `next.config`), tako da preglednik sve vidi na istom hostu.
