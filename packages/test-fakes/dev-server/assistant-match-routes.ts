@@ -6,6 +6,9 @@
 // words in a row after folding case and punctuation; the real rule is
 // server/domain/assistant-match and app.assistant_match_*. Findings live in
 // memory beside the state, one per segment reference and answer.
+// PIL-P1-PODUDARANJE-OBJASNJENJE-SRV: the owner explains a finding once
+// (work.assistant-match-explanation.post; a second time is 409, a finding that
+// does not exist 404), and the findings carry it, null until then.
 import type { Handlers } from "./server.ts";
 import { readerOf } from "./state.ts";
 
@@ -21,6 +24,7 @@ type Finding = {
   recordedAt: string;
   attachedAt: string;
   documentId: string;
+  explanation: { text: string; writtenAt: string } | null;
 };
 const FINDINGS = new WeakMap<object, Finding[]>();
 
@@ -73,11 +77,29 @@ export const ASSISTANT_MATCH_HANDLERS: Handlers = {
         runWords,
         recordedAt: at,
         attachedAt: at,
+        explanation: null,
       });
     }
     return {
       status: 200,
       body: { matches: [{ messageId: MESSAGE, conversationId: CONVERSATION, runWords }] },
     };
+  },
+  "work.assistant-match-explanation.post": ({ state, account, params, body, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) !== "owner") {
+      return { error: "not_found" };
+    }
+    const finding = (FINDINGS.get(state) ?? []).find(
+      (f) =>
+        f.documentId === work.documentId &&
+        f.segmentRef === body.segmentRef &&
+        f.messageId === body.messageId,
+    );
+    if (finding === undefined) return { error: "not_found" };
+    if (finding.explanation !== null) return { error: "conflict" };
+    finding.explanation = { text: body.text, writtenAt: now.toISOString() };
+    return { status: 201, body: finding.explanation };
   },
 };
