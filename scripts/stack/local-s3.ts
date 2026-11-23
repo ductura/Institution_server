@@ -9,7 +9,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { constants } from "node:fs";
 import { link, lstat, mkdir, open, realpath, unlink } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export type LocalS3Config = {
@@ -290,9 +290,10 @@ export function localS3Config(env: Env): LocalS3Config & { port: number } {
     return value;
   };
   const root = named("VS1_S3_ROOT");
-  // Absolute and already normal: no trailing "/", "//", "." or "..", so lstat
-  // of the root judges the root itself and never follows a link at its end.
-  if (!root.startsWith("/") || resolve(root) !== root) {
+  // Absolute (POSIX "/..." or Windows "C:\...") and already normal: no trailing
+  // separator, doubled separator, "." or "..", so lstat of the root judges the
+  // root itself and never follows a link at its end.
+  if (!isAbsolute(root) || resolve(root) !== root) {
     throw new Error("VS1_S3_ROOT must be an absolute normalized path");
   }
   const bucket = named("VS1_S3_BUCKET");

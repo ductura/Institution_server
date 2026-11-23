@@ -61,6 +61,10 @@ describe("inside (Windows paths)", () => {
     ["D:\\Ductura\\Institution_server-drugi\\.local", false],
     ["D:\\Ductura", false],
     ["C:\\Users\\izmisljeni\\.ductura\\stack-vs1-x", false],
+    // Device paths fail closed: they can name the checkout behind a prefix.
+    ["\\\\?\\D:\\Ductura\\Institution_server\\.local", true],
+    ["\\\\.\\D:\\Ductura\\Institution_server\\.local", true],
+    ["//?/C:/Users/izmisljeni/.ductura/stack-vs1-x", true],
   ])("judges %j inside the checkout: %s", (path, expected) => {
     expect(inside(path, repo, "win32")).toBe(expected);
   });

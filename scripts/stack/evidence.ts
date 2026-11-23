@@ -36,6 +36,8 @@ export type S3Credentials = { keyId: string; secret: string };
  * `resolve` and `realpathSync` give backslashes, and a check against `${root}/`
  * alone let a seed inside the checkout through. Windows paths are compared as
  * Windows does (either separator, any case); POSIX paths stay case-sensitive.
+ * A Windows device path (`\\?\` or `\\.\`) can name the checkout in a form
+ * `relative` does not see through, so it counts as inside and is refused.
  */
 export const inside = (
   path: string,
@@ -43,6 +45,9 @@ export const inside = (
   platform: NodeJS.Platform = process.platform,
 ): boolean => {
   const paths = platform === "win32" ? win32 : posix;
+  if (platform === "win32" && [path, root].some((p) => /^[\\/]{2}[?.][\\/]/u.test(p))) {
+    return true;
+  }
   const rest = paths.relative(root, path);
   return (
     rest === "" || (rest !== ".." && !rest.startsWith(`..${paths.sep}`) && !paths.isAbsolute(rest))
@@ -96,8 +101,8 @@ export function ensureSeed(file: string, root: string): void {
   // own real directory, and it is made 0700 here, so no one else can swap the seed.
   const holder = lstatSync(dirname(file));
   // Windows has no POSIX uid (process.getuid is undefined, lstat reports 0):
-  // there the seed's directory is a real directory under the user's own
-  // profile (seedFile), and every other check below still holds.
+  // there only the uid comparison is skipped; the real-directory, regular-file,
+  // no-link and outside-the-checkout checks still hold.
   const uid = process.getuid?.();
   if (!holder.isDirectory() || (uid !== undefined && holder.uid !== uid)) {
     throw new Error("the signing seed's directory is not this user's own directory");
