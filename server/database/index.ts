@@ -489,7 +489,10 @@ export {
   type OriginRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
+  createDeclarationRequiredSwitch,
   createSubmissionDeclarationGate,
+  type DeclarationRequiredSetting,
+  type DeclarationRequiredSwitch,
   type SubmissionDeclarationGate,
   type SubmissionDeclarationGateAnswer,
 } from "./declaration/index.ts";

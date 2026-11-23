@@ -1000,6 +1000,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: SUBMIT,
   },
+  "submission.submit-second.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { ...SUBMIT, path: "/api/v1/submission/v2" },
+  },
   "support.problem-report.post": {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
@@ -1652,6 +1656,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission-history`,
       as: "nastavnik",
       method: "GET",
+    },
+  },
+  "teacher.declaration-required.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-required`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.declaration-required.put": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-required`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { required: true },
     },
   },
   "teacher.submission-withdrawal.get": {

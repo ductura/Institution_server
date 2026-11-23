@@ -217,3 +217,58 @@ describe("POST /api/submission", () => {
     },
   );
 });
+
+// PIL-K-IZJAVA-SRV (review point 5 on #646): this entry goes through the same
+// submitWork, so the database's refusal of a request without the required
+// declaration (ZD428) is 409 declaration_required here too, never a pass and
+// never a retry; any other failure stays 503 request.
+describe("a request the database refuses for a missing declaration", () => {
+  function refusing(error: unknown) {
+    const { deps, queries } = setup();
+    const withActor = async (
+      _token: string | null,
+      fn: (tx: ActorTransaction) => Promise<unknown>,
+    ) =>
+      fn({
+        async query(text) {
+          queries.push(text);
+          if (text.includes("request_submission")) throw error;
+          return {
+            rows: [{ user_id: "00000000-0000-4000-8000-0000000000e1" }] as never[],
+            rowCount: 1,
+          };
+        },
+      });
+    return { deps: { ...deps, withActor: withActor as unknown as WithActor }, queries };
+  }
+
+  it("ZD428 is 409 declaration_required and nothing is recorded", async () => {
+    const { deps, queries } = refusing(
+      Object.assign(new Error("declaration_required"), { code: "ZD428" }),
+    );
+    const response = await handleSubmissionRequest(post(BODY), deps);
+    expect([response.status, await response.json()]).toEqual([
+      409,
+      { status: "declaration_required" },
+    ]);
+    expect(response.headers.get("retry-after")).toBeNull();
+    expect(queries.some((text) => text.includes("record_submission"))).toBe(false);
+  });
+
+  it("another database error stays 503 request", async () => {
+    const { deps } = refusing(Object.assign(new Error("izmišljeno"), { code: "57014" }));
+    const response = await handleSubmissionRequest(post(BODY), deps);
+    expect([response.status, await response.json()]).toEqual([
+      503,
+      { status: "unavailable", stage: "request" },
+    ]);
+  });
+
+  it("the closed mapping names declaration_required", async () => {
+    const response = submissionResponse({ status: "declaration_required" });
+    expect([response.status, await response.json()]).toEqual([
+      409,
+      { status: "declaration_required" },
+    ]);
+  });
+});

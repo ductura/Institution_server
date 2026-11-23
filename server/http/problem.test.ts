@@ -83,6 +83,8 @@ const CODE_IN_STATUS = new Set([
   "evidence.open.post",
   "evidence.commit.post",
   "submission.submit.post",
+  // PIL-K-IZJAVA-SRV: the second major of the submission answers as the first.
+  "submission.submit-second.post",
   "evidence.replay.post",
 ]);
 

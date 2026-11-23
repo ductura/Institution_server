@@ -21,7 +21,12 @@ import {
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
-import { createSubmissionRoute, gatedSubmit, type SubmitWork } from "./submission.ts";
+import {
+  createSubmissionRoute,
+  gatedSubmit,
+  type SubmissionMajor,
+  type SubmitWork,
+} from "./submission.ts";
 
 const FIXTURES = new URL("../../db/main/tests/fixtures/", import.meta.url);
 const institution = readFileSync(new URL("institution.inc", FIXTURES), "utf8");
@@ -100,7 +105,7 @@ const requestPort: SubmitWork = async (token, input) => {
   }
 };
 
-async function start() {
+async function start(major: SubmissionMajor = 2) {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
@@ -111,16 +116,20 @@ async function start() {
         submit: gatedSubmit(createSubmissionDeclarationGate(withActor), requestPort),
         actors: {} as ActorReader,
         recordActivity: async () => undefined,
+        major,
       }),
     ],
   });
 }
 
-function post(revision: number): Promise<{ status: number; body: unknown }> {
+function post(
+  revision: number,
+  major: SubmissionMajor = 2,
+): Promise<{ status: number; body: unknown }> {
   const headers = { ...SUBMITTED.request.headers, cookie: `__Host-ductus_session=${ANA}` };
   const body = JSON.stringify({ documentId: "doc-a", revision });
   const head = [
-    "POST /api/v1/submission HTTP/1.1",
+    `POST ${major === 2 ? "/api/v1/submission/v2" : "/api/v1/submission"} HTTP/1.1`,
     "host: 127.0.0.1",
     ...Object.entries(headers).map(([k, v]) => `${k}: ${v}`),
     `content-length: ${Buffer.byteLength(body)}`,
@@ -151,7 +160,7 @@ async function ask(actor: string, sql: string): Promise<string | null> {
   return rows[0]?.answer ?? null;
 }
 const requireDeclaration = (value: boolean) =>
-  ask("vesna", `SELECT institution.set_declaration_required({z1}, ${value})::text`);
+  ask("vesna", `SELECT required::text FROM institution.set_declaration_required({z1}, ${value})`);
 async function confirm(revision: number): Promise<string | null> {
   const { rows } = await db.query<{ sha: string }>(
     "SELECT encode(sha256(convert_to($1, 'UTF8')), 'hex') AS sha",
@@ -181,13 +190,22 @@ async function requests(): Promise<number> {
   );
   return Number(rows[0]?.n);
 }
-const REFUSED = { status: 503, body: { status: "unavailable", stage: "request" } };
+// The second major (submission.submit-second.post) names the refusal; the first keeps its 503.
+const REFUSED = { status: 409, body: { status: "declaration_required" } };
+const REFUSED_FIRST = { status: 503, body: { status: "unavailable", stage: "request" } };
 
 describe("a submission while the assignment requires a declaration", () => {
   it("(1) without a confirmed declaration is refused and nothing is written", async () => {
     expect(await requireDeclaration(true)).toBe("true");
     await start();
     expect(await post(1)).toEqual(REFUSED);
+    expect(await requests()).toBe(0);
+  });
+
+  it("(1) on the first major the same refusal is its 503 request, and nothing is written", async () => {
+    expect(await requireDeclaration(true)).toBe("true");
+    await start(1);
+    expect(await post(1, 1)).toEqual(REFUSED_FIRST);
     expect(await requests()).toBe(0);
   });
 

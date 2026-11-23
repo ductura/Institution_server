@@ -74,6 +74,8 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["attachment_stale", "errors.attachmentStale"],
   ["attachments_too_large", "errors.attachmentsTooLarge"],
   ["declaration_conflict", "errors.declarationConflict"],
+  ["declaration_required", "errors.declarationRequired"],
+  ["declaration_required", "errors.declarationRequired"],
   ["form_outdated", "errors.formOutdated"],
   ["incomplete", "errors.incomplete"],
   ["invalid_attachment", "errors.invalidAttachment"],

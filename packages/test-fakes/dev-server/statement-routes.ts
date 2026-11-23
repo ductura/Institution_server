@@ -70,6 +70,15 @@ function answerOf(state: State, work: NonNullable<ReturnType<typeof workOf>>): S
   };
 }
 
+/** PIL-K-IZJAVA-SRV: whether the work's declaration is confirmed for its current revision. */
+export function declarationConfirmedFor(
+  state: State,
+  work: { readonly documentId: string; readonly revision: number },
+): boolean {
+  const saved = stateFor(SAVED, state).get(work.documentId)?.latest;
+  return saved?.state === "confirmed" && saved.payload?.revision === work.revision;
+}
+
 export const STATEMENT_HANDLERS: Handlers = {
   // SRV-1213. P-5: the access-log surface stays closed, so the fake records no opening.
   "teacher.declaration.get": ({ state, account, params }) => {

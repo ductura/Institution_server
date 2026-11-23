@@ -2062,6 +2062,8 @@ export const hr = {
     attachmentStale: "Priloženi razgovor se u međuvremenu promijenio. Priložite ga ponovno.",
     attachmentsTooLarge: "Prilozi izjave zajedno su preveliki.",
     declarationConflict: "Izjava je u međuvremenu promijenjena. Učitajte je ponovno.",
+    declarationRequired:
+      "Za predaju ovog zadatka potrebna je potvrđena izjava za ovu verziju rada. Potvrdite izjavu pa predajte ponovno.",
     formOutdated: "Obrazac izjave se u međuvremenu promijenio. Učitajte novi obrazac.",
     incomplete: "Izjava nije potpuna. Ispunite sva obavezna polja.",
     invalidAttachment: "Prilog nije pronađen ili ne pripada ovom radu.",
