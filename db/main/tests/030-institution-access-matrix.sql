@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3427);
+SELECT plan(3443);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -890,6 +890,33 @@ SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.pilot_metrics()')
 FROM (VALUES
   ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
   ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+-- SRV-ADMIN-1 (NF-7 OA-7, OA-3): the problem reports routed by kind and the
+-- log of administrator and operator actions. Only the web role executes the
+-- RPCs; a reader position gets its (here empty) list, anybody else ZD403, no
+-- session ZD401. The routing, the state trail and the log rows are in
+-- 232-problem-report-routing.sql and 233-admin-action-log.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['identity.routed_problem_reports()', 'identity.set_problem_report_status(text,text)',
+       'identity.submit_course_problem_report(uuid,text,text,text,text,integer,text)', 'app.admin_action_log()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-ADMIN-1: only ductus_app and the owner execute the report routing and the action log'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM identity.routed_problem_reports()'), c.result,
+  format('SRV-ADMIN-1: %s reads the routed problem reports: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', '0'), ('marko', '0'), ('iva', '0'), ('lea', '0'), ('ana', 'ZD403: forbidden'), ('boris', 'ZD403: forbidden'),
+  ('nina', 'ZD403: forbidden'), ('tomo', 'ZD403: forbidden'), ('closed', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.admin_action_log()'), c.result,
+  format('SRV-ADMIN-1: %s reads the action log: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', '2'), ('lea', '2'), ('vesna', 'ZD403: forbidden'), ('ana', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'),
+  ('closed', 'ZD401: not authenticated')
 ) AS c (actor, result);
 -- SRV-1304 (plan M10.2, M10.7): the dry run of the data classes. Only the web
 -- role executes it, with no institution from the caller; only the administrator
