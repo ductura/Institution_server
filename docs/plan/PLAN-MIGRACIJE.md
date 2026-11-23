@@ -1,3 +1,4 @@
+<!-- SNIMKA: ne uređuj ovdje. Izvor je ductura/.github, docs/plan/PLAN-MIGRACIJE.md na 4499d36b; osvježava se s node _raspored/sinkro-plan.mjs --repo <ovaj repo>. -->
 # Ductura — kanonski plan razvoja, integracije i objave
 
 Ovo je glavni plan za cijeli proizvod. Redoslijed i uvjete prolaza određuju ovdje opisane faze. Linear vodi izvršne zadatke, GitHub nosi izmjene i dokaze, a `_raspored/red.json` služi postojećem orkestratoru za dodjele. Prihvaćene odluke, Ustav, ugovori, inventari ekrana i auditi ostaju izvori zahtjeva i dokaza. Datirani opisi u donjim poglavljima daju povijesni kontekst. Aktualne odluke i prilozi zadataka imaju prednost nad starijim procjenama i putanjama.
@@ -6,20 +7,20 @@ Ovo je glavni plan za cijeli proizvod. Redoslijed i uvjete prolaza određuju ovd
 
 ## Arhitektura i granice rada
 
-| Dio                                      | Odgovornost                                                                                                                                                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Aplication_front` i `Aplication_server` | Administracija platforme, iniciranje i praćenje otvaranja ustanove. Pristup studentskom sadržaju traži zasebnu ovlast.                                                                                  |
-| `Institution_server`                     | AAI@EduHr, sesije, upravljanje ovlastima i RLS, institucionalni API, evidencija, predaja, migracije, objekti i konfiguracija spremnosti.                                                                |
-| Next.js institucionalni frontovi         | Jedan dokazano aktivan ulaz za temeljni tok. Ekrani preko `/api/v1`, zajednički editor i UI paketi, lokalni dnevnik i adapter sinkronizacije. Mobilni i ostali preglednici dijele ugovore i komponente. |
-| Preloader i edge                         | Javni ulaz na `ductura.org`, usmjeravanje prema stvarno dostupnom frontu i manifest preuzimanja.                                                                                                        |
-| Radnik institucijskog servera            | Zaseban izvršni proces za odgođeni potpis, oporavak, planirane izvoze i odobrene poslove nad podacima. Web proces zadržava postojeće sigurnosne granice.                                                |
-| Windows i macOS                          | Tanke ljuske istog web proizvoda, s odvojenim prihvatom prijave, izvornog događaja, potpisa, instalacije i distribucije.                                                                                |
+| Dio | Odgovornost |
+|---|---|
+| `Aplication_front` i `Aplication_server` | Administracija platforme, iniciranje i praćenje otvaranja ustanove. Pristup studentskom sadržaju traži zasebnu ovlast. |
+| `Institution_server` | AAI@EduHr, sesije, upravljanje ovlastima i RLS, institucionalni API, evidencija, predaja, migracije, objekti i konfiguracija spremnosti. |
+| Next.js institucionalni frontovi | Jedan dokazano aktivan ulaz za temeljni tok. Ekrani preko `/api/v1`, zajednički editor i UI paketi, lokalni dnevnik i adapter sinkronizacije. Mobilni i ostali preglednici dijele ugovore i komponente. |
+| Preloader i edge | Javni ulaz na `ductura.org`, usmjeravanje prema stvarno dostupnom frontu i manifest preuzimanja. |
+| Radnik institucijskog servera | Zaseban izvršni proces za odgođeni potpis, oporavak, planirane izvoze i odobrene poslove nad podacima. Web proces zadržava postojeće sigurnosne granice. |
+| Windows i macOS | Tanke ljuske istog web proizvoda, s odvojenim prihvatom prijave, izvornog događaja, potpisa, instalacije i distribucije. |
 
 Radne kopije i artefakti nalaze se lokalno na stolnom računalu u `D:\Ductura`. Codex se vodi s laptopa, a projektne izmjene izvode se preko Desktop Commandera u tim radnim kopijama. Na stolnom se pokreću samo potrebne provjere i postojeći projektni procesi kada su odobreni. Koristi se postojeći orkestrator i njegova evidencija preklapanja. Vlasništvo, grana, putanje i kriterij prihvata potvrđuju se prije paralelnog pisanja. Kod za migraciju ide na migracijske grane, prema važećim pravilima i D-97.
 
 ## Kritični put i uvjeti prolaza
 
-1. **Faza 1 — kopija i osnovica.** Očuvati migracijsku osnovicu, evidenciju prenesenih migracija i testova, točne repozitorije, grane i commitove. Zasebno bilježiti rezultate povijesne arhive, `main` i migracijskih grana.
+1. **Faza 1 — kopija i osnovica.** Očuvati migracijsku osnovicu, evidenciju prenesenih migracija i testova, točne repozitorije, grane i commitove. Zasebno bilježiti rezultate povijesne arhive, `main` i migracijskih grana. Zapisnik osnovice: [OSNOVICA-FAZE-1.md](https://github.com/ductura/.github/blob/4499d36bac383479e805dc63252807c0397233a6/docs/plan/OSNOVICA-FAZE-1.md) (stanje 22. 11. 2026.; otvorena pitanja su na kraju zapisnika).
 2. **Faza 2 — osposobljavanje.** Svaki obuhvaćeni repo mora imati čist typecheck, gradnju i tražene zelene testove. Ugovori prethode klijentima. Shema, vektori uspjeha i grešaka, lažni poslužitelj, objavljeni paket i stvarni handler zasebni su dokazi. Za #350 i #352 evidentirati rezultate provjera aplikacije i DB testova, PostgreSQL/pgTAP i stvarni rezultat S3 provjere. ZEL paketi ulaze po vlastitom prihvatu i ovisnostima. Prije spajanja razlikovati ciljani lokalni test od cjelovitog CI-ja.
 3. **Faza 3 — lokalna integracija.** Jedan dokumentirani ulaz podiže stvarni API, PostgreSQL, lokalni OIDC, pohranu, Next.js front i preloader. Slijede VS-1, VS-1b, predaja i nastavnikov pregled, administracija i pristup, mobilni prolaz te zaseban oporavak povrata. Stog koristi sintetičke podatke. Kriteriji su u sljedećoj matrici.
 4. **Faza 4 — `main`, repo po repo.** Zeleni CI i jedan ciljani kritični pregled po repozitoriju obuhvaćaju autentikaciju, RLS, dokaze i predaju. Preloader ide posljednji, nakon provjere odredišta i odluke za javnu domenu. Produkcijski sustav i produkcijski AAI imaju vlastite dokaze spremnosti.
@@ -31,18 +32,18 @@ Radne kopije i artefakti nalaze se lokalno na stolnom računalu u `D:\Ductura`. 
 
 Za svaki red spremiti rezultat, naredbu, stvarnu testiranu reviziju svakog uključenog repoa i vezu na artefakt. Knjižiti odvojeno `PROLAZ`, `PAD` ili `NEPROVEDENO`. Sintetički testni podaci imaju jedinstven ID. Status ticketa potvrđuje tijek rada, a artefakt potvrđuje tehnički rezultat.
 
-| ID  | Vlasnik postojećeg rada                                              | Izvršni prihvat                                                                                                                                                                                                                                                                                                                                                                       |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A01 | Preloader / DAN-939, DAN-933, VS-2                                   | Iz početnog URL-a stvarni web i mobilni odabir otvaraju odgovarajući host. Uključi iPad s desktop identitetom, vraćanje na stvarno podržani prikaz, te dostupna i nedostupna odredišta. Svaka ponuđena desktop poveznica preuzima stvarni paket s očekivanim hashom. Nepostojeći paket nema ponuđen gumb.                                                                             |
-| A02 | Platforma i Institution_server / provisioning                        | Sintetički platformni admin otvara ustanovu. BFF i server dijele pravilo issuera i vremenski budžet ili trajan ID zahtjeva s praćenjem stanja. Ponovni isti zahtjev ne stvara drugu ustanovu. Odvojeni prijavni pokušaji ne blokiraju druge račune. Imenovanje prvog admina je potvrđeno, zabilježeno i provjerljivo. Tijelo zahtjeva ograničava se prije nekontroliranog učitavanja. |
-| A03 | Platforma i identitet / DAN-759, DAN-887                             | Nova sintetička ustanova ulazi kroz isti edge i lokalni AAI/OIDC s ispravnim issuerom, povratnom adresom i sesijom. Zasebno se prikazuju spremnost za prijavu, konfigurirana domena evidencije, objekti i ključevi te operativna spremnost. Otvaranje rada u nekonfiguriranoj ustanovi sigurno se odbija.                                                                             |
-| A04 | WEB-08, WEB-17, WEB-20 i pripadni SRV                                | Svaka uloga otvara stvarni početni ekran i vidi samo dopuštene radnje. Duboka poveznica, query/hash, aplikacijski prefiks te stanja učitavanja, praznog rezultata, pogreške i ponovnog čitanja provjeravaju se iz aktivnog hosta.                                                                                                                                                     |
-| A05 | DAN-887, DAN-1022, DAN-1023                                          | U pravom editoru upis se prvo zabilježi na uređaju. Potvrđeno stanje dolazi tek nakon provjere potpisa za istu transakciju, dokument i reviziju. Osvježavanje iz čistog konteksta vraća istu rečenicu, reviziju i hash. Stari zakašnjeli odgovor ne potvrđuje noviji tekst.                                                                                                           |
-| A06 | DAN-887 / VS-1.13                                                    | Ponovno pokretanje servera i svjež kontekst preglednika vraćaju isti dokument kroz API u studentskoj sesiji. Usporediti `documentId`, reviziju, tekst i neovisni hash te zapisati `vs-run.json`.                                                                                                                                                                                      |
-| A07 | VS-1b / DAN-822, DAN-823, DAN-824, DAN-1024                          | Izgubljeni odgovor, prekid mreže i ponovno slanje istog sadržaja istim ključem daju jednu reviziju. Nakon `202 pending_signature` prekid radnika i oporavak daju točno jednu valjanu potvrdu iste revizije. Potvrđeno stanje čeka provjeren potpis.                                                                                                                                   |
-| A08 | SRV-18–25, WEB-22–28, WEB-30–36 / DAN-856, DAN-858, DAN-311, DAN-316 | Predati potvrđeni V1 dok nastaje lokalni V2. Utrka i dvostruka predaja imaju jedan ishod. Nastavnik, komentar, opetovano preuzimanje potvrde i izvoz vezani su uz V1. Usporediti reviziju i hash na svim površinama.                                                                                                                                                                  |
-| A09 | Institucijske ovlasti, stvarni dist server / DAN-858 i RLS           | Student i nastavnik pokušaju pristup tuđem radu i drugoj ustanovi. Nakon ukidanja pripadnosti, uloge ili odnosa postojeća sesija i novi poziv gube pristup, uz propisani zapis. Test koristiti kroz HTTP i stvarnu aplikacijsku DB ulogu.                                                                                                                                             |
-| A10 | SRV-JS → WEB-14c / `journalScope` iz `/me`                           | Dvije stvarne kartice, više nepotvrđenih radova i isti uređaj. Odjava A zaustavlja staru karticu i uklanja prethodni prikaz. B nema pristup A-ovom dnevniku. Nakon povratka A dobiva vlastite lokalne izmjene. Izostao ili nevaljan scope zatvara pristup.                                                                                                                            |
+| ID | Vlasnik postojećeg rada | Izvršni prihvat |
+|---|---|---|
+| A01 | Preloader / DAN-939, DAN-933, VS-2 | Iz početnog URL-a stvarni web i mobilni odabir otvaraju odgovarajući host. Uključi iPad s desktop identitetom, vraćanje na stvarno podržani prikaz, te dostupna i nedostupna odredišta. Svaka ponuđena desktop poveznica preuzima stvarni paket s očekivanim hashom. Nepostojeći paket nema ponuđen gumb. |
+| A02 | Platforma i Institution_server / provisioning | Sintetički platformni admin otvara ustanovu. BFF i server dijele pravilo issuera i vremenski budžet ili trajan ID zahtjeva s praćenjem stanja. Ponovni isti zahtjev ne stvara drugu ustanovu. Odvojeni prijavni pokušaji ne blokiraju druge račune. Imenovanje prvog admina je potvrđeno, zabilježeno i provjerljivo. Tijelo zahtjeva ograničava se prije nekontroliranog učitavanja. |
+| A03 | Platforma i identitet / DAN-759, DAN-887 | Nova sintetička ustanova ulazi kroz isti edge i lokalni AAI/OIDC s ispravnim issuerom, povratnom adresom i sesijom. Zasebno se prikazuju spremnost za prijavu, konfigurirana domena evidencije, objekti i ključevi te operativna spremnost. Otvaranje rada u nekonfiguriranoj ustanovi sigurno se odbija. |
+| A04 | WEB-08, WEB-17, WEB-20 i pripadni SRV | Svaka uloga otvara stvarni početni ekran i vidi samo dopuštene radnje. Duboka poveznica, query/hash, aplikacijski prefiks te stanja učitavanja, praznog rezultata, pogreške i ponovnog čitanja provjeravaju se iz aktivnog hosta. |
+| A05 | DAN-887, DAN-1022, DAN-1023 | U pravom editoru upis se prvo zabilježi na uređaju. Potvrđeno stanje dolazi tek nakon provjere potpisa za istu transakciju, dokument i reviziju. Osvježavanje iz čistog konteksta vraća istu rečenicu, reviziju i hash. Stari zakašnjeli odgovor ne potvrđuje noviji tekst. |
+| A06 | DAN-887 / VS-1.13 | Ponovno pokretanje servera i svjež kontekst preglednika vraćaju isti dokument kroz API u studentskoj sesiji. Usporediti `documentId`, reviziju, tekst i neovisni hash te zapisati `vs-run.json`. |
+| A07 | VS-1b / DAN-822, DAN-823, DAN-824, DAN-1024 | Izgubljeni odgovor, prekid mreže i ponovno slanje istog sadržaja istim ključem daju jednu reviziju. Nakon `202 pending_signature` prekid radnika i oporavak daju točno jednu valjanu potvrdu iste revizije. Potvrđeno stanje čeka provjeren potpis. |
+| A08 | SRV-18–25, WEB-22–28, WEB-30–36 / DAN-856, DAN-858, DAN-311, DAN-316 | Predati potvrđeni V1 dok nastaje lokalni V2. Utrka i dvostruka predaja imaju jedan ishod. Nastavnik, komentar, opetovano preuzimanje potvrde i izvoz vezani su uz V1. Usporediti reviziju i hash na svim površinama. |
+| A09 | Institucijske ovlasti, stvarni dist server / DAN-858 i RLS | Student i nastavnik pokušaju pristup tuđem radu i drugoj ustanovi. Nakon ukidanja pripadnosti, uloge ili odnosa postojeća sesija i novi poziv gube pristup, uz propisani zapis. Test koristiti kroz HTTP i stvarnu aplikacijsku DB ulogu. |
+| A10 | SRV-JS → WEB-14c / `journalScope` iz `/me` | Dvije stvarne kartice, više nepotvrđenih radova i isti uređaj. Odjava A zaustavlja staru karticu i uklanja prethodni prikaz. B nema pristup A-ovom dnevniku. Nakon povratka A dobiva vlastite lokalne izmjene. Izostao ili nevaljan scope zatvara pristup. |
 
 Scenariji A02–A04 i A08–A10 pripadaju prihvatu integracije. VS-1 ne čeka potpisnog radnika, puni provisioning ni nastavničku predaju. Ta podjela omogućuje rani stvarni dokaz bez sužavanja konačnog prihvata.
 
@@ -58,22 +59,56 @@ Scenariji A02–A04 i A08–A10 pripadaju prihvatu integracije. VS-1 ne čeka po
 
 Valovi su skupine značajki unutar pet faza. Ugovori, server i web mogu se pripremati paralelno uz potvrđene ulaze, vlasništvo i ovisnosti. Valovi koji ovise o prethodnom prolazu idu iza njega. Oznake M0–M11 i valovi služe povezivanju obveza i postojećih zadataka.
 
-| Val | Obuhvat                                                                              | Uvjet ili dokaz                                                                                                   |
-| --- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| 1   | Jezgra editora i Next.js, pisanje, lokalni dnevnik, server i potpis                  | A05–A07 i VS-1/VS-1b.                                                                                             |
-| 2   | Student, prijava, moji zadaci, kolegiji, radovi, upis kodom i obavijesti             | Stvarna uloga i ovlaštenja, jasna stanja, ponovno čitanje, sigurna upotreba koda.                                 |
-| 3   | Radni prostor studenta, Izjava, predaja, potvrda                                     | Nakon temelja 1, 2 i 4. A08, jedan ishod predaje i provjerljiva potvrda.                                          |
-| 4   | Nastavnik i administrator, kolegiji, novi zadatak i verzije, izdavanje i opoziv koda | A02–A04. Otvaranje, uređivanje i posljedice verzije zadatka provjerene kroz mrežu i ovlasti.                      |
-| 5   | Nastavnik vidi predaju, rosters, napomene i mentorstva                               | Nakon predaje. A08–A09 i stvarna projekcija predane revizije.                                                     |
-| 6   | Ljuska editora, trake, paneli, ladice, radne affordance i pristupačnost              | Isti stvarni editor i žarište tipkovnice, bez narušavanja spremanja.                                              |
-| 7   | Citati, izvori i razvoj sheme v3                                                     | Identičan kanonski sadržaj kroz unos, pohranu, ponovno otvaranje i kompatibilnu migraciju sheme.                  |
-| 8   | Mentorova suradnja, komentari, dorade, prijedlozi, brzi put                          | Veza s ispravnim dokumentom i verzijom, kontrola pristupa, audit i opoziv.                                        |
-| 9   | Procesni sažetak, reprodukcija, usporedba i javna provjera                           | Dokaziva rekonstrukcija i dopušteni prikaz, uz granice Ustava.                                                    |
-| 10  | Bogati sadržaj, stranice, shema v4, uvoz i izvoz                                     | Sljedivost verzije i istih bajtova preko spremanja, predaje i izvoza.                                             |
-| 11  | Provjere teksta, etape, konzultacije, Merlin, produljenje                            | Odobren D-260 opseg nakon pilota. Primijeniti zasebne institucionalne odluke za rokove, pristup i izvoz.          |
-| 12  | AI pomoćnik                                                                          | Ograničen važećim pravilima, dopuštenom obradom podataka, zasebnom odlukom i dokazom konkretne korisničke radnje. |
+| Val | Obuhvat | Uvjet ili dokaz |
+|---|---|---|
+| 1 | Jezgra editora i Next.js, pisanje, lokalni dnevnik, server i potpis | A05–A07 i VS-1/VS-1b. |
+| 2 | Student, prijava, moji zadaci, kolegiji, radovi, upis kodom i obavijesti | Stvarna uloga i ovlaštenja, jasna stanja, ponovno čitanje, sigurna upotreba koda. |
+| 3 | Radni prostor studenta, Izjava, predaja, potvrda | Nakon temelja 1, 2 i 4. A08, jedan ishod predaje i provjerljiva potvrda. |
+| 4 | Nastavnik i administrator, kolegiji, novi zadatak i verzije, izdavanje i opoziv koda | A02–A04. Otvaranje, uređivanje i posljedice verzije zadatka provjerene kroz mrežu i ovlasti. |
+| 5 | Nastavnik vidi predaju, rosters, napomene i mentorstva | Nakon predaje. A08–A09 i stvarna projekcija predane revizije. |
+| 6 | Ljuska editora, trake, paneli, ladice, radne affordance i pristupačnost | Isti stvarni editor i žarište tipkovnice, bez narušavanja spremanja. |
+| 7 | Citati, izvori i razvoj sheme v3 | Identičan kanonski sadržaj kroz unos, pohranu, ponovno otvaranje i kompatibilnu migraciju sheme. |
+| 8 | Mentorova suradnja, komentari, dorade, prijedlozi, brzi put | Veza s ispravnim dokumentom i verzijom, kontrola pristupa, audit i opoziv. |
+| 9 | Procesni sažetak, reprodukcija, usporedba i javna provjera | Dokaziva rekonstrukcija i dopušteni prikaz, uz granice Ustava. |
+| 10 | Bogati sadržaj, stranice, shema v4, uvoz i izvoz | Sljedivost verzije i istih bajtova preko spremanja, predaje i izvoza. |
+| 11 | Provjere teksta, etape, konzultacije, Merlin, produljenje | Odobren D-260 opseg nakon pilota. Primijeniti zasebne institucionalne odluke za rokove, pristup i izvoz. |
+| 12 | AI pomoćnik | Ograničen važećim pravilima, dopuštenom obradom podataka, zasebnom odlukom i dokazom konkretne korisničke radnje. |
+| 13 | Prezentacije: vlastiti editor slajdova | Nakon pilota. Isti temelji kao tekstni editor: lokalni dnevnik, revizija, potpis, predaja, potvrda i izvoz (`.pptx`, PDF). Radi se u postojećim repoima (paket u webu, rute na serveru), bez novog repoa. |
+| 14 | Tablice: vlastiti editor tablica | Nakon pilota. Isti temelji kao val 13, izvoz `.xlsx` i CSV. Formule su determinističke i pokrivene testovima. Postojeći repoi. |
+| 15 | Statistička analiza (u stilu jamovija ili SPSS-a) | Nakon pilota. Zaseban repo i servis za izračune (Python ili R) otvara se tek kad val krene; web prikazuje rezultate samo kroz `/api/v1`. Rezultat je ponovljiv iz istih podataka i iste verzije analize. Kod pod AGPL ili GPL licencom (npr. jamovi) ne kopira se bez odluke vlasnika o licenci. |
+| 16 | Završni i diplomski rad od teme do Dabra | Nakon pilota. Prijedlog teme, odobrenje mentora, etape, povjerenstvo, termin obrane i pohrana u Dabar s metapodacima. Gradi na mentorstvu, predaji i potvrdi. Pohrana u Dabar traži dogovor sa Srcem i ustanovom. |
+| 17 | Rubrike, banka komentara i fakultetski predlošci | Nakon pilota. Kriteriji ocjenjivanja vidljivi studentu prije predaje, ponovno upotrebljivi komentari nastavnika, predlošci fakulteta i provjera formata prije predaje (proširenje M4 Lekte). Rubrika ne ocjenjuje automatski. |
+| 18 | Upitnici i kvalitativno kodiranje | Nakon pilota, uz val 15. Upitnik šalje podatke izravno u statistički servis; kodiranje intervjua i bilješki. Samo izmišljeni podaci u testovima, osobni podaci ispitanika po DPIA-i. |
+| 19 | Dnevnik stručne prakse, grupni rad i recenzija među studentima | Nakon pilota. Dnevnik prakse koji mentor potpisuje; grupni rad s doprinosom iz zabilježenih događaja (C-6 a), bez rangiranja i sankcija; anonimna recenzija koju uključuje nastavnik. |
+| 20 | Hrvatski jezični alati i pristupačnost | Nakon pilota. Pravopis i gramatika, nazivlje (Struna), hrvatski stilovi citiranja, uvoz iz Hrčka i CROSBI-ja po DOI-ju; čitanje naglas na hrvatskom, font za disleksiju, način čitanja. Tuđi servisi samo uz njihov pristanak ili licencu. |
+| 21 | Paketi po područjima | Nakon pilota, redom kojim fakulteti ulaze u pilot. Društvene znanosti (upitnici, kodiranje), STEM (LaTeX, bilježnice s kodom, programski zadaci s testovima u izoliranom okruženju), pravo (Narodne novine, sudska praksa, predlošci, simulirano suđenje), medicina (prikaz slučaja, provjera podataka o pacijentima), jezici (usporedni prijevod, glosari, prijevodna memorija), arhitektura (portfelj sa slikama), učiteljski i kineziološki (pripreme za sat, portfelj prakse). |
+| 22 | Povezivanje s ISVU-om i Studomatom | Nakon pilota, odluka vlasnika 21. 11. 2026. Popisi kolegija i upisanih studenata iz ISVU-a, izvoz ocjena natrag u ISVU, poveznica iz Studomata. Samo službenim sučeljem i ugovorom sa Srcem i ustanovom, nikad struganjem stranica ni tuđim lozinkama. Prijava i dalje samo AAI@EduHr. Izvoz ocjena uvijek potvrđuje nastavnik. Prije početka: dogovor sa Srcem, DPIA i pravna osnova obrade. |
 
 Poprečne cjeline obuhvaćaju M0 temelje i CI, M1 AAI identitet, M2 ustanove, M3 evidenciju, M4 Lektu i akademska pravila, M5 editor, M6 suradnju, M7 predaju, M8 uvoz/izvoz, M9 pomoćnika, M10 privatnost, podatke i izvršenje prava, te M11 GO uvjete. Životni ciklus produkcije obuhvaća observability, backup, redovne vježbe povrata, incidentne postupke, ažuriranje paketa, pristupačnost i korisničku podršku. Za svaki dio vrijedi isti testirani ugovor, provjerljiv prihvat i status prema postojećem Linear zadatku.
+
+### Proširenja nakon pilota (odluka vlasnika 21. 11. 2026.)
+
+- **Repoi:** do pilota nema novih repoa. Prezentacije i tablice (valovi 13 i 14) idu u postojeće repoe. Novi repo dobivaju samo dijelovi s drugim jezikom ili zasebnim pokretanjem: statistički servis (val 15) i servis za provjeru podudarnosti s hrvatskim korpusom (dio vala 11: indeks korpusa, otisci teksta, usporedba). Oba se otvaraju tek kad njihov val krene.
+- **Provjera podudarnosti:** gradi se kao vlastita provjera podudarnosti s izvorima (Ustav v1.6 C-6 b), samo za izvore iz D-260 t. 5 i tek nakon pravnog mišljenja i DPIA. Ne nosi ime tuđeg proizvoda.
+- **AI detektor:** nije u planu. Ustav v1.6–v1.8 ne dopušta model ni klasifikator autorstva. Dopuštena je samo oznaka podudaranja s AI odgovorom (C-6 c), uvijek s napomenom „nije dokaz autorstva”. Promjena traži novu odluku vlasnika o Ustavu i novo pravno mišljenje.
+- **Priprema ugovora:** kad val 5 bude spojen, jedan nekritičan SRV zadatak dodaje neobavezno polje `documentKind` (zadano `text`) u ugovore revizije, podrijetla teksta i izvoza. Polje je aditivno i ne lomi postojeće klijente, a valovi 13 i 14 zato ne trebaju mijenjati postojeće ugovore. Prije toga se ne stavlja u red.
+- **Redoslijed valova 16–22 (prijedlog orkestratora, vlasnik ga može promijeniti):** 16, zatim 17, zatim 18 s valom 15, zatim 19, zatim 21 po fakultetima. Val 20 ide uz 17 gdje je moguće, a val 22 kreće čim Srce potpiše dogovor. U red pisaca ništa od toga ne ide prije pilota.
+- **Prepoznavanje alata za automatizirano pisanje [K-1]:** vlasnik 21. 11. 2026. želi bilježiti i sadržaj tipki u editoru Ducture kako bi se prepoznale aplikacije koje automatski tipkaju tekst. Vlasnik je 21. 11. 2026. doslovno potvrdio Ustav v1.9 (P-3, Drive 1LNP-EXlCCpDP9zmEo97zu_tYE0gyYhcBbQ0rDe7yroY): tipke se bilježe samo u polju za pisanje u editoru Ducture, kao zasebna klasa podataka koja se briše nakon izračuna oznake „za pregled”, a najkasnije 30 dana nakon predaje. Služe samo pravilima N-4 i nikad se ne prikazuju kao zapis tipki. Sa stvarnim studentima tek nakon novog pravnog mišljenja i DPIA, a dotad samo u demou s izmišljenim podacima. U red pisaca ne ide prije pilota.
+
+### Dodaci pilotu (odluka vlasnika 21. 11. 2026.)
+
+Vlasnik je 21. 11. 2026. sve stavke P-D1 do P-D8 uvrstio u pilot. Grade se na postojećoj predaji, potvrdi, zadatku i obavijestima, bez novih repoa i bez promjene Ustava.
+
+| Oznaka | Dodatak | Granice |
+|---|---|---|
+| P-D1 | Probni zadatak za studente | Prije prvog pravog roka student prolazi prijavu, editor, Izjavu, predaju i potvrdu na zadatku bez ocjene. Probna predaja se jasno označava, ne ulazi u ocjenu ni izvoz i ne ide u Merlin. |
+| P-D2 | Skupno preuzimanje predaja | Nastavnik zadatka preuzima ZIP sa svim predajama (PDF ili .docx i potvrda svake predaje). Isti pristup kao za pojedinačnu predaju, zapis u dnevnik pristupa, poveznica s ograničenim trajanjem. |
+| P-D3 | Povlačenje i ponovna predaja prije roka | Odobrio vlasnik 21. 11. 2026. Student smije povući predaju i predati ponovno dok rok traje. Svaka predaja i svako povlačenje ostaju zapisani s vlastitom potvrdom; nastavnik vidi zadnju važeću predaju i povijest. Nakon roka povlačenje nije moguće. Nastavnik ga za zadatak smije isključiti, a zadano je uključeno. |
+| P-D4 | Kopiranje zadatka | Nastavnik kopira svoj zadatak (iz prošle godine ili drugog kolegija) kao novu verziju na kolegiju kojem ima pristup. Kopiraju se upute, rokovi i postavke, nikad predaje ni podaci studenata. |
+| P-D5 | Stranica stanja sustava | Javno pokazuje samo dostupnost i najavljeno održavanje, bez osobnih podataka. Zapis prekida može poslužiti kao dokaz za produljenje roka. |
+| P-D6 | Mjerila uspjeha pilota | Samo zbirni tehnički brojevi (uspjele i neuspjele predaje, greške spremanja, zahtjevi za pomoć), bez sadržaja teksta i bez identiteta osobe, nikad po studentu. Obuhvaća se DPIA-om pilota. Služi odluci nakon pilota. |
+| P-D7 | Vraćanje vlastitog teksta na raniju verziju | Student vraća svoj tekst na ranije zabilježeno stanje. Vraćanje je nova revizija s vlastitim potpisom; povijest se ne briše i reprodukcija (val 9) ostaje točna. |
+| P-D8 | Popis tipkovničkih prečaca u editoru | Uz val 6 i WCAG 2.2 AA; otvara se s tipkovnice i čitač zaslona ga čita. |
 
 ## Izvori, prednost i održavanje
 
@@ -134,13 +169,13 @@ O frontovima je Daniel 19. 11. rekao:
 
 ### Pregled
 
-| Faza                          | Što                                                        | Vrata                                                 |
-| ----------------------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
-| 1. Kopija                     | Doslovna kopija Ductusa na grane za migraciju.             | Gotovo.                                               |
-| 2. Osposobljavanje na granama | Svaki repo: tsc 0 grešaka, zeleni testovi, gradnja.        | Orkestrator testira lokalno i spaja u granu.          |
-| 3. Lokalna integracija        | Server, baza i frontovi zajedno, lažni OIDC; tokovi redom. | Svi tokovi prolaze.                                   |
-| 4. Grana → `main`             | Repo po repo; Preloader zadnji.                            | Zeleni CI i jedan ciljani pregled kritičnih dijelova. |
-| 5. Objava                     | Serveri na Renderu, frontovi na Vercelu.                   | Samo na Danielovu riječ.                              |
+| Faza | Što | Vrata |
+|---|---|---|
+| 1. Kopija | Doslovna kopija Ductusa na grane za migraciju. | Gotovo. |
+| 2. Osposobljavanje na granama | Svaki repo: tsc 0 grešaka, zeleni testovi, gradnja. | Gotovo (22. 11.). |
+| 3. Lokalna integracija | Server, baza i frontovi zajedno, lažni OIDC; tokovi redom. | Svi tokovi prolaze. |
+| 4. Grana → `main` | Repo po repo; Preloader zadnji. | Zeleni CI i jedan ciljani pregled kritičnih dijelova. |
+| 5. Objava | Serveri na Renderu, frontovi na Vercelu. | Samo na Danielovu riječ. |
 
 ### Faza 1. Kopija (gotovo)
 
@@ -199,7 +234,247 @@ Valovi 1–10 (S-1A do S-1I) nisu građeni zadatak po zadatak. Preuzeti su kopij
 
 Valovi 11–18 kreću **nakon faze 3**. Grade se izravno u Ducturinim repozitorijima istim ritmom: PR, lokalni test, spajanje.
 
+### Stanje izvedbe (22. 11. 2026.)
+
+Ovaj odjeljak bilježi što je stvarno spojeno u grane za migraciju. Izvor je `_raspored/red.json` (413 zadataka) i `raspored.mjs`. Ništa od ovoga nije u `main` ni na produkciji.
+
+#### Faze
+
+| Faza | Stanje |
+|---|---|
+| 1. Kopija | Gotovo. |
+| 2. Osposobljavanje na granama | Gotovo. Svi ZEL zadaci spojeni (zadnji SRV #609, 22. 11.). |
+| 3. Lokalna integracija | Kod spojen: INT-01…INT-07 i LOK-2. **Scenariji A01–A10 još nisu izvršeni na stvarnom stogu** (server + baza + frontovi + lažni OIDC). „faza3 100/100” mjeri samo pokrivenost ugovora. Završni prolaz: INT-09 (PRE, stog iza edgea :8000, u tijeku) i INT-08 (WEB, `test:sistem` u CI-ju za INT-02…05, čeka LOK-WEB-1, WEB #335). |
+| 4. Grana → `main` | Nije počelo. Treba Danielov „Spoji n” po repou, Preloader zadnji. |
+| 5. Objava | Nije počelo. Samo na Danielovu riječ. |
+
+#### Valovi 0–12 (katalog)
+
+| Val | Sadržaj | Stanje |
+|---|---|---|
+| 0 | Kopija i temelji | Gotovo (faza 1). |
+| 1 | Jezgra editora, potpisana potvrda | Spojeno. |
+| 2 | Student: ljuska, prijava, upis kodom, obavijesti | Spojeno. |
+| 3 | Radni prostor, Izjava, predaja, potvrda | Spojeno. |
+| 4 | Nastavnik i administrator | Spojeno. |
+| 5 | Nastavnik vidi predaju | Spojeno. |
+| 6 | Izgled editora | Spojeno. |
+| 7 | Citati i izvori (shema v3) | Spojeno. |
+| 8 | Suradnja mentora | Spojeno. |
+| 9 | Zapis procesa | Spojeno, osim P-1: Karta podrijetla i ritam unosa (odgođeno). |
+| 10 | Bogati sadržaj, stranice (shema v4), izvoz | Spojeno. |
+| 11 | Provjere teksta, etape, konzultacije, Merlin, produljenje | Spojeno, osim P-1: pragovi i naziv obrasca Izjave; N-14 i N-15 čekaju nacrt. |
+| 12 | Pomoćnik | Spojen kostur bez stvarnog AI pružatelja. Pružatelj, `aitext` i oznaka podudaranja čekaju Q-10/D-194 (rok 15. 12.). |
+
+Valovi 1–11: svih 70 ID-jeva iz kataloga spojeno, osim gore navedenih odgoda.
+
+#### Valovi 13–20
+
+Spojeni u grane. Paket `val14-18.json` (79 zadataka) ušao je u red 21. 11. 2026. i svih 79 je spojeno (ispravak: ranija rečenica da čeka „da” bila je netočna). Kanonski plan spojen kao PR #52 (22. 11.).
+
+#### Što ostaje
+
+1. Faza 3: izvršiti A01–A10 na stvarnom stogu (INT-08, INT-09) i popraviti što padne.
+2. Odluke vlasnika: Q-10/D-194 (AI pružatelj; bira Daniel), potvrda teksta P-1 (nacrt `docs/plan/P-1-NACRT.md`), nacrti N-14/N-15.
+3. Faza 4: „Spoji n” repo po repo u `main`.
+4. Faza 5: objava na Danielovu riječ.
+
+### Dopuna 22. 11. 2026. (večer): odluke od 20. 11. i cilj za 30. 11.
+
+Ovaj odjeljak samo zapisuje odluke koje već vrijede u radu. Novo pravilo ne uvodi. Daniel je dopunu odobrio 22. 11. („da, napravi dopunu plana”).
+
+#### Stanje u brojkama (red.json, 22. 11. navečer)
+
+Red ima 524 zadatka: 496 spojeno, 13 u PR-u, 11 čeka ovisnost, 4 zadržana.
+
+**Ispravak tablice faza:** faza 2 nije potpuno zatvorena za WEB. Baza `migracija/kopija-ductus-front` ima crveni CI (`client`, `ui`, pa i `ci-ok`). Bazu popravlja graditeljev PR #416 (CI i osnovne snimke kataloga). Faza 2 za WEB zatvara se kad je `ci-ok` na bazi zelen.
+
+**Zatvoreno 23. 11. 2026.:** faza 2 je zatvorena za svih devet repoa. Svi ZEL i LOK-WEB zadaci su spojeni, a CI na svakoj migracijskoj bazi je zelen: SRV `2f1c37f0`, WEB `a3a3b27c` (`ci-ok`), PRE `cd6128df`, WM `ae5f825c`, WO `66a34105`, APS `ba92b34f`, APF `a3d460ca`, DWIN `aefc1736`, DMAC `9d74e356`. Svaki novi commit na bazi mora zadržati zeleni CI.
+
+#### 1. Funkcije usporedno s fazom 3
+
+Pravilo „valovi 11–18 kreću nakon faze 3” u praksi je zamijenjeno. Funkcije po prototipu grade se usporedno s fazom 3, prema ugovorima `/api/v1`:
+
+- ekrani N-xx,
+- etape i razgovor (WEB-1520/1530),
+- nastavnički izvori (SRV-2133S).
+
+Serverska ovisnost i dalje se provjerava u fazi 3 (`srvDeps`).
+
+#### 2. Cilj „identično prototipu” (Daniel, 22. 11.)
+
+- Frontovi trebaju izgledati i raditi kao prototipovi u `_prototipovi`. Rasponi su do 640, 641–1050, 1051–1250 i iznad 1250 px.
+- Tome služi traka `VIZ-*`.
+- **Redoslijed:** prvo sve funkcije i rute po planu, a završni dizajn i snimke na kraju.
+- `globals.css` ostaje zaključan. Odstupanja idu u `*.module.css` ili u varijantu `@ductura/ui`.
+
+#### 3. Podjela posla (Daniel, 22. 11.)
+
+| Tko | Radi |
+|---|---|
+| Graditelj (lokalno) | Sve što traži upaljenu aplikaciju: e2e i `next build` na stvarnoj bazi, LOK-* zadaci, usporedba s prototipom snimkama, vizualna provjera VIZ-* PR-ova označenih „DJELOMIČNO”. |
+| Pisci u oblaku | WEB-*, SRV-* i VIZ-* kod koji ne treba upaljenu aplikaciju. Jedan zadatak, jedan PR. |
+| Orkestrator | Raspoređivanje, odgovori piscima, sitni popravci (sukobi, izvadak ugovora, CI baze), guranje PR-ova do spajanja. |
+
+#### 4. Vrata CI-ja za WEB (Daniel, 22. 11.)
+
+Daniel je rekao: „Ako ove 3 promjene ne usporavaju razvoj aplikacije, da napravi te 3 stvari.” Te tri stvari su:
+
+1. **Test čitača ugovora u klijentu.** Gotovo: ZEL-W19, WEB #429.
+2. **CI po putanjama.** To je ZEL-W20, koji čeka #416. `ci-ok` mora ostati jednako strog.
+3. **Zaštita grane** `migracija/kopija-ductus-front` s obveznim `ci-ok`, ne-strogo. Uključuje se nakon #416, kad je baza zelena.
+
+#### 5. Cilj za kontrolnu točku 30. 11. (prijedlog orkestratora)
+
+Ovo je prijedlog, a ne odluka vlasnika:
+
+1. Faza 2 zatvorena za sve repoe, uključujući zeleni `ci-ok` na WEB bazi.
+2. U fazi 3 lokalno prolazi tok student piše → sinkronizacija → predaja → nastavnik vidi predaju. To su scenariji A01–A05 na stvarnom stogu (INT-08, INT-09).
+3. Funkcije po prototipu imaju spojene rute i podatke. Dizajn VIZ-* ne mora biti završen.
+
 ---
+
+
+### Ubrzanje (Daniel 22. 11. 2026.: „Ok, napravi svih tih 7 izmjena”)
+
+1. **Tok s kraja na kraj odmah.** Graditelj prvo vrti A01–A05 na stvarnom stogu (INT-08, INT-09), tek zatim VIZ provjere i snimke. Uputa je u `_raspored/GRADITELJ.md`, odjeljak „Prednost”.
+2. **Zelena WEB baza je blokada broj 1**, zatim CI po putanjama (ZEL-W20) i Playwright u PR-ovima samo na Chromiumu (ZEL-W21). Puna matrica preglednika vrti se na bazi i noću. `ci-ok` ostaje jednako strog.
+3. **Zajedničke datoteke prvo.** Kad više zadataka dira layout, okvire ili tokene, prvo ide jedan PR koji ih priprema, a tek zatim paralelni pisci.
+4. **Ručni koraci su automatski.** Izvadak ugovora osvježava `_raspored/izvadak-auto.mjs` nakon svakog SRV spajanja (PR prema WEB bazi). `mk-pisac` u nalog upisuje retke `Agent:`, `Risk:` i `Task:` te prag rizika.
+5. **Usporedba s prototipom u CI-ju** (VIZ-CI): snimke na 390, 768, 1100 i 1280 px uz prototip, samo izvještaj, izvan `ci-ok`. Pisci u oblaku tako vide izgled bez lokalne aplikacije.
+6. **Uži opseg do probe 22. 2. 2027.:** samo Institution_server i Institution_front_web_chrome (te Preloader koliko treba za ulaz). ZEL-M1, ZEL-O1, WO-01 i DWIN-1301 su zadržani (`opseg-nakon-probe`). Institution_web_mobile, Web_other i desktop dolaze nakon probe, osim onoga što proba traži.
+7. **Kraći plan.** Trenutno stanje je u `STANJE.md` (generira ga `_raspored/stanje-plana.mjs` iz `red.json`). Povijesni dijelovi 4 i 10 premješteni su u `PLAN-ARHIVA.md`. Danielove otvorene odluke su na jednom mjestu, u `STANJE.md`.
+
+### Faze nakon V2 (plan 22. 11. 2026., Daniel: „Da”)
+
+Ovo nastavlja „Pet faza” i `PLAN.md` §5. Svaki korak ima vrata koja provjerava stroj. Novi zadaci čekaju svoja vrata kroz `drzi` u `red.json`, pa ih raspored ne pokreće prerano.
+
+#### Redoslijed
+
+1. **Zatvoriti V1 i V2:** zeleni `ci-ok` na WEB i SRV bazi; A01–A05 na istim SHA, tablica na Ductus#2052.
+2. **F3b, A06–A10 na stvarnom stogu** (graditelj): restart, oporavak potpisa, predaja V1/V2, ovlasti, dvije kartice. Usporedno idu preostale funkcije pilota po `STANJE.md` (P-1, P-D1…P-D8).
+3. **V3, izgled:** VIZ zadaci, snimke na 390/768/1100/1280 px, ručna WCAG matrica (DAN-428, DAN-755). Server ne čeka V3.
+4. **F4, grana → `main`:** Institution_server, zatim Institution_front_web_chrome, Preloader zadnji. Svaki repo na „Spoji n”.
+5. **Proba 22. 2. 2027.** na stagingu, samo izmišljeni podaci.
+6. **F5, objava i pilot:** samo na Danielovu riječ, uz pravno mišljenje i DPIA.
+7. **Nakon pilota:** valovi 13–22; mobile, Web_other i desktop prema opsegu nakon probe.
+
+| Datum | Što mora biti istina |
+|---|---|
+| 30. 11. 2026. | V1, V2 i F3b |
+| 15. 12. 2026. | Danielova odluka o AI pružatelju (Q-10) |
+| 20. 12. 2026. | Izbor ustanove za pilot (O-1) |
+| 15. 1. 2027. | Funkcije pilota u `packages/app`, V3 i F4 za server i WEB |
+| 22. 2. 2027. | Proba |
+
+#### Vrata po fazi
+
+| Faza | Ulaz | Izlaz |
+|---|---|---|
+| F3b | V2 zelen | A06–A10 PROLAZ na istim SHA, tablica na #2052 |
+| V3 | V1 + V2 | Snimke bez odstupanja većih od praga (VIZ-PRAG), axe zelen, matrica DAN-755 potpisana |
+| F4 | V1, V2, F3b i V3 za taj repo | Zeleni CI na PR-u grana→`main`, ciljani kritični pregled bez otvorenih nalaza, „Spoji n” |
+| Proba | F4 za SRV, WEB i Preloader | A01–A10 na stagingu, oporavak (DAN-889) izmjeren |
+| F5 | Proba, Danielova odluka, pravno mišljenje i DPIA | Produkcija radi, stranica stanja javna, pilot odobren posebno |
+
+#### Novi zadaci u `red.json`
+
+| id | repo | tko | drzi | što |
+|---|---|---|---|---|
+| INT-17 | WEB | graditelj | V2 | A06: restart servera i svjež preglednik vraćaju isti `documentId`, reviziju i hash |
+| INT-18 | SRV | graditelj | V2 | A07: izgubljeni odgovor i prekid radnika daju jednu reviziju i jednu potvrdu |
+| INT-19 | SRV | graditelj | V2 | A09: tuđi rad i druga ustanova odbijeni kroz HTTP i stvarnu DB ulogu |
+| INT-20 | WEB | graditelj | V2 | A10: dvije kartice, odjava A, B ne vidi A-ov dnevnik |
+| VIZ-SNIMKE | WEB | oblak | V3 | Snimke prototip↔app na četiri širine za sve rute |
+| VIZ-WCAG | WEB | graditelj | V3 | Ručna matrica DAN-755 |
+| F4-SYNC-SRV, F4-SYNC-WEB | SRV, WEB | orkestrator | F4 | Spojiti `main` u integracijsku granu (6 i 2 commita), CI zelen |
+| F4-PREGLED-SRV, F4-PREGLED-WEB | SRV, WEB | neovisni pregled | F4 | Ciljani pregled: AAI i sesije, RLS, dokazi (B-8), predaja |
+| F4-PR-SRV, F4-PR-WEB | SRV, WEB | orkestrator | F4 | PR grana→`main`, čeka „Spoji n” |
+| F4-PRE-HOST | Preloader | oblak | F4-PRE | Stvarni hostovi umjesto `.invalid`, nakon odluke D1 |
+| P-STAGING | SRV | orkestrator + Daniel | P | Staging, samo izmišljeni podaci |
+| P-OPORAVAK | SRV | graditelj | P | DAN-889 na stagingu, RPO/RTO izmjeren |
+| OBJ-KONFIG | SRV, WEB | orkestrator | F5 | Konfiguracija objave bez tajni; tajne upisuje Daniel |
+
+#### Način rada
+
+- **Graditelj** dokazuje tok na stvarnom stogu (F3b, lokalni A01–A10 na SHA koji ide u `main`, oporavak).
+- **Pisci u oblaku** rade kod i popravke nalaza, najviše 40 živih, jedan zadatak = jedan PR.
+- **Orkestrator** spaja u valovima po 2, sinkronizira grane i otvara PR-ove grana→`main`.
+- Granice: RAM ≥ 4 GB, teški testovi samo u CI-ju, bez slabljenja `ci-ok` i axea, VIZ tek u V3.
+- **F4:** dok PR grana→`main` za neki repo čeka „Spoji n”, u tu granu ulaze samo popravci nalaza pregleda, pa pregledani SHA ostaje SHA koji se spaja. Prije F4 svaki repo treba 3 zelena `ci-ok` zaredom na bazi.
+- **Pravilo „3 zelena zaredom”:** broje se zadnja 3 završena runa CI-ja na integracijskoj grani, a svaki mora imati zeleni posao `ci-ok`. Run koji je otkazan (zamijenio ga je noviji) ne broji se. Svaki drugi ishod je crven, i kad posla `ci-ok` nema. Provjera: `node scripts/ci-nestabilni.mjs --repo ductura/<repo> --branch <integracijska grana>` (dodaj `--strogo` za izlaz 1 kad pravilo nije ispunjeno). Ista skripta ispisuje nestabilne poslove: pad i prolaz na istom SHA. Skripta ništa ne mijenja i ne slabi `ci-ok` ni axe.
+
+#### Odluke D1–D8 (orkestrator po Danielovu „Ti odluči za D1-D8”, 22. 11. 2026.)
+
+| # | Pitanje | Odluka |
+|---|---|---|
+| D1 | Domena i usmjeravanje | Jedna domena `ductura.org` s podputanjama (`/`, `/c/`, `/api/v1/`), kao §1c. Jedan kolačić sesije i jedna AAI registracija. Domena je već registrirana (Daniel, 22. 11.). |
+| D2 | Staging | Render + Vercel preview, samo izmišljeni podaci, zasebna baza. Bez deploya dok Daniel ne otvori račune (D3). **Dopunjeno 23. 11.:** staging s migracijskih grana prije F4, vidi „Dopuna 23. 11. 2026.: staging s migracijskih grana”. |
+| D3 | Računi i tajne | Račune (Render, Vercel, baza, S3) i tajne otvara i upisuje Daniel. Orkestrator piše samo konfiguraciju bez tajni i ne stvara račune. |
+| D4 | Redoslijed u `main` | Institution_server, zatim Institution_front_web_chrome, Preloader zadnji. Nikad dva repoa odjednom. |
+| D5 | Način spajanja grana→`main` | Merge commit, bez squasha: čuva se povijest i veza commita sa zadacima i dokazima. |
+| D6 | Q-10 / D-194: AI pružatelj | **Ostaje Danielu** (pravilo: pružatelja i model bira samo Daniel). Rok 15. 12. 2026.; do tada je pomoćnik kostur. |
+| D7 | Pravno mišljenje i DPIA | Obavezni prije stvarnih studenata (F5). Proba 22. 2. 2027. ide samo s izmišljenim podacima. Narudžbu radi Daniel; orkestrator priprema popis obrada i tokova podataka. |
+| D8 | Licence | Jedan zadatak popisuje licence svih ovisnosti, fontova i prototipa prije F5; nalazi idu Danielu na potvrdu. |
+
+#### Čišćenje (svaka stavka tek na Danielovo „da”)
+
+SRV grana `migracija/kopija-ductus-testovi-server`; WEB #61, #62, #418, #434; SRV #347; Preloader #37, #40, #46, #47; Aplication_front #2; `.github` #26, #38, #41–#43, #48–#50. Revizije pariteta (WEB #340, #341, #343) čekaju V3, a red-team prijedlozi (WEB #261, SRV #511) odluku o P-2.
+
+
+### Dopuna 23. 11. 2026.: staging s migracijskih grana (odluka Daniel)
+
+Ovo **mijenja raniji plan**. Po „Pet faza” i D2 staging je dolazio tek uz probu i Fazu 5 (M11.4: staging s AAI@EduHr Labom). Daniel je 23. 11. odlučio da se staging digne odmah, s migracijskih grana, prije Faze 4. Izvori: „b i a, postavi staging s migracijske grane”, „Idemo B”, „Idemo B onda da, ali moramo sve raditi paralelno i za A”.
+
+#### Što je odlučeno
+
+| # | Odluka |
+|---|---|
+| S1 | Staging se gradi s migracijskih grana: SRV `migracija/kopija-ductus-backend`, WEB `migracija/kopija-ductus-front`. Ne čeka F4 ni `main`. |
+| S2 | Hosting: server i baze na Renderu (Blueprint „Ductura”, servis `ductura-institution-server-staging`, Frankfurt), WEB na Vercelu (projekt `ductura-staging`, adresa `https://ductura-staging.vercel.app`, korijen `packages/app`). Vercel prosljeđuje `/api/v1/*` serveru (`INSTITUTION_SERVER_URL`). |
+| S3 | **Prijava, opcija B (sada):** lažni OIDC izdavatelj kao **zaseban Render servis**, samo uz `DUCTURA_DEPLOYMENT=staging` i host izvan `ductura.org`. Produkcijski build i dalje odbija lažnog pružatelja (D-09). Samo izmišljeni `demo-*` računi. |
+| S4 | **Prijava, opcija A (paralelno pripremljena):** testni resurs u Registru AAI@EduHr (vrsta „Test”). Čeka da neki fakultet odobri matičnu ustanovu. Kad odobri, mijenjaju se samo Render varijable (`DUCTUS_AUTH_PROVIDER=aai-eduhr`, `OIDC_*`), bez novog koda. Tekst zahtjeva: `_raspored/stg-aai-zahtjev.md`. |
+| S5 | Samo izmišljeni podaci. Nikad pravi računi, e-pošte ni radovi studenata i nastavnika. |
+| S6 | Račune, tajne i lozinke otvara i upisuje Daniel (D3). Prvi deploy i svaki sljedeći ide **samo na Danielovu riječ**. |
+
+#### Odnos prema ostatku plana
+
+- **M11.4 i GO uvjeti ostaju.** Lažni OIDC na stagingu nije dokaz stvarnog AAI toka (D-203 D1). Prije stvarnih korisnika i dalje treba prolaz prijave preko AAI@EduHr (opcija A).
+- **Proba 22. 2. 2027.** ide na ovom stagingu. Do F4 staging prati migracijske grane; nakon F4 prelazi na `main`.
+- **Faza 5 se ne mijenja:** produkcija samo na Danielovu riječ, uz pravno mišljenje i DPIA.
+- `STAGING-KONFIG.md` (nacrt s `<…>` mjestima) dopunjen je stvarnim imenima servisa i projekata. Mjerodavne upute za postavljanje su `docs/STAGING.md` u Institution_serveru.
+
+#### Zadaci
+
+| id | repo | tko | stanje 23. 11. | što |
+|---|---|---|---|---|
+| STG-PRIJAVA | SRV | oblak | spojeno (SRV #655) | Izričit staging način za lažnog pružatelja; produkcija ostaje fail-closed. |
+| OBJ-KONFIG | SRV | oblak | spojeno (SRV #656) | Render Blueprint za staging i `docs/STAGING.md`, bez tajni i bez deploya. |
+| STG-OIDC | SRV | oblak | u izradi | Lažni OIDC kao zaseban Render servis (`packages/test-fakes/oidc/`, staging način). |
+| STG-AAI | SRV | Daniel | čeka fakultet | Registracija testnog resursa i testnih e-identiteta kod Srca. |
+| P-STAGING | SRV | orkestrator i Daniel | čeka STG-OIDC | Baza (uloge, `ductus_legal`, migracije) psql skriptom koju pokreće Daniel; varijable na Renderu i Vercelu; prvi deploy na Danielovu riječ. |
+| P-OPORAVAK | SRV | graditelj | čeka P-STAGING | DAN-889 na stagingu, RPO i RTO izmjereni. |
+
+#### Usputni zadaci iz lokalne provjere sheme 3 (23. 11.)
+
+Nisu dio staginga, ali su nastali istog dana iz graditeljeve provjere v3 rada u upaljenoj aplikaciji:
+
+| id | repo | tko | stanje 23. 11. | što |
+|---|---|---|---|---|
+| LOK-SRV-V3 | SRV | graditelj | spojeno (SRV #654) | Lažni dev server daje rad sheme 3 (`DUCTURA_LAZNI_SHEMA=3`). |
+| INT-22 | WEB | graditelj | gotovo | Provjera v3 rada od početka do kraja; nalazi su postali INT-23…INT-27. |
+| INT-23 | WEB | oblak, kritično | u izradi | Nastavnikova reprodukcija v3 rada. |
+| INT-24 | WEB | oblak | u izradi | Vidljiva i fokusabilna oznaka fusnote u v3 tekstu. |
+| INT-25 | WEB | oblak | u izradi | Kopiranje teksta rada uključuje fusnote. |
+| INT-26 | WEB | oblak, kritično | u izradi | Prikaz uživo za v3 rad. |
+| INT-27 | SRV | graditelj | čeka | Lažni server čuva ranije verzije za usporedbu. |
+
+#### Redoslijed do prvog deploya
+
+1. STG-OIDC spojen u SRV migracijsku granu.
+2. Daniel pokreće psql skriptu za baze i uloge (klijent `psql` 17, bez lokalnog Postgres servera).
+3. Daniel upisuje Render varijable (`DUCTURA_DEPLOYMENT=staging`, `DUCTUS_AUTH_PROVIDER=fake-oidc`, `OIDC_*`, baze) i na Vercelu `INSTITUTION_SERVER_URL`.
+4. Daniel kaže „deploy”. Orkestrator provjerava prijavu i tok A01 na stagingu.
 
 ## 0. Ukratko
 
@@ -220,15 +495,15 @@ Valovi 11–18 kreću **nakon faze 3**. Grade se izravno u Ducturinim repozitori
 
 ### 1a. Sedam repozitorija
 
-| Repo                      | Što posjeduje                                                                                                                                                                                                                                                | Što nikad ne smije sadržavati                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `Ductura/server`          | API `/api/v1`, prijava AAI@EduHr (D-09), FIDO2 za operatere, ovlasti, sve baze (glavna, zapisi, pravni tekstovi), migracije i pgTAP, radnici u pozadini, zapisi i metrika, backup, manifest i ruta za preuzimanje, testni server, ugovor (OpenAPI i vektori) | Stranice, React, CSS, editor, Dexie. Ništa što ovisi o pregledniku.                           |
-| `Ductura/preloader`       | Prvi ekran, provjera servera, prepoznavanje okruženja, odabir sučelja, gumb za paket, stranice grešaka, traka kolačića i pristanak, ulaz u prijavu, javna info stranica (3e), javni pravni tekstovi, stranica za preuzimanje, pravila usmjeravanja na domeni | Pristup bazi. Odluke o ovlastima. Otisak preglednika (fingerprinting). Editor i radni ekrani. |
-| `Ductura/web-chrome`      | Sučelje za Chrome na računalu: editor, dnevnik, sinkronizacija, ekrani studenta, nastavnika i admina                                                                                                                                                         | Serverski kod, rute API-ja, tajne, izravne veze na bazu. Kod za mobitel i ostale preglednike. |
-| `Ductura/web-mobile`      | Sučelje za mobitele i tablete: dodir, zaslonska tipkovnica, rotacija, uski zaslon                                                                                                                                                                            | Isto kao web-chrome.                                                                          |
-| `Ductura/web-other`       | Firefox, Safari, Edge, Opera i ostali preglednici na računalu. **Prijedlog: tanki repo za kompatibilnost i testove, ili ga nema** (§8, prijedlog 16; odluka 13)                                                                                              | Isto kao web-chrome. Vlastiti editor ili vlastite ekrane.                                     |
-| `Ductura/desktop-windows` | Windows aplikacija, instalacijski paket, potpis paketa, prvo pokretanje                                                                                                                                                                                      | Vlastiti server ili baza. Druga prijava osim one preko servera.                               |
-| `Ductura/desktop-macos`   | macOS aplikacija, paket, potpis i notarizacija kod Applea                                                                                                                                                                                                    | Isto kao Windows.                                                                             |
+| Repo | Što posjeduje | Što nikad ne smije sadržavati |
+|---|---|---|
+| `Ductura/server` | API `/api/v1`, prijava AAI@EduHr (D-09), FIDO2 za operatere, ovlasti, sve baze (glavna, zapisi, pravni tekstovi), migracije i pgTAP, radnici u pozadini, zapisi i metrika, backup, manifest i ruta za preuzimanje, testni server, ugovor (OpenAPI i vektori) | Stranice, React, CSS, editor, Dexie. Ništa što ovisi o pregledniku. |
+| `Ductura/preloader` | Prvi ekran, provjera servera, prepoznavanje okruženja, odabir sučelja, gumb za paket, stranice grešaka, traka kolačića i pristanak, ulaz u prijavu, javna info stranica (3e), javni pravni tekstovi, stranica za preuzimanje, pravila usmjeravanja na domeni | Pristup bazi. Odluke o ovlastima. Otisak preglednika (fingerprinting). Editor i radni ekrani. |
+| `Ductura/web-chrome` | Sučelje za Chrome na računalu: editor, dnevnik, sinkronizacija, ekrani studenta, nastavnika i admina | Serverski kod, rute API-ja, tajne, izravne veze na bazu. Kod za mobitel i ostale preglednike. |
+| `Ductura/web-mobile` | Sučelje za mobitele i tablete: dodir, zaslonska tipkovnica, rotacija, uski zaslon | Isto kao web-chrome. |
+| `Ductura/web-other` | Firefox, Safari, Edge, Opera i ostali preglednici na računalu. **Prijedlog: tanki repo za kompatibilnost i testove, ili ga nema** (§8, prijedlog 16; odluka 13) | Isto kao web-chrome. Vlastiti editor ili vlastite ekrane. |
+| `Ductura/desktop-windows` | Windows aplikacija, instalacijski paket, potpis paketa, prvo pokretanje | Vlastiti server ili baza. Druga prijava osim one preko servera. |
+| `Ductura/desktop-macos` | macOS aplikacija, paket, potpis i notarizacija kod Applea | Isto kao Windows. |
 
 ### 1b. Kako razgovaraju
 
@@ -243,17 +518,16 @@ Valovi 11–18 kreću **nakon faze 3**. Grade se izravno u Ducturinim repozitori
 
 **Preporuka: jedna adresa i podputanje.** Primjer na `ductura.org` (domena odlučena 17. 11., ispravak 10):
 
-| Putanja         | Tko je poslužuje                                                    |
-| --------------- | ------------------------------------------------------------------- |
-| `/`             | preloader (prvi ekran, info stranica, pravni tekstovi, preuzimanje) |
-| `/c/`           | web-chrome                                                          |
-| `/m/`           | web-mobile                                                          |
-| `/o/`           | web-other                                                           |
-| `/api/v1/`      | server                                                              |
-| `/preuzimanje/` | paketi, preko manifesta servera (S-1H.5)                            |
+| Putanja | Tko je poslužuje |
+|---|---|
+| `/` | preloader (prvi ekran, info stranica, pravni tekstovi, preuzimanje) |
+| `/c/` | web-chrome |
+| `/m/` | web-mobile |
+| `/o/` | web-other |
+| `/api/v1/` | server |
+| `/preuzimanje/` | paketi, preko manifesta servera (S-1H.5) |
 
 Zašto podputanje, a ne poddomene (`c.ductura.org` …):
-
 1. Kolačić sesije ostaje `__Host-` kolačić. On radi samo na jednoj adresi. S poddomenama bismo morali širiti kolačić na cijelu domenu, a to je slabija zaštita.
 2. Nema CORS-a. Sučelje i API su na istom porijeklu, pa postojeća zaštita od zahtjeva s drugog porijekla radi bez promjene.
 3. Srce dobiva jednu adresu preusmjeravanja za web (V-5).
@@ -273,33 +547,32 @@ Tri web sučelja i preloader inače bi kopirali isto: klijent API-ja, tipove, lo
 
 ### 2b. Usporedba
 
-| Način                   | Za                                                                                                                     | Protiv                                                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Verzionirani paketi** | Jasna verzija. Svaki repo bira kad nadograđuje. Automatski prijedlog nadogradnje (Dependabot). Radi s gateom i CI-jem. | Treba objava paketa i malo discipline oko verzija.                                                               |
-| Git submoduli           | Nema registra paketa.                                                                                                  | Agenti i oblak često ih krivo kloniraju. Promjena traži dva PR-a i ručno pomicanje pokazivača. Teško se reviewa. |
-| Kopiranje               | Najjednostavnije na početku.                                                                                           | Razilaženje je sigurno. Popravak greške treba ponoviti četiri puta.                                              |
+| Način | Za | Protiv |
+|---|---|---|
+| **Verzionirani paketi** | Jasna verzija. Svaki repo bira kad nadograđuje. Automatski prijedlog nadogradnje (Dependabot). Radi s gateom i CI-jem. | Treba objava paketa i malo discipline oko verzija. |
+| Git submoduli | Nema registra paketa. | Agenti i oblak često ih krivo kloniraju. Promjena traži dva PR-a i ručno pomicanje pokazivača. Teško se reviewa. |
+| Kopiranje | Najjednostavnije na početku. | Razilaženje je sigurno. Popravak greške treba ponoviti četiri puta. |
 
 ### 2c. Preporuka: verzionirani paketi
 
-| Paket                  | Objavljuje ga                                                  | Sadrži                                                                                                                                               | Koriste ga                                                    |
-| ---------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `@ductura/contracts`   | server                                                         | generirani klijent iz OpenAPI-ja, tipovi, katalog kodova grešaka, testni vektori, čisti formati evidencije (JCS, sažeci) iz `server/domain`          | preloader, sva tri weba; desktop koristi OpenAPI datoteku     |
-| `@ductura/ui`          | web-chrome                                                     | oznake dizajna (D-188), osnovne komponente, hrvatske lokale sučelja                                                                                  | preloader, web-mobile, web-other                              |
+| Paket | Objavljuje ga | Sadrži | Koriste ga |
+|---|---|---|---|
+| `@ductura/contracts` | server | generirani klijent iz OpenAPI-ja, tipovi, katalog kodova grešaka, testni vektori, čisti formati evidencije (JCS, sažeci) iz `server/domain` | preloader, sva tri weba; desktop koristi OpenAPI datoteku |
+| `@ductura/ui` | web-chrome | oznake dizajna (D-188), osnovne komponente, hrvatske lokale sučelja | preloader, web-mobile, web-other |
 | `@ductura/editor-core` | **najprije Ductus**, zatim web-chrome (`packages/editor-core`) | editor (shema, unos, identitet blokova), dnevnik (Dexie), sinkronizacija s osam stanja, ACK potpisanom potvrdom, odjava i brisanje lokalnih podataka | web-chrome, web-mobile, web-other, desktop (preko web paketa) |
 
 **Izdavatelji paketa (ispravak 14. 11.; prema planovima po repozitorijima):**
 
-| Paket                                                                     | Izdavatelj (izvor i objava)                                                                           |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `@ductura/contracts`                                                      | `server` (`packages/contracts`), objava iz Actionsa na oznaku (U10)                                   |
-| `@ductura/test-fakes`                                                     | `server` (`packages/test-fakes`), objava iz Actionsa na oznaku (U10)                                  |
-| `@ductura/ui`                                                             | `web` (`packages/ui`, 2.c1)                                                                           |
-| `@ductura/parity`                                                         | `web` (`packages/parity`)                                                                             |
-| `@ductura/editor-core`                                                    | najprije Ductus (E-0.1, E-0.2 objavljuje 0.x prije VS-1), zatim `web` (`packages/editor-core`, E-0.3) |
-| `@ductura/tsconfig`, `@ductura/eslint-config`, `@ductura/prettier-config` | `.github` (`packages/`)                                                                               |
+| Paket | Izdavatelj (izvor i objava) |
+|---|---|
+| `@ductura/contracts` | `server` (`packages/contracts`), objava iz Actionsa na oznaku (U10) |
+| `@ductura/test-fakes` | `server` (`packages/test-fakes`), objava iz Actionsa na oznaku (U10) |
+| `@ductura/ui` | `web` (`packages/ui`, 2.c1) |
+| `@ductura/parity` | `web` (`packages/parity`) |
+| `@ductura/editor-core` | najprije Ductus (E-0.1, E-0.2 objavljuje 0.x prije VS-1), zatim `web` (`packages/editor-core`, E-0.3) |
+| `@ductura/tsconfig`, `@ductura/eslint-config`, `@ductura/prettier-config` | `.github` (`packages/`) |
 
 Zašto ovako:
-
 - Server je vlasnik ugovora, pa i paketa ugovora. To je drugi paket: generirani klijent OpenAPI-ja i tipovi.
 - **Editor i sinkronizacija imaju jednu implementaciju.** To je najkritičniji i najbolje testirani kod (B-8, F-3: property, ekvivalencijski i odjavni testovi u `src/editor`, `src/lib/journal`, `src/lib/sync`). Druga ili treća kopija bila bi najveći rizik cijele migracije.
 - `server/domain` već po planu ne uvozi ništa (S-0.19), pa se može objaviti bez izmjena.
@@ -316,7 +589,6 @@ Zašto ovako:
 4. Nakon selidbe Ductusova kopija postaje samo za čitanje, uz bilješku gdje paket sada živi.
 
 **Tok verzija i nadogradnje:**
-
 1. Svaki paket ima semantičku verziju. Promjena koja lomi daje novu glavnu verziju.
 2. Verziju podiže PR koji mijenja paket, zapisom promjene (changeset). Spajanje u `main` pokreće objavu.
 3. Klijent prikvači točnu verziju. Dependabot otvara PR za nadogradnju. Taj PR prolazi CI klijenta, s vektorima nove verzije.
@@ -333,14 +605,14 @@ Ductus danas: oko 806 `.ts`, 104 `.tsx` i 217 `.mjs` datoteka; 37 ruta u `app/ap
 
 Pravilo za svaki prijenos: PR navodi izvorni SHA Ductusa, isti testovi prolaze prije i poslije, a logika se u istom PR-u ne mijenja. Povijest gita se ne prenosi, samo sadržaj (odluka vlasnika, Ductus#87 c.6881719844, točka 13): svaki prijenosni PR navodi izvorni SHA Ductusa.
 
-| Repo                                | Polazište iz Ductusa                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Kada                                       |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **server**                          | Po §9 popisa zadataka: `db/migrations` i ledger (S-0.13), `db/local`, `infra/postgres` (S-0.14), `db/tests` (S-0.15), `infra/fake-oidc` (S-0.16), `src/server/log`, `src/server/db`, `env.ts` (S-0.17), čisti dio `src/server/auth` (S-0.18), dio `src/domain` i `src/adapters` (S-0.19), `src/lib/i18n` za serverske poruke (S-1L.1), zatim logika ostalih ruta (val 6). `src/application` (evidence, jobs, ports, projection) ide uz pripadne rute u valu 6.                                                                                                                   | Faza A i B                                 |
-| **preloader**                       | `app/error.tsx`, `app/not-found.tsx`, `app/global-error.tsx` (stranice grešaka); `src/components/auth` (ulaz u prijavu); `src/components/landing` i `how-it-works` (info stranica, bez ustanova); `src/lib/status/public-status`; oznake iz `app/globals.css`, `app/fonts`, `src/components/shell/tokens`. Logika odabira sučelja je nova.                                                                                                                                                                                                                                       | Čista logika rano (P-0.2), ostalo u fazi C |
-| **web-chrome**                      | `src/editor`, `src/lib/journal` i `src/lib/sync` dolaze kao paket `@ductura/editor-core` iz Ductusa (§2d), ne kopijom; izvorni kod paketa seli se tek po uvjetima izlaza. Kopijom dolaze `src/client`, `src/components` (bez landinga), stranice `app/rad`, `zadaci`, `zadatak`, `nastavnik`, `ustanova`, `upis`, `stanje`; klijentski dio `src/domain` (document, diff, citation, text, provenance, sync, serverSync, collaboration); UI dio `src/lib/i18n`; `e2e/` za tokove sučelja. Pozivi prema Next.js rutama zamjenjuju se generiranim klijentom iz `@ductura/contracts`. | Faza C                                     |
-| **web-mobile**                      | Ništa izravno. Početak je predložak repoa plus `@ductura/ui` i `@ductura/editor-core`. Iz Ductusa samo e2e koji već provjeravaju uski zaslon.                                                                                                                                                                                                                                                                                                                                                                                                                                    | Faza D                                     |
-| **web-other**                       | Ako ostaje (odluka 13): samo popravci kompatibilnosti i testovi preglednika. Iz Ductusa `.github/workflows/webkit-macos.yml` kao uzor za Safari.                                                                                                                                                                                                                                                                                                                                                                                                                                 | Faza D                                     |
-| **desktop-windows / desktop-macos** | Ništa iz koda. Ljuska učitava isti web paket. Polazi od manifesta i simulacije preuzimanja (S-1H.5, S-1H.6) i ADR-a S-1E-e.                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Faza E                                     |
+| Repo | Polazište iz Ductusa | Kada |
+|---|---|---|
+| **server** | Po §9 popisa zadataka: `db/migrations` i ledger (S-0.13), `db/local`, `infra/postgres` (S-0.14), `db/tests` (S-0.15), `infra/fake-oidc` (S-0.16), `src/server/log`, `src/server/db`, `env.ts` (S-0.17), čisti dio `src/server/auth` (S-0.18), dio `src/domain` i `src/adapters` (S-0.19), `src/lib/i18n` za serverske poruke (S-1L.1), zatim logika ostalih ruta (val 6). `src/application` (evidence, jobs, ports, projection) ide uz pripadne rute u valu 6. | Faza A i B |
+| **preloader** | `app/error.tsx`, `app/not-found.tsx`, `app/global-error.tsx` (stranice grešaka); `src/components/auth` (ulaz u prijavu); `src/components/landing` i `how-it-works` (info stranica, bez ustanova); `src/lib/status/public-status`; oznake iz `app/globals.css`, `app/fonts`, `src/components/shell/tokens`. Logika odabira sučelja je nova. | Čista logika rano (P-0.2), ostalo u fazi C |
+| **web-chrome** | `src/editor`, `src/lib/journal` i `src/lib/sync` dolaze kao paket `@ductura/editor-core` iz Ductusa (§2d), ne kopijom; izvorni kod paketa seli se tek po uvjetima izlaza. Kopijom dolaze `src/client`, `src/components` (bez landinga), stranice `app/rad`, `zadaci`, `zadatak`, `nastavnik`, `ustanova`, `upis`, `stanje`; klijentski dio `src/domain` (document, diff, citation, text, provenance, sync, serverSync, collaboration); UI dio `src/lib/i18n`; `e2e/` za tokove sučelja. Pozivi prema Next.js rutama zamjenjuju se generiranim klijentom iz `@ductura/contracts`. | Faza C |
+| **web-mobile** | Ništa izravno. Početak je predložak repoa plus `@ductura/ui` i `@ductura/editor-core`. Iz Ductusa samo e2e koji već provjeravaju uski zaslon. | Faza D |
+| **web-other** | Ako ostaje (odluka 13): samo popravci kompatibilnosti i testovi preglednika. Iz Ductusa `.github/workflows/webkit-macos.yml` kao uzor za Safari. | Faza D |
+| **desktop-windows / desktop-macos** | Ništa iz koda. Ljuska učitava isti web paket. Polazi od manifesta i simulacije preuzimanja (S-1H.5, S-1H.6) i ADR-a S-1E-e. | Faza E |
 
 **Ostaje samo u Ductusu, kao povijest:** `docs/` (odluke, Ustav, plan, sažeci), `STATE.md`, skripte orkestratora (`scripts/orchestrator`), alati za gate Ductusa dok Ductus živi, `spikes/`, `plugins/`, `.claude/` i `.agents/` Ductusa, `middleware.ts` i Next.js rute API-ja (zamjenjuju ih rute servera), stari vizualni snimci.
 
@@ -350,109 +622,25 @@ Pravilo za svaki prijenos: PR navodi izvorni SHA Ductusa, isti testovi prolaze p
 
 ## 4. Redoslijed i faze (raniji plan A–E, povijest)
 
-**Od 19. 11. 2026. vrijedi odjeljak „Pet faza”.** Tablica niže je raniji plan s fazama A–E i valovima 1–10; ostaje zbog poveznica iz ostalih dokumenata (V-1b, „Faza E · aktivacija desktop razvoja”). Odjeljci §4a do §4c pisani su za taj redoslijed. Proizvodna pravila iz njih (VS-1b kao uvjet za rad sa stvarnim podacima, R-1 do R-10) ostaju na snazi dok orkestrator i Daniel ne odluče drukčije.
-
-| Faza                         | Što                                                                                                                                                | Ulaz                                                                                                     | Izlaz                                                                                                                                                         | Tvoje radnje                                                                                                                      |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **A** priprema, val 0        | Repo servera s CI-jem, gateom i botovima; prijenos temelja (S-0.1 … S-0.21)                                                                        | V-0, V-1                                                                                                 | Jedan pravi PR prošao cijeli gate u `Ductura/server`; ledger migracija jednak Ductusovu; skripte orkestratora vide repo                                       | V-0 domena i e-pošta; V-1 organizacija i repozitoriji; V-2 zaštita grane; V-3 botovi i Codex; V-4 tajne                           |
-| **B** server, valovi 1–10    | Sve od S-1A do S-1I                                                                                                                                | Faza A gotova                                                                                            | Testni server objavljen kao Docker slika; S-1H.8 prolazi; `@ductura/contracts` objavljen u verziji 0.x                                                        | V-5 zahtjev Srcu; V-7 račun admina aplikacije                                                                                     |
-| **C** preloader i web-chrome | Preloader (2.0), info stranica (2.1), web-chrome od komponenata; izdvajanje standarda (T-0); selidba `editor-core` u web-chrome po uvjetima iz §2d | VS-1 prošao; S-1M, S-1N, S-1H.7 i `@ductura/contracts` dostupni                                          | Prvi cijeli prolaz „domena → preloader → web-chrome → server” na sistemskom stogu; glavni tok u web-chromeu (otvori, piši, spremi, osvježi, bez veze, predaj) | V-1b (web i preloader, odobreno 14. 11., ne čeka fazu C); V-3 u njima; odluka o zamrzavanju Ductusa (ne prije 20. 12. 2026., §4d) |
-| **D** web-mobile i web-other | Ista funkcija, druga sučelja                                                                                                                       | `@ductura/ui` i `@ductura/editor-core` u verziji 1.0; skup scenarija pariteta                            | Paritet zelen u sva tri weba; matrica preloadera zelena; domena prebačena na novi stog                                                                        | V-1b za ta dva repoa; potvrda prebacivanja produkcije                                                                             |
-| **E** desktop                | Tanka ljuska oko istog web paketa za Windows i macOS                                                                                               | Odluka o ljusci i broju repozitorija (odluke 8 i 12); Apple račun; potpis za Windows; odgovor Srca (V-5) | Potpisani paketi; instalacija i pokretanje na čistom Windowsu i Macu; gumbi preloadera vode na prava izdanja                                                  | Apple Developer račun; certifikat za Windows; **Faza E · aktivacija desktop razvoja** (zasebna radnja, ne dio V-1b)               |
-
-**Napomena o redoslijedu:** tvoje pravilo je „prvo server”. Predlažem dvije iznimke:
-
-1. Čista logika preloadera (P-0.1, P-0.2). Ne treba server, mala je i dobro se testira tablicom. Radi se samo kad je pisac slobodan.
-2. **Vertikalni presjek (VS-1, VS-2), prijedlog.**
-
-### 4a. Vertikalni presjek (prijedlog)
-
-Cilj: što ranije dokazati da sedam repozitorija stvarno radi zajedno, prije nego što izgradimo sve valove servera.
-
-- **VS-1:** preloader + web-chrome + server. Korisnik se prijavi (lažni AAI@EduHr), otvori rad, spremi jednu rečenicu, osvježi stranicu i vidi rečenicu.
-- **Ulaz VS-1:** od servera samo prijava i spremanje rada, ne svi valovi: S-1E-a (prijava), S-1D-d (kolačić i odjava), S-1M-a (zdravlje s verzijom) i uski rez servera (§4c; ranije S-M-5). **O-3 (Ductus#87 c.6880835493):** otvaranje, spremanje i ponavljanje evidencije dolaze iz uskog reza servera odmah iza S-0.19, ne čekaju valove 1 do 5 ni val 6. Od Ductusa: `@ductura/editor-core` 0.x (E-0.2).
-- **Kriterij prihvata VS-1 (ispravak 14. 11.):** sintetički student se prijavi kroz lažni OIDC, spremi rečenicu i nakon osvježavanja stranice vidi tu rečenicu. Ovisi o DAN-758 (sheme i vektori za otvaranje i spremanje), DAN-759 (minimalni lokalni stog, umjesto S-1H.7) i DAN-760 (kriterij prihvata).
-- **Izlaz VS-1:** test „prijava → otvori → spremi → osvježi” prolazi na sistemskom stogu, sa zapisanim SHA svakog repoa. Preloader i web-chrome imaju samo onoliko koda koliko presjek traži.
-- **VS-1b (O-2):** zaseban, bezuvjetan nastavak VS-1; vidi §4a-1.
-- **VS-2:** isti rad otvara se na mobitelu (web-mobile ili, ako je odluka 13 tako, web-chrome u mobilnom prikazu). Spremljena rečenica je ondje.
-- Ostatak faza B i C nastavlja se nakon presjeka. Ako presjek pokaže da je razdvajanje preskupo, vidi se rano (prijedlog 17).
-
-### 4a-1. Ovisnosti i prihvat VS-1 i VS-2 (Daniel 14. 11.)
-
-Danielov tekst iz analize arhitekture, odobren za umetanje 14. 11. 2026. („Tekst za umetanje može”). Gdje se razlikuje od starijih redaka u §4a, vrijedi ovaj odjeljak.
-
-**Ovisnosti do prvog spremljenog rada.** Za svaku rutu bilježimo tri odvojena prolaza. Nakon prihvaćene sheme klijent može graditi poziv i stanja sučelja. Nakon vektora uspjeha i grešaka te funkcionalnog lažnog servera može provjeriti ugovorno ponašanje. Nakon U10 integrira objavljenu verziju paketa. Sistemski prolaz izvodi se nad stvarnim handlerima, sesijom, trajnom bazom, objektnom pohranom i potpisnikom. DAN-758 određuje pozivatelja, handler i test za svaku rutu VS-1. Rani stog DAN-759 može se pripremati odmah, a njegov završetak čeka te handlere. Puni testni server S-1H.7 ostaje za kasniju provjeru pariteta.
-
-**Prihvat VS-1 (izmjena prema O-2, Ductus#87 c.6880835493).** VS-1 se prihvaća s potpisom u istom odgovoru (protokol 1), **isključivo nad sintetičkim podacima u lokalnom i CI stogu**. U tom stogu sintetički student ulazi kroz `/`, prijavljuje se preko lokalnog OIDC pružatelja, vraća se u isti web pod `/app/` i otvara vlastiti postojeći rad s objavljenim `editor-coreom` 0.x. Upisuje jedinstvenu rečenicu. Nakon uspješnog lokalnog upisa editor prikazuje „Spremljeno na uređaju”. Odgovor servera nosi potpis u istom odgovoru; „Spremljeno na poslužitelju” prikazuje se tek kad klijent provjeri potpis za poslanu transakciju, dokument i reviziju. Nakon osvježavanja student vidi rečenicu. Čisti kontekst bez lokalnog dnevnika iz servera dobiva isti `documentId`, reviziju, hash i tekst. Test izgubljenog odgovora dokazuje da isti ključ i isti bajtovi daju jednu reviziju. Drugi student ne može pročitati ni izmijeniti taj rad. Uz prolaz se bilježe SHA preloadera, weba i servera, verzije paketa i rezultat provjera nad sintetičkim podacima.
-
-Uz tvrdnje VS-1 (numeracija VS-1.x prema DAN-760) vrijede dvije dopune iz iste odluke:
-
-- **VS-1.13 (nova tvrdnja):** nakon VS-1.7 proces servera (i radnika, ako postoji) gasi se i ponovno podiže, zatim se ponavlja VS-1.9. Isti dokument, ista revizija, isti hash i isti tekst moraju se vratiti iz trajne baze, ne iz memorije procesa.
-- **Zabrana administratorske veze na bazu kao dokaza čitanja:** tvrdnje o čitanju (VS-1.9 i VS-1.13) dokazuju se kroz API servera kao student i kroz ulogu aplikacije s RLS-om. Čitanje preko administratorske ili vlasničke veze na bazu ne računa se kao dokaz.
-
-**VS-1b (nova stavka, O-2).** Slijedi odmah nakon VS-1, **bezuvjetna je** i **uvjet je za osnovicu 20. 12. 2026. i za svaki rad sa stvarnim podacima (D-71)**. Sadržaj: odgovor `202 pending_signature`, worker koji potpisuje, red poslova, oporavak nakon prekida (worker, red i proces), te prikaz „Spremljeno na poslužitelju” tek nakon provjere potpisa. Protokol 1 nad stvarnim podacima nikad (D-71, R-1, §8a); prolaz VS-1b ne otvara protokol 1. VS-1b je `critical`, a ovisi o VS-1.
-
-**Prihvat VS-2.** Isti student u novom mobilnom kontekstu kroz isti web otvara rad iz VS-1 i s poslužitelja dobiva istu potvrđenu reviziju i rečenicu. Rezultat navodi uređaj ili emulaciju i preglednički motor. Produkcijski AAI, objava desktop paketa i prijelaz postojećih studentskih radova imaju zasebne uvjete prihvata.
-
-### 4b. Vremenska crta (procjena, NEPROVJERENO; raniji plan A–E, povijest)
-
-Procjena vrijedi za raniji plan A–E. Za pet faza vrijede kontrolne točke 30. 11. i 15. 1. i proba 22. 2. 2027.
-
-Migracija počinje onog dana kad postoji **V-1** (organizacija i repozitoriji). Dan 1 je prvi radni dan nakon toga.
-
-Mjera su radni dani uz današnji tempo: oko 35–40 PR-ova dnevno preko svih pisaca. Novi repo u početku ide sporije od tog prosjeka. Razlozi su ograničenje od tri kodna PR-a po repou, migracije redom, `critical` gate i ovisnosti među zadacima. Vanjska čekanja (Srce, Apple, certifikat za Windows, tvoje odluke) nisu uračunata.
-
-| Faza                       | Procjena (radni dani)     | Okvirno od–do                                 | Napomena                                                                                                                                   |
-| -------------------------- | ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| A (val 0)                  | 3–6                       | dan 1 – dan 6                                 | NEPROVJERENO. Gate se tek postavlja, pa su prvi PR-ovi sporiji.                                                                            |
-| B (valovi 1–10)            | 8–15                      | dan 4 – dan 20                                | NEPROVJERENO. Oko 95 zadataka; usporedni rad počinje u valu 5.                                                                             |
-| Uski rez servera (O-3)     | prema PR-ovima            | od završetka S-0.19, usporedno s valovima 1–5 | NEPROVJERENO. Zasebni `critical` PR-ovi redom (§4c). Nije izdanje.                                                                         |
-| VS-1 i VS-2                | 2–4                       | otprilike dan 10 – dan 16                     | NEPROVJERENO. Kreće čim su gotovi S-1E-a, S-1D-d, S-1M-a i uski rez (§4c; ranije S-M-5), usred faze B. VS-1 samo nad sintetičkim podacima. |
-| VS-1b                      | nakon VS-1                | prije osnovice 20. 12. 2026.                  | Bezuvjetan (O-2). Uvjet za osnovicu 20. 12. i za rad sa stvarnim podacima.                                                                 |
-| C (preloader i web-chrome) | 10–20                     | dan 14 – dan 35                               | NEPROVJERENO. Najveći dio prijenosa sučelja; preklapa se s krajem faze B.                                                                  |
-| D (mobile i other)         | 5–10                      | dan 30 – dan 45                               | NEPROVJERENO. Kraće ako je `web-other` tanak ili ga nema (odluka 13).                                                                      |
-| E (desktop)                | 8–15                      | dan 40 – dan 60                               | NEPROVJERENO. Plus vanjska čekanja na Apple račun, certifikat i Srce.                                                                      |
-| **Ukupno**                 | **oko 35–60 radnih dana** |                                               | NEPROVJERENO. Prva provjera procjene nakon faze A, iz mjera M-0.1.                                                                         |
-
-**Prezentacija 16. 11.** radi na Ductusu. Ništa iz ovog plana ne dira kod Ductusa prije toga, osim dokumenata (S-0.1, S-0.2) i spikea (S-0.3).
-
-### 4c. Uski rez servera za VS-1 (O-3)
-
-Odluka vlasnika (Ductus#87 c.6880835493, točka 3; mijenja D-306 t. 15; stari unos ostaje u povijesti).
-
-- **Što:** sesija, `open`, `commit` i `replay` grade se **odmah iza S-0.19**, usporedno s valovima 1 do 5.
-- **Kako:** svaki dio je zaseban `critical` PR, redom, **bez ugniježđenih PR-ova**; nad pravim PostgreSQL-om s RLS-om i pgTAP-om; u mapama područja iz server `docs/PLAN.md` §3.
-- **Uvjet početka:** S-0.19 spojen; prije svakog dijela plan napada (`ductus-attack-plan`); stalna granica od tri kodna PR-a po repou vrijedi i za rez.
-- **Rez nije izdanje.** Valovi 1 do 5 ostaju uvjet za pilot. Rez služi samo da VS-1 (i VS-1b) ne čekaju sve valove.
-- Novi D-unos koji navodi što mijenja (D-306 t. 15) i izmjena server `docs/PLAN.md` idu zasebnim docs PR-ovima kroz gate; ovaj dokument samo bilježi odluku.
-
-### 4d. Pilot na jednom sustavu (O-1)
-
-Odluka vlasnika (Ductus#87 c.6880835493, točka 1). Ovdje su „faze A i B pilota” faze pilota, ne faze migracije A–E iz §4.
-
-- Faze A i B pilota rade na **jednom sustavu**. Bira ga vlasnik prije faze A pilota, **na kontrolnoj točki 20. 12. 2026.**, uz mjerenje osnovice M3 na sustavu koji ide u pilot.
-- **Do izbora Ductus ostaje spreman za pilot; zamrzavanje iz D-295 ne nastupa prije izbora.** Ovo ima prednost pred „zamrzavanjem” u §8 točka 4 i §9 redak 10.
-- Proba povrata (M11.2-P04) ostaje GO uvjet prije stvarnih studenata (R-8).
-
----
+Premješteno u `PLAN-ARHIVA.md` (Daniel 22. 11. 2026.: „Ok, napravi svih tih 7 izmjena”, točka 7).
 
 ## 5. Standard svakog repozitorija
 
 Isti za svih sedam. Razlike su samo u putanjama i vrstama testova.
 
-| Stavka                                     | Pravilo                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Grana `main`                               | PR obvezan, squash, bez izravnog pusha, obvezna zbirna provjera `ci-ok` i statusi gatea. Postavljaš ti (V-2).                                                                                                                                                                                                                                                                                     |
-| CI                                         | Lint, typecheck, **funkcionalni testovi** i **testovi pomoćnih funkcija** kao odvojeni poslovi; skeniranje tajni; pregled ovisnosti; `ci-ok` pada ako padne bilo koji potreban posao. Akcije prikvačene na SHA.                                                                                                                                                                                   |
-| Funkcionalni test                          | Onaj iz tvoje tablice, npr. server „vlastiti dokument da, tuđi ne” (S-1H.3), preloader „Chrome na Macu otvara Chrome i nudi macOS paket”.                                                                                                                                                                                                                                                         |
-| Test pomoćnih funkcija                     | Unit testovi uz kod, npr. server „prazan i neispravan ID”, mobile „izračun prostora uz tipkovnicu”.                                                                                                                                                                                                                                                                                               |
-| Gate                                       | Isti kao Ductus: risk razine po putanjama, `Agent-Review:` i `QA-Agent:` na aktualnom headu, Codex review na točnom headu, dvije različite aplikacije za `critical`; spajanje po pravilu iz §7. **Za migraciju (faze 1–4) ne vrijedi:** vrata su opisana u odjeljku „Pet faza” (faza 2: lokalni test orkestratora; faza 4: zeleni CI i jedan ciljani pregled kritičnih dijelova po repozitoriju). |
-| CODEOWNERS                                 | Pokriva sve `critical` putanje.                                                                                                                                                                                                                                                                                                                                                                   |
-| `CLAUDE.md`, `AGENTS.md`, `.claude/rules/` | Tanki adapteri. Nijedno novo pravilo. Upućuju na kanonske dokumente.                                                                                                                                                                                                                                                                                                                              |
-| README                                     | Na hrvatskom: što repo radi, kako se pokreće, kako se testira, što nikad ne sadrži.                                                                                                                                                                                                                                                                                                               |
-| Pravilnik koda                             | Jedan `docs/CODE_STYLE.md` (S-0.5), isti u svim web i serverskom repou. Desktop dobiva dodatak za svoj jezik.                                                                                                                                                                                                                                                                                     |
-| Izdanja                                    | Semantička verzija i oznaka `vX.Y.Z`. Server: Docker slika i paket ugovora. Web: statična izgradnja. Desktop: potpisani paket u GitHub Releaseu.                                                                                                                                                                                                                                                  |
-| Botovi                                     | Ista labela i ista pravila kao u Ductusu (`ready-for-claude`, `bug`, `security`, `area:*`, `role:*`).                                                                                                                                                                                                                                                                                             |
+| Stavka | Pravilo |
+|---|---|
+| Grana `main` | PR obvezan, squash, bez izravnog pusha, obvezna zbirna provjera `ci-ok` i statusi gatea. Postavljaš ti (V-2). |
+| CI | Lint, typecheck, **funkcionalni testovi** i **testovi pomoćnih funkcija** kao odvojeni poslovi; skeniranje tajni; pregled ovisnosti; `ci-ok` pada ako padne bilo koji potreban posao. Akcije prikvačene na SHA. |
+| Funkcionalni test | Onaj iz tvoje tablice, npr. server „vlastiti dokument da, tuđi ne” (S-1H.3), preloader „Chrome na Macu otvara Chrome i nudi macOS paket”. |
+| Test pomoćnih funkcija | Unit testovi uz kod, npr. server „prazan i neispravan ID”, mobile „izračun prostora uz tipkovnicu”. |
+| Gate | Isti kao Ductus: risk razine po putanjama, `Agent-Review:` i `QA-Agent:` na aktualnom headu, Codex review na točnom headu, dvije različite aplikacije za `critical`; spajanje po pravilu iz §7. **Za migraciju (faze 1–4) ne vrijedi:** vrata su opisana u odjeljku „Pet faza” (faza 2: lokalni test orkestratora; faza 4: zeleni CI i jedan ciljani pregled kritičnih dijelova po repozitoriju). |
+| CODEOWNERS | Pokriva sve `critical` putanje. |
+| `CLAUDE.md`, `AGENTS.md`, `.claude/rules/` | Tanki adapteri. Nijedno novo pravilo. Upućuju na kanonske dokumente. |
+| README | Na hrvatskom: što repo radi, kako se pokreće, kako se testira, što nikad ne sadrži. |
+| Pravilnik koda | Jedan `docs/CODE_STYLE.md` (S-0.5), isti u svim web i serverskom repou. Desktop dobiva dodatak za svoj jezik. |
+| Izdanja | Semantička verzija i oznaka `vX.Y.Z`. Server: Docker slika i paket ugovora. Web: statična izgradnja. Desktop: potpisani paket u GitHub Releaseu. |
+| Botovi | Ista labela i ista pravila kao u Ductusu (`ready-for-claude`, `bug`, `security`, `area:*`, `role:*`). |
 
 Web repozitoriji koriste Next.js sa statičnom izgradnjom (`output: 'export'`), bez server actions i bez vlastitih ruta API-ja. Tako ostaje postojeći kod, a server ostaje jedini server. Preloader ima proračun veličine (test pada ako JavaScript prvog ekrana prijeđe dogovorenu granicu).
 
@@ -460,13 +648,13 @@ Web repozitoriji koriste Next.js sa statičnom izgradnjom (`output: 'export'`), 
 
 ## 6. Testiranje preko repozitorija
 
-| Vrsta                      | Što provjerava                                                                                                                                                                          | Gdje živi                                                                                                                       | Tko pokreće                                                                                                                                        |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ugovorni testovi**       | Klijent i server govore isti jezik. Klijent prikvači verziju `@ductura/contracts` i pokreće njezine vektore. Server pokreće vektore svih glavnih verzija koje još podržava.             | Vektori u serveru (S-1H.4); provjera u CI-ju svakog klijenta                                                                    | CI na svakom PR-u                                                                                                                                  |
-| **Scenariji pariteta**     | Isti tok prolazi u sva tri weba: prijava, otvaranje rada, pisanje, rad bez veze, ponovno spajanje, predaja.                                                                             | Razina API-ja u serveru (S-1H.8). Razina sučelja kao paket `@ductura/parity` u web-chromeu, koji pokreću web-mobile i web-other | CI svakog weba, nad Docker slikom testnog servera (S-1H.7)                                                                                         |
-| **Matrica preloadera**     | Dvije odluke zasebno: sučelje po uređaju i pregledniku, gumb po sustavu. Rubni slučajevi: Edge s oznakom Chrome, iPad u desktop načinu, uski prozor, nepoznat sustav, nedostupan paket. | `preloader`: tablični unit test (P-0.2) i Playwright s emuliranim uređajima u Chromiumu, Firefoxu i WebKitu (P-0.11)            | CI preloadera                                                                                                                                      |
-| **Simulacija preuzimanja** | Pravi paket za svaki sustav i arhitekturu, SHA-256 se poklapa, preuzimanje samo na klik.                                                                                                | Server (S-1H.6); kasnije desktop repo s pravim paketom                                                                          | CI servera; CI desktopa pri izdanju                                                                                                                |
-| **Sistemski e2e**          | „Domena → preloader → sučelje → server” kroz pravi proxy.                                                                                                                               | `preloader/e2e/system/` i `deploy/edge/` (proxy). Stog: slika testnog servera + statične izgradnje sva tri weba + preloader.    | Noćni posao u preloaderu i svaki kandidat za izdanje. QA sesija čita rezultat; orkestrator ga ne smatra prolazom bez zapisa SHA-ova svih dijelova. |
+| Vrsta | Što provjerava | Gdje živi | Tko pokreće |
+|---|---|---|---|
+| **Ugovorni testovi** | Klijent i server govore isti jezik. Klijent prikvači verziju `@ductura/contracts` i pokreće njezine vektore. Server pokreće vektore svih glavnih verzija koje još podržava. | Vektori u serveru (S-1H.4); provjera u CI-ju svakog klijenta | CI na svakom PR-u |
+| **Scenariji pariteta** | Isti tok prolazi u sva tri weba: prijava, otvaranje rada, pisanje, rad bez veze, ponovno spajanje, predaja. | Razina API-ja u serveru (S-1H.8). Razina sučelja kao paket `@ductura/parity` u web-chromeu, koji pokreću web-mobile i web-other | CI svakog weba, nad Docker slikom testnog servera (S-1H.7) |
+| **Matrica preloadera** | Dvije odluke zasebno: sučelje po uređaju i pregledniku, gumb po sustavu. Rubni slučajevi: Edge s oznakom Chrome, iPad u desktop načinu, uski prozor, nepoznat sustav, nedostupan paket. | `preloader`: tablični unit test (P-0.2) i Playwright s emuliranim uređajima u Chromiumu, Firefoxu i WebKitu (P-0.11) | CI preloadera |
+| **Simulacija preuzimanja** | Pravi paket za svaki sustav i arhitekturu, SHA-256 se poklapa, preuzimanje samo na klik. | Server (S-1H.6); kasnije desktop repo s pravim paketom | CI servera; CI desktopa pri izdanju |
+| **Sistemski e2e** | „Domena → preloader → sučelje → server” kroz pravi proxy. | `preloader/e2e/system/` i `deploy/edge/` (proxy). Stog: slika testnog servera + statične izgradnje sva tri weba + preloader. | Noćni posao u preloaderu i svaki kandidat za izdanje. QA sesija čita rezultat; orkestrator ga ne smatra prolazom bez zapisa SHA-ova svih dijelova. |
 
 Svaki prolaz bilježi verziju sustava, preglednika ili paketa i točan SHA svakog sudjelujućeg repoa. Svi podaci su izmišljeni.
 
@@ -493,7 +681,6 @@ Pravi uređaji (iPhone, iPad, Android) za fazu D: Playwright emulacija ne zamjen
 **Ograničenje WIP-a.** Danas: najviše tri kodna PR-a izvan nacrta. Prijedlog: tri po repozitoriju, uz ukupnu granicu pisaca zbog RAM-a i oblaka (odluka 7).
 
 **Koordinacijski issue.** Prijedlog: **#87 u Ductusu ostaje jedino mjesto tvojih odluka za sve repozitorije.** Tako povijest odluka ostaje na jednom mjestu. Svaki novi repo ima:
-
 - issue „Koordinacija <repo>” za bilješke orkestratora tog repoa,
 - issue „Botovi: dnevni pregled” za botove.
 
@@ -506,7 +693,6 @@ Pravi uređaji (iPhone, iPad, Android) za fazu D: Playwright emulacija ne zamjen
 Pitanje: može li svaki repo imati svog orkestratora, pa da svih sedam radi usporedno? **Preporuka: ne odmah. Jedan glavni orkestrator, a orkestratori po području dodaju se u etapama**, tek kad njihovi repozitoriji imaju stvaran usporedni posao.
 
 **Glavni orkestrator** posjeduje sve što prelazi granice repozitorija:
-
 - verzije ugovora (`@ductura/contracts`) i zajedničkih paketa (`editor-core`, `ui`);
 - izdanja i sistemski e2e;
 - #87, Linear i zajedničke zadatke;
@@ -514,23 +700,21 @@ Pitanje: može li svaki repo imati svog orkestratora, pa da svih sedam radi uspo
 
 **Etape:**
 
-| Etapa | Orkestratori                                                                             | Kada počinje                           |
-| ----- | ---------------------------------------------------------------------------------------- | -------------------------------------- |
-| 1     | Samo glavni, radi na serveru                                                             | Od V-1                                 |
-| 2     | Glavni (server) + **front orkestrator** za preloader, web-chrome, web-mobile i web-other | Zajedno s vertikalnim presjekom (VS-1) |
-| 3     | + **desktop orkestrator**                                                                | Kad počne rad na ljusci (faza E)       |
+| Etapa | Orkestratori | Kada počinje |
+|---|---|---|
+| 1 | Samo glavni, radi na serveru | Od V-1 |
+| 2 | Glavni (server) + **front orkestrator** za preloader, web-chrome, web-mobile i web-other | Zajedno s vertikalnim presjekom (VS-1) |
+| 3 | + **desktop orkestrator** | Kad počne rad na ljusci (faza E) |
 
 Najviše **tri** orkestratora u isto vrijeme.
 
 **Zašto ne sedam odmah:**
-
 1. **RAM.** Desktop ima 16 GB, a orkestrator je već padao zbog manjka memorije. Dodatni orkestratori rade u oblaku ili na laptopu, ne na desktopu.
 2. **Kvota.** Svaki orkestrator troši kvotu jednako kao pisac, i to stalno.
 3. **Ti si jedna točka odluke.** Sedam orkestratora značilo bi sedam redova pitanja za tebe.
 4. **Ovisnosti.** Na početku svi repozitoriji čekaju ugovor servera i paket editora. Sedam usporednih orkestratora uglavnom bi čekalo.
 
 **Pravila:**
-
 - Svaki orkestrator ima svoje ime slota (npr. `claude:b:orchestrator`, `claude:c:orch-front`) i svoj koordinacijski issue u svakom svom repou.
 - Samo glavni mijenja zajedničke pakete i verzije ugovora. Front ili desktop orkestrator za to otvara zahtjev glavnom.
 - Bazen pisaca i ograničenja WIP-a dijele se među orkestratorima. Glavni objavljuje podjelu na #87, a mijenja je samo on.
@@ -551,7 +735,7 @@ Najviše **tri** orkestratora u isto vrijeme.
    - **A:** Windows u C#/.NET s WebView2 (motor Chromium), macOS u Swiftu s WKWebView (motor WebKit). Dva repozitorija, kako si zadao.
    - **B:** jedan kod za oba sustava, Tauri ili Electron. Tada predlažem **jedan repo `desktop` s dva cilja** (Windows i macOS) umjesto dva repozitorija.
    - **C:** mješovito nije preporučeno.
-     Moja preporuka: A ako želiš izvorni osjećaj i C# kako je predloženo; B ako želiš manje održavanja. Odluka najkasnije na kraju faze C, uz kratki spike (D-0.1) ranije (odluke 8 i 12).
+   Moja preporuka: A ako želiš izvorni osjećaj i C# kako je predloženo; B ako želiš manje održavanja. Odluka najkasnije na kraju faze C, uz kratki spike (D-0.1) ranije (odluke 8 i 12).
 6. **macOS potpis i notarizacija.** Bez Apple Developer računa (99 USD godišnje) macOS blokira aplikaciju. Račun treba prije prvog javnog paketa. Predlažem otvoriti ga na početku faze E, ne prije.
 7. **Windows potpis.** Bez potpisa SmartScreen upozorava korisnika. Mogućnosti: klasični certifikat (oko 200 do 400 USD godišnje) ili Microsoftova usluga potpisa u oblaku (mjesečna pretplata; treba provjeriti dostupnost za Hrvatsku). Odluka u fazi E.
 8. **Gdje žive paketi za preuzimanje.** Prijedlog: izvor istine je GitHub Release desktop repoa. Server u manifestu drži adresu i SHA-256. Za korisnika ostaje jedna domena: `/preuzimanje/` vodi kroz server. Na početku je to preusmjeravanje na Release; kasnije, ako ustanova traži, kopija u vlastitoj pohrani.
@@ -567,7 +751,7 @@ Najviše **tri** orkestratora u isto vrijeme.
     - koliko repozitorija dira jedna promjena;
     - koliko PR čeka na PR u drugom repou;
     - vrijeme od prvog commita do testiranog izdanja, uz ostale DORA mjere (učestalost izdanja, udio promjena koje ruše, vrijeme oporavka).
-      **Pravilo:** ako obične promjene stalno traže tri gotovo jednaka PR-a (npr. ista izmjena u tri weba), to je znak da treba dijeliti više koda. Tada predlažem premještanje tog dijela u paket. Mjere idu u tjedni izvještaj petkom.
+    **Pravilo:** ako obične promjene stalno traže tri gotovo jednaka PR-a (npr. ista izmjena u tri weba), to je znak da treba dijeliti više koda. Tada predlažem premještanje tog dijela u paket. Mjere idu u tjedni izvještaj petkom.
 18. **Krivo prepoznavanje u preloaderu.** Niz preglednika (UA) laže: Edge i Opera nose oznaku Chrome, iPad se predstavlja kao Mac. Prijedlog: prepoznavanje koristi **client hints** (`Sec-CH-UA`, `Sec-CH-UA-Mobile`, `Sec-CH-UA-Platform`) i **provjeru mogućnosti** (dodir, širina zaslona, podržani API-ji), a niz preglednika samo kao zadnju zamjenu. Nikad samo niz. Korisnik **uvijek** može ručno promijeniti prikaz i paket. Prepoznavanje ne služi za ovlasti i nije otisak preglednika (3c).
 
 ---
@@ -576,134 +760,60 @@ Najviše **tri** orkestratora u isto vrijeme.
 
 Rizici uz odluku vlasnika 14. 11. (Ductus#87 c.6880835493). Svaki ima jednog nositelja zapisa u planu; pojedinosti i rok potvrđuje orkestrator u zadatku.
 
-| ID   | Rizik                                                                                                              | Što se traži                                                                                                                                                                                                                                                                                                                     |
-| ---- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R-1  | Protokol 1 (potpis u istom odgovoru) ne smije nikad dotaknuti stvarne podatke.                                     | Samo sintetički podaci u lokalnom i CI stogu (D-71). VS-1b je uvjet za svaki rad sa stvarnim podacima (§4a-1).                                                                                                                                                                                                                   |
-| R-2  | Lokalni zapis (dnevnik) u pregledniku.                                                                             | Šifriranje ili rok trajanja lokalnog zapisa odlučen prije pilota (D-122); shema dnevnika u E-0.1.                                                                                                                                                                                                                                |
-| R-3  | Izmjene izdanja tijekom pilota.                                                                                    | Faza A pilota zamrzava izdanje (§4d).                                                                                                                                                                                                                                                                                            |
-| R-4  | Domena je vezana uz AAI registraciju i `__Host-` kolačić (§1c).                                                    | V-0 mora biti konačan prije zahtjeva Srcu (V-5).                                                                                                                                                                                                                                                                                 |
-| R-5  | Knjiga migracija (ledger).                                                                                         | Samo za dodavanje (append-only). S-0.13 prenosi 112 migracija i `migrations.sum` doslovno u `db/main/migrations/`, s istom knjigom (usklađeno s §4, §10 i serverskim planom, `ductura/Institution_server` docs/PLAN.md redak 61). Nove migracije vidi §3 (točka 17).                                                             |
-| R-6  | Domena evidencije i registar ključeva.                                                                             | Dolaze iz konfiguracije operatera (D-102, DAN-759), ne iz koda.                                                                                                                                                                                                                                                                  |
-| R-7  | Sintetički prolaz na stagingu.                                                                                     | Ovisi o B0.1.                                                                                                                                                                                                                                                                                                                    |
-| R-8  | Proba povrata baze nikad nije izvršena.                                                                            | Proba (M11.2-P04) mora uključiti nižu reviziju na poslužitelju nakon povrata. Odluka vlasnika (Ductus#87 c.6880906459, varijanta A): na nižoj reviziji nakon povrata klijent ponovno šalje lokalne korake kao nove revizije s novim potpisanim potvrdama; lanac dokaza nosi oznaku „obnovljeno iz lokalne kopije nakon povrata”. |
-| R-9  | Inventar v1.                                                                                                       | Potvrda inventara; izbor po `receiptSchema`.                                                                                                                                                                                                                                                                                     |
-| R-10 | Dva statusa spremanja („Spremljeno na uređaju”, „Spremljeno na poslužitelju”) nasuprot osam stanja sinkronizacije. | Preslikavanje između dva statusa i osam stanja mora biti zapisano i testirano prije nego se „Spremljeno na poslužitelju” prikaže (kroz VS-1 i VS-1b).                                                                                                                                                                            |
+| ID | Rizik | Što se traži |
+|---|---|---|
+| R-1 | Protokol 1 (potpis u istom odgovoru) ne smije nikad dotaknuti stvarne podatke. | Samo sintetički podaci u lokalnom i CI stogu (D-71). VS-1b je uvjet za svaki rad sa stvarnim podacima (§4a-1). |
+| R-2 | Lokalni zapis (dnevnik) u pregledniku. | Šifriranje ili rok trajanja lokalnog zapisa odlučen prije pilota (D-122); shema dnevnika u E-0.1. |
+| R-3 | Izmjene izdanja tijekom pilota. | Faza A pilota zamrzava izdanje (§4d). |
+| R-4 | Domena je vezana uz AAI registraciju i `__Host-` kolačić (§1c). | V-0 mora biti konačan prije zahtjeva Srcu (V-5). |
+| R-5 | Knjiga migracija (ledger). | Samo za dodavanje (append-only). S-0.13 prenosi 112 migracija i `migrations.sum` doslovno u `db/main/migrations/`, s istom knjigom (usklađeno s §4, §10 i serverskim planom, `ductura/Institution_server` docs/PLAN.md redak 61). Nove migracije vidi §3 (točka 17). |
+| R-6 | Domena evidencije i registar ključeva. | Dolaze iz konfiguracije operatera (D-102, DAN-759), ne iz koda. |
+| R-7 | Sintetički prolaz na stagingu. | Ovisi o B0.1. |
+| R-8 | Proba povrata baze nikad nije izvršena. | Proba (M11.2-P04) mora uključiti nižu reviziju na poslužitelju nakon povrata. Odluka vlasnika (Ductus#87 c.6880906459, varijanta A): na nižoj reviziji nakon povrata klijent ponovno šalje lokalne korake kao nove revizije s novim potpisanim potvrdama; lanac dokaza nosi oznaku „obnovljeno iz lokalne kopije nakon povrata”. |
+| R-9 | Inventar v1. | Potvrda inventara; izbor po `receiptSchema`. |
+| R-10 | Dva statusa spremanja („Spremljeno na uređaju”, „Spremljeno na poslužitelju”) nasuprot osam stanja sinkronizacije. | Preslikavanje između dva statusa i osam stanja mora biti zapisano i testirano prije nego se „Spremljeno na poslužitelju” prikaže (kroz VS-1 i VS-1b). |
 
 ---
 
 ## 9. Odluke koje trebam od tebe
 
-| #   | Pitanje                              | Moja preporuka                                                                                                                                                                                                                 |
-| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Usmjeravanje na domeni               | Jedna adresa i podputanje (`/`, `/c/`, `/m/`, `/o/`, `/api/v1/`)                                                                                                                                                               |
-| 2   | Način dijeljenja koda i registar     | Verzionirani paketi; registar GitHub Packages (odluka od 14. 11., ispravak). Javni npm opseg bio je raniji prijedlog.                                                                                                          |
-| 3   | Pomoćni repo za zajedničke workflowe | `Ductura/.github`, bez koda aplikacije. Alternativa: sve u serveru.                                                                                                                                                            |
-| 4   | Gdje se bilježe tvoje odluke         | #87 u Ductusu ostaje jedino mjesto za svih sedam repozitorija                                                                                                                                                                  |
-| 5   | Linear                               | Jedan projekt „Ductus”, labela po repou, jedan zajednički zadatak po funkciji s poveznicama na sve PR-ove, prekretnice po fazama                                                                                               |
-| 6   | Aplikacija botova                    | Prenijeti `ductus-botovi` u organizaciju; promijeniti pravilo „samo ovaj repo” D-zapisom                                                                                                                                       |
-| 7   | WIP                                  | Tri kodna PR-a po repozitoriju, uz ukupnu granicu pisaca                                                                                                                                                                       |
-| 8   | Desktop ljuska i trenutak            | Tanka ljuska oko istog web paketa, nikad izvorni editor. Put A (C#/.NET + WebView2 i Swift + WKWebView) ili put B (Tauri ili Electron). Odluka najkasnije na kraju faze C, spike ranije.                                       |
-| 9   | Pravi mobilni uređaji                | Ručni QA protokol na tvojim uređajima; farma uređaja tek ako se pokaže potreba                                                                                                                                                 |
-| 10  | Zamrzavanje Ductusa                  | Zamrznuti na kraju faze C, zaključati dva tjedna nakon prebacivanja domene. **Dopuna O-1:** ne prije izbora sustava za pilot 20. 12. 2026. (§4d)                                                                               |
-| 11  | Repozitoriji pri V-1                 | Otvoriti svih sedam odmah (rezervacija imena), aktivirati samo `server`; ostali prazni s README-om „u pripremi”                                                                                                                |
-| 12  | Jedan ili dva desktop repozitorija   | Dva (`desktop-windows`, `desktop-macos`) uz put A; jedan `desktop` s dva cilja uz put B                                                                                                                                        |
-| 13  | `web-other`                          | Web-chrome za sve preglednike na računalu uz matricu preglednika u CI-ju; `web-other` kao tanki repo za kompatibilnost i testove ako želiš zadržati sedam repozitorija                                                         |
-| 14  | Editor i sinkronizacija              | Jedan paket `@ductura/editor-core`: počinje u Ductusu, seli se u web-chrome po uvjetima iz §2d                                                                                                                                 |
-| 15  | Vertikalni presjek                   | Da: VS-1 odmah nakon S-1E-a, S-1D-d, S-1M-a i uskog reza servera (§4c; ranije S-M-5, više nije ulaz VS-1). **Dopuna O-2, O-3:** VS-1 samo nad sintetičkim podacima, VS-1b bezuvjetan; uski rez servera iza S-0.19 (§4a-1, §4c) |
-| 16  | Mjere razdvajanja                    | Da: M-0.1 u `orch:metrics` od prvih zadataka, s pravilom „tri gotovo jednaka PR-a → dijeli više”                                                                                                                               |
-| 17  | Orkestratori po repozitoriju         | Ne sedam odmah: glavni + front (od VS-1) + desktop (od faze E), najviše tri, dodatni u oblaku ili na laptopu (§7a)                                                                                                             |
-| 18  | Pilot na jednom sustavu (O-1)        | Odlučeno 14. 11.: izbor na kontrolnoj točki 20. 12. 2026. (§4d)                                                                                                                                                                |
+| # | Pitanje | Moja preporuka |
+|---|---|---|
+| 1 | Usmjeravanje na domeni | Jedna adresa i podputanje (`/`, `/c/`, `/m/`, `/o/`, `/api/v1/`) |
+| 2 | Način dijeljenja koda i registar | Verzionirani paketi; registar GitHub Packages (odluka od 14. 11., ispravak). Javni npm opseg bio je raniji prijedlog. |
+| 3 | Pomoćni repo za zajedničke workflowe | `Ductura/.github`, bez koda aplikacije. Alternativa: sve u serveru. |
+| 4 | Gdje se bilježe tvoje odluke | #87 u Ductusu ostaje jedino mjesto za svih sedam repozitorija |
+| 5 | Linear | Jedan projekt „Ductus”, labela po repou, jedan zajednički zadatak po funkciji s poveznicama na sve PR-ove, prekretnice po fazama |
+| 6 | Aplikacija botova | Prenijeti `ductus-botovi` u organizaciju; promijeniti pravilo „samo ovaj repo” D-zapisom |
+| 7 | WIP | Tri kodna PR-a po repozitoriju, uz ukupnu granicu pisaca |
+| 8 | Desktop ljuska i trenutak | Tanka ljuska oko istog web paketa, nikad izvorni editor. Put A (C#/.NET + WebView2 i Swift + WKWebView) ili put B (Tauri ili Electron). Odluka najkasnije na kraju faze C, spike ranije. |
+| 9 | Pravi mobilni uređaji | Ručni QA protokol na tvojim uređajima; farma uređaja tek ako se pokaže potreba |
+| 10 | Zamrzavanje Ductusa | Zamrznuti na kraju faze C, zaključati dva tjedna nakon prebacivanja domene. **Dopuna O-1:** ne prije izbora sustava za pilot 20. 12. 2026. (§4d) |
+| 11 | Repozitoriji pri V-1 | Otvoriti svih sedam odmah (rezervacija imena), aktivirati samo `server`; ostali prazni s README-om „u pripremi” |
+| 12 | Jedan ili dva desktop repozitorija | Dva (`desktop-windows`, `desktop-macos`) uz put A; jedan `desktop` s dva cilja uz put B |
+| 13 | `web-other` | Web-chrome za sve preglednike na računalu uz matricu preglednika u CI-ju; `web-other` kao tanki repo za kompatibilnost i testove ako želiš zadržati sedam repozitorija |
+| 14 | Editor i sinkronizacija | Jedan paket `@ductura/editor-core`: počinje u Ductusu, seli se u web-chrome po uvjetima iz §2d |
+| 15 | Vertikalni presjek | Da: VS-1 odmah nakon S-1E-a, S-1D-d, S-1M-a i uskog reza servera (§4c; ranije S-M-5, više nije ulaz VS-1). **Dopuna O-2, O-3:** VS-1 samo nad sintetičkim podacima, VS-1b bezuvjetan; uski rez servera iza S-0.19 (§4a-1, §4c) |
+| 16 | Mjere razdvajanja | Da: M-0.1 u `orch:metrics` od prvih zadataka, s pravilom „tri gotovo jednaka PR-a → dijeli više” |
+| 17 | Orkestratori po repozitoriju | Ne sedam odmah: glavni + front (od VS-1) + desktop (od faze E), najviše tri, dodatni u oblaku ili na laptopu (§7a) |
+| 18 | Pilot na jednom sustavu (O-1) | Odlučeno 14. 11.: izbor na kontrolnoj točki 20. 12. 2026. (§4d) |
 
 ---
 
 ## 10. Prva dva tjedna (raniji plan, povijest)
 
-Raspored niže pisan je za raniji plan A–E. Za pet faza vidi odjeljak „Pet faza”.
-
-Pretpostavka: početak u ponedjeljak 17. 11., nakon prezentacije. Dokumenti i spike mogu i ranije.
-
-### 10a. Što se mijenja u postojećim zadacima
-
-| Zadatak            | Izmjena                                                                                                                                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S-0.1              | D-zapis navodi `preloader` kao sedmi repo umjesto `shared-core`. Dodaje odluke iz §9 koje potvrdiš (usmjeravanje, paketi, pomoćni repo, botovi).                                                    |
-| S-0.6              | Adapteri pravila nastaju tako da ih T-0.4 kasnije može kopirati u druge repozitorije. Sadržaj isti.                                                                                                 |
-| S-0.9              | Gradi se u serveru kao danas. Piše se tako da ga T-0.2 kasnije izdvoji bez promjene ponašanja.                                                                                                      |
-| S-0.20             | **Ukinuto 17. 11.** Spajanje ide po pravilu iz §7.                                                                                                                                                  |
-| S-0.10-a, S-0.10-b | Pišu se u `.github` (kao T-0.2), ne u serveru; server ih poziva punim SHA-om.                                                                                                                       |
-| S-0.11             | Ovisi i o prijenosu aplikacije botova u organizaciju (V-3). Labele dolaze iz zajedničkog popisa kad postoji T-0.1.                                                                                  |
-| S-0.19             | Briše se „Otvoreno: prelazi u shared-core”. `server/domain` ostaje u serveru i objavljuje se u `@ductura/contracts`. Time je pitanje shared-corea zatvoreno (zamijenjeno paketima, KARTA §4).       |
-| S-0.21             | Popis praćenih repozitorija ima svih sedam plus Ductus. Proširenje preko repozitorija je T-0.6.                                                                                                     |
-| S-1L.1             | Briše se „dugoročno mjesto lokala je shared-core”. Serverske lokale ostaju u serveru. Lokale sučelja idu u `@ductura/ui`. Test u `@ductura/ui` provjerava da svaki kod greške iz ugovora ima tekst. |
-| S-1M-c             | Katalog grešaka objavljuje se u `@ductura/contracts`, jer ga preloader treba.                                                                                                                       |
-| S-1H.4, S-1H.8     | Vektori i scenariji objavljuju se u `@ductura/contracts`. Potrošači su preloader i web repozitoriji, ne shared-core.                                                                                |
-| §6 i §7 popisa     | „Testovi shared-core” zamjenjuju testovi preloadera. Desktop gradi nad paketima i OpenAPI-jem, ne nad shared-coreom.                                                                                |
-
-### 10b. Novi zadaci
-
-| ID       | Što                                                                                                                                           | Repo                          | Ovisi o                                                       | Risk     |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------- | -------- |
-| T-0.1    | Pomoćni repo: profil organizacije, predlošci issuea i PR-a, zajednički popis labela                                                           | `.github` (ili server)        | V-1, odluka 3                                                 | standard |
-| T-0.2    | Zajednički workflowi: CI osnova s `ci-ok`, gate, tajne, ovisnosti; S-0.10-a/b se pišu ovdje, ne u serveru                                     | `.github`                     | U2, S-0.9                                                     | critical |
-| T-0.3    | **Ukinuto 17. 11.** (bila su zajednička pravila spajanja; spajanje ide po pravilu iz §7)                                                      | `.github`                     | —                                                             | —        |
-| T-0.4    | Generator početnih datoteka novog repoa                                                                                                       | `.github`                     | S-0.6, T-0.2 (uključuje S-0.10-a)                             | standard |
-| T-0.5    | Objava paketa: verzije, zapisi promjena, objava iz Actionsa                                                                                   | server                        | S-1H.1-b, odluka 2                                            | critical |
-| T-0.6    | Skripte orkestratora za sedam repozitorija, preklapanje preko repozitorija                                                                    | Ductus                        | S-0.21                                                        | critical |
-| T-0.7    | Tjedna provjera razilaženja postavki (samo čitanje)                                                                                           | `.github`                     | T-0.2                                                         | standard |
-| P-0.1    | Kostur preloadera (statična izgradnja, proračun veličine)                                                                                     | preloader                     | V-1b, T-0.4 ili ručno                                         | standard |
-| P-0.2    | Dvije odluke kao čiste funkcije, s tablicom iz plana prvog vala; ulaz su client hints i provjera mogućnosti, niz preglednika samo kao zamjena | preloader                     | P-0.1                                                         | standard |
-| P-0.3    | Ručni izbor prikaza i paketa, pamćenje izbora                                                                                                 | preloader                     | P-0.2                                                         | standard |
-| P-0.4    | Provjera servera i verzije API-ja                                                                                                             | preloader                     | S-1M-a                                                        | standard |
-| P-0.5    | Stranice grešaka iz kataloga                                                                                                                  | preloader                     | S-1M-c                                                        | standard |
-| P-0.6    | Traka kolačića i ekran pristanka                                                                                                              | preloader                     | S-1N-d                                                        | critical |
-| P-0.7    | Ulaz u prijavu AAI@EduHr; FIDO2 za mrežnog inženjera                                                                                          | preloader                     | S-1E-a, S-1E-g                                                | critical |
-| P-0.8    | Slanje konteksta klijenta                                                                                                                     | preloader                     | S-1M-b                                                        | standard |
-| P-0.9    | Info stranica, javni pravni tekstovi, stranica za preuzimanje                                                                                 | preloader                     | S-1N-c, S-1H.5                                                | standard |
-| P-0.10   | Proxy na domeni i lokalni sistemski stog                                                                                                      | preloader                     | S-1H.7                                                        | critical |
-| P-0.11   | Matrica preloadera u Playwrightu (tri motora)                                                                                                 | preloader                     | P-0.3                                                         | standard |
-| D-0.1    | Spike desktop ljuske (WebView2, WKWebView, Tauri) s istom web izgradnjom                                                                      | Ductus `spikes/`              | kraj faze B                                                   | low      |
-| E-0.1    | Granica paketa `editor-core` u Ductusu: `packages/editor-core`, bez Next.js-a, transport kao parametar; isti testovi prije i poslije          | Ductus                        | nakon 16. 11.                                                 | critical |
-| E-0.2    | Objava `@ductura/editor-core` 0.x iz Ductusa                                                                                                  | Ductus                        | E-0.1, odluka 2                                               | critical |
-| E-0.3    | Selidba paketa u web-chrome po uvjetima izlaza (§2d)                                                                                          | web-chrome                    | VS-1, zamrzavanje Ductusa                                     | critical |
-| Uski rez | Sesija, `open`, `commit`, `replay` kao zasebni `critical` PR-ovi redom (O-3, §4c); ID-eve dodjeljuje orkestrator                              | server                        | S-0.19                                                        | critical |
-| VS-1     | Vertikalni presjek: prijava, otvori, spremi rečenicu, osvježi; samo sintetički podaci; uključuje VS-1.13 (O-2)                                | preloader, web-chrome, server | S-1E-a, S-1D-d, S-1M-a, uski rez (ranije S-M-5), E-0.2, P-0.1 | critical |
-| VS-1b    | `202 pending_signature`, worker, red poslova, oporavak; uvjet za osnovicu 20. 12. 2026. i za stvarne podatke (O-2)                            | server, web-chrome            | VS-1                                                          | critical |
-| VS-2     | Isti rad otvoren na mobitelu                                                                                                                  | web-mobile ili web-chrome     | VS-1, odluka 13                                               | standard |
-| M-0.1    | Mjere razdvajanja i DORA u `orch:metrics` (repozitorija po promjeni, čekanje na drugi repo, vrijeme do testiranog izdanja)                    | Ductus                        | S-0.21                                                        | standard |
-
-### 10c. Raspored
-
-**Tjedan 1 (17.–21. 11.)**
-
-- Ti: V-0 e-pošta (domena odlučena 17. 11.: `ductura.org`). V-1 organizacija i repozitoriji. Odgovori na odluke 1–6, 11 i 14–16.
-- U Ductusu odmah: S-0.1 (s izmjenom iz 10a), S-0.2, S-0.3, S-0.21.
-- Nakon V-1: S-0.4, zatim S-0.5, S-0.7 i S-0.16 usporedno.
-
-**Tjedan 2 (24.–28. 11.)**
-
-- Ti: V-2 zaštita grane, V-3 prijenos i instalacija aplikacije botova i Codex, V-4 tajne.
-- Server: S-0.6, S-0.8, S-0.12, zatim S-0.9, S-0.11, S-0.13, S-0.14.
-- `.github`: T-0.2 (u sklopu kojeg se pišu S-0.10-a i S-0.10-b, nakon S-0.9). Redoslijed V-2 (§7): S-0.9 i S-0.10-b dokažu prolaz i očekivani pad prije nego V-2 dopiše statuse.
-- T-0.6 i M-0.1 u Ductusu, nakon S-0.21. Mjere počinju s prvim PR-om u serveru.
-- E-0.1 u Ductusu (granica paketa editora), nakon prezentacije i uz pisca koji poznaje `src/editor`.
-- Ako je pisac slobodan: P-0.1 i P-0.2 (bez servera).
-
-**Izlaz iz dva tjedna:** `Ductura/server` ima CI s `ci-ok`, gate i botove, a jedan pravi PR prošao je cijeli gate. Migracije su prenesene s istim ledgerom. Orkestrator prati server iz svojih skripti. Odluke 1–6, 11 i 14–16 su zapisane na #87.
-
-Ostatak vala 0 (S-0.15, S-0.17, S-0.18, S-0.19) i T-0.1, T-0.4 i T-0.7 ide u treći tjedan. **Uski rez servera (O-3, §4c) počinje odmah iza S-0.19**, dakle u trećem tjednu, kao zasebni `critical` PR-ovi redom, usporedno s valovima 1 do 5. Uvjeti početka: S-0.19 spojen, plan napada za svaki dio, ne više od tri kodna PR-a po repou. VS-1 i VS-1b slijede iza reza (§4a-1), a kontrolna točka 20. 12. 2026. traži VS-1b i izbor sustava za pilot (§4d). T-0.2 (s S-0.10-a/b) je u drugom tjednu jer je preduvjet za T-0.4, T-0.7 i za V-2.
-
-<a id="katalog-zadataka"></a>
+Premješteno u `PLAN-ARHIVA.md` (Daniel 22. 11. 2026.: „Ok, napravi svih tih 7 izmjena”, točka 7).
 
 ## Katalog zadataka
 
 Stavke imaju izvorni ID kako bi postojeći zadaci, PR-ovi i dodjele ostali povezani. Stavke iz različitih izvora koje opisuju isti ishod upućuju na isti izvršni prihvat. Datirani statusi, prijedlozi, ovisnosti o ranijem ustroju i procjene u priloženim zapisima provjeravaju se prema redoslijedu i aktualnim odlukama iz gornjih poglavlja.
+
 
 ### Raspodjela značajki po valovima
 
 Lokalna specifikacija preuzeta iz radne dokumentacije. SHA-256 normaliziranog teksta izvornika 2038ce7c277769d9195b55ede1edba96cc5332301c10c42b2f95a02a57ad9956.
 
 <!-- VALOVI-START -->
-
 Datum: 19. 11. 2026. Izvori: `INVENTAR-editor.md` (oznaka **E§**), `INVENTAR-student.md` (**S:** E-n, PD-n, R-n, PO-n), `INVENTAR-nastavnik.md` (**N:** N-nn). Pitanja su u `PITANJA-ZA-DANIELA.md` (oznake 0, A-n, B-n, C-n). Danielovi odgovori (43/43, 19. 11.) su u `ODGOVORI-DANIEL-2026-11-19.md`; oznaka **✓** znači riješeno. Zadaci za valove 1, 2 i 4: `ZADACI-VAL-1-2-4.md`.
 
 ## Pravila koja vrijede za svaki val
@@ -742,7 +852,6 @@ Repoi: **SRV** je Institution_server, **WEB** je Institution_front_web_chrome, *
 ## Korak P-1: izmjena pravila proizvoda: čeka izmjenu pravila (Daniel odlučio 19. 11.)
 
 Daniel je 19. 11. odlučio da se „Podrijetlo teksta” i podudaranje s pomoćnikom grade kao u prototipu i da se proizvod mijenja. To nije obična gradnja: ritam unosa su vremena između tipki, nova vrsta osobnih podataka. Prije gradnje tih dijelova mora sletjeti docs promjena:
-
 1. PRODUCT §5: pravila 1 (tvrdnja o korištenju AI-ja), 2 (postotak), 4 (bilježenje tipki i ritma), 8 (atribucija), 13 (analiza procesa pisanja) i rječnik zabranjenih izraza; uz to iznimka skenera za doslovni navod službenog obrasca (B-5).
 2. Ustav (Product Constitution v1.4), ako ga te granice pokrivaju: izmjena traži izričitu Danielovu potvrdu teksta.
 3. Privatnost i DPIA: nova klasa podataka (vremena unosa), svrha, rok čuvanja (D-30 je još PRIJEDLOG), tko vidi, obavijest studentu; utjecaj na `docs/privacy/` i DPIA uz DPO-a (D-142/D-143).
@@ -753,14 +862,12 @@ Tek nakon P-1: bilježenje ritma u editoru i evidence zapisu (zaseban SRV + edit
 ## Shema dokumenta: nesklad i gdje se rješava
 
 **Nesklad.**
-
 - Prototip editora koristi `bulletList`/`listItem`, `blockquote`, citat `{page, via, rq}` i `hid` samo na naslovima.
 - Ima još 9 čvorova i atributa (fusnota, unakrsna poveznica, prikaz, formula, fxi, prijelom stranice, okvir, blok koda, `vg`) i 8 oznaka (paste, imported, hl, sup, sub, lang, aitext, link) (E§6).
 - editor-core (V2 kanonska shema) i server (`server/domain/document/schema.ts`) poznaju samo odlomak, h1–h3, `bulletItem`, `quote`, podebljano, kurziv i citat `{sourceId, locator}`.
 - Server odbija svako nepoznato polje (pravilo B-8 iz `STATE.md`, nije pitanje s popisa). Dokument iz prototipa zato ne prolazi commit, a izmjena sheme samo u webu ruši spremanje.
 
 **Rješenje.**
-
 1. Val 1 radi na postojećoj V2 shemi. Prikaz se prilagođava shemi: popis i citat crtaju se iz V2 čvorova kako izgledaju u prototipu, a stranica se prikazuje iz `locator` (✓ C-2).
 2. Svako proširenje je zaseban niz PR-ova „shema vN”, nikad samo u jednom repou, uvijek ovim redom:
    1. ugovor i JCS test vektori;
@@ -774,27 +881,25 @@ Tek nakon P-1: bilježenje ritma u editoru i evidence zapisu (zaseban SRV + edit
 
 ## Redoslijed i paralelnost
 
-| Val | Naziv                                                                                  | Paralelno s             | Repo              |
-| --- | -------------------------------------------------------------------------------------- | ----------------------- | ----------------- |
-| 1   | Jezgra editora: pisanje i potvrda (+ Next.js temelj weba)                              | 2, 4                    | WEB + UI (+2 SRV) |
-| 2   | Student: ljuska, prijava, upis, obavijesti                                             | 1, 4                    | SRV + WEB         |
-| 3   | Student: radni prostor, Izjava, predaja, potvrda                                       | nakon 1, 2 i 4          | SRV + WEB         |
-| 4   | Nastavnik: ljuska, kolegiji, novi zadatak; admin izrađuje kolegij                      | 1, 2                    | SRV + WEB         |
-| 5   | Nastavnik vidi predaju                                                                 | 6                       | SRV + WEB         |
-| 6   | Izgled editora: trake, paneli, ladice                                                  | 5                       | WEB + UI          |
-| 7   | Citati i izvori (shema v3)                                                             | 8                       | SRV + WEB         |
-| 8   | Suradnja mentora: komentari, dorada, prijedlozi                                        | 7                       | SRV + WEB         |
-| 9   | Zapis procesa: sažetak, reprodukcija, usporedba, provjera                              | 10                      | SRV + WEB         |
-| 10  | Bogati sadržaj i stranice (shema v4), izvoz                                            | 9                       | SRV + WEB         |
-| 11  | Provjere teksta, etape, konzultacije, Merlin, produljenje (11a student, 11b nastavnik) | 11a i 11b međusobno, 12 | SRV + WEB         |
-| 12  | Pomoćnik (nakon D-194)                                                                 | 11                      | SRV + WEB         |
+| Val | Naziv | Paralelno s | Repo |
+|---|---|---|---|
+| 1 | Jezgra editora: pisanje i potvrda (+ Next.js temelj weba) | 2, 4 | WEB + UI (+2 SRV) |
+| 2 | Student: ljuska, prijava, upis, obavijesti | 1, 4 | SRV + WEB |
+| 3 | Student: radni prostor, Izjava, predaja, potvrda | nakon 1, 2 i 4 | SRV + WEB |
+| 4 | Nastavnik: ljuska, kolegiji, novi zadatak; admin izrađuje kolegij | 1, 2 | SRV + WEB |
+| 5 | Nastavnik vidi predaju | 6 | SRV + WEB |
+| 6 | Izgled editora: trake, paneli, ladice | 5 | WEB + UI |
+| 7 | Citati i izvori (shema v3) | 8 | SRV + WEB |
+| 8 | Suradnja mentora: komentari, dorada, prijedlozi | 7 | SRV + WEB |
+| 9 | Zapis procesa: sažetak, reprodukcija, usporedba, provjera | 10 | SRV + WEB |
+| 10 | Bogati sadržaj i stranice (shema v4), izvoz | 9 | SRV + WEB |
+| 11 | Provjere teksta, etape, konzultacije, Merlin, produljenje (11a student, 11b nastavnik) | 11a i 11b međusobno, 12 | SRV + WEB |
+| 12 | Pomoćnik (nakon D-194) | 11 | SRV + WEB |
 
 „Paralelno” znači disjunktne datoteke: WEB PR-ovi ne diraju iste rute ni komponente, SRV PR-ovi ne diraju iste rukovatelje. Zajedničke datoteke (ugovori i generirani klijent, `inventory.ts`, `server.ts`, `migrations.sum`, pgTAP matrica, `messages.hr`, izvozi `ui`, lockfile) imaju vlasnika trake ili zadani redoslijed (`ZADACI-VAL-1-2-4.md`).
-
 - Val 7 dira shemu dokumenta, a val 8 rukovatelje `collaboration.*`, pa su disjunktni. Valovi 9 i 10 su disjunktni ako shema v4 (val 10) ne dira replay i projekcije (val 9).
 
 Ograničenja:
-
 - **Next.js temelj weba (val 1) ide prije svih WEB stranica.** Kopija weba nema `next` ni `next.config`; stranice su Next oblika, a 69 datoteka čita bazu izravno (`withActor`, `@/server/*`, a `src/server` u kopiji ne postoji). Svaka stranica u svom PR-u prelazi na `src/client` → `/api/v1`, a pripadni `src/app/api` rukovatelji s bazom se brišu.
 - Val 3 traži gotove valove 1, 2 i 4: zadatak koji student otvara stvara nastavnik u valu 4. Val 5 traži val 3, jer nastavnik gleda stvarnu predaju.
 - Valovi 1, 2 i 4 dijele SRV PR „lokalni seed”: izmišljeni student, nastavnik, administrator i račun bez uloge, kolegij s nositeljem i grupama, zadatak s obavijesti, rad, valjan i istekao kod. Samo lokalno i u CI-ju, nikad stvarne osobe ni tekstovi.
@@ -806,13 +911,11 @@ Ograničenja:
 ## Val 1: Jezgra editora: pisanje, potpisana potvrda, ponovno učitavanje
 
 **Što Daniel klikne:**
-
 1. Napiše odlomak, naslov i popis. Status pokaže „Sinkroniziram” pa „Spremljeno na poslužitelju”.
 2. Osvježi stranicu i vidi isti tekst.
 3. Isključi mrežu i piše dalje. Status pokazuje „Spremljeno na uređaju”, bez „na poslužitelju”. Kad uključi mrežu, vraća se „Spremljeno na poslužitelju”.
 
 **Ekrani:**
-
 - list papira i statusna traka (E§1, status 30 px);
 - statični dio trake alata (E§3.6 toolbar2): poništi, ponovi, stil bloka, podebljano, kurziv, popis, citat;
 - stari nacrt (EarlierDraft);
@@ -821,14 +924,12 @@ Ograničenja:
 Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se pokazuje samo uz potpisanu potvrdu, a `pending_signature` nije potvrda (✓ B-6).
 
 **Server:**
-
 - evidence open, commit i replay već su montirani i samo se spajaju; novih ruta nema;
 - test: commit, potvrda, a replay vraća isti JCS hash.
 
 **WEB temelj:** Next.js u `src/app`, most `/api/v1` prema serveru, čitanje na serveru kroz `src/client`.
 
 **UI prvo:**
-
 - tokeni „papir i grafit”: tamna tema zadana, svijetla kroz `:root[data-theme=light]`, tema lista zasebna (zadano bijela);
 - lokalni fontovi (✓ A-13);
 - `SaveState` s 8 stanja (✓ A-4).
@@ -840,14 +941,12 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 ## Val 2: Student: ljuska, prijava, upis kodom, obavijesti
 
 **Što Daniel klikne:**
-
 1. Prijavi se lažnim OIDC-om kao student i vidi bočnu traku s 5 stavki i „Moje zadatke” (✓ A-1).
 2. Upiše kod i prođe stanja upisa: krivi kod, istekao kod, već upisan, kolegij bez zadatka, uspjeh (✓ A-2).
 3. Pročita obavijest kolegija, potvrdi je i odjavi se kroz dijalog; završi na javnoj početnoj stranici (✓ A-6).
 4. Prijavi se računom bez uloge i vidi stanje „bez uloge” s uputom na administratora fakulteta (✓ A-5).
 
 **Ekrani:**
-
 - S: E-0 ljuska (64 px, izbornik ispod 800 px, tema, odjava s dijalogom), E-1 Prijava (6 stanja);
 - E-2 Moji zadaci, E-3 Moji kolegiji, E-4 Moji radovi (uz pretragu i godinu, ✓ A-10);
 - E-5 Upis kodom (7 stanja), E-6 Obavijest (8 stanja, tekst prema ✓ A-14);
@@ -855,7 +954,6 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 - dodatni web ekrani ostaju (✓ A-10): dnevnik pristupa, „Kako radi”, stanje.
 
 **Server:**
-
 - već montirano: auth, me, locale;
 - samo ugovor, treba rukovatelj: `student.assignments.get`, `institution.enrollments.post`, `institution.acknowledgment.post`, `student.access-log.get`;
 - novo: ugovor „obavijest pročitana” (PO-7) s tablicom potvrda čitanja (RLS, pgTAP); proširenje `student.assignments.get` (✓ A-3); ishodi upisa „već upisan” i „kolegij bez zadatka” (✓ A-2).
@@ -869,19 +967,16 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 ## Val 3: Student: radni prostor, Izjava, predaja, potpisana potvrda
 
 **Što Daniel klikne:**
-
 1. Otvori zadatak iz vala 2 i piše u editoru iz vala 1.
 2. Otvori „Prije predaje”, vidi provjere, prođe Izjavu, preda rad i potvrdi u prozoru „Predati rad?”.
 3. Dobije potvrdu s otiskom. Nakon osvježavanja potvrda se učitava sa servera (C-4).
 
 **Ekrani:**
-
 - S: E-7 Radni prostor (6 stanja), E-8 Prije predaje, E-9 Izjava (✓ C-3, na lažnom serveru; naziv obrasca doslovno prema ✓ B-5 tek nakon iznimke skenera iz P-1), E-10 Predaja (10 stanja);
 - E-11 Potvrda (redak verzije prema ✓ C-11, gumb „Otisak u međuspremnik” ✓ B-4), bez PDF-a, QR-a i javne provjere, koji dolaze u valu 9;
 - PD-1 Sažetak procesa (osnovni dijelovi), PD-3 Predati rad?, PD-4 Napomena.
 
 **Server:**
-
 - samo ugovor, treba rukovatelj:
   - `submission.submit.post`, koji vraća `SignedSubmissionReceiptV2` (Ed25519);
   - `student.assignment-work.get`;
@@ -901,20 +996,17 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 ## Val 4: Nastavnik: ljuska, kolegiji, novi zadatak, kod za upis; admin izrađuje kolegij
 
 **Što Daniel klikne:**
-
 1. Kao administrator na `/ustanova/kolegiji` izradi kolegij s nositeljem i grupama (✓ A-7).
 2. Kao nastavnik vidi kolegije i bočnu traku s 4 stavke, i „Zbirni” (✓ A-9).
 3. Izradi i objavi novi zadatak, uz pravila o alatima (✓ A-14).
 4. Izradi novi kod za upis, vidi ga samo jednom (✓ A-8) i opozove stari. Student iz vala 2 upiše se tim kodom.
 
 **Ekrani:**
-
 - N: N-01 kolegiji, N-02/03 novi zadatak **bez obrasca kolegija** (✓ A-7: `submit:course` i varijanta `kolegij-stvoren` ne grade se za nastavnika; prazni nastavnik vidi uputu da kolegij izrađuje administrator), dijalog dk-h;
 - admin: obrazac „Novi kolegij” na postojećem `/ustanova/kolegiji` (A-03); prototipa nema, gradi se iz `ui` elemenata u izgledu tog ekrana;
 - postojeće web komponente: TeacherCourses, TeacherSetup, AssignmentVersionForm (✓ A-10).
 
 **Server:**
-
 - `institution.courses.post` postaje samo administratorov, s poljem nositelja (nova RPC `institution.admin_create_course`, RLS i pgTAP retci); nastavnički `create_course` ostaje u bazi, ali ga ruta više ne zove;
 - već montirano: izrada i opoziv koda za upis (čuva se samo sažetak, ✓ A-8);
 - samo ugovor, treba rukovatelj: `teacher.access.get`, `teacher.courses.get`, `institution.assignment-versions.post`;
@@ -930,19 +1022,16 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 ## Val 5: Nastavnik vidi predaju
 
 **Što Daniel klikne:**
-
 1. Vidi studente i radove sa stanjem predaje.
 2. Čita rad iz vala 3 uživo, samo za čitanje.
 3. Otvori predaju i vidi istu potvrdu, otisak i redak verzije koje je vidio student (✓ C-11).
 4. Otvori zbirni pregled i prihvati ili odbije zamolbu za mentorstvo; vidi banner o prazninama u zapisu kad ih ima (✓ C-18).
 
 **Ekrani:**
-
 - N: N-04 studenti, N-16 mentorstva (dijalog do-h), N-17 zbirni, N-06 rad (pogled uživo, banner praznina), N-07 predaja;
 - postojeće web komponente: MentoredWorks, LiveWorkView.
 
 **Server:**
-
 - samo ugovor, treba rukovatelj: `teacher.submissions.get`, `teacher.assignment-submissions.post`, `teacher.mentorships.get`, `teacher.mentorship.get`, `live.document.get`, `institution.student-removal.post`, `institution.student-return.post`;
 - `teacher_rosters` i `mentorship_request` postoje samo kao migracije: ugovor i rukovatelj, uz provjeru RLS-a i pgTAP redaka; novo: `teacher.submission-receipt.get` (✓ C-4), uz RLS po kolegiju; suradnik ima ista prava kao nositelj (✓ C-7).
 
@@ -957,14 +1046,12 @@ Stanja spremanja dolaze iz editor-corea (✓ A-4: 8 `SAVE_STATES`). SYNCED se po
 Samo WEB i UI, paralelno s valom 5.
 
 **Što Daniel klikne:**
-
 1. Provjeri da editor izgleda kao prototip na 1250, 1050, 760 i 640 px.
 2. Mijenja raspored panela A/B/C i otvara ladice, način fokusa i traku za traženje.
 3. Otvara Ctrl+K, prečace i kontekstne izbornike.
 4. Mijenja temu lista neovisno o temi ljuske.
 
 **Ekrani:**
-
 - E§1: zaglavlje 48 px, alati 44 px, stup 248/288/340, list najviše 820, panel 300/340/400;
 - E§3.1: rasporedi i ladice;
 - E§3.6:
@@ -984,21 +1071,18 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 7: Citati i izvori (shema v3)
 
 **Što Daniel klikne:**
-
 1. Doda izvor ručno i preko DOI/ISBN-a, pa umetne citat sa stranicom.
 2. Promijeni stil citiranja ili Lektin profil, umetne fusnotu i unakrsnu poveznicu.
 3. Otvori „Za provjeru” i „Pregled literature”.
 4. Osvježi stranicu i sve ostaje spremljeno uz potvrdu.
 
 **Ekrani:**
-
 - E§3.2: popover citata, Za provjeru;
 - E§3.3: Brzi izvor;
 - E§3.4: sources2 (DOI/ISBN, preporučeni i obvezni izvori, Pregled literature), Dijelovi rada, Poveznica;
 - postojeća komponenta: SourcesPanel.
 
 **Server:**
-
 - shema v3, redom kako je opisano gore (fusnota, unakrsna poveznica, `via`, `rq`);
 - novo: tablica izvora rada (RLS, pgTAP);
 - DOI/ISBN se traži preko servera, bez poziva iz preglednika (✓ A-13);
@@ -1013,13 +1097,11 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 8: Suradnja mentora: komentari, dorada, prijedlozi, brzi put
 
 **Što Daniel klikne:**
-
 1. Kao nastavnik ostavi komentar na odlomak i opći komentar, predloži izmjenu teksta i vrati rad na doradu s rokom.
 2. Kao student vidi komentar, prijedlog i zahtjev, odgovori i pošalje doradu.
 3. Nastavnik vidi novu rundu i povijest rundi, te koristi brzi put.
 
 **Ekrani:**
-
 - N: N-06/07/08 komentari, dorada i prijedlozi (dijalog dd-h), N-05 brzi put;
 - E§3.5: comments2 (opći komentari, privatne bilješke, predlošci, povijest rundi, ispis), mentor2 „Vrati na doradu”;
 - E§3.2: obrazac komentara;
@@ -1027,7 +1109,6 @@ Samo WEB i UI, paralelno s valom 5.
 - postojeće komponente: TeacherComments, CommentPanel, RevisionPanel, FastPath.
 
 **Server:**
-
 - samo ugovor, treba rukovatelj: `collaboration.comments.post`, `collaboration.revision-requests.post`, `teacher.fast-path.post`;
 - `live.document.put` za prijedloge teksta (✓ C-9);
 - novo: rok dorade u ugovoru (✓ C-8), tablice privatnih bilješki i predložaka (RLS, pgTAP).
@@ -1041,13 +1122,11 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 9: Zapis procesa: sažetak, reprodukcija, usporedba, javna provjera
 
 **Što Daniel klikne:**
-
 1. Kao nastavnik otvori sažetak procesa, pusti reprodukciju i usporedi bilo koje dvije verzije (✓ C-10).
 2. Bez prijave otvori `/provjera` preko QR-a s potvrde i vidi da se predani tekst nije mijenjao (✓ C-6).
 3. Preuzme PDF potvrde.
 
 **Ekrani:**
-
 - N: N-10 sažetak (Karta podrijetla tek nakon P-1), N-09 reprodukcija, N-11 usporedba;
 - S: PD-1 svih 11 dijelova, E-11 s PDF-om i QR-om (PO-20, PO-21);
 - E§3.3: Povijest rada, Predajni paket (naziv i tekst koda prema ✓ B-3);
@@ -1056,7 +1135,6 @@ Samo WEB i UI, paralelno s valom 5.
 - postojeće komponente: ProcessSummaryView, ReplayView.
 
 **Server:**
-
 - evidence replay je već montiran;
 - novo: popis verzija, `public.verification.post` s uskom SECURITY DEFINER funkcijom (✓ C-6), PDF na serveru;
 - javna provjera ne smije postati način prijave (D-09);
@@ -1071,21 +1149,18 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 10: Bogati sadržaj i stranice (shema v4), izvoz
 
 **Što Daniel klikne:**
-
 1. Umetne tablicu, sliku s obrezivanjem, formulu, blok koda, okvir, prijelom stranice i tekst na stranom jeziku.
 2. Uveze tekst i vidi oznaku uvezenog i zalijepljenog teksta (✓ B-7).
 3. Uredi naslovnicu i oblik stranice, otvori pregled ispisa, izveze i preuzme rad; uključi diktiranje i čitanje naglas (✓ C-14).
 4. Osvježi stranicu i sve ostaje spremljeno uz potvrdu.
 
 **Ekrani:**
-
 - E§3.3: Tablica/Slika, Pregled ispisa, Uvoz teksta;
 - E§3.4: Strani jezik, Formula (KaTeX, lokalno), blok koda, okvir;
 - E§3.6 rich: trake tablice i slike, obrezivanje, paleta markera, Dodaci editora;
 - E§3.6 pages: naslovnica, Oblik stranice.
 
 **Server:**
-
 - shema v4, uključivo `paste` i `imported`;
 - slike kao privitci rada: tablica s RLS-om i pgTAP retcima;
 - izvoz na serveru.
@@ -1099,12 +1174,10 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 11: Provjere teksta, etape, konzultacije, izvoz za Merlin, produljenje
 
 **Što Daniel klikne:**
-
 1. **11a, student:** otvori Pregled i Sitnice, pravopis, „Riješi redom”, „Probu predaje” i potvrdu iz izvora.
 2. **11b, nastavnik:** postavi etape, pripremi razgovor i zakaže konzultacije, ocijeni kriterije, izveze za Merlin i produlji rok.
 
 **Ekrani:**
-
 - E§3.5 review2: Pregled, Sitnice, Sažetak rada;
 - E§3.6 rich: pravopis;
 - E§3.4: proofs (blaži tekst ✓ B-8), tools.js, advice.js, wizard, plus.js, Pravila oblika (✓ C-19);
@@ -1113,7 +1186,6 @@ Samo WEB i UI, paralelno s valom 5.
 - N: N-12 konzultacije, N-18 izvoz za Merlin (✓ C-16), N-13 produljenje (✓ C-15), N-14 Priprema za razgovor i N-15 Etape (✓ C-15, nakon nacrta ekrana).
 
 **Server:**
-
 - tablice etapa, konzultacija, poruka, kriterija i produljenog roka (PO-22), svaka s RLS-om i pgTAP retcima;
 - izvoz za Merlin (CSV po prezimenu, poveznica 24 h, PDF i .docx, razlozi produljenja);
 - pravila provjera i Lektini profili kao konfiguracija ustanove (✓ C-12).
@@ -1123,7 +1195,6 @@ Samo WEB i UI, paralelno s valom 5.
 **PR-ovi:** oko 17: 8 SRV i 9 WEB, podijeljeno na 11a i 11b, plus Pragovi nakon P-1.
 
 **Blokira:**
-
 - Pragovi i naziv obrasca: P-1;
 - N-14 i N-15: nacrt ekrana (nema prototipa);
 - N-13: ADR Q-5 se i dalje piše (rok 30. 11.), ali gradnja ga ne čeka (✓ C-15).
@@ -1131,13 +1202,11 @@ Samo WEB i UI, paralelno s valom 5.
 ## Val 12: Pomoćnik
 
 **Što Daniel klikne:**
-
 1. Kao student pita pomoćnika unutar dopuštene razine.
 2. Tekst iz pomoćnika dobiva oznaku, a podudaranje sam priloži razgovor Izjavi (nakon P-1).
 3. Kao nastavnik vidi razgovor i priloge (N-AI-ATT) onoliko koliko odluka dopušta.
 
 **Ekrani:**
-
 - E§3.5 assist/assist2: pomoćnik, izvori, ključevi, upozorenje o osobnim podacima, Podudaranje (✓ B-2, nakon P-1);
 - E§3.3: dijalog pitanja; S: PD-2 dijalog razgovora (E-9 Izjava je u valu 3);
 - N: N-AI-ATT (✓ C-15, nakon nacrta ekrana);
@@ -1150,7 +1219,6 @@ Samo WEB i UI, paralelno s valom 5.
 **PR-ovi:** oko 11: 6 SRV i 5 WEB.
 
 **Blokira:**
-
 - Q-10/D-194 (✓ C-13: pomoćnik zadnji);
 - P-1 za Podudaranje, automatsko prilaganje i `aitext`;
 - N-AI-ATT: nacrt ekrana. Do tada u panelu pomoćnika stoji samo kartica „uskoro”.
@@ -1162,15 +1230,14 @@ Samo WEB i UI, paralelno s valom 5.
 - Paralelne skupine: 1+2+4, 5+6, 7+8, 9+10, 11a+11b, a 12 uz 11 kad se odblokira.
 - Shema dokumenta mijenja se samo kroz nizove „shema v3” i „shema v4”, i `aitext` u valu 12.
 - Pitanje 0 je riješeno: testovi i fixturei editora koriste samo `editor/samples/primjer-izmisljeni.json`; `diplomski.json` ne ide u testove, fixturee ni repoe.
-
 <!-- VALOVI-END -->
+
 
 ### Tehničke stavke valova 1, 2 i 4
 
 Lokalna specifikacija preuzeta iz radne dokumentacije. SHA-256 normaliziranog teksta izvornika 74d3a1d82bb2d532bc6bacfbe249ff9dce3eed15e5d709022e80a185e9466065.
 
 <!-- VAL-1-2-4-START -->
-
 Datum: 19. 11. 2026. Plan: `PLAN-VALOVA.md`. Odgovori: `ODGOVORI-DANIEL-2026-11-19.md`. Inventari: `INVENTAR-editor.md` (E§), `INVENTAR-student.md` (S:), `INVENTAR-nastavnik.md` (N:). Prototipovi su u `_prototipovi` (editor, student, nastavnik).
 
 ## Zajednička pravila za svaki PR
@@ -1194,14 +1261,14 @@ Datum: 19. 11. 2026. Plan: `PLAN-VALOVA.md`. Odgovori: `ODGOVORI-DANIEL-2026-11-
 
 Najviše 3 pisca u SRV i 3 u WEB istodobno.
 
-| Traka | Repo | Vlasnik zajedničkih datoteka                                                                                                                                                                                                                                                             |
-| ----- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S-A   | SRV  | `server/contracts/**` (rute, vektori, `generated/`, `openapi/`, `inventory.ts`), lokalni seed                                                                                                                                                                                            |
-| S-B   | SRV  | `db/main/migrations/**`, `migrations.sum`, pgTAP matrice; migracije strogo redom                                                                                                                                                                                                         |
-| S-C   | SRV  | studentski rukovatelji `server/institution/student-*-route.ts` (novo) i evidence testovi                                                                                                                                                                                                 |
-| W-A   | WEB  | Next temelj, `next.config.ts`, `src/client/**` (i podizanje verzije ugovora), `packages/ui/**`, `src/app/ustanova/**`                                                                                                                                                                    |
-| W-B   | WEB  | `src/app/zadaci/**`, `src/app/upis/**`, `src/app/prijava/**`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/kako-radi`, `src/app/stanje`, `src/app/rad/[assignmentId]/dnevnik-pristupa`, `src/components/student/**`, `src/components/shell/**`, `messages.hr` (samo svoja sekcija) |
-| W-C   | WEB  | `src/app/rad/**` (bez `dnevnik-pristupa`), `src/components/editor/**`, zatim `src/app/nastavnik/**`, `src/components/teacher/**`                                                                                                                                                         |
+| Traka | Repo | Vlasnik zajedničkih datoteka |
+|---|---|---|
+| S-A | SRV | `server/contracts/**` (rute, vektori, `generated/`, `openapi/`, `inventory.ts`), lokalni seed |
+| S-B | SRV | `db/main/migrations/**`, `migrations.sum`, pgTAP matrice; migracije strogo redom |
+| S-C | SRV | studentski rukovatelji `server/institution/student-*-route.ts` (novo) i evidence testovi |
+| W-A | WEB | Next temelj, `next.config.ts`, `src/client/**` (i podizanje verzije ugovora), `packages/ui/**`, `src/app/ustanova/**` |
+| W-B | WEB | `src/app/zadaci/**`, `src/app/upis/**`, `src/app/prijava/**`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/kako-radi`, `src/app/stanje`, `src/app/rad/[assignmentId]/dnevnik-pristupa`, `src/components/student/**`, `src/components/shell/**`, `messages.hr` (samo svoja sekcija) |
+| W-C | WEB | `src/app/rad/**` (bez `dnevnik-pristupa`), `src/components/editor/**`, zatim `src/app/nastavnik/**`, `src/components/teacher/**` |
 
 - `server.ts` (montiranje ruta) i lockfile: tko spaja kasnije, rješava konflikt pri rebaseu; generirane datoteke ugovora uvijek se ponovno generiraju (`pnpm contracts:generate`), ne spajaju ručno.
 - Trake ne diraju tuđe direktorije. Treba li stranici nova komponenta u `ui`, pisac W-B ili W-C traži je od W-A (zaseban mali UI PR) ili ga sam otvori u `packages/ui` nakon dogovora na koordinacijskom issueu.
@@ -1220,7 +1287,6 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 ## Val 1: jezgra editora (8 PR-ova)
 
 ### SRV-01 `seed-lokalni` · SRV · traka S-A
-
 - **Datoteke:** `db/main/local/seed.sql`, `db/main/local/lazni-oidc-racuni.json` (novo, za `FAKE_OIDC_ACCOUNTS_FILE`), `scripts/lokalno/config.ts` (put do datoteke računa), `README` odjeljak „Lokalni računi”.
 - **Gradi:** u `demo-fakultet`:
   - administrator `demo-admin` (imenovan kroz `appoint_institution_admin`);
@@ -1234,49 +1300,42 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 - **Ovisi o:** ništa. Blokira gotovo sve.
 
 ### SRV-16 `test-evidence-tok` · SRV · traka S-C
-
 - **Datoteke:** proširiti `scripts/stack/evidence.integration.test.ts` (postoji) ili novi `server/evidence/evidence-tok.integration.test.ts` (novo) u vitest projektu `integration`.
 - **Gradi:** integracijski test: evidence open za rad iz seeda → commit dokumenta iz `primjer-izmisljeni.json` pretvorenog u V2 shemu → potpisana potvrda (Ed25519) → replay vraća isti JCS hash; negativni slučaj: nepoznato polje u dokumentu → odbijeno (B-8).
 - **Prihvaćanje:** `pnpm test` zelen; namjerno pokvaren hash u testu pada.
 - **Ovisi o:** SRV-01.
 
 ### WEB-01 `next-temelj` · WEB · traka W-A
-
 - **Datoteke:** `package.json` (dodati `next`, istu glavnu verziju kao Aplication_front, i skripte `next:dev`, `next:build`, `typecheck`), `next.config.ts` (novo; komentar u `src/app/api/[...path]/route.ts` ga spominje, ali ga u kopiji nema), `tsconfig.json` putanje; `git mv` svih datoteka koje uvoze `@/server/*` ili zovu `withActor` (69 datoteka: stranice, `src/app/api/**` osim `[...path]`, komponente) u `src/_cekanje/` (novo), isključeno iz `tsconfig` i izvan `src/app`, pa ga Next ne gradi ni ne usmjerava.
 - **Gradi:** Next.js App Router nad `src/app`; postojeći `dev-server.mjs` (:5173) i `packages/app` (Vite) ostaju netaknuti dok ih stranice ne zamijene. Svaki PR stranice vraća svoju rutu iz `src/_cekanje/` u `src/app` i prebacuje je na `/api/v1`; ono što ostane u `_cekanje` na kraju vala 4 popisano je i čeka svoj val.
 - **Prihvaćanje:** `pnpm next:dev` → `http://localhost:3000/` otvara javnu početnu bez greške; `pnpm next:build` i `pnpm typecheck` prolaze.
 - **Ovisi o:** ništa. Blokira sve WEB PR-ove.
 
 ### WEB-02 `api-most` · WEB · traka W-A
-
 - **Datoteke:** `src/app/api/v1/[...path]/route.ts` (novo, proxy; specifičnija ruta, pa ima prednost pred postojećim `src/app/api/[...path]` koji vraća 404), `src/client/server.ts` (novo: čitanje na serveru kroz `createApi` s kolačićima zahtjeva), `.env.example` (`INSTITUTION_SERVER_URL=http://127.0.0.1:4000`, kao `dev-server.mjs`).
 - **Gradi:** sve `/api/v1/*` ide na Institution_server po uzoru na proxy u `dev-server.mjs`; kolačić sesije prolazi u oba smjera; prijava i odjava idu na serverske `/api/v1/auth/*` (stari `src/app/api/auth/*` iz `_cekanje` briše se ovdje); bez ikakvog pristupa bazi u WEB-u.
 - **Prihvaćanje:** prijava kao `demo-student` kroz web → `/api/v1/me` u pregledniku vraća studenta; odjava briše kolačić.
 - **Ovisi o:** WEB-01, SRV-01.
 
 ### WEB-03 `ui-tokeni-fontovi` · UI · traka W-A
-
 - **Datoteke:** `packages/ui/src/tokens.css`, `packages/ui/src/fonts/**`, `packages/ui/src/icons/**` (ikone trake alata za WEB-15), `packages/ui/src/save-state.ts` (stanja već postoje; dodaje se komponenta).
 - **Gradi:** tokeni „papir i grafit” (tamna ljuska zadana, svijetla `:root[data-theme=light]`, tema lista zasebna, zadano bijela) prema `docs/design/DESIGN-SYSTEM.md` i prototipu editora; fontovi lokalno (A-13); `SaveState` komponenta s 8 stanja (A-4), SYNCED tekst „Spremljeno na poslužitelju”.
 - **Prihvaćanje:** Storybook ili testna stranica `/ui-pregled` (samo dev) pokazuje sve tokene u obje teme i 8 stanja spremanja.
 - **Ovisi o:** WEB-01.
 
 ### WEB-14 `editor-stranica` · WEB · traka W-C
-
 - **Datoteke:** `src/app/rad/[assignmentId]/page.tsx` (novo; postoji samo `src/app/rad/page.tsx`), `src/components/editor/EditorPage.tsx` i `StatusBar.tsx` (novo); koristi postojeće `OpenWork`, `EarlierDraft`, `document-saver`, `OfflineNotice` iz `src/components/editor`, vraćene iz `_cekanje` i prebačene na `/api/v1`.
 - **Gradi:** list papira (E§1, širina do 820) i statusna traka 30 px sa `SaveState`; editor-core V2: dnevnik (Dexie), sync, `serverSync`; evidence open pri otvaranju; SYNCED samo uz potpisanu potvrdu (B-6); druga kartica: blokada iz editor-corea (A-12) s tekstom `BLOCKED_TEXT`; stari nacrt (EarlierDraft) iz dnevnika.
 - **Prihvaćanje:** kao `demo-student` otvori rad iz seeda → piše → „Sinkroniziram” pa „Spremljeno na poslužitelju”; osvježi → isti tekst; mreža isključena → „Spremljeno na uređaju”; druga kartica → blokada.
 - **Ovisi o:** WEB-02, WEB-03, SRV-01.
 
 ### WEB-15 `editor-traka-staticna` · WEB · traka W-C
-
 - **Datoteke:** postojeći `src/components/editor/EditorToolbar.tsx` i `EditorToolbarFor.tsx`; ikone iz `packages/ui` (WEB-03).
 - **Gradi:** statični dio trake (E§3.6 toolbar2): poništi, ponovi, stil bloka (odlomak, H1–H3), podebljano, kurziv, popis, citat; samo čvorovi V2 sheme (popis = `bulletItem`, citat = `quote`), izgled kao u prototipu.
 - **Prihvaćanje:** svaki gumb mijenja tekst; Ctrl+Z/Ctrl+Y rade; stanje gumba prati odabir; spremanje i dalje „na poslužitelju”.
 - **Ovisi o:** WEB-14.
 
 ### WEB-16 `editor-e2e` · WEB · traka W-C
-
 - **Datoteke:** `e2e/editor-val1.spec.js` (novo, uz postojeće `e2e/*.spec.js` i `e2e/support/axe.js`).
 - **Gradi:** Playwright tok iz „Prihvaćanja” WEB-14 i WEB-15 na lokalnom stogu (server + lažni OIDC), uz axe na 1250 i 400 px.
 - **Prihvaćanje:** `pnpm test:functional` zelen lokalno.
@@ -1289,7 +1348,6 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 ## Val 2: student (18 PR-ova)
 
 ### SRV-02 `ugovori-student` · SRV · traka S-A
-
 - **Datoteke:** `server/contracts/routes/student.ts`, `server/contracts/routes/enrollment.ts`, `server/contracts/vectors/*.json`, `server/contracts/generated/*`, `server/contracts/inventory.ts`.
 - **Gradi:**
   - `student.assignments.get` prošireno (A-3): akademska godina, grupe, vrsta rada, mentor, produljeni rok, nastavnici kolegija (`{id, ime, uloga: nositelj|suradnik}`);
@@ -1300,106 +1358,89 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 - **Ovisi o:** SRV-01.
 
 ### SRV-04 `ugovori-izdanje` · SRV · traka S-A
-
 - **Gradi:** `pnpm release:tarball` za `@ductura/contracts` 3.0.0 (glavno izdanje) sa studentskim i nastavničkim/admin ugovorima zajedno, tarball u Releases. Jedno izdanje i jedno podizanje verzije u WEB-u za sva tri vala.
 - **Prihvaćanje:** tarball se instalira u čistom direktoriju.
 - **Ovisi o:** SRV-02, SRV-03 (ista traka S-A, odmah iza seeda).
 
 ### SRV-05 `mig-upis-ishodi` · SRV · traka S-B
-
 - **Datoteke:** nova migracija, `migrations.sum`, pgTAP.
 - **Gradi:** `enroll_with_code` vraća `already_enrolled` i `enrolled_no_assignment`; kod se normalizira (velika slova, bez razmaka) prije usporedbe s `code_hash`.
 - **Prihvaćanje:** pgTAP: svih 5 ishoda; drugi student ne vidi tuđi upis.
 - **Ovisi o:** SRV-01.
 
 ### SRV-06 `mig-obavijest-procitana` · SRV · traka S-B
-
 - **Gradi:** tablica `institution.notice_read (assignment_id, student_id, read_at)` samo za dodavanje (novo), RLS (student piše i čita svoje, nastavnik kolegija čita), RPC `institution.mark_notice_read` (novo); pgTAP retci.
 - **Prihvaćanje:** pgTAP matrica: student da, drugi student ne, nastavnik kolegija čita, nastavnik drugog kolegija ne.
 - **Ovisi o:** SRV-05 (redoslijed migracija).
 
 ### SRV-08 `mig-zadaci-studenta` · SRV · traka S-B
-
 - **Gradi:** funkcija čitanja zadataka studenta s poljima iz A-3 (grupe, mentor, produljeni rok, nastavnici kolegija), RLS po upisu; pgTAP.
 - **Prihvaćanje:** pgTAP: student vidi samo zadatke svojih kolegija; polja odgovaraju seedu.
 - **Ovisi o:** SRV-06.
 
 ### SRV-09 `h-student-zadaci` · SRV · traka S-C
-
 - **Datoteke:** `server/institution/student-assignments-route.ts` (novo, uz postojeći `student-workspace.ts`), montiranje u `server.ts`.
 - **Gradi:** rukovatelj `student.assignments.get` nad SRV-08.
 - **Prihvaćanje:** `curl` s kolačićem `demo-student` vraća zadatak iz seeda s nastavnicima kolegija.
 - **Ovisi o:** SRV-02, SRV-08.
 
 ### SRV-10 `h-upis-obavijest` · SRV · traka S-C
-
 - **Gradi:** rukovatelji `institution.enrollments.post`, `institution.acknowledgment.post`, `student.notice-read.post`.
 - **Prihvaćanje:** upis s `UPIS2026DEMO` → `enrolled`; ponovno → `already_enrolled`; `STARI2025KOD` → `expired_code`; obavijest pročitana pa potvrđena.
 - **Ovisi o:** SRV-02, SRV-05, SRV-06.
 
 ### SRV-11 `h-pristup-dnevnik` · SRV · traka S-C
-
 - **Gradi:** rukovatelj `student.access-log.get` nad postojećim `server/database/my-access-log.ts` (tko je i kada otvorio rad).
 - **Prihvaćanje:** `demo-student` vidi redak iz seeda (`demo-teacher` otvorio rad).
 - **Ovisi o:** SRV-01 (ugovor već postoji).
 
 ### WEB-04 `ui-dijalog-toast` · UI · traka W-A
-
 - **Gradi:** `Dialog` sa zarobljenim fokusom i Esc, `Toast` (aria-live) u `packages/ui`.
 - **Prihvaćanje:** `/ui-pregled`: Tab ostaje u dijalogu, Esc zatvara, fokus se vraća na gumb.
 - **Ovisi o:** WEB-03.
 
 ### WEB-05 `ui-obrasci` · UI · traka W-A
-
 - **Gradi:** kvačica, odabir, višeredno polje, oznaka (tag), skeleton, detalji (`details`).
 - **Prihvaćanje:** `/ui-pregled` u obje teme, tipkovnica radi, axe bez nalaza.
 - **Ovisi o:** WEB-03.
 
 ### WEB-06 `ui-ljuska` · UI · traka W-A
-
 - **Gradi:** premjestiti iz weba u `packages/ui`: PanelTabs, ErrorScreen, RouteLoading, `LogoutDialog` (sada `src/components/editor`), izbornik ljuske (ispod 800 px); web uvozi iz `ui`.
 - **Prihvaćanje:** postojeće stranice izgledaju isto; `pnpm build` prolazi.
 - **Ovisi o:** WEB-03.
 
 ### WEB-07 `ugovori-bump` · WEB · traka W-A
-
 - **Gradi:** `@ductura/contracts` s 2.8.0 na 3.0.0 (Release URL), prilagodba `src/client` parsera (klijent odbija nepoznata polja).
 - **Prihvaćanje:** typecheck i testovi zeleni.
 - **Ovisi o:** SRV-04.
 
 ### WEB-08 `student-ljuska-prijava` · WEB · traka W-B
-
 - **Datoteke:** `src/app/layout.tsx`, `src/components/shell/**` (2 datoteke iz `_cekanje`), `src/app/prijava/page.tsx`, `src/app/page.tsx`; dijalog odjave iz `ui` (WEB-06).
 - **Gradi:** S: E-0 ljuska (64 px, bočna traka s 5 stavki, tema, izbornik ispod 800 px), odjava s dijalogom (A-6): odjava iz Ducture i AAI sesije (`auth.logout.post`), zatim `/`; E-1 Prijava sa 6 stanja; 403 na `/me` → stanje „bez uloge” s uputom na administratora fakulteta (A-5).
 - **Prihvaćanje:** prijava kao `demo-student` → ljuska i `/zadaci`; odjava kroz dijalog → `/`, ponovni ulaz traži prijavu; račun bez uloge → stanje „bez uloge”.
 - **Ovisi o:** WEB-02, WEB-04, WEB-06.
 
 ### WEB-09 `student-moji-zadaci` · WEB · traka W-B
-
 - **Gradi:** S: E-2 Moji zadaci (`/zadaci`, A-1) sa stanjima iz inventara; briše `src/app/zadaci` `withActor` datoteke (3).
 - **Prihvaćanje:** `demo-student` vidi zadatak iz seeda, rok, nastavnike kolegija; prazno stanje za `demo-student-2`.
 - **Ovisi o:** WEB-07, WEB-08, SRV-09.
 
 ### WEB-10 `student-kolegiji-radovi` · WEB · traka W-B
-
 - **Gradi:** S: E-3 Moji kolegiji, E-4 Moji radovi uz pretragu i akademsku godinu (A-10).
 - **Prihvaćanje:** popis kolegija i radova iz seeda; pretraga filtrira; odabir godine mijenja popis.
 - **Ovisi o:** WEB-09.
 
 ### WEB-11 `student-upis` · WEB · traka W-B
-
 - **Gradi:** S: E-5 Upis kodom (7 stanja), prozori PD-5/PD-6; briše `src/app/upis` `withActor` (2).
 - **Prihvaćanje:** krivi kod, istekao kod, već upisan, kolegij bez zadatka, uspjeh: svaki daje svoje stanje.
 - **Ovisi o:** WEB-08, WEB-07, SRV-10.
 
 ### WEB-12 `student-obavijest` · WEB · traka W-B
-
 - **Gradi:** S: E-6 Obavijest (8 stanja), PO-7 „pročitano”, potvrda; tekst o pravilima alata i pogledu uživo prema A-14; PD-7/PD-8.
 - **Prihvaćanje:** obavijest se otvori, označi pročitanom, potvrdi; nakon osvježavanja ostaje potvrđena.
 - **Ovisi o:** WEB-11, SRV-10.
 
 ### WEB-13 `student-dodatni-ekrani` · WEB · traka W-B
-
 - **Gradi:** dodatni web ekrani iz A-10 vraćeni iz `_cekanje` i prebačeni na `/api/v1`: `src/app/rad/[assignmentId]/dnevnik-pristupa`, `src/app/kako-radi`, `src/app/stanje`.
 - **Prihvaćanje:** dnevnik pristupa pokazuje redak iz seeda; „Kako radi” i stanje se otvaraju bez greške.
 - **Ovisi o:** WEB-08, SRV-11.
@@ -1411,61 +1452,51 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 ## Val 4: nastavnik i administrator (10 PR-ova)
 
 ### SRV-03 `ugovori-nastavnik-admin` · SRV · traka S-A
-
 - **Gradi:** `institution.courses.post` (postoji, `routes/institution.ts`) samo za administratora, s `holderId` i grupama; ugovori grupa (`institution.course-groups.*`, novo); `institution.assignments.post` (novo, izrada zadatka); vektori. Izdaje se zajedno sa SRV-02 u SRV-04.
 - **Prihvaćanje:** `contracts:generate` bez razlike; vektori zeleni.
 - **Ovisi o:** SRV-02 (isti vlasnik, redom).
 
 ### SRV-07 `mig-admin-kolegij` · SRV · traka S-B
-
 - **Gradi:** RPC `institution.admin_create_course(name, year, ai_policy, holder)` (SECURITY DEFINER, provjera uloge administratora ustanove); nastavnički `create_course` ostaje, ruta ga više ne zove.
 - **Prihvaćanje:** pgTAP: administrator da, nastavnik ne, administrator druge ustanove ne.
 - **Ovisi o:** SRV-08 (redoslijed migracija).
 
 ### SRV-12 `h-admin-kolegij` · SRV · traka S-A
-
 - **Gradi:** rukovatelj `institution.courses.post` nad SRV-07.
 - **Prihvaćanje:** `demo-admin` izradi kolegij; `demo-teacher` dobije 403.
 - **Ovisi o:** SRV-03, SRV-07.
 
 ### SRV-13 `h-nastavnik-citanje` · SRV · traka S-A
-
 - **Gradi:** rukovatelji `teacher.access.get`, `teacher.courses.get`.
 - **Prihvaćanje:** `demo-teacher` vidi kolegij iz seeda i novi kolegij gdje je nositelj.
 - **Ovisi o:** SRV-01.
 
 ### SRV-14 `h-zadatak-izrada` · SRV · traka S-A
-
 - **Gradi:** spojiti `server/institution/assignment-route.ts` (makni iz PENDING), rukovatelj `institution.assignment-versions.post`; pravila o alatima u zadatku (A-14); pri objavi se ništa ne šalje (C-17).
 - **Prihvaćanje:** `demo-teacher` izradi i objavi zadatak; `demo-student` ga vidi nakon upisa.
 - **Ovisi o:** SRV-03.
 
 ### SRV-15 `h-grupe` · SRV · traka S-A
-
 - **Gradi:** rukovatelji grupa nad `course_team_groups` (administrator i nositelj); provjeriti RLS i dodati pgTAP retke koji nedostaju.
 - **Prihvaćanje:** nositelj doda grupu; suradnik (C-7) također; student ne.
 - **Ovisi o:** SRV-03.
 
 ### WEB-17 `nastavnik-ljuska` · WEB · traka W-C
-
 - **Gradi:** nastavnička ljuska s 4 stavke uključivo „Zbirni” (A-9; prazno stanje do vala 5), nad zajedničkom ljuskom iz WEB-08; `src/app/nastavnik/page.tsx` vraćen iz `_cekanje`.
 - **Prihvaćanje:** prijava kao `demo-teacher` → bočna traka s 4 stavke; „Zbirni” pokazuje prazno stanje.
 - **Ovisi o:** WEB-07, WEB-08, SRV-13.
 
 ### WEB-18 `nastavnik-kolegiji` · WEB · traka W-C
-
 - **Gradi:** N: N-01 kolegiji, dijalog dk-h (izrada i opoziv koda; kod se pokazuje jednom, A-8); prazni nastavnik vidi uputu da kolegij izrađuje administrator (A-7).
 - **Prihvaćanje:** izradi kod → vidi ga jednom, nakon zatvaranja samo „izdan”; opozove stari; `demo-student-2` se upiše novim kodom.
 - **Ovisi o:** WEB-17, SRV-13.
 
 ### WEB-19 `nastavnik-novi-zadatak` · WEB · traka W-C
-
 - **Gradi:** N: N-02/03 bez obrasca kolegija (`submit:course` i `kolegij-stvoren` se ne grade), koraci zs-1 do zs-4, objava; postojeće TeacherSetup i AssignmentVersionForm prebačeni na `/api/v1`; briše `src/app/nastavnik` `withActor` (8) koje ova stranica koristi.
 - **Prihvaćanje:** izradi zadatak s pravilima alata i rokom, objavi; student ga vidi u „Mojim zadacima”.
 - **Ovisi o:** WEB-18, SRV-14.
 
 ### WEB-20 `admin-kolegij-novi` · WEB · traka W-A
-
 - **Gradi:** obrazac „Novi kolegij” na `/ustanova/kolegiji` (naziv, godina, AI pravilo, nositelj, grupe) iz `ui` elemenata, u izgledu postojećeg ekrana A-03 (prototipa nema); briše `src/app/ustanova` `withActor` (4).
 - **Prihvaćanje:** `demo-admin` izradi kolegij s nositeljem `demo-teacher-2` i grupom; `demo-teacher-2` ga vidi u N-01.
 - **Ovisi o:** WEB-05, WEB-07, SRV-12, SRV-15.
@@ -1476,24 +1507,24 @@ WEB-01 Next temelj → WEB-02 API most → WEB-03 tokeni → WEB-04/05/06 ui →
 
 ## Zbroj i trake
 
-| Val        | SRV                                    | WEB/UI                         | Ukupno |
-| ---------- | -------------------------------------- | ------------------------------ | ------ |
-| 1          | 2 (SRV-01, 16)                         | 6 (WEB-01, 02, 03, 14, 15, 16) | 8      |
-| 2          | 8 (SRV-02, 04, 05, 06, 08, 09, 10, 11) | 10 (WEB-04 do 13)              | 18     |
-| 4          | 6 (SRV-03, 07, 12, 13, 14, 15)         | 4 (WEB-17 do 20)               | 10     |
-| **Ukupno** | **16**                                 | **20**                         | **36** |
+| Val | SRV | WEB/UI | Ukupno |
+|---|---|---|---|
+| 1 | 2 (SRV-01, 16) | 6 (WEB-01, 02, 03, 14, 15, 16) | 8 |
+| 2 | 8 (SRV-02, 04, 05, 06, 08, 09, 10, 11) | 10 (WEB-04 do 13) | 18 |
+| 4 | 6 (SRV-03, 07, 12, 13, 14, 15) | 4 (WEB-17 do 20) | 10 |
+| **Ukupno** | **16** | **20** | **36** |
 
 Prvi krug bez čekanja: S-A SRV-01, S-B SRV-05 i W-A WEB-01; S-C kreće sa SRV-16 čim sleti SRV-01. W-B (WEB-08) i W-C (WEB-14) kreću kad sletnu WEB-01, 02 i 03 (WEB-08 još WEB-04 i 06).
 
 **Uska grla:** W-A ima 8 PR-ova u nizu (WEB-01 do 07 i WEB-20), a W-C radi WEB-14 do 16 prije WEB-17 do 19. Uz granicu od 3 WEB pisca web dio vala 4 kreće tek kad W-C završi editor; serverski dio vala 4 ide paralelno.
 <!-- VAL-1-2-4-END -->
 
+
 ### Tehničke stavke valova 3 i 5
 
 Lokalna specifikacija preuzeta iz radne dokumentacije. SHA-256 normaliziranog teksta izvornika b8e519d4aa07d28ef18dfdb2281532c7c53206f6964dd73b535c9193e547a93c.
 
 <!-- VAL-3-5-START -->
-
 Datum: 19. 11. 2026. Odobrenje: Daniel 19. 11. 2026. („Može, napravi sve”). Plan: `PLAN-VALOVA.md`. Odgovori: `ODGOVORI-DANIEL-2026-11-19.md`. Inventari: `INVENTAR-editor.md` (E§), `INVENTAR-student.md` (S:), `INVENTAR-nastavnik.md` (N:). Prethodni zadaci: `ZADACI-VAL-1-2-4.md` (SRV-01 do SRV-16, WEB-01 do WEB-20); ovdje se numeriranje nastavlja od SRV-17 i WEB-21.
 
 Val 3: student piše, potvrđuje izjavu, predaje i dobiva potpisanu potvrdu. Val 5: nastavnik vidi studente, mentorstva, zbirni pregled, rad i predaju. Val 3 počinje kad su valovi 1, 2 i 4 gotovi; val 5 kad je serverski dio vala 3 gotov (val 5 ide usporedno s valom 6, koji je samo WEB i UI).
@@ -1531,14 +1562,14 @@ Val 3: student piše, potvrđuje izjavu, predaje i dobiva potpisanu potvrdu. Val
 
 Najviše 3 pisca u SRV i 3 u WEB istodobno.
 
-| Traka | Repo | Vlasnik zajedničkih datoteka                                                                                                                                                                                                                                                             |
-| ----- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S-A   | SRV  | `server/contracts/**` (rute, vektori, `generated/`, `openapi/`, `inventory.ts`), lokalni seed                                                                                                                                                                                            |
-| S-B   | SRV  | `db/main/migrations/**`, `migrations.sum`, pgTAP matrice; migracije strogo redom                                                                                                                                                                                                         |
-| S-C   | SRV  | studentski rukovatelji `server/institution/student-*-route.ts` (novo) i evidence testovi                                                                                                                                                                                                 |
-| W-A   | WEB  | Next temelj, `next.config.ts`, `src/client/**` (i podizanje verzije ugovora), `packages/ui/**`, `src/app/ustanova/**`                                                                                                                                                                    |
-| W-B   | WEB  | `src/app/zadaci/**`, `src/app/upis/**`, `src/app/prijava/**`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/kako-radi`, `src/app/stanje`, `src/app/rad/[assignmentId]/dnevnik-pristupa`, `src/components/student/**`, `src/components/shell/**`, `messages.hr` (samo svoja sekcija) |
-| W-C   | WEB  | `src/app/rad/**` (bez `dnevnik-pristupa`), `src/components/editor/**`, zatim `src/app/nastavnik/**`, `src/components/teacher/**`                                                                                                                                                         |
+| Traka | Repo | Vlasnik zajedničkih datoteka |
+|---|---|---|
+| S-A | SRV | `server/contracts/**` (rute, vektori, `generated/`, `openapi/`, `inventory.ts`), lokalni seed |
+| S-B | SRV | `db/main/migrations/**`, `migrations.sum`, pgTAP matrice; migracije strogo redom |
+| S-C | SRV | studentski rukovatelji `server/institution/student-*-route.ts` (novo) i evidence testovi |
+| W-A | WEB | Next temelj, `next.config.ts`, `src/client/**` (i podizanje verzije ugovora), `packages/ui/**`, `src/app/ustanova/**` |
+| W-B | WEB | `src/app/zadaci/**`, `src/app/upis/**`, `src/app/prijava/**`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/kako-radi`, `src/app/stanje`, `src/app/rad/[assignmentId]/dnevnik-pristupa`, `src/components/student/**`, `src/components/shell/**`, `messages.hr` (samo svoja sekcija) |
+| W-C | WEB | `src/app/rad/**` (bez `dnevnik-pristupa`), `src/components/editor/**`, zatim `src/app/nastavnik/**`, `src/components/teacher/**` |
 
 - `server.ts` (montiranje ruta) i lockfile: tko spaja kasnije, rješava konflikt pri rebaseu; generirane datoteke ugovora uvijek se ponovno generiraju (`pnpm contracts:generate`), ne spajaju ručno.
 - Trake ne diraju tuđe direktorije. Treba li stranici nova komponenta u `ui`, pisac W-B ili W-C traži je od W-A (zaseban mali UI PR) ili ga sam otvori u `packages/ui` nakon dogovora na koordinacijskom issueu.
@@ -1547,11 +1578,11 @@ Najviše 3 pisca u SRV i 3 u WEB istodobno.
 
 Tablica gore je prepisana iz `ZADACI-VAL-1-2-4.md` bez izmjene. Za ove valove vrijedi dopuna, jer bi se inače studentski tok predaje (stranice u `src/app/rad/**`, komponente u `src/components/student/**`) dijelio između dvije trake:
 
-| Traka | Dodaje se (valovi 3 i 5)                                                                                                                                                                 | Napomena                                                                             |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| S-C   | ukrcavanje ruta u `server/http/*.ts` za predaju i nastavnička čitanja vala 5 (`server/http/submission.ts`, `teacher-reads.ts`, `live.ts` i nove datoteke u `server/http/`)               | otvoreni PR-ovi #349, #351, #353 drže iste datoteke; S-C radi nakon njihova spajanja |
-| W-B   | `src/app/rad/[assignmentId]/predaja/**`, `src/components/predaja/**` (novo), `src/components/student/Submission*`, `SubmissionView.ts`, `TeacherViewSheet*`, `src/components/summary/**` | cijeli tok predaje E-8 do E-11 je jedna traka                                        |
-| W-C   | `src/app/rad/[assignmentId]/page.tsx` i okvir radnog prostora E-7 oko editora; u valu 5 `src/app/nastavnik/**`, `src/components/teacher/**`                                              | bez `predaja/**`                                                                     |
+| Traka | Dodaje se (valovi 3 i 5) | Napomena |
+|---|---|---|
+| S-C | ukrcavanje ruta u `server/http/*.ts` za predaju i nastavnička čitanja vala 5 (`server/http/submission.ts`, `teacher-reads.ts`, `live.ts` i nove datoteke u `server/http/`) | otvoreni PR-ovi #349, #351, #353 drže iste datoteke; S-C radi nakon njihova spajanja |
+| W-B | `src/app/rad/[assignmentId]/predaja/**`, `src/components/predaja/**` (novo), `src/components/student/Submission*`, `SubmissionView.ts`, `TeacherViewSheet*`, `src/components/summary/**` | cijeli tok predaje E-8 do E-11 je jedna traka |
+| W-C | `src/app/rad/[assignmentId]/page.tsx` i okvir radnog prostora E-7 oko editora; u valu 5 `src/app/nastavnik/**`, `src/components/teacher/**` | bez `predaja/**` |
 
 ## Redoslijed (ovisnosti)
 
@@ -1570,7 +1601,6 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 ## Val 3: predaja studenta (17 PR-ova)
 
 ### SRV-17 `seed-predaja` · SRV · traka S-A
-
 - **Datoteke:** `scripts/lokalno/seed-predaja.ts` (novo), `scripts/lokalno/config.ts` (naredba), `db/main/local/seed.sql` (samo zadatak s rokom u prošlosti), README odjeljak „Lokalni računi”.
 - **Gradi:** potpisana potvrda ne smije se upisati ručno u bazu, pa skripta nakon `pnpm lokalno` prolazi stvarni put preko `/api/v1` s lažnim OIDC-om. Računi iz SRV-01 ostaju kakvi jesu (WEB-09 treba prazno stanje za `demo-student-2`, WEB-18 njegov upis novim kodom); za predaje se dodaju novi izmišljeni računi u datoteku lažnih OIDC računa:
   - `demo-student`: rad na zadatku „Seminarski rad: kućno kompostiranje” ostaje otvoren i nepredan (za E-7 do E-10);
@@ -1581,7 +1611,6 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** SRV-01, SRV-18. Rad s prazninom u zapisu: vidi Otvorena pitanja (P-3).
 
 ### SRV-18 `h-predaja` · SRV · traka S-C · **kritično**
-
 - **Datoteke:** `server/http/submission.ts` (iz #353), `server/http/index.ts` (montiranje), `server/contracts/inventory.ts` (makni `submission.submit.post` iz `CONTRACT_ONLY`; vlasnik S-A, pisac traži jednoredni dogovor), `server/http/submission.integration.test.ts` (novo).
 - **Gradi:** ukrcati `submission.submit.post` (`POST /api/v1/submission`) nad `server/evidence/submission.ts` kad postane učitljiv (nakon #348 i #352); rub iz #353 (tijelo točno `{documentId, revision}`, do 1 KiB, zatvorena mapa ishoda) se ne mijenja. Vrijeme je sat baze; od klijenta ne dolazi vrijeme, tekst ni hash.
 - **Prihvaćanje (integracijski testovi na lokalnoj bazi):**
@@ -1593,7 +1622,6 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** #348, #350, #352, #353 (spojeni), SRV-01.
 
 ### SRV-19 `ugovori-predaja` · SRV · traka S-A
-
 - **Datoteke:** `server/contracts/routes/student.ts`, `server/contracts/routes/index.ts`, `server/contracts/vectors/*.json`, `server/contracts/generated/*`, `server/contracts/inventory.ts`.
 - **Gradi:** samo nove rute (novi član zatvorenog tijela je glavno izdanje, komentar u `student.ts`):
   - `student.submission.get` `GET /api/v1/student/assignments/{assignmentId}/submission` → `{state:"none"}` | `{state:"ceka", revision, requestedAt}` | `{state:"potvrdeno", receipt}` (receipt = isti `SignedSubmissionReceiptV2` kao u `evidence.ts`, izvesti ga iz jednog mjesta). „ceka” znači: predaja je upisana, potvrda još nije vezana (503 `signing` u SRV-18);
@@ -1605,7 +1633,6 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** SRV-04 (izdanje 3.0.0 već objavljeno).
 
 ### SRV-20 `mig-predaja-citanje` · SRV · traka S-B · **kritično**
-
 - **Datoteke:** nova migracija, `migrations.sum`, `db/main/tests/067-submission-receipt.sql` (proširiti), `db/main/tests/030-institution-access-matrix.sql`.
 - **Gradi:** `evidence.submission_receipt` nema dozvolu za web ulogu, a `app.read_submission_receipt(p_submission_id)` čita samo po id-ju predaje i samo za pozivatelja. Dodaje se:
   - `app.submission_state_of(p_assignment_id, p_student_id)`: čisti čitač bez nuspojava (vraća `none` | `ceka` | `potvrdeno` s potvrdom), bez dozvole za web ulogu; jedini izvor oblika za oba čitatelja (pravilo 5);
@@ -1616,62 +1643,53 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** SRV-07 (redoslijed migracija).
 
 ### SRV-21 `mig-napomene` · SRV · traka S-B · **kritično**
-
 - **Datoteke:** nova migracija, `migrations.sum`, `db/main/tests/` (nova datoteka napomena), matrica pristupa.
 - **Gradi:** tablica `evidence.submission_note (id, assignment_id, student_id, text, created_at)` samo za dodavanje (okidač `audit.reject_change` na UPDATE i DELETE, kao u `mentorship_request`), `text` 1 do 600 znakova; RLS: student dodaje i čita svoje, nastavnik i suradnik kolegija čitaju; RPC `app.add_submission_note`, `app.submission_notes`. Napomena nije dio sažetka procesa ni potvrde.
 - **Prihvaćanje:** pgTAP matrica: student da, drugi student ne, nastavnik kolegija čita, nastavnik drugog kolegija ne; UPDATE i DELETE padaju; 601 znak pada.
 - **Ovisi o:** SRV-20.
 
 ### SRV-22 `h-predaja-stanje` · SRV · traka S-C · **kritično**
-
 - **Datoteke:** `server/institution/student-submission-route.ts` (novo), `server/institution/student-requirements-route.ts` (novo), montiranje, testovi.
 - **Gradi:** rukovatelji `student.submission.get` i `student.assignment-requirements.get` nad SRV-20; nepoznat, tuđi i neispravan id daju isti 404; red koji čitanje ne može potvrditi → 503, nikad djelomičan odgovor.
 - **Prihvaćanje:** `demo-student-3` → `potvrdeno` s istim bajtovima potvrde kao iz predaje; `demo-student` → `none`; s isključenim potpisivačem predaja → 503, zatim `ceka`; nakon ponovne predaje iste revizije `potvrdeno`.
 - **Ovisi o:** SRV-18, SRV-19, SRV-20.
 
 ### SRV-23 `h-sazetak-procesa` · SRV · traka S-C · **kritično**
-
 - **Datoteke:** `server/http/process-summary.ts` (novo), nad `server/projection/process-summary-reader.ts`; `inventory.ts` (makni iz `CONTRACT_ONLY`).
 - **Gradi:** ukrcati `projection.process-summary.post` (tijelo točno `{documentId}`, do 1 KiB); isti JCS bajtovi za studenta i nastavnika (pravilo 5); nastavničko čitanje upisuje dnevnik pristupa s površinom `process_summary`. Oblik `ProcessSummaryV1` se ne mijenja.
 - **Prihvaćanje:** kao `demo-student-3` i kao `demo-teacher` isti bajtovi odgovora; `demo-student` za tuđi rad → 404; nakon nastavničkog čitanja `student.access-log.get` pokazuje redak `process_summary`.
 - **Ovisi o:** SRV-18, SRV-11.
 
 ### SRV-24 `h-napomene` · SRV · traka S-C
-
 - **Datoteke:** `server/institution/student-notes-route.ts` (novo), montiranje, testovi.
 - **Gradi:** rukovatelji `student.submission-notes.get` i `.post` nad SRV-21; prazan tekst → 422.
 - **Prihvaćanje:** `demo-student` doda napomenu, vidi je nakon osvježavanja; ne može je izmijeniti ni obrisati; 601 znak → 422.
 - **Ovisi o:** SRV-19, SRV-21.
 
 ### SRV-25 `ugovori-izdanje-3-1` · SRV · traka S-A
-
 - **Gradi:** `pnpm release:tarball` za `@ductura/contracts` 3.1.0 (manje izdanje) s rutama iz SRV-19, tarball u Releases.
 - **Prihvaćanje:** tarball se instalira u čistom direktoriju; vektori izjave dostupni lažnom serveru.
 - **Ovisi o:** SRV-19.
 
 ### WEB-21 `ui-koraci-otisak` · UI · traka W-A
-
 - **Datoteke:** `packages/ui/src/steps/**`, `packages/ui/src/fingerprint/**`, `packages/ui/src/key-value/**` (novo).
 - **Gradi:** `Steps` (`ol` s `aria-current="step"`, 5 koraka: 1 Tekst, 2 Izjava, 3 Prije predaje, 4 Predaja, 5 Potvrda); `Fingerprint` (64 heksadecimalna znaka u skupinama po 4, gumb „Otisak u međuspremnik”, u međuspremnik ide 64 znaka bez razmaka, `Toast` „Otisak je u međuspremniku (64 znaka, bez razmaka).”); `KeyValueList` (`dl`, s mjestom za UTC pojedinosti u `details`).
 - **Prihvaćanje:** `/ui-pregled` u obje teme; čitač zaslona čita trenutni korak; otisak u međuspremniku nema razmaka; axe bez nalaza.
 - **Ovisi o:** WEB-04, WEB-05.
 
 ### WEB-22 `klijent-predaja` · WEB · traka W-A · **kritično**
-
 - **Datoteke:** `src/client/submission.ts` (novo), `src/client/submission.test.ts` (novo), `src/client/package.json` (ugovori 3.1.0; ondje je verzija `@ductura/contracts`).
 - **Gradi:** podizanje `@ductura/contracts` na 3.1.0; čitači `student.submission.get`, `student.assignment-requirements.get` i napomena; predaja `submission.submit.post` sa zatvorenom mapom ishoda prema S: PO-17: 200 → `predano` samo ako potvrda prođe `schema-check`; 409 `blocked` → `odbijeno` (s razlogom), osim `record_mismatch` → `nedovrseno`; 408 i 503 → `nepoznato` (nikad „nije predano”); 409 `already_requested` → čitanje stanja; 401 → postojeći tok isteka sesije (`session-expired`). Ishodi koje inventar ne preslikava (`stale_revision`, `not_acknowledged`, `not_open`, 404, 413, 426): prijedlog `greska` s vlastitim tekstom, konačno prema P-10. Svaki nepoznat oblik → `nepoznato`.
 - **Prihvaćanje:** jedinični testovi za svaki ishod iz vektora; potvrda s dodatnim poljem → `nepoznato`, ne `predano`.
 - **Ovisi o:** SRV-25, WEB-07.
 
 ### WEB-23 `student-radni-prostor` · WEB · traka W-C
-
 - **Datoteke:** `src/app/rad/[assignmentId]/page.tsx` (iz WEB-14), `src/components/editor/WorkspaceTopBar.tsx` (novo), `src/components/editor/StatusBar.tsx` (iz WEB-14).
 - **Gradi:** S: E-7 okvir oko editora: gornja traka „← Moji zadaci”, naslov, prekidač lista „Bijeli list/Tamni list”, gumb „Predaja rada” → `/rad/[assignmentId]/predaja`; statusna traka: stanje spremanja i broj riječi uz raspon („opseg 1.200 do 1.600 · vidite samo Vi”, napomene se ne broje); varijante puno, prazno, ucitavanje, greska, bez-mreze, predano (nakon predaje list samo za čitanje, stanje iz `student.submission.get`).
 - **Prihvaćanje:** `demo-student` vidi raspon iz zadatka i broj riječi koji raste dok piše; mreža isključena → „Predaja rada” onemogućen s objašnjenjem; `demo-student-3` vidi predani rad samo za čitanje.
 - **Ovisi o:** WEB-15, WEB-22, SRV-22.
 
 ### WEB-24 `student-izjava` · WEB · traka W-B
-
 - **Datoteke:** `src/app/rad/[assignmentId]/predaja/izjava/page.tsx` (novo), `src/components/predaja/Declaration.tsx` (novo).
 - **Gradi:** S: E-9 (C-3), naziv „Izjava”: blokovi „Zabilježeno u Ducturi” (iz sažetka procesa, stvarni server), „Vaša izjava”; kvačica „Potvrđujem izjavu” otključava „Dalje”; potvrda živi samo u toku predaje u pregledniku (ne šalje se serveru, P-7); varijante puno, prazno, ucitavanje, greska. **Ne gradi se:** varijanta `nesklad`, blok Prilozi s razgovorima (PD-2), sve iz B-2; „Pitanje nastavnika” s odgovorom čeka P-7 (nema gdje upisati odgovor).
 - **Putanje** `predaja/izjava`, `predaja/pregled`, `predaja/slanje`, `predaja/potvrda` (ovdje i u WEB-25 do 27) su prijedlog: inventar ima jednu stranicu predaje i korake 1–5, ne URL-ove; pisac smije zadržati jednu stranicu s koracima ako je manje promjena.
@@ -1679,14 +1697,12 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** WEB-21, WEB-22, SRV-23 (blok „Zabilježeno u Ducturi”).
 
 ### WEB-25 `student-prije-predaje` · WEB · traka W-B
-
 - **Datoteke:** `src/app/rad/[assignmentId]/predaja/pregled/page.tsx` (novo), `src/components/predaja/BeforeSubmit.tsx`, `NoteDialog.tsx` (novo); `src/components/summary/ProcessSummaryView.tsx` (postoji).
 - **Gradi:** S: E-8 s koracima i redovima provjere: Izjava, Mjesta za izvor, Zalijepljeno (izvor nije opažen), Pravila oblika („Provjera oblika još nije pokrenuta.”, bez funkcije, C-19); „Dodaj napomenu (nije obavezna)” → PD-4 (do 600 znakova, samo dodavanje, prazno → `aria-invalid`); desni stupac PD-1 samo s odjeljcima koje `ProcessSummaryV1` ima (sesije, lijepljenja, praznine u zapisu, stanje zapisa). Varijante puno, zatvoreno, bezmreze, predano, prazno, ucitavanje, greska. **Ne gradi se:** redak „Razgovori uz izjavu” (B-2), Karta podrijetla (B-1), AI odjeljak (D-194).
 - **Prihvaćanje:** rad s lijepljenjem i prazninom u zapisu može dalje na korak 4 (pravilo 11); nepotvrđena izjava vraća na korak 2; napomena se doda i ostaje nakon osvježavanja.
 - **Ovisi o:** WEB-24, SRV-23, SRV-24.
 
 ### WEB-26 `student-predaja` · WEB · traka W-B · **kritično**
-
 - **Datoteke:** `src/app/rad/[assignmentId]/predaja/slanje/page.tsx` (novo), `src/app/rad/[assignmentId]/predaja/page.tsx` (postoji; postaje preusmjerenje na korak prema `student.submission.get`), `src/components/student/Submission.tsx` i `SubmissionView.ts` (postoje, prebačeni na `/api/v1`), `src/components/predaja/SubmitDialog.tsx` (novo).
 - **Gradi:** S: E-10 i PD-3 „Predati rad?” (dok šalje, gumbi onemogućeni, Esc ne zatvara); varijante puno, nakonroka (rok iz `student.assignments.get`), produljen (A-3), bezmreze, utijeku („Šalje se…”), odbijeno, nedovrseno, nepoznato („Provjeri stanje predaje” čita `student.submission.get`, R-38), ucitavanje, greska. Šalje se samo revizija koju student vidi; uspjeh tek s potvrdom (WEB-22). Briše `withActor` datoteke stare stranice predaje.
 - **Prihvaćanje:** `demo-student` predaje → korak 5; isključen potpisivač → „nepoznato”, „Provjeri stanje predaje” → `ceka`; dvostruki klik šalje jedan zahtjev; rok prošao → varijanta nakonroka prije slanja.
@@ -1694,14 +1710,12 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 - **Ovisi o:** WEB-25, SRV-22.
 
 ### WEB-27 `student-potvrda` · WEB · traka W-B · **kritično**
-
 - **Datoteke:** `src/app/rad/[assignmentId]/predaja/potvrda/page.tsx` (novo), `src/components/predaja/ReceiptPanel.tsx` (novo; jedini dom komponente, W-C ga u valu 5 uvozi bez izmjene, a promjene idu preko W-B).
 - **Gradi:** S: E-11 iz `student.submission.get`: vrijeme predaje, rok, „Potpisivanje započelo”, verzija zadatka (C-11), pojedinosti u UTC (`requestedAt`, `dueAt`, `signedAt`), otisak (`artifactSha256`) kroz `Fingerprint`, stanje zapisa (`continuous` | `with_gaps`), poveznica na sažetak (PD-1); tekst B-3 „Kod potvrđuje da se predani tekst nije mijenjao od predaje.” Varijante puno, ceka, nakonroka, praznine, prazno, ucitavanje, greska. Vrijeme u zoni Europe/Zagreb (`zagreb-time.ts`). **Ne gradi se:** `/provjera`, QR, PDF (val 9).
 - **Prihvaćanje:** nakon predaje i osvježavanja ista potvrda (isti otisak); otisak u međuspremniku 64 znaka; predaja nakon roka pokazuje varijantu nakonroka; `ceka` ne kaže „predano”.
 - **Ovisi o:** WEB-21, WEB-26.
 
 ### WEB-28 `predaja-e2e` · WEB · traka W-B
-
 - **Datoteke:** `e2e/predaja-val3.spec.js` (novo).
 - **Gradi:** Playwright tok na lokalnom stogu: prijava `demo-student` → rad → izjava → prije predaje (uz napomenu) → predaja → potvrda → osvježavanje; uz axe na 1250 i 400 px; slučaj s isključenom mrežom na koraku 4.
 - **Prihvaćanje:** `pnpm test:functional` zelen lokalno.
@@ -1716,14 +1730,12 @@ WEB-21 ui-koraci-otisak → WEB-24..27;  WEB-29 ui-tablica-oznaka → WEB-31..33
 Već u tijeku (ne duplicirati): #346 (`institution.student-removal.post`, `student-return.post`, `assignment-versions.post`; preklapa se s rukovateljem iz SRV-14, pisac SRV-14 prvo provjeri #346), #349 (`teacher.courses.get`, `teacher.mentorships.get`, `teacher.mentorship.get`, `teacher.submissions.get`, `teacher.assignment-submissions.post`; preklapa se sa SRV-13 za `teacher.courses.get`), #351 (`live.document.get` i `.put`, nastavničko čitanje već upisuje dnevnik pristupa).
 
 ### SRV-26 `seed-nastavnik` · SRV · traka S-A
-
 - **Datoteke:** `db/main/local/seed.sql`, `scripts/lokalno/seed-predaja.ts` (iz SRV-17).
 - **Gradi:** novi izmišljeni račun `demo-student-5` šalje zahtjev za mentorstvo prema `demo-teacher` kroz `institution.request_mentorship` (završni rad, izmišljen naslov); funkcija čita pozivatelja iz sesije, pa poziv ide kroz skriptu (kao predaje u SRV-17), ne kroz čisti `seed.sql`; pisac provjeri koji lokalni put postavlja sesiju studenta. U kolegiju seeda `demo-student` je u grupi A, `demo-student-3` u grupi B; `demo-student-2` se ne dira.
 - **Prihvaćanje:** `teacher.mentorships.get` kao `demo-teacher` pokazuje zahtjev; kolegij ima studente u obje grupe; prazno stanje `demo-student-2` iz WEB-09 i dalje vrijedi.
 - **Ovisi o:** SRV-17, #349.
 
 ### SRV-27 `ugovori-nastavnik-predaje` · SRV · traka S-A
-
 - **Datoteke:** `server/contracts/routes/teacher.ts`, vektori, `generated/*`, `inventory.ts`.
 - **Gradi:** samo nove rute:
   - `teacher.course-students.get` `GET /api/v1/teacher/courses/{courseId}/students` (N-04): ime i prezime (ili `null`, nikad zamjena), grupa, stanje rada po zadatku; nad `app.teacher_course_students` (postoji, `20261028140000_teacher_rosters.sql`);
@@ -1734,7 +1746,6 @@ Već u tijeku (ne duplicirati): #346 (`institution.student-removal.post`, `stude
 - **Ovisi o:** SRV-25.
 
 ### SRV-28 `mig-nastavnik-predaje` · SRV · traka S-B · **kritično**
-
 - **Datoteke:** nova migracija, `migrations.sum`, `db/main/tests/104-mentorship-request.sql`, `090-teacher-rosters.sql`, `086-assignment-submissions.sql` (proširiti), matrica pristupa.
 - **Gradi:**
   - `institution.decline_mentorship_request(p_request_id, p_reason)` (novo; postoje samo `request_`, `withdraw_` i `approve_mentorship_request`), događaj u `audit.mentorship_event`;
@@ -1744,83 +1755,71 @@ Već u tijeku (ne duplicirati): #346 (`institution.student-removal.post`, `stude
 - **Ovisi o:** SRV-21 (redoslijed migracija).
 
 ### SRV-29 `h-studenti-zbirni` · SRV · traka S-C
-
 - **Datoteke:** `server/http/teacher-roster.ts` (novo), montiranje, testovi; `server/institution/course-students.ts` (postoji).
 - **Gradi:** rukovatelji `teacher.course-students.get` i `teacher.assignment-overview.get`; tuđi, nepoznat i neispravan id daju isti odgovor kao prazan (kao `teacher.submissions.get`).
 - **Prihvaćanje:** `demo-teacher` i `demo-teacher-2` vide studente kolegija u dvije grupe; zbirni pokazuje `demo-student-3` predano i `demo-student` nepredano; zbirni zadatka iz kolegija urbane hidrologije (nastavnik iz seeda tog kolegija) pokazuje `demo-student-4` nakon roka; otvaranje zbirnog ne dodaje retke u dnevnik pristupa.
 - **Ovisi o:** SRV-27, SRV-28, #349.
 
 ### SRV-30 `h-potvrda-nastavnik` · SRV · traka S-C · **kritično**
-
 - **Datoteke:** `server/http/teacher-submission-receipt.ts` (novo), montiranje, testovi.
 - **Gradi:** rukovatelj `teacher.submission-receipt.get` nad `app.teacher_submission_state` (isti čisti čitač kao studentski, SRV-20); čitanje upisuje dnevnik pristupa.
 - **Prihvaćanje:** bajtovi potvrde za `demo-teacher` jednaki onima koje vidi `demo-student-3`; nakon čitanja student u dnevniku pristupa vidi novi redak; nastavnik drugog kolegija → 404.
 - **Ovisi o:** SRV-22, SRV-27.
 
 ### SRV-31 `h-mentorstva-zahtjevi` · SRV · traka S-C
-
 - **Datoteke:** `server/http/teacher-mentorship-requests.ts` (novo), montiranje, testovi.
 - **Gradi:** rukovatelji `teacher.mentorship-requests.get` i `teacher.mentorship-request-decision.post` nad `approve_mentorship_request` i SRV-28; odgovor tek nakon upisa u bazu.
 - **Prihvaćanje:** `demo-teacher` odobri zahtjev → mentorstvo se pojavi u `teacher.mentorships.get`; odbijanje s razlogom → zahtjev nestaje s popisa; ponovna odluka → 409.
 - **Ovisi o:** SRV-26, SRV-27, SRV-28.
 
 ### SRV-32 `ugovori-izdanje-3-2` · SRV · traka S-A
-
 - **Gradi:** `@ductura/contracts` 3.2.0 (manje izdanje) s rutama iz SRV-27, tarball u Releases.
 - **Prihvaćanje:** tarball se instalira u čistom direktoriju.
 - **Ovisi o:** SRV-27.
 
 ### WEB-29 `ui-tablica-oznaka` · UI · traka W-A
-
 - **Datoteke:** `packages/ui/src/table/**`, `packages/ui/src/state-tag/**` (novo).
 - **Gradi:** `DataTable` (`caption`, zaglavlja s `scope`, sortiranje tipkovnicom, prazno stanje, skeleton); `StateTag` (oznaka stanja: tekst uvijek uz boju, nikad samo boja; stanja predano, nije predano, nakon roka, čeka potvrdu, praznina u zapisu).
 - **Prihvaćanje:** `/ui-pregled` u obje teme i na 400 px; axe bez nalaza; čitač zaslona čita zaglavlje uz ćeliju.
 - **Ovisi o:** WEB-05.
 
 ### WEB-30 `klijent-nastavnik-predaje` · WEB · traka W-A
-
 - **Datoteke:** `src/client/teacher-reads.ts` (novo; postoji samo `teacher-reads.test.ts`, proširiti ga), `src/client/mentorship-requests.ts` (novo), `src/client/package.json` (ugovori 3.2.0).
 - **Gradi:** podizanje na 3.2.0; čitači ruta iz SRV-27 i odluka o mentorstvu; potvrda za nastavnika prolazi isti `schema-check` kao studentska (WEB-22).
 - **Prihvaćanje:** jedinični testovi iz vektora; nepoznato polje → greška, ne prikaz.
 - **Ovisi o:** SRV-32, WEB-22.
 
 ### WEB-31 `nastavnik-studenti` · WEB · traka W-C
-
 - **Datoteke:** `src/app/nastavnik/kolegiji/[courseId]/studenti/page.tsx` (novo), `src/components/teacher/CourseStudents.tsx` (novo).
 - **Gradi:** N: N-04 s filtrom grupe (`#f-gr` s brojevima), redak „ime · grupa”, podredak stanja, „Otvori seminarski rad”; varijante puno, prazno, ucitavanje, greska. Varijanta `dorada` čeka val 8.
 - **Prihvaćanje:** `demo-teacher` i `demo-teacher-2` vide studente kolegija; filtar grupe B pokazuje samo `demo-student-3`; „Otvori seminarski rad” vodi na N-06.
 - **Ovisi o:** WEB-29, WEB-30, SRV-29, WEB-18.
 
 ### WEB-32 `nastavnik-mentorstva` · WEB · traka W-C
-
 - **Datoteke:** `src/app/nastavnik/mentorstva/page.tsx` (postoji), `src/components/teacher/MentoredWorks.tsx` (postoji), `src/components/teacher/MentorshipRequests.tsx` (novo).
 - **Gradi:** N: N-16 popis mentorstava i kartica „Zahtjevi za mentorstvo” s „Odobri” i „Odbij”; „Odbij” otvara dijalog `do-h` s neobveznim razlogom (`#f-ro`, do 600 znakova); poruka tek nakon odgovora servera (B-6). Briše `withActor` datoteke stranice.
 - **Prihvaćanje:** `demo-teacher` odobri zahtjev iz seeda → rad se pojavi u popisu; odbijanje uz razlog → zahtjev nestane; s isključenim serverom poruka o uspjehu se ne pojavi.
 - **Ovisi o:** WEB-30, SRV-31.
 
 ### WEB-33 `nastavnik-zbirni` · WEB · traka W-C
-
 - **Datoteke:** `src/app/nastavnik/zbirni/page.tsx` (iz WEB-17, prazno stanje), `src/components/teacher/AssignmentOverview.tsx` (novo).
 - **Gradi:** N: N-17 tablica: Student, Stanje, Vrijeme predaje (minuta, Europe/Zagreb), Nakon roka, Stanje zapisa, Dorada (stupac prazan do vala 8); odabir zadatka; redak vodi na N-07.
 - **Prihvaćanje:** zbirni za zadatak iz seeda pokazuje predano, nakon roka i nepredano; sortiranje po vremenu predaje radi tipkovnicom.
 - **Ovisi o:** WEB-29, WEB-30, SRV-29, WEB-17.
 
 ### WEB-34 `nastavnik-rad-uzivo` · WEB · traka W-C
-
 - **Datoteke:** `src/app/nastavnik/rad/[id]/page.tsx` (postoji), `src/components/teacher/LiveWorkView.tsx`, `LiveText.tsx`, `SummaryCard.tsx` (postoje).
 - **Gradi:** N: N-06 rad uživo samo za čitanje (`live.document.get`, #351), zaglavlje, poveznice, prethodni i sljedeći rad; traka o prazninama u zapisu kad sažetak kaže `has_gaps` (C-18), s poveznicom na sažetak; traka „nije predano” bez poveznice na produljenje (val 11); poveznica na N-07 kad je rad predan. **Ne gradi se:** „Zatraži doradu” (val 8).
 - **Prihvaćanje:** `demo-teacher` otvori rad `demo-student` i vidi tekst koji student piše; student nakon toga u dnevniku pristupa vidi otvaranje (površina `live_view`, #351).
 - **Ovisi o:** WEB-30, SRV-23, #351.
 
 ### WEB-35 `nastavnik-predaja` · WEB · traka W-C · **kritično**
-
 - **Datoteke:** `src/app/nastavnik/rad/[id]/predaja/page.tsx` (novo); `ReceiptPanel` iz WEB-27 uvozi se bez izmjene.
 - **Gradi:** N: N-07 potvrda iz `teacher.submission-receipt.get`, ista komponenta i isti tekst kao kod studenta; varijante ceka i nedovrseno; potvrda se nikad ne prikazuje bez potpisane potvrde. **Ne gradi se:** blok izjave (`declPanel`, ne prikazuje se), QR i poveznica za provjeru (val 9).
 - **Prihvaćanje:** `demo-teacher` otvori predaju `demo-student-3` i vidi isti otisak kao student; redak u dnevniku pristupa studenta provjerava se tek kad P-5 odluči površinu.
 - **Ovisi o:** WEB-27, WEB-30, WEB-34, SRV-30.
 
 ### WEB-36 `nastavnik-e2e` · WEB · traka W-C
-
 - **Datoteke:** `e2e/nastavnik-val5.spec.js` (novo).
 - **Gradi:** Playwright: `demo-teacher` → studenti → rad → predaja; zbirni; mentorstva (odobri zahtjev `demo-student-5`); zatim `demo-student-3` vidi isti otisak i retke u dnevniku pristupa; axe na 1250 i 400 px.
 - **Prihvaćanje:** `pnpm test:functional` zelen lokalno.
@@ -1847,25 +1846,24 @@ Do odgovora se navedeno ne gradi; zadatak gradi ostatak.
 
 ## Zbroj, trake i redoslijed
 
-| Val        | SRV              | WEB/UI           | Ukupno |
-| ---------- | ---------------- | ---------------- | ------ |
-| 3          | 9 (SRV-17 do 25) | 8 (WEB-21 do 28) | 17     |
-| 5          | 7 (SRV-26 do 32) | 8 (WEB-29 do 36) | 15     |
-| **Ukupno** | **16**           | **16**           | **32** |
+| Val | SRV | WEB/UI | Ukupno |
+|---|---|---|---|
+| 3 | 9 (SRV-17 do 25) | 8 (WEB-21 do 28) | 17 |
+| 5 | 7 (SRV-26 do 32) | 8 (WEB-29 do 36) | 15 |
+| **Ukupno** | **16** | **16** | **32** |
 
-| Traka | Val 3                  | Val 5          | Ukupno |
-| ----- | ---------------------- | -------------- | ------ |
-| S-A   | SRV-17, 19, 25         | SRV-26, 27, 32 | 6      |
-| S-B   | SRV-20, 21             | SRV-28         | 3      |
-| S-C   | SRV-18, 22, 23, 24     | SRV-29, 30, 31 | 7      |
-| W-A   | WEB-21, 22             | WEB-29, 30     | 4      |
-| W-B   | WEB-24, 25, 26, 27, 28 | –              | 5      |
-| W-C   | WEB-23                 | WEB-31 do 36   | 7      |
+| Traka | Val 3 | Val 5 | Ukupno |
+|---|---|---|---|
+| S-A | SRV-17, 19, 25 | SRV-26, 27, 32 | 6 |
+| S-B | SRV-20, 21 | SRV-28 | 3 |
+| S-C | SRV-18, 22, 23, 24 | SRV-29, 30, 31 | 7 |
+| W-A | WEB-21, 22 | WEB-29, 30 | 4 |
+| W-B | WEB-24, 25, 26, 27, 28 | – | 5 |
+| W-C | WEB-23 | WEB-31 do 36 | 7 |
 
 **Kritično (11):** SRV-18, 20, 21, 22, 23, 28, 30 (sve S-B migracije su među njima); WEB-22, 26, 27, 35.
 
 **Redoslijed po trakama:**
-
 - S-A: SRV-19 → SRV-25 → (SRV-17 čim sleti SRV-18) → SRV-27 → SRV-32 → SRV-26.
 - S-B: SRV-20 → SRV-21 → SRV-28 (nakon SRV-07 iz vala 4).
 - S-C: SRV-18 (čim spoje #348, #352, #353) → SRV-22 → SRV-23 → SRV-24 → SRV-30 → SRV-29 → SRV-31.
@@ -1878,34 +1876,36 @@ Do odgovora se navedeno ne gradi; zadatak gradi ostatak.
 **Uska grla:** S-C ima 7 zadataka u nizu i čeka otvorene PR-ove #348, #352, #353; W-B (5 zadataka) čeka WEB-22, a WEB-22 čeka izdanje 3.1.0 (SRV-25). Kad bi #353 kasnio, WEB-24 i WEB-25 mogu početi nad lažnim serverom iz vektora 3.1.0.
 <!-- VAL-3-5-END -->
 
+
 ### Zajednički alati i CI
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/.github/blob/265ea93a2e14a22902e17d259e31304278c30982/docs/PLAN.md).
 
-| Korak / ID                      | Što                                                                                                                                                                                                                                                                     | Ovisi o                                                                             | Risk                                                                                                     |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| U2 (server plan; PRIJEDLOG ID)  | Stvaranje repoa i prvi sadržaj; ide **odmah nakon kostura servera**                                                                                                                                                                                                     | V-1                                                                                 | standard                                                                                                 |
-| T-0.1                           | Profil, predlošci issuea i PR-a, labele                                                                                                                                                                                                                                 | U2                                                                                  | standard                                                                                                 |
-| T-0.2                           | Reusable workflowi: CI osnova s `ci-ok`, tajne, ovisnosti, gate                                                                                                                                                                                                         | U2, S-0.9; S-0.10-a/b se pišu **ovdje**, ne u serveru, i nema izdvajanja iz servera | critical                                                                                                 |
-| — (novo, PRIJEDLOG ID)          | Preseti `@ductura/tsconfig`, `eslint-config`, `prettier-config` na GitHub Packages                                                                                                                                                                                      | U2                                                                                  | standard                                                                                                 |
-| T-0.3                           | **Ukinuto 17. 11.** (spajanje po pravilu iz `docs/plan/PLAN-MIGRACIJE.md` §7)                                                                                                                                                                                           | —                                                                                   | —                                                                                                        |
-| T-0.4                           | Generator novog repoa                                                                                                                                                                                                                                                   | S-0.6, T-0.2                                                                        | standard                                                                                                 |
-| T-0.7                           | Tjedna provjera razilaženja postavki (samo čitanje)                                                                                                                                                                                                                     | T-0.2                                                                               | standard                                                                                                 |
-| U11 (server plan; PRIJEDLOG ID) | **Gate prema riziku uz ugovorne testove**: npr. PR koji mijenja `server/contracts/**` je najmanje `critical` i traži zelene ugovorne testove preloadera i weba nad novom verzijom; PR koji ne dira ugovor, a prolazi ugovorne testove, zadržava risk iz tablice putanja | zadnje: nakon ugovora (U4 … U10) i S-1H.8                                           | critical; **zaseban PR pravila, vlasnik potvrđuje** (pravilo gatea mijenja `docs/ENGINEERING_SYSTEM.md`) |
+| Korak / ID | Što | Ovisi o | Risk |
+|---|---|---|---|
+| U2 (server plan; PRIJEDLOG ID) | Stvaranje repoa i prvi sadržaj; ide **odmah nakon kostura servera** | V-1 | standard |
+| T-0.1 | Profil, predlošci issuea i PR-a, labele | U2 | standard |
+| T-0.2 | Reusable workflowi: CI osnova s `ci-ok`, tajne, ovisnosti, gate | U2, S-0.9; S-0.10-a/b se pišu **ovdje**, ne u serveru, i nema izdvajanja iz servera | critical |
+| — (novo, PRIJEDLOG ID) | Preseti `@ductura/tsconfig`, `eslint-config`, `prettier-config` na GitHub Packages | U2 | standard |
+| T-0.3 | **Ukinuto 17. 11.** (spajanje po pravilu iz `docs/plan/PLAN-MIGRACIJE.md` §7) | — | — |
+| S-0.20 | **Ukinuto 17. 11.** Spajanje ide po pravilu iz §7. | — | — |
+| T-0.4 | Generator novog repoa | S-0.6, T-0.2 | standard |
+| T-0.7 | Tjedna provjera razilaženja postavki (samo čitanje) | T-0.2 | standard |
+| U11 (server plan; PRIJEDLOG ID) | **Gate prema riziku uz ugovorne testove**: npr. PR koji mijenja `server/contracts/**` je najmanje `critical` i traži zelene ugovorne testove preloadera i weba nad novom verzijom; PR koji ne dira ugovor, a prolazi ugovorne testove, zadržava risk iz tablice putanja | zadnje: nakon ugovora (U4 … U10) i S-1H.8 | critical; **zaseban PR pravila, vlasnik potvrđuje** (pravilo gatea mijenja `docs/ENGINEERING_SYSTEM.md`) |
 
 Promjena ponašanja gatea (risk floor, broj aplikacija za `critical`, popis obveznih statusa) nikad ne ide u PR koji radi nešto drugo.
 
 #### 6. Testovi (personalizirano: workflowi i pravila gatea)
 
-| Sloj                            | Konkretni slučajevi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pomoćne funkcije**            | risk-floor: putanja → razina za svaku tablicu repoa; najviša razina pobjeđuje; nepoznata putanja dobiva zadanu razinu; provjera verdikata: redak na krivom headu, krivi format `runtime:slot:role`, isti autor i reviewer, nedostaje QA za `critical`, Owner Override bez SHA. Preneseni testovi Ductusa s istim tvrdnjama.                                                                                                                                                                                         |
-| **Statička provjera workflowa** | actionlint na svakom workflowu; svaka akcija prikvačena na SHA (test pada na `@v4`); najmanje dozvole (`permissions`) po poslu; nema `pull_request_target` s checkoutom tuđeg koda; PRIJEDLOG zizmor (besplatan) za sigurnost workflowa.                                                                                                                                                                                                                                                                            |
-| **Samotest (integracija)**      | `self-test.yml` poziva svaki reusable workflow nad fixtureom: zeleni Node projekt daje zeleni `ci-ok`; projekt s namjerno palim testom daje crveni `ci-ok`; posao koji se preskoči ne daje lažno zeleni `ci-ok`; tajna u fixtureu ruši `secret-scan`; lockfile s poznatom ranjivošću ruši `osv-scan` (DAN-921); snimljeni `body_html` PR-a s kodom bez tablice koju GitHub prikazuje ruši `tests-table`, isto kao netaknuti predložak PR-a, a predložak s popunjenim retkom-predloškom i docs PR prolaze (DAN-948). |
-| **Preseti**                     | fixture koji mora pasti (implicitni `any`, dubok uvoz kad su granice uključene, krivi format) i koji mora proći.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Generator**                   | novi repo dobiva README, adaptere pravila, CODEOWNERS, PR predložak, risk tablicu i labele; drugi prolaz ne mijenja ništa.                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Provjera razilaženja**        | lažni API odgovori: repo bez zaštite grane, bez obveznog `ci-ok`, s viškom labele → nalaz u koordinacijskom issueu; ništa se ne mijenja (samo čitanje).                                                                                                                                                                                                                                                                                                                                                             |
-| **Verzije**                     | promjena reusable workflowa ne utječe na repo koji poziva stariji puni SHA (test nad fixtureom s prikvačenim SHA-om); poziv oznakom ili granom pada.                                                                                                                                                                                                                                                                                                                                                                |
+| Sloj | Konkretni slučajevi |
+|---|---|
+| **Pomoćne funkcije** | risk-floor: putanja → razina za svaku tablicu repoa; najviša razina pobjeđuje; nepoznata putanja dobiva zadanu razinu; provjera verdikata: redak na krivom headu, krivi format `runtime:slot:role`, isti autor i reviewer, nedostaje QA za `critical`, Owner Override bez SHA. Preneseni testovi Ductusa s istim tvrdnjama. |
+| **Statička provjera workflowa** | actionlint na svakom workflowu; svaka akcija prikvačena na SHA (test pada na `@v4`); najmanje dozvole (`permissions`) po poslu; nema `pull_request_target` s checkoutom tuđeg koda; PRIJEDLOG zizmor (besplatan) za sigurnost workflowa. |
+| **Samotest (integracija)** | `self-test.yml` poziva svaki reusable workflow nad fixtureom: zeleni Node projekt daje zeleni `ci-ok`; projekt s namjerno palim testom daje crveni `ci-ok`; posao koji se preskoči ne daje lažno zeleni `ci-ok`; tajna u fixtureu ruši `secret-scan`; lockfile s poznatom ranjivošću ruši `osv-scan` (DAN-921); snimljeni `body_html` PR-a s kodom bez tablice koju GitHub prikazuje ruši `tests-table`, isto kao netaknuti predložak PR-a, a predložak s popunjenim retkom-predloškom i docs PR prolaze (DAN-948). |
+| **Preseti** | fixture koji mora pasti (implicitni `any`, dubok uvoz kad su granice uključene, krivi format) i koji mora proći. |
+| **Generator** | novi repo dobiva README, adaptere pravila, CODEOWNERS, PR predložak, risk tablicu i labele; drugi prolaz ne mijenja ništa. |
+| **Provjera razilaženja** | lažni API odgovori: repo bez zaštite grane, bez obveznog `ci-ok`, s viškom labele → nalaz u koordinacijskom issueu; ništa se ne mijenja (samo čitanje). |
+| **Verzije** | promjena reusable workflowa ne utječe na repo koji poziva stariji puni SHA (test nad fixtureom s prikvačenim SHA-om); poziv oznakom ili granom pada. |
 
 Vizualni, pristupačnost i performanse se ne primjenjuju. **Matrica:** `ubuntu-latest`; `windows-latest` i `macos-latest` samo za `ci-dotnet` i `ci-swift` u fazi E. **Prag „gotovo”:** samotest zelen za svaki workflow; svaka akcija prikvačena; preneseni testovi gatea prolaze.
 
@@ -1923,6 +1923,7 @@ Vizualni, pristupačnost i performanse se ne primjenjuju. **Matrica:** `ubuntu-l
 4. Tjedna provjera razilaženja radi i javlja nalaz.
 5. U11 spojen tek nakon vlasnikove potvrde.
 
+
 ### Institucijski server
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/Institution_server/blob/fd0002ef2b782cb28eaf89fff052c6c312f962c0/docs/PLAN.md).
@@ -1934,7 +1935,7 @@ Postojeći ID-evi su iz zadataka §4–§5 i migracije §10b. Koraci U1–U11 su
 | Korak | Što                                                                                                                                                                                                                                                                                                             | Ovisi o           | Promjena                                                                         |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
 | U1    | S-0.4 kostur                                                                                                                                                                                                                                                                                                    | V-1               | —                                                                                |
-| U2    | `ductura/.github`: reusable workflowi, preseti, predlošci ([plan `.github`](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka))                                                                                                                                         | V-1               | T-0.1, T-0.2, T-0.4 idu **odmah**, ne izdvajanjem kasnije                        |
+| U2    | `ductura/.github`: reusable workflowi, preseti, predlošci ([plan `.github`](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka))                                                                                                                                                                         | V-1               | T-0.1, T-0.2, T-0.4 idu **odmah**, ne izdvajanjem kasnije                        |
 | U3    | S-0.2 inventar 38 ruta (Ductus)                                                                                                                                                                                                                                                                                 | —                 | ulaz u ugovor                                                                    |
 | U4    | **Ugovor kao izvor koda** (S-1H.1-a proširen): sheme svih ruta u `server/contracts/` (TypeBox, prijedlog zadataka t. 15): ulaz, izlaz, greške (kod i ključ), tko smije. Iz njih generator daje validaciju ulaza na serveru, OpenAPI i dokumentaciju, TS tipove i klijent, lažni server. Generirano = commitano. | U1, U3            | S-1H.1-a pomaknut iz vala 1 (bio ← S-1B-b); router ga koristi kad S-1B-b postoji |
 | U5    | S-1H.1-b OpenAPI `v1`, verzija, zaštita od lomljenja                                                                                                                                                                                                                                                            | U4                | iz vala 1                                                                        |
@@ -1949,7 +1950,7 @@ Pravilo nakon U10: **zadatak koji prenosi ili gradi rutu gotov je kad server pro
 
 | Val        | Zadaci                                                                                                                                                                                                | Ključne ovisnosti                                                                                                                     |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 0 (Ductus) | S-0.1, S-0.2, S-0.3, S-0.21                                                                                                                                                                           | vidi [KARTA](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka)                               |
+| 0 (Ductus) | S-0.1, S-0.2, S-0.3, S-0.21                                                                                                                                                                           | vidi [KARTA](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka)                                                         |
 | 0          | U1 → U2, U4 … U10 ‖ S-0.5 ‖ S-0.7 ‖ S-0.16 → S-0.6, S-0.8, S-0.12 → S-0.9 (poziva workflowe iz U2) → S-0.10-a → S-0.10-b → S-0.11; S-0.9 → S-0.13 → S-0.14 → S-0.15, S-0.17 → S-0.18, S-0.19 → S-0.20 | S-0.13 ← samo S-0.9 (ne čeka S-0.10-b ni S-0.11); V-1 prije U1; V-4 prije S-0.9; V-2 prije S-0.10-b, S-0.20; V-3 prije S-0.11, S-0.20 |
 | 1          | S-1A-a → S-1A-b (granice, §3), S-1L.1 → S-1B-a → S-1B-b ‖ S-1B-c; validacija iz ugovora u routeru                                                                                                     | S-1A-a ← S-0.12; S-1B-a ← S-1A-b, S-0.17                                                                                              |
 | 2          | S-1F-a ‖ S-1F-c → S-1F-b, S-1F-d, S-1F-e                                                                                                                                                              | S-1F-e ← S-0.3, U9                                                                                                                    |
@@ -1961,7 +1962,7 @@ Pravilo nakon U10: **zadatak koji prenosi ili gradi rutu gotov je kad server pro
 | 8          | S-1G-a → S-1G-b ‖ S-1G-c → S-1G-d → S-1G-e; S-1G-f                                                                                                                                                    | V-6 nakon S-1G-e                                                                                                                      |
 | 9          | S-1H.2 (test „tko smije” nad pravim serverom), S-1H.3, S-1H.5 → S-1H.6, S-1H.7 → S-1H.8, S-1L.5                                                                                                       | S-1H.8 ← S-1H.7, U7                                                                                                                   |
 | 10         | S-1I                                                                                                                                                                                                  | ← S-1H.8                                                                                                                              |
-| zadnje     | U11: **gate prema riziku uz ugovorne testove** (odluka B6), vidi [plan `.github`](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka)                          | ← U10, S-1H.8; **zaseban PR pravila, vlasnik potvrđuje**                                                                              |
+| zadnje     | U11: **gate prema riziku uz ugovorne testove** (odluka B6), vidi [plan `.github`](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md#katalog-zadataka)                                                          | ← U10, S-1H.8; **zaseban PR pravila, vlasnik potvrđuje**                                                                              |
 
 **Nesklad:** S-3B-a ovisi o S-M-3, S-3B-b o S-M-6, S-3B-c o S-M-2a (val 5 naspram 6). Prijedlog: S-3B-a … c nakon pripadnog S-M.
 **Zajednički:** VS-1 (S-1E-a, S-1D-d, S-1M-a, S-M-5); VS-2 bez koda servera.
@@ -2010,44 +2011,45 @@ Vizualni i pristupačnost se ne primjenjuju. **Matrica:** `ubuntu-latest`, Node 
 6. S-1H.3 i S-1H.8 prolaze nad `dist/server.js`, sa SHA; S-1H.6 zelen.
 7. Server je odigrao svoj dio u VS-1 (sistemski e2e zelen sa SHA svih repoa).
 
+
 ### Institucijski Next.js front
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/Institution_front_web_chrome/blob/28effd7811d7f7c7918d7d3bb3ca711fae7a019b/docs/PLAN.md).
 
 **Ugovor prvi (A3):** web ovisi o ugovoru, ne o gotovom serveru. Svaki ekran se gradi nad lažnim serverom iz `@ductura/test-fakes` čim su shema i vektori rute objavljeni (server U4–U10). Pravi server dolazi u VS-1 i sistemskom e2e.
 
-| ID / korak | Što                                                                                | Ovisi o                                           |
-| ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
-| 2.c1       | Popis komponenti **i katalog s vizualnim testovima** od prvog dana (B5)            | `@ductura/ui` oznake                              |
-| 2.c2       | Testovi komponenti (u katalogu: svako stanje, svaka širina)                        | 2.c1                                              |
-| 2.c3       | Generirani klijent iz `@ductura/contracts`                                         | server U10                                        |
-| 2.c4       | Komponente i ekrani po području                                                    | 2.c3 i shema rute (ne gotov server)               |
-| 2.c5       | `src/platform`: prilagodbe mogućnosti, mobilni prikaz, tipkovnica, dodir, zamjene  | 2.c4                                              |
-| 2.c6       | e2e matrica (§6)                                                                   | 2.c4                                              |
-| 2.c7, 2.c8 | **spojeni u 2.c5 i 2.c6** (prije: mobilno i ostali preglednici u zasebnim repoima) | —                                                 |
-| E-0.3      | `@ductura/editor-core` u `packages/editor-core`                                    | VS-1, zamrzavanje Ductusa, 4 uvjeta migracije §2d |
-| VS-1       | Vertikalni presjek preko pravog API-ja                                             | S-1E-a, S-1D-d, S-1M-a, S-M-5, E-0.2, P-0.1       |
-| VS-2       | Drugi presjek (mobilni prikaz u ovom repou)                                        | VS-1; odluka 13 riješena odlukom A1               |
+| ID / korak | Što | Ovisi o |
+|---|---|---|
+| 2.c1 | Popis komponenti **i katalog s vizualnim testovima** od prvog dana (B5) | `@ductura/ui` oznake |
+| 2.c2 | Testovi komponenti (u katalogu: svako stanje, svaka širina) | 2.c1 |
+| 2.c3 | Generirani klijent iz `@ductura/contracts` | server U10 |
+| 2.c4 | Komponente i ekrani po području | 2.c3 i shema rute (ne gotov server) |
+| 2.c5 | `src/platform`: prilagodbe mogućnosti, mobilni prikaz, tipkovnica, dodir, zamjene | 2.c4 |
+| 2.c6 | e2e matrica (§6) | 2.c4 |
+| 2.c7, 2.c8 | **spojeni u 2.c5 i 2.c6** (prije: mobilno i ostali preglednici u zasebnim repoima) | — |
+| E-0.3 | `@ductura/editor-core` u `packages/editor-core` | VS-1, zamrzavanje Ductusa, 4 uvjeta migracije §2d |
+| VS-1 | Vertikalni presjek preko pravog API-ja | S-1E-a, S-1D-d, S-1M-a, S-M-5, E-0.2, P-0.1 |
+| VS-2 | Drugi presjek (mobilni prikaz u ovom repou) | VS-1; odluka 13 riješena odlukom A1 |
 
 Koraci 2.c1 … 2.c9 nemaju ID (**PRIJEDLOG; ID dodjeljuje orkestrator u fazi 0.3**). 2.c9 (preuzimanje) je u preloaderu (P-0.9).
-Područja za 2.c4 slijede serverske valove, ali čekaju samo shemu: račun i postavke (S-1J-_, S-1L.2, S-1L.3), dokumenti i rad (S-1D-_, S-M-_), predaja (S-1C._), nastavnik i admin (S-1K._), stanje (S-1M-_), pravno u aplikaciji (S-1N-_), uvoz (S-1G-_).
+Područja za 2.c4 slijede serverske valove, ali čekaju samo shemu: račun i postavke (S-1J-*, S-1L.2, S-1L.3), dokumenti i rad (S-1D-*, S-M-*), predaja (S-1C.*), nastavnik i admin (S-1K.*), stanje (S-1M-*), pravno u aplikaciji (S-1N-*), uvoz (S-1G-*).
 
 #### 6. Testovi (editor, dnevnik, sinkronizacija, ekrani, svi preglednici)
 
 **Dvojnici (iz `@ductura/test-fakes`, bez Dockera):** lažni server iz ugovora, lažni AAI@EduHr, lažni sat, lažne usluge `ok`/`slow`/`down`; `fake-indexeddb` za dnevnik; prekid veze kroz Playwright `offline`; odbijeno dopuštenje kroz `permissions`. Sistemski e2e nad pravim serverom (nativno, `preloader/e2e/system/`). Sintetički tekstovi.
 
-| Sloj                        | Konkretni slučajevi                                                                                                                                                                                                                                                                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pomoćne funkcije**        | shema dokumenta, diff, citati FPZG, brojanje; greške API-ja → poruke iz lokala; paritet `hr`/`en`; provjera mogućnosti vraća pravu zamjenu; izračun vidljivog prostora iz `visualViewport`; raspored po širini.                                                                                                                                                             |
-| **Property (editor-core)**  | izmjene i ponovna izgradnja daju isti dokument; dnevnik nakon prekida u bilo kojem trenutku daje zadnje potvrđeno stanje; nema SYNCED bez potpisane potvrde (F-3, F-8); replay provjerava hash obrisanog raspona (B-12); za bilo koju visinu tipkovnice kursor ostaje vidljiv.                                                                                              |
-| **Integracija**             | odjava briše dnevnik i zatvara stare kartice; ponovno spajanje prazni red; recovery, rebase, salvage; predaja samo kroz API; IndexedDB u privatnom načinu Firefoxa i Safarija daje upozorenje, ne tihi gubitak; međuspremnik bez dopuštenja.                                                                                                                                |
-| **Ugovor**                  | generirani klijent pokreće sve vektore; nepoznato polje odbijeno; prikvačena verzija paketa; CI pada kad nova verzija ugovora lomi klijent.                                                                                                                                                                                                                                 |
-| **Katalog i vizualni (B5)** | svaka komponenta u katalogu u svim stanjima (prazno, učitavanje, greška, puno, onemogućeno); snimke na 1440, 1024, 768, 390 i 360 px, svjetla ljuska „papir i grafit” (D-188); usporedba s odobrenom snimkom pada na razlici iznad praga (vrijednost **otvoreno**); nova komponenta bez kataloga ruši test.                                                                 |
-| **e2e**                     | S-1H.8/1..6 (prijava, otvaranje rada, pisanje, rad bez veze, ponovno spajanje, predaja); nastavnik: kolegij, zadatak, pregled, komentar; admin fakulteta; tri postojeća scenarija iz kostura; prvi val §4: Chrome (spremi, osvježi, zamjena kad mogućnost fali), mobitel (tipkovnica, okretanje iPada), ostali (učitavanje, navigacija, međuspremnik, odbijeno dopuštenje). |
-| **Paritet**                 | `@ductura/parity` S-1H.8/1..6 u svakom stupcu matrice.                                                                                                                                                                                                                                                                                                                      |
-| **Pristupačnost**           | WCAG 2.2 AA (Q-14): axe na svakoj stranici i u katalogu; tipkovnica u editoru; fokus nakon dijaloga; dodirne mete; uvećanje 200 %.                                                                                                                                                                                                                                          |
-| **Performanse**             | tipkanje u dugom dokumentu (i uz usporeni CPU za mobilno); veliki diff po odlomcima; veličina paketa po stranici.                                                                                                                                                                                                                                                           |
-| **Sigurnost**               | nema tajni u izgradnji; CSP bez `unsafe-inline` (proxy); zabranjeni izrazi (PRODUCT §5); XSS kroz zalijepljeni sadržaj; `test-fakes` nije u produkcijskoj izgradnji.                                                                                                                                                                                                        |
+| Sloj | Konkretni slučajevi |
+|---|---|
+| **Pomoćne funkcije** | shema dokumenta, diff, citati FPZG, brojanje; greške API-ja → poruke iz lokala; paritet `hr`/`en`; provjera mogućnosti vraća pravu zamjenu; izračun vidljivog prostora iz `visualViewport`; raspored po širini. |
+| **Property (editor-core)** | izmjene i ponovna izgradnja daju isti dokument; dnevnik nakon prekida u bilo kojem trenutku daje zadnje potvrđeno stanje; nema SYNCED bez potpisane potvrde (F-3, F-8); replay provjerava hash obrisanog raspona (B-12); za bilo koju visinu tipkovnice kursor ostaje vidljiv. |
+| **Integracija** | odjava briše dnevnik i zatvara stare kartice; ponovno spajanje prazni red; recovery, rebase, salvage; predaja samo kroz API; IndexedDB u privatnom načinu Firefoxa i Safarija daje upozorenje, ne tihi gubitak; međuspremnik bez dopuštenja. |
+| **Ugovor** | generirani klijent pokreće sve vektore; nepoznato polje odbijeno; prikvačena verzija paketa; CI pada kad nova verzija ugovora lomi klijent. |
+| **Katalog i vizualni (B5)** | svaka komponenta u katalogu u svim stanjima (prazno, učitavanje, greška, puno, onemogućeno); snimke na 1440, 1024, 768, 390 i 360 px, svjetla ljuska „papir i grafit” (D-188); usporedba s odobrenom snimkom pada na razlici iznad praga (vrijednost **otvoreno**); nova komponenta bez kataloga ruši test. |
+| **e2e** | S-1H.8/1..6 (prijava, otvaranje rada, pisanje, rad bez veze, ponovno spajanje, predaja); nastavnik: kolegij, zadatak, pregled, komentar; admin fakulteta; tri postojeća scenarija iz kostura; prvi val §4: Chrome (spremi, osvježi, zamjena kad mogućnost fali), mobitel (tipkovnica, okretanje iPada), ostali (učitavanje, navigacija, međuspremnik, odbijeno dopuštenje). |
+| **Paritet** | `@ductura/parity` S-1H.8/1..6 u svakom stupcu matrice. |
+| **Pristupačnost** | WCAG 2.2 AA (Q-14): axe na svakoj stranici i u katalogu; tipkovnica u editoru; fokus nakon dijaloga; dodirne mete; uvećanje 200 %. |
+| **Performanse** | tipkanje u dugom dokumentu (i uz usporeni CPU za mobilno); veliki diff po odlomcima; veličina paketa po stranici. |
+| **Sigurnost** | nema tajni u izgradnji; CSP bez `unsafe-inline` (proxy); zabranjeni izrazi (PRODUCT §5); XSS kroz zalijepljeni sadržaj; `test-fakes` nije u produkcijskoj izgradnji. |
 
 **Matrica (A1):** Chromium i pravi Chrome (`channel: 'chrome'`), Firefox, WebKit (Safari), Edge (`msedge`), mobilni viewport u emulaciji (Pixel 7, iPhone 14, iPad, iPad položeno). **Opera: ručna provjera** prije izdanja, zapis u PR-u. Safari na macOS-u noćno po uzoru na `webkit-macos.yml` (PRIJEDLOG). Pravi mobilni uređaji: odluka 9, **otvoreno** (trošak farme je vlasnička odluka).
 **Prag „gotovo”:** S-1H.8/1..6 zeleni u svakom stupcu; katalog pokriva svaku komponentu; property testovi editor-corea zeleni; axe bez kršenja; ručni zapis za Operu.
@@ -2066,26 +2068,27 @@ Područja za 2.c4 slijede serverske valove, ali čekaju samo shemu: račun i pos
 4. Preneseni testovi iz Ductusa prolaze s istim brojem i tvrdnjama.
 5. `@ductura/ui`, `@ductura/editor-core` i `@ductura/parity` objavljeni.
 
+
 ### Preloader i edge
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/Preloader/blob/62ab8aa9ad71e40557d34d025f4abca9e95093ad/docs/PLAN.md).
 
 **Ugovor prvi (A3):** zadaci preloadera ovise o shemi i vektorima rute u ugovoru (server U4–U10), ne o gotovom serveru. Rade nad lažnim serverom iz `@ductura/test-fakes`. Gotov serverski zadatak treba samo za sistemski e2e.
 
-| ID     | Što                                                  | Prije A3 ovisio o                           | Sada ovisi o                                                              | Risk     |
-| ------ | ---------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------- | -------- |
-| P-0.1  | Kostur (statična izgradnja, proračun veličine)       | V-1b, T-0.4                                 | V-1b, `ductura/.github` (U2)                                              | standard |
-| P-0.2  | Dvije odluke kao čiste funkcije                      | P-0.1                                       | P-0.1                                                                     | standard |
-| P-0.3  | Ručni izbor prikaza i paketa, pamćenje               | P-0.2                                       | P-0.2                                                                     | standard |
-| P-0.11 | Matrica u Playwrightu, tri motora                    | P-0.3                                       | P-0.3                                                                     | standard |
-| P-0.4  | Provjera servera i verzije API-ja                    | S-1M-a                                      | shema `health` (U4, U7)                                                   | standard |
-| P-0.5  | Stranice grešaka iz kataloga                         | S-1M-c                                      | katalog grešaka u ugovoru (U4)                                            | standard |
-| P-0.8  | Slanje konteksta klijenta                            | S-1M-b                                      | shema `client-context`                                                    | standard |
-| P-0.7  | Ulaz u prijavu AAI@EduHr; FIDO2 za mrežnog inženjera | S-1E-a, S-1E-g                              | sheme `auth/*` + lažni OIDC i FIDO2 (U9); spajanje tek uz S-1E-a i S-1E-g | critical |
-| P-0.6  | Traka kolačića i ekran pristanka                     | S-1N-d                                      | shema pristanka i `legal`; spajanje uz S-1N-d                             | critical |
-| P-0.9  | Info stranica, pravni tekstovi, preuzimanje          | S-1N-c, S-1H.5                              | sheme `legal`, `downloads`                                                | standard |
-| P-0.10 | Proxy na domeni i lokalni sistemski stog             | S-1H.7                                      | S-1H.7 (treba pravi server)                                               | critical |
-| VS-1   | Vertikalni presjek (ulaz i preusmjeravanje)          | S-1E-a, S-1D-d, S-1M-a, S-M-5, E-0.2, P-0.1 | isto                                                                      | critical |
+| ID | Što | Prije A3 ovisio o | Sada ovisi o | Risk |
+|---|---|---|---|---|
+| P-0.1 | Kostur (statična izgradnja, proračun veličine) | V-1b, T-0.4 | V-1b, `ductura/.github` (U2) | standard |
+| P-0.2 | Dvije odluke kao čiste funkcije | P-0.1 | P-0.1 | standard |
+| P-0.3 | Ručni izbor prikaza i paketa, pamćenje | P-0.2 | P-0.2 | standard |
+| P-0.11 | Matrica u Playwrightu, tri motora | P-0.3 | P-0.3 | standard |
+| P-0.4 | Provjera servera i verzije API-ja | S-1M-a | shema `health` (U4, U7) | standard |
+| P-0.5 | Stranice grešaka iz kataloga | S-1M-c | katalog grešaka u ugovoru (U4) | standard |
+| P-0.8 | Slanje konteksta klijenta | S-1M-b | shema `client-context` | standard |
+| P-0.7 | Ulaz u prijavu AAI@EduHr; FIDO2 za mrežnog inženjera | S-1E-a, S-1E-g | sheme `auth/*` + lažni OIDC i FIDO2 (U9); spajanje tek uz S-1E-a i S-1E-g | critical |
+| P-0.6 | Traka kolačića i ekran pristanka | S-1N-d | shema pristanka i `legal`; spajanje uz S-1N-d | critical |
+| P-0.9 | Info stranica, pravni tekstovi, preuzimanje | S-1N-c, S-1H.5 | sheme `legal`, `downloads` | standard |
+| P-0.10 | Proxy na domeni i lokalni sistemski stog | S-1H.7 | S-1H.7 (treba pravi server) | critical |
+| VS-1 | Vertikalni presjek (ulaz i preusmjeravanje) | S-1E-a, S-1D-d, S-1M-a, S-M-5, E-0.2, P-0.1 | isto | critical |
 
 Za `critical` zadatke (P-0.6, P-0.7) PRIJEDLOG: gradi se nad lažnim serverom, a spaja tek kad pravi serverski zadatak prođe iste vektore. P-0.7 ne gradi prijavu admina aplikacije (pitanje 8).
 
@@ -2093,22 +2096,22 @@ Za `critical` zadatke (P-0.6, P-0.7) PRIJEDLOG: gradi se nad lažnim serverom, a
 
 **Dvojnici (bez Dockera):** lažni server iz ugovora (`@ductura/test-fakes`) s vektorima `health` (`ok`, `degraded`, nedostupan, kriva verzija), katalogom grešaka i manifestom (pun, prazan, bez jednog sustava); lažni AAI@EduHr i lažni FIDO2 iz istog paketa; UA i client hints kao fixturei. Sistemski e2e nad pravim serverom pokrenutim nativno.
 
-| Sloj                            | Konkretni slučajevi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sloj | Konkretni slučajevi |
+|---|---|
 | **Pomoćne funkcije (tablično)** | Za svaki redak prvog vala §3, novi ishod nakon A1: Windows+Chrome → web, prikaz računalo, gumb Windows; Mac+Chrome → web, računalo, macOS; Windows+Edge/Firefox/Opera → web, računalo, Windows; Mac+Safari/Firefox → web, računalo, macOS; mobitel ili tablet → web, prikaz mobilno, bez istaknutog paketa; Linux ili nepoznat → web, računalo, ručni izbor paketa. Rubni: Edge i Opera s oznakom Chrome; iPad u desktop načinu (UA kao Mac, dodir); uski prozor; client hints prisutni i odsutni; UA i hints se ne slažu (hints pobjeđuju). Ulaz nikad nema više od dopuštenih polja. |
-| **Property**                    | nasumičan UA i hints daju jedan prikaz i najviše jedan istaknut paket; ručni izbor uvijek pobjeđuje; ništa ne pokreće preuzimanje.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **Integracija**                 | `ok` nastavlja, `degraded` upozorava, nedostupan → greška ili offline, `minClientVersion` veći od izgradnje → osvježavanje (P-0.4); svaki status (400, 401, 403, 404, 408, 429, 500, 502, 503, 504, offline, `session_expired`) ima stranicu i tekst iz lokala (P-0.5); `client-context` šalje samo zatvorene vrijednosti, jednom (P-0.8).                                                                                                                                                                                                                                             |
-| **Ugovor**                      | generirani klijent prolazi vektore `health`, `client-context`, `legal`, `downloads`, `auth/login`; nova verzija ugovora koja lomi preloader ruši CI.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Dokaz jednakosti**            | preneseni testovi (§4) prolaze s istim tvrdnjama.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **e2e (P-0.11)**                | Chromium, Firefox, WebKit uz emulaciju: Desktop Chrome (Windows i Mac UA), Edge, Firefox, Safari, Pixel 7, iPhone, iPad, iPad u desktop načinu, prozor 600 px; za svaki: pravi prikaz, pravi gumb, ručna promjena se pamti; nedostupan paket nudi nastavak u webu. Opera ručno.                                                                                                                                                                                                                                                                                                        |
-| **Pristanak i kolačići**        | bez pristanka samo nužni kolačić sesije; izbor se pamti i mijenja; nova verzija uvjeta traži ponovni pristanak (`consentRequired: true`); popis kolačića = stvarni `Set-Cookie` (P-0.6).                                                                                                                                                                                                                                                                                                                                                                                               |
-| **Prijava**                     | gumb vodi samo na AAI@EduHr; za studenta nema drugog puta; mrežni inženjer dobiva FIDO2 korak (P-0.7).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Proxy**                       | `/` → preloader, putanja weba → izgradnja `ductura/Institution_front_web_chrome`, `/api/v1/` → server, `/preuzimanje/` → server; nepoznata putanja → 404; kolačić `__Host-` na jednom porijeklu; CSP i zaglavlja na svakoj putanji (P-0.10).                                                                                                                                                                                                                                                                                                                                           |
-| **Sistemski e2e**               | `e2e/system/`: domena → preloader → web → server kroz pravi proxy (VS-1), noćno i za kandidata izdanja; SHA svakog repoa.                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **Vizualni**                    | prvi ekran, info, greške, traka kolačića na 1440, 768 i 400 px, „papir i grafit” (D-188), usporedba s odobrenom slikom (SESSIONS §6).                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| **Pristupačnost**               | axe na svakoj stranici; tipkovnica kroz traku kolačića i ručni izbor; kontrast D-188.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| **Performanse**                 | proračun veličine JS-a prvog ekrana (granica **otvoreno**, PRIJEDLOG odrediti u P-0.1); vrijeme do prvog prikaza.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Sigurnost**                   | zatvoren popis poslanih polja; prepoznavanje nikad za pristup; zabranjeni izrazi; gitleaks i dependency review; `test-fakes` nije u izgradnji.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Property** | nasumičan UA i hints daju jedan prikaz i najviše jedan istaknut paket; ručni izbor uvijek pobjeđuje; ništa ne pokreće preuzimanje. |
+| **Integracija** | `ok` nastavlja, `degraded` upozorava, nedostupan → greška ili offline, `minClientVersion` veći od izgradnje → osvježavanje (P-0.4); svaki status (400, 401, 403, 404, 408, 429, 500, 502, 503, 504, offline, `session_expired`) ima stranicu i tekst iz lokala (P-0.5); `client-context` šalje samo zatvorene vrijednosti, jednom (P-0.8). |
+| **Ugovor** | generirani klijent prolazi vektore `health`, `client-context`, `legal`, `downloads`, `auth/login`; nova verzija ugovora koja lomi preloader ruši CI. |
+| **Dokaz jednakosti** | preneseni testovi (§4) prolaze s istim tvrdnjama. |
+| **e2e (P-0.11)** | Chromium, Firefox, WebKit uz emulaciju: Desktop Chrome (Windows i Mac UA), Edge, Firefox, Safari, Pixel 7, iPhone, iPad, iPad u desktop načinu, prozor 600 px; za svaki: pravi prikaz, pravi gumb, ručna promjena se pamti; nedostupan paket nudi nastavak u webu. Opera ručno. |
+| **Pristanak i kolačići** | bez pristanka samo nužni kolačić sesije; izbor se pamti i mijenja; nova verzija uvjeta traži ponovni pristanak (`consentRequired: true`); popis kolačića = stvarni `Set-Cookie` (P-0.6). |
+| **Prijava** | gumb vodi samo na AAI@EduHr; za studenta nema drugog puta; mrežni inženjer dobiva FIDO2 korak (P-0.7). |
+| **Proxy** | `/` → preloader, putanja weba → izgradnja `ductura/Institution_front_web_chrome`, `/api/v1/` → server, `/preuzimanje/` → server; nepoznata putanja → 404; kolačić `__Host-` na jednom porijeklu; CSP i zaglavlja na svakoj putanji (P-0.10). |
+| **Sistemski e2e** | `e2e/system/`: domena → preloader → web → server kroz pravi proxy (VS-1), noćno i za kandidata izdanja; SHA svakog repoa. |
+| **Vizualni** | prvi ekran, info, greške, traka kolačića na 1440, 768 i 400 px, „papir i grafit” (D-188), usporedba s odobrenom slikom (SESSIONS §6). |
+| **Pristupačnost** | axe na svakoj stranici; tipkovnica kroz traku kolačića i ručni izbor; kontrast D-188. |
+| **Performanse** | proračun veličine JS-a prvog ekrana (granica **otvoreno**, PRIJEDLOG odrediti u P-0.1); vrijeme do prvog prikaza. |
+| **Sigurnost** | zatvoren popis poslanih polja; prepoznavanje nikad za pristup; zabranjeni izrazi; gitleaks i dependency review; `test-fakes` nije u izgradnji. |
 
 **Prag „gotovo”:** svi retci matrice i rubni slučajevi zeleni u unit testu i u tri motora; svaka greška ima tekst; proxy pokriva svaku putanju; sistemski e2e zelen sa SHA; vizualna usporedba odobrena.
 
@@ -2126,34 +2129,35 @@ Za `critical` zadatke (P-0.6, P-0.7) PRIJEDLOG: gradi se nad lažnim serverom, a
 4. Sistemski e2e (VS-1) zelen kroz pravi proxy, sa SHA svih repoa.
 5. Gumbi za preuzimanje vode na manifest servera; bez paketa korisnik nastavlja u webu.
 
+
 ### Windows ljuska
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/Desktop_windows/blob/f358589e21a9dbe8ee38b5d7b2c818a2934ab006/docs/PLAN.md).
 
-| Korak                               | Što                                                                                                                                                               | Ovisi o                                                         |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| D1 (DAN-878)                        | Ovaj plan                                                                                                                                                         | —                                                               |
-| D-0.1                               | Spike ljuske (WebView2, WKWebView, Tauri) s istom web izgradnjom, u Ductusu                                                                                       | kraj faze B                                                     |
-| odluke 8 i 12                       | Vlasnik                                                                                                                                                           | D-0.1; najkasnije kraj faze C                                   |
-| Faza E · aktivacija desktop razvoja | Vlasnička radnja, odvojena od V-1b (karta §3)                                                                                                                     | vlasnik; ulaz faze E (migracija §4): odluke 8 i 12, potpis, V-5 |
-| ljuska                              | Prozor učitava isti web paket s provjerene adrese (`WebAddress`)                                                                                                  | odluka 8, aktivacija faze E                                     |
-| prijava                             | Token u zaglavlju po ADR-u S-1E-e; samo preko servera                                                                                                             | S-1E-e, V-5 (Srce)                                              |
-| klijent ugovora                     | Iz OpenAPI-ja u `@ductura/contracts`; vektori u CI-ju                                                                                                             | U10, odluka 8                                                   |
-| izdanje                             | GitHub Release desktop repoa kao izvor paketa. Server u manifestu drži adresu i SHA-256, a korisnik preuzima kroz `/preuzimanje/` (PRIJEDLOG, migracija §8 t. 8). | S-1H.5, S-1H.6, odluka 12                                       |
-| potpis                              | Potpisani paket                                                                                                                                                   | ovisi o potpisu                                                 |
+| Korak | Što | Ovisi o |
+|---|---|---|
+| D1 (DAN-878) | Ovaj plan | — |
+| D-0.1 | Spike ljuske (WebView2, WKWebView, Tauri) s istom web izgradnjom, u Ductusu | kraj faze B |
+| odluke 8 i 12 | Vlasnik | D-0.1; najkasnije kraj faze C |
+| Faza E · aktivacija desktop razvoja | Vlasnička radnja, odvojena od V-1b (karta §3) | vlasnik; ulaz faze E (migracija §4): odluke 8 i 12, potpis, V-5 |
+| ljuska | Prozor učitava isti web paket s provjerene adrese (`WebAddress`) | odluka 8, aktivacija faze E |
+| prijava | Token u zaglavlju po ADR-u S-1E-e; samo preko servera | S-1E-e, V-5 (Srce) |
+| klijent ugovora | Iz OpenAPI-ja u `@ductura/contracts`; vektori u CI-ju | U10, odluka 8 |
+| izdanje | GitHub Release desktop repoa kao izvor paketa. Server u manifestu drži adresu i SHA-256, a korisnik preuzima kroz `/preuzimanje/` (PRIJEDLOG, migracija §8 t. 8). | S-1H.5, S-1H.6, odluka 12 |
+| potpis | Potpisani paket | ovisi o potpisu |
 
 Koraci bez ID-a su PRIJEDLOG: ID dodjeljuje orkestrator.
 
 #### 6. Testovi
 
-| Sloj                       | Konkretni slučajevi                                                                                                                 |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **Pomoćne funkcije**       | Argumenti, nazivi paketa, ID rada, adresa weba i ishod `--smoke` (postoje). Nove funkcije ljuske dobivaju testove u `Windows Core`. |
-| **Funkcionalni**           | Preuzimanje, instalacija i pokretanje iz izbornika Start. Razmaci i hrvatski znakovi u putanji (karta §4).                          |
-| **Ugovor**                 | Klijent prikvači verziju ugovora i pokreće njegove vektore (migracija §6).                                                          |
-| **Paritet**                | `@ductura/parity` S-1H.8/1..6 u ljusci (ovisi o odluci 8).                                                                          |
-| **Simulacija preuzimanja** | Pravi paket, SHA-256 jednak manifestu, preuzimanje samo na klik (migracija §6). Pokreće ga CI desktopa pri izdanju.                 |
-| **Sigurnost**              | Nema tajni (`secret-scan`). Ljuska otvara samo provjerenu adresu. Prijava ide samo preko servera.                                   |
+| Sloj | Konkretni slučajevi |
+|---|---|
+| **Pomoćne funkcije** | Argumenti, nazivi paketa, ID rada, adresa weba i ishod `--smoke` (postoje). Nove funkcije ljuske dobivaju testove u `Windows Core`. |
+| **Funkcionalni** | Preuzimanje, instalacija i pokretanje iz izbornika Start. Razmaci i hrvatski znakovi u putanji (karta §4). |
+| **Ugovor** | Klijent prikvači verziju ugovora i pokreće njegove vektore (migracija §6). |
+| **Paritet** | `@ductura/parity` S-1H.8/1..6 u ljusci (ovisi o odluci 8). |
+| **Simulacija preuzimanja** | Pravi paket, SHA-256 jednak manifestu, preuzimanje samo na klik (migracija §6). Pokreće ga CI desktopa pri izdanju. |
+| **Sigurnost** | Nema tajni (`secret-scan`). Ljuska otvara samo provjerenu adresu. Prijava ide samo preko servera. |
 
 **Matrica:** `windows-latest` (x64) za izgradnju i funkcionalni test, `ubuntu-latest` za `ci-ok-test` i `contract-client`.
 **Prag „gotovo”:** `ci-ok` je zelen i ništa nije preskočeno. Funkcionalni test na čistom Windowsu prolazi.
@@ -2188,34 +2192,35 @@ Izlaz faze E prema migraciji §4: „Potpisani paketi; instalacija i pokretanje 
 5. Prijava ide samo preko servera, tokom (S-1E-e). Za studente je to AAI@EduHr (D-09).
 6. `ci-ok` je zelen. Prihvat vala s instalacijom desktopa je **otvoren** (karta §4).
 
+
 ### macOS ljuska
 
 Tehničke stavke i kriteriji iz [izvorne revizije](https://github.com/ductura/Desktop_macos/blob/0126b348dc5c755efad446d03be7a9a171822fbb/docs/PLAN.md).
 
-| Korak                               | Što                                                                                                                                                               | Ovisi o                                                         |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| D1 (DAN-878)                        | Ovaj plan                                                                                                                                                         | —                                                               |
-| D-0.1                               | Spike ljuske (WebView2, WKWebView, Tauri) s istom web izgradnjom, u Ductusu                                                                                       | kraj faze B                                                     |
-| odluke 8 i 12                       | Vlasnik                                                                                                                                                           | D-0.1; najkasnije kraj faze C                                   |
-| Faza E · aktivacija desktop razvoja | Vlasnička radnja, odvojena od V-1b (karta §3)                                                                                                                     | vlasnik; ulaz faze E (migracija §4): odluke 8 i 12, potpis, V-5 |
-| ljuska                              | Prozor učitava isti web paket s provjerene adrese (`WebAddress`)                                                                                                  | odluka 8, aktivacija faze E                                     |
-| prijava                             | Token u zaglavlju po ADR-u S-1E-e; samo preko servera                                                                                                             | S-1E-e, V-5 (Srce)                                              |
-| klijent ugovora                     | Iz OpenAPI-ja u `@ductura/contracts`; vektori u CI-ju                                                                                                             | U10, odluka 8                                                   |
-| izdanje                             | GitHub Release desktop repoa kao izvor paketa. Server u manifestu drži adresu i SHA-256, a korisnik preuzima kroz `/preuzimanje/` (PRIJEDLOG, migracija §8 t. 8). | S-1H.5, S-1H.6, odluka 12                                       |
-| potpis                              | Potpisani paket                                                                                                                                                   | ovisi o potpisu                                                 |
+| Korak | Što | Ovisi o |
+|---|---|---|
+| D1 (DAN-878) | Ovaj plan | — |
+| D-0.1 | Spike ljuske (WebView2, WKWebView, Tauri) s istom web izgradnjom, u Ductusu | kraj faze B |
+| odluke 8 i 12 | Vlasnik | D-0.1; najkasnije kraj faze C |
+| Faza E · aktivacija desktop razvoja | Vlasnička radnja, odvojena od V-1b (karta §3) | vlasnik; ulaz faze E (migracija §4): odluke 8 i 12, potpis, V-5 |
+| ljuska | Prozor učitava isti web paket s provjerene adrese (`WebAddress`) | odluka 8, aktivacija faze E |
+| prijava | Token u zaglavlju po ADR-u S-1E-e; samo preko servera | S-1E-e, V-5 (Srce) |
+| klijent ugovora | Iz OpenAPI-ja u `@ductura/contracts`; vektori u CI-ju | U10, odluka 8 |
+| izdanje | GitHub Release desktop repoa kao izvor paketa. Server u manifestu drži adresu i SHA-256, a korisnik preuzima kroz `/preuzimanje/` (PRIJEDLOG, migracija §8 t. 8). | S-1H.5, S-1H.6, odluka 12 |
+| potpis | Potpisani paket | ovisi o potpisu |
 
 Koraci bez ID-a su PRIJEDLOG: ID dodjeljuje orkestrator.
 
 #### 6. Testovi
 
-| Sloj                       | Konkretni slučajevi                                                                                                                                                  |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pomoćne funkcije**       | Argumenti, nazivi paketa, ID rada, adresa weba i ishod `--smoke` (postoje). Nove funkcije ljuske dobivaju testove u `DucturaCore`.                                   |
-| **Funkcionalni**           | Preuzimanje, mapa Aplikacije i pokretanje; arhitektura (Apple Silicon i Intel) (karta §4). Nakon potpisa (ovisi o potpisu): prvo pokretanje bez blokade Gatekeepera. |
-| **Ugovor**                 | Klijent prikvači verziju ugovora i pokreće njegove vektore (migracija §6).                                                                                           |
-| **Paritet**                | `@ductura/parity` S-1H.8/1..6 u ljusci (ovisi o odluci 8).                                                                                                           |
-| **Simulacija preuzimanja** | Pravi paket, SHA-256 jednak manifestu, preuzimanje samo na klik (migracija §6). Pokreće ga CI desktopa pri izdanju.                                                  |
-| **Sigurnost**              | Nema tajni (`secret-scan`). Ljuska otvara samo provjerenu adresu. Prijava ide samo preko servera.                                                                    |
+| Sloj | Konkretni slučajevi |
+|---|---|
+| **Pomoćne funkcije** | Argumenti, nazivi paketa, ID rada, adresa weba i ishod `--smoke` (postoje). Nove funkcije ljuske dobivaju testove u `DucturaCore`. |
+| **Funkcionalni** | Preuzimanje, mapa Aplikacije i pokretanje; arhitektura (Apple Silicon i Intel) (karta §4). Nakon potpisa (ovisi o potpisu): prvo pokretanje bez blokade Gatekeepera. |
+| **Ugovor** | Klijent prikvači verziju ugovora i pokreće njegove vektore (migracija §6). |
+| **Paritet** | `@ductura/parity` S-1H.8/1..6 u ljusci (ovisi o odluci 8). |
+| **Simulacija preuzimanja** | Pravi paket, SHA-256 jednak manifestu, preuzimanje samo na klik (migracija §6). Pokreće ga CI desktopa pri izdanju. |
+| **Sigurnost** | Nema tajni (`secret-scan`). Ljuska otvara samo provjerenu adresu. Prijava ide samo preko servera. |
 
 **Matrica:** `macos-latest` za izgradnju i funkcionalni test, `ubuntu-latest` samo za `ci-ok-test`.
 **Prag „gotovo”:** `ci-ok` je zelen i ništa nije preskočeno. Funkcionalni test na čistom Macu prolazi.
@@ -2248,6 +2253,7 @@ Izlaz faze E prema migraciji §4: „Potpisani paketi; instalacija i pokretanje 
 4. Editor dolazi iz web paketa. Nema nijednog retka izvornog editora.
 5. Prijava ide samo preko servera, tokom (S-1E-e). Za studente je to AAI@EduHr (D-09).
 6. `ci-ok` je zelen. Prihvat vala s instalacijom desktopa je **otvoren** (karta §4).
+
 
 ### Povijesni FPZG demo i dokazi
 
@@ -2284,12 +2290,12 @@ Prema `PROGRAM.md`, na izmišljenom zadatku, lokalno u Dockeru, s lažnom prijav
 
 #### 3. Tokovi i tjedni
 
-| Tjedan | Razdoblje         | Kontrolna točka (petak)                                                                                                        |
-| ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| T1     | 3. do 11. 10.     | Kostur, CI i lokalni stog spojeni; dizajn odobren                                                                              |
-| T2     | 12. do 18. 10.    | Jezgra prenesena (isti broj testova kao izvor); prijava i model fakulteta s pgTAP matricom; editor u aplikaciji sprema lokalno |
-| T3     | 19. do 25. 10.    | Evidencija na poslužitelju s potpisanim potvrdama; nastavnik vidi stanje i komentira; obavijest S3 i upis kodom                |
-| T4     | 26. 10. do 1. 11. | Predaja s rekonstrukcijom, sažetak procesa, E2E prolaz 1 do 5 zelen u CI-ju; proba u subotu 31. 10.                            |
+| Tjedan | Razdoblje | Kontrolna točka (petak) |
+| --- | --- | --- |
+| T1 | 3. do 11. 10. | Kostur, CI i lokalni stog spojeni; dizajn odobren |
+| T2 | 12. do 18. 10. | Jezgra prenesena (isti broj testova kao izvor); prijava i model fakulteta s pgTAP matricom; editor u aplikaciji sprema lokalno |
+| T3 | 19. do 25. 10. | Evidencija na poslužitelju s potpisanim potvrdama; nastavnik vidi stanje i komentira; obavijest S3 i upis kodom |
+| T4 | 26. 10. do 1. 11. | Predaja s rekonstrukcijom, sažetak procesa, E2E prolaz 1 do 5 zelen u CI-ju; proba u subotu 31. 10. |
 
 Na svakoj kontrolnoj točki orkestrator uspoređuje stanje s tablicom i, ako se kasni, primjenjuje rezove iz §5 i javlja Danielu. **Stanje 11. 10. 2026. (D-105; issue #87, komentar 6105201573):** zasad se ništa ne reže; rok srijeda 14. 10. za #206 je točka u kojoj orkestrator ponovno iznosi stanje, ne automatski rez. Već primijenjeno iz D-98 time nije promijenjeno.
 
@@ -2299,63 +2305,63 @@ Oznaka uloge: P Platforma, B Backend, F Frontend, K kratkotrajna sesija, D Danie
 
 ##### Platforma
 
-| ID  | Zadatak                                                                                                                                                                                                        | Ovisi o  | Gotovo kad                                                               | T   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ | --- |
-| P-1 | M0.1 kostur: pnpm, Node 24, Next.js i React kao u `pisac-editor`, TypeScript strict, ESLint, Vitest (unit, property), Playwright konfiguracija; bez Supabasea i Netlifyja                                      |          | `pnpm install`, `lint`, `typecheck`, `test` zeleni                       | T1  |
-| P-2 | M0.4a CI na GitHub Actions: lint, typecheck, unit, property, Gitleaks, zizmor, Semgrep, OSV; lefthook lokalno                                                                                                  | P-1      | CI zelen na `main`; namjerno pokvaren test ruši CI                       | T1  |
-| P-3 | M0.4b `docker compose`: Postgres 17, S3-kompatibilna pohrana (RustFS; MinIO više nema sliku), Mailpit, lažni OIDC pružatelj (`node-oidc-provider`) s jasnom oznakom "demo prijava"; jedna naredba za podizanje | P-1      | `pnpm stack:up` diže sve; zdravstvene provjere zelene; isto radi u CI-ju | T1  |
-| P-4 | Migracije s dbmateom (D-91) i pgTAP u CI-ju (`pg_prove` nad Postgresom iz compose); zaštitne mjere iz D-91 u zasebnom PR-u                                                                                     | P-3      | Prazna migracija i jedan pgTAP test prolaze lokalno i u CI-ju            | T2  |
-| P-5 | E2E u CI-ju: Playwright nad stogom iz compose, axe, snimke zaslona i video kao artefakti PR-a                                                                                                                  | P-2, P-3 | Primjer E2E testa zelen u CI-ju; snimke vidljive uz PR                   | T2  |
-| P-6 | Provjera zabranjenih riječi u CI-ju (rječnik iz `PRODUCT.md` §5) nad tekstovima sučelja                                                                                                                        | P-2      | Riječ iz rječnika u ključu teksta ruši CI                                | T2  |
-| P-7 | Demo naredbe: `pnpm local:up` (stog, migracije, izmišljeni podaci) i kratke upute za Daniela                                                                                                                   | P-3, K-3 | Daniel s čistog stanja podiže demo jednom naredbom                       | T4  |
+| ID | Zadatak | Ovisi o | Gotovo kad | T |
+| --- | --- | --- | --- | --- |
+| P-1 | M0.1 kostur: pnpm, Node 24, Next.js i React kao u `pisac-editor`, TypeScript strict, ESLint, Vitest (unit, property), Playwright konfiguracija; bez Supabasea i Netlifyja | | `pnpm install`, `lint`, `typecheck`, `test` zeleni | T1 |
+| P-2 | M0.4a CI na GitHub Actions: lint, typecheck, unit, property, Gitleaks, zizmor, Semgrep, OSV; lefthook lokalno | P-1 | CI zelen na `main`; namjerno pokvaren test ruši CI | T1 |
+| P-3 | M0.4b `docker compose`: Postgres 17, S3-kompatibilna pohrana (RustFS; MinIO više nema sliku), Mailpit, lažni OIDC pružatelj (`node-oidc-provider`) s jasnom oznakom "demo prijava"; jedna naredba za podizanje | P-1 | `pnpm stack:up` diže sve; zdravstvene provjere zelene; isto radi u CI-ju | T1 |
+| P-4 | Migracije s dbmateom (D-91) i pgTAP u CI-ju (`pg_prove` nad Postgresom iz compose); zaštitne mjere iz D-91 u zasebnom PR-u | P-3 | Prazna migracija i jedan pgTAP test prolaze lokalno i u CI-ju | T2 |
+| P-5 | E2E u CI-ju: Playwright nad stogom iz compose, axe, snimke zaslona i video kao artefakti PR-a | P-2, P-3 | Primjer E2E testa zelen u CI-ju; snimke vidljive uz PR | T2 |
+| P-6 | Provjera zabranjenih riječi u CI-ju (rječnik iz `PRODUCT.md` §5) nad tekstovima sučelja | P-2 | Riječ iz rječnika u ključu teksta ruši CI | T2 |
+| P-7 | Demo naredbe: `pnpm local:up` (stog, migracije, izmišljeni podaci) i kratke upute za Daniela | P-3, K-3 | Daniel s čistog stanja podiže demo jednom naredbom | T4 |
 
 ##### Backend
 
-| ID   | Zadatak                                                                                                                                                                                                                                         | Ovisi o                                 | Gotovo kad                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | T            |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| B-1  | Plan prijenosa backend jezgre (samo čitanje)                                                                                                                                                                                                    |                                         | Plan poslan orkestratoru                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | T1           |
-| B-2  | M0.2a prijenos domene i forenzike (`src/domain` bez dijelova Frontenda)                                                                                                                                                                         | P-1, B-1                                | Isti broj prenesenih testova kao u izvoru, svi zeleni                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | T1 do T2     |
-| B-3  | M0.2b prijenos `application/ports`, `application/evidence`, in-memory adaptera i ugovornih testova                                                                                                                                              | B-2                                     | Isti broj testova kao u izvoru                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | T2           |
-| B-4  | M0.2c crypto adapteri: razvojni Ed25519 potpisnik u upotrebi, KMS adapter prenesen ali ne spojen                                                                                                                                                | B-3                                     | Ugovorni testovi potpisnika zeleni                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | T2           |
-| B-5  | Uloge baze (`ductus_migrator`, `ductus_app`, `ductus_worker`, `ductus_evidence`), sesije u bazi, `current_actor()`, `withActor` (BACKEND §3, §4.3)                                                                                              | P-4                                     | Tablica sesija s uključenim RLS-om i retkom u pgTAP matrici; pgTAP: `ductus_app` ne vidi tablicu sesija ni uz isključen `REVOKE`; test da GUC ne ostaje na vezi                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | T2           |
-| B-6  | Prijava preko lažnog OIDC-a: `openid-client`, PKCE, `state`, `nonce`, sesija u bazi, kolačić `__Host-`, odjava; test da produkcijska konfiguracija nema lažnog pružatelja                                                                       | B-5, P-3                                | Prijava i odjava rade; navedeni testovi zeleni                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | T2           |
-| B-7  | Model fakulteta za demo (dio M2): fakultet, kolegij, članstvo, upis kodom, zadatak i verzija zadatka, potvrda obavijesti; RLS i pgTAP matrica                                                                                                   | B-5                                     | Matrica pristupa zelena za studenta, nastavnika i stranca (drugi kolegij)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | T2 do T3     |
-| B-8  | Evidencija (dio M3): ruta `ingest`, odsječci (D-24), jedan RPC za CAS reviziju i `reserve`, hash lanac, spremanje u lokalnu S3 pohranu, idempotentno ponovno slanje                                                                             | B-3, B-7, #240 (D-103)                  | Property testovi: izmjena, brisanje ili preslagivanje odsječka ruši provjeru; ponovno slanje ne duplicira; RPC izvodi identitet iz `current_actor()` i pgTAP dokazuje da `ductus_app` ne može dodati evidenciju s tuđim principalom; RLS i pgTAP retci za sve nove tablice evidencije; `ingest` odbija zahtjev s pogrešnim ili nedostajućim `Origin` i `Sec-Fetch-Site` (test); svaka nova tablica rada, dokumenta, evidencije i predaje nosi ključ ustanove, složeni strani ključ koji sprječava miješanje ustanova (kao u postojećem modelu ustanove), RLS vezan uz ustanovu i retke u pgTAP matrici s personama druge ustanove (D-103) | T3           |
-| B-9  | **Izlazi iz demoa (D-98 dopuna, 10. 10. 2026.; ide nakon demoa).** Worker: pg-boss, potpis potvrda razvojnim ključem, `attach_signature`; stanje `pending_signature`                                                                            | B-4, B-8                                | Potvrda potpisana po D-92 i prolazi ugovorni known-answer vektor iz BACKEND §4.1 (točni ulazni bajtovi, `D`, potpis testnim ključem), uključujući negativne slučajeve (potpis nad punim JCS-om, nad samim `D`, s drugim prefiksom ili nad izmijenjenim payloadom se odbija; v1 `pending_signature` ne potpisuje se v2 putem); pad workera ostavlja `pending_signature` i oporavlja se                                                                                                                                                                                                                                                     | T3           |
-| B-10 | Komentari uz odlomak: tablica, RPC, RLS, pgTAP                                                                                                                                                                                                  | B-7                                     | Student vidi komentar na svom radu; stranac ne vidi ništa                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | T3           |
-| B-11 | Pogled nastavnika: spremljeno stanje rada s osvježavanjem po P-03 (polling, D-06); podaci za brz put (D-80): zadnja promjena, otvoreni zahtjevi, lijepljenja bez izvora, stanje izjave                                                          | B-8                                     | Nastavnik ne dobiva novo stanje češće od P-03; test                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | T3 do T4     |
-| B-12 | Predaja (dio M7): `requested_at` iz sata baze, rekonstrukcija (za demo u web procesu, od prvog događaja, bez tablice kontrolnih točaka; D-98 dopuna), JCS usporedba, nepodudarnost blokira predaju (D-11), praznina vidljiva, potpisana potvrda | B-4, B-8 (B-9 nakon demoa; D-98 dopuna) | Rekonstrukcija podudarna na scenarijima uključujući prazninu; nepodudarnost blokira; nove tablice predaje nose ključ ustanove (D-103)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | T4           |
-| B-13 | Sažetak procesa: jedna funkcija za studenta i nastavnika (pravilo 5), sesije (P-01), lijepljenja (P-02), praznine, vrsta dokaza (D-44), stanje zapisa                                                                                           | B-8                                     | Test jednakosti studentskog i nastavničkog prikaza, uključujući API (D-80 točka 6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | T4           |
-| B-14 | Tanki prolaz kritičnog puta (D-98 t. 1, §7): `ingest` → rekonstrukcija → JCS usporedba, bez sučelja, baze i workera                                                                                                                             | B-3, B-4                                | `ingest` jednog odsječka, rekonstrukcija i JCS usporedba prolaze od početka do kraja nad in-memory adapterima i razvojnim potpisnikom, kao automatski test u CI-ju                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | T2 (18. 10.) |
+| ID | Zadatak | Ovisi o | Gotovo kad | T |
+| --- | --- | --- | --- | --- |
+| B-1 | Plan prijenosa backend jezgre (samo čitanje) | | Plan poslan orkestratoru | T1 |
+| B-2 | M0.2a prijenos domene i forenzike (`src/domain` bez dijelova Frontenda) | P-1, B-1 | Isti broj prenesenih testova kao u izvoru, svi zeleni | T1 do T2 |
+| B-3 | M0.2b prijenos `application/ports`, `application/evidence`, in-memory adaptera i ugovornih testova | B-2 | Isti broj testova kao u izvoru | T2 |
+| B-4 | M0.2c crypto adapteri: razvojni Ed25519 potpisnik u upotrebi, KMS adapter prenesen ali ne spojen | B-3 | Ugovorni testovi potpisnika zeleni | T2 |
+| B-5 | Uloge baze (`ductus_migrator`, `ductus_app`, `ductus_worker`, `ductus_evidence`), sesije u bazi, `current_actor()`, `withActor` (BACKEND §3, §4.3) | P-4 | Tablica sesija s uključenim RLS-om i retkom u pgTAP matrici; pgTAP: `ductus_app` ne vidi tablicu sesija ni uz isključen `REVOKE`; test da GUC ne ostaje na vezi | T2 |
+| B-6 | Prijava preko lažnog OIDC-a: `openid-client`, PKCE, `state`, `nonce`, sesija u bazi, kolačić `__Host-`, odjava; test da produkcijska konfiguracija nema lažnog pružatelja | B-5, P-3 | Prijava i odjava rade; navedeni testovi zeleni | T2 |
+| B-7 | Model fakulteta za demo (dio M2): fakultet, kolegij, članstvo, upis kodom, zadatak i verzija zadatka, potvrda obavijesti; RLS i pgTAP matrica | B-5 | Matrica pristupa zelena za studenta, nastavnika i stranca (drugi kolegij) | T2 do T3 |
+| B-8 | Evidencija (dio M3): ruta `ingest`, odsječci (D-24), jedan RPC za CAS reviziju i `reserve`, hash lanac, spremanje u lokalnu S3 pohranu, idempotentno ponovno slanje | B-3, B-7, #240 (D-103) | Property testovi: izmjena, brisanje ili preslagivanje odsječka ruši provjeru; ponovno slanje ne duplicira; RPC izvodi identitet iz `current_actor()` i pgTAP dokazuje da `ductus_app` ne može dodati evidenciju s tuđim principalom; RLS i pgTAP retci za sve nove tablice evidencije; `ingest` odbija zahtjev s pogrešnim ili nedostajućim `Origin` i `Sec-Fetch-Site` (test); svaka nova tablica rada, dokumenta, evidencije i predaje nosi ključ ustanove, složeni strani ključ koji sprječava miješanje ustanova (kao u postojećem modelu ustanove), RLS vezan uz ustanovu i retke u pgTAP matrici s personama druge ustanove (D-103) | T3 |
+| B-9 | **Izlazi iz demoa (D-98 dopuna, 10. 10. 2026.; ide nakon demoa).** Worker: pg-boss, potpis potvrda razvojnim ključem, `attach_signature`; stanje `pending_signature` | B-4, B-8 | Potvrda potpisana po D-92 i prolazi ugovorni known-answer vektor iz BACKEND §4.1 (točni ulazni bajtovi, `D`, potpis testnim ključem), uključujući negativne slučajeve (potpis nad punim JCS-om, nad samim `D`, s drugim prefiksom ili nad izmijenjenim payloadom se odbija; v1 `pending_signature` ne potpisuje se v2 putem); pad workera ostavlja `pending_signature` i oporavlja se | T3 |
+| B-10 | Komentari uz odlomak: tablica, RPC, RLS, pgTAP | B-7 | Student vidi komentar na svom radu; stranac ne vidi ništa | T3 |
+| B-11 | Pogled nastavnika: spremljeno stanje rada s osvježavanjem po P-03 (polling, D-06); podaci za brz put (D-80): zadnja promjena, otvoreni zahtjevi, lijepljenja bez izvora, stanje izjave | B-8 | Nastavnik ne dobiva novo stanje češće od P-03; test | T3 do T4 |
+| B-12 | Predaja (dio M7): `requested_at` iz sata baze, rekonstrukcija (za demo u web procesu, od prvog događaja, bez tablice kontrolnih točaka; D-98 dopuna), JCS usporedba, nepodudarnost blokira predaju (D-11), praznina vidljiva, potpisana potvrda | B-4, B-8 (B-9 nakon demoa; D-98 dopuna) | Rekonstrukcija podudarna na scenarijima uključujući prazninu; nepodudarnost blokira; nove tablice predaje nose ključ ustanove (D-103) | T4 |
+| B-13 | Sažetak procesa: jedna funkcija za studenta i nastavnika (pravilo 5), sesije (P-01), lijepljenja (P-02), praznine, vrsta dokaza (D-44), stanje zapisa | B-8 | Test jednakosti studentskog i nastavničkog prikaza, uključujući API (D-80 točka 6) | T4 |
+| B-14 | Tanki prolaz kritičnog puta (D-98 t. 1, §7): `ingest` → rekonstrukcija → JCS usporedba, bez sučelja, baze i workera | B-3, B-4 | `ingest` jednog odsječka, rekonstrukcija i JCS usporedba prolaze od početka do kraja nad in-memory adapterima i razvojnim potpisnikom, kao automatski test u CI-ju | T2 (18. 10.) |
 
 ##### Frontend
 
-| ID   | Zadatak                                                                                                                                                                                                                                             | Ovisi o         | Gotovo kad                                                               | T        |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------ | -------- |
-| F-1  | Plan prijenosa editora, journala i sinkronizacije (samo čitanje)                                                                                                                                                                                    |                 | Plan poslan orkestratoru                                                 | T1       |
-| F-2  | M0.3a prijenos `src/domain/sync`, `document`, `diff`, `serverSync`                                                                                                                                                                                  | P-1, F-1        | Isti broj testova kao u izvoru                                           | T1 do T2 |
-| F-3  | M0.3b editor (Tiptap), journal (Dexie) i klijent sinkronizacije s testovima; adapteri prema Supabaseu zamijenjeni sučeljem                                                                                                                          | F-2             | Isti broj testova kao u izvoru                                           | T2       |
-| F-4  | Ljuska aplikacije po odobrenom dizajnu: tokeni, raspored, navigacija, tekstovi u ključevima (hr; D-84, uz dopunu D-70 od 11. 10. 2026.)                                                                                                             | P-1, D-2        | Snimke zaslona odgovaraju odobrenom dizajnu; axe bez kritičnih nalaza    | T2       |
-| F-5  | Ekran "demo prijava" i odjava; odjava uvijek zatvara sesiju, a nepredani zapis ostaje vezan uz studenta i nastavlja se pri njegovoj ponovnoj prijavi (D-118); druga osoba ne vidi journal prethodnog korisnika                                      | B-6, F-4        | E2E: prijava, odjava s nesinkroniziranim promjenama, prijava druge osobe | T2 do T3 |
-| F-6  | Nastavnik: stvaranje kolegija i zadatka s obaviješću S3 i popisom dopuštenih i zabranjenih uporaba iz FPZG čl. 8                                                                                                                                    | B-7, F-4        | E2E: nastavnik stvara zadatak                                            | T3       |
-| F-7  | Student: upis kodom, prvi ekran zadatka (obavijest i čl. 8), potvrda; prije potvrde nema slanja evidencije                                                                                                                                          | B-7, F-4        | E2E; test da prije potvrde ništa ne ide na poslužitelj                   | T3       |
-| F-8  | Editor u aplikaciji: naslovi, citat i bibliografija u FPZG stilu (osnovno; u demou običan tekst, bez novog čvora u shemi, D-98 dopuna), stanja spremanja "spremljeno na uređaju" i "spremljeno na poslužitelju", rad bez mreže i povratak s oznakom | F-3, B-8, K-2   | E2E: prekid mreže, nastavak, ništa izgubljeno, offline oznaka ostaje     | T3       |
-| F-9  | Nastavnički pogled na rad u nastajanju i komentar uz odlomak                                                                                                                                                                                        | B-10, B-11, F-4 | E2E: komentar stiže studentu                                             | T3 do T4 |
-| F-10 | Predaja, potvrda i sažetak procesa (isti prikaz za oba)                                                                                                                                                                                             | B-12, B-13      | E2E: predaja, potvrda, isti sažetak                                      | T4       |
-| F-11 | Brz put za nastavnika (D-80): tekst rada, četiri retka, stanje zapisa, sortiranje po prezimenu                                                                                                                                                      | B-11, F-9       | E2E; nema sortiranja po brojevima                                        | T4       |
+| ID | Zadatak | Ovisi o | Gotovo kad | T |
+| --- | --- | --- | --- | --- |
+| F-1 | Plan prijenosa editora, journala i sinkronizacije (samo čitanje) | | Plan poslan orkestratoru | T1 |
+| F-2 | M0.3a prijenos `src/domain/sync`, `document`, `diff`, `serverSync` | P-1, F-1 | Isti broj testova kao u izvoru | T1 do T2 |
+| F-3 | M0.3b editor (Tiptap), journal (Dexie) i klijent sinkronizacije s testovima; adapteri prema Supabaseu zamijenjeni sučeljem | F-2 | Isti broj testova kao u izvoru | T2 |
+| F-4 | Ljuska aplikacije po odobrenom dizajnu: tokeni, raspored, navigacija, tekstovi u ključevima (hr; D-84, uz dopunu D-70 od 11. 10. 2026.) | P-1, D-2 | Snimke zaslona odgovaraju odobrenom dizajnu; axe bez kritičnih nalaza | T2 |
+| F-5 | Ekran "demo prijava" i odjava; odjava uvijek zatvara sesiju, a nepredani zapis ostaje vezan uz studenta i nastavlja se pri njegovoj ponovnoj prijavi (D-118); druga osoba ne vidi journal prethodnog korisnika | B-6, F-4 | E2E: prijava, odjava s nesinkroniziranim promjenama, prijava druge osobe | T2 do T3 |
+| F-6 | Nastavnik: stvaranje kolegija i zadatka s obaviješću S3 i popisom dopuštenih i zabranjenih uporaba iz FPZG čl. 8 | B-7, F-4 | E2E: nastavnik stvara zadatak | T3 |
+| F-7 | Student: upis kodom, prvi ekran zadatka (obavijest i čl. 8), potvrda; prije potvrde nema slanja evidencije | B-7, F-4 | E2E; test da prije potvrde ništa ne ide na poslužitelj | T3 |
+| F-8 | Editor u aplikaciji: naslovi, citat i bibliografija u FPZG stilu (osnovno; u demou običan tekst, bez novog čvora u shemi, D-98 dopuna), stanja spremanja "spremljeno na uređaju" i "spremljeno na poslužitelju", rad bez mreže i povratak s oznakom | F-3, B-8, K-2 | E2E: prekid mreže, nastavak, ništa izgubljeno, offline oznaka ostaje | T3 |
+| F-9 | Nastavnički pogled na rad u nastajanju i komentar uz odlomak | B-10, B-11, F-4 | E2E: komentar stiže studentu | T3 do T4 |
+| F-10 | Predaja, potvrda i sažetak procesa (isti prikaz za oba) | B-12, B-13 | E2E: predaja, potvrda, isti sažetak | T4 |
+| F-11 | Brz put za nastavnika (D-80): tekst rada, četiri retka, stanje zapisa, sortiranje po prezimenu | B-11, F-9 | E2E; nema sortiranja po brojevima | T4 |
 
 ##### Kratkotrajne sesije i Daniel
 
-| ID  | Zadatak                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Ovisi o        | Gotovo kad                                        | T   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------------------------- | --- |
-| K-1 | B0.4 prepis `docs/ARCHITECTURE.md` (sesija Arhitektura)                                                                                                                                                                                                                                                                                                                                                                                                                                         |                | PR spojen                                         | T1  |
-| D-1 | S8 dizajnerski sustav i ekrani demoa po prototipu (sesija Dizajn)                                                                                                                                                                                                                                                                                                                                                                                                                               |                | Design artifact objavljen                         | T1  |
-| D-2 | Daniel komentira dizajn; Dizajn sesija ispravlja; Daniel odobrava                                                                                                                                                                                                                                                                                                                                                                                                                               | D-1            | Daniel napiše "odobreno"                          | T1  |
-| K-2 | Citatni stil (D-83): FPZG stil kopiran iz Lekte (`katedra-lite/references/fakulteti/fpzg.json`, `fpzg-diplomski/references/stranice-i-izvori.md`) u konfiguracijsku datoteku Ductusa; čista funkcija za citat u tekstu i bibliografiju                                                                                                                                                                                                                                                          | P-1            | Testovi s primjerima iz Lekte zeleni              | T2  |
-| K-3 | Izmišljeni podaci demoa: fakultet, kolegij, zadatak, nastavnik, dva studenta, i dvije povijesti koje Ductus ne može razlikovati (samostalan uvezeni tekst i postupno pretipkan tuđi tekst) s objašnjenjem granica zapisa (D-80 točka 3)                                                                                                                                                                                                                                                         | B-7, B-8       | Skripta puni bazu; nijedan stvarni osobni podatak | T3  |
-| K-4 | E2E prolaz demoa 1 do 5 kao jedan Playwright test s videom. Nastaje u T2 s prvim korakom i raste postupno (§7 t. 2); završni rok ostaje T4. Do 1. 11. obvezan je samo na Chromiumu; Firefox i WebKit su informativni (D-98 dopuna)                                                                                                                                                                                                                                                              | F-10, P-5, K-3 | Zelen u CI-ju; video priložen                     | T4  |
-| D-3 | Proba demoa u subotu 31. 10.: Daniel prolazi demo sam, zapisuje primjedbe. Prijava ne stvara ulogu nastavnika: `pnpm local:up` prije pokretanja aplikacije daje je samo računu `Demo nastavnik` (`db/local/demo-k3.sql`, ista dodjela kao `db/local/provision-demo-teacher.sql`). Nakon `pnpm local:prepare` i prve prijave računa ulogu daje `node scripts/local/provision-teacher.mjs` (za `Demo nastavnica` s argumentom `demo-teacher-2`) ili `pnpm local:bootstrap-accounts` za oba računa | K-4, P-7       | Primjedbe poslane orkestratoru                    | T4  |
-| D-4 | Snimka prolaza 1 do 5 za sastanak                                                                                                                                                                                                                                                                                                                                                                                                                                                               | D-3            | Snimka postoji                                    | T4  |
+| ID | Zadatak | Ovisi o | Gotovo kad | T |
+| --- | --- | --- | --- | --- |
+| K-1 | B0.4 prepis `docs/ARCHITECTURE.md` (sesija Arhitektura) | | PR spojen | T1 |
+| D-1 | S8 dizajnerski sustav i ekrani demoa po prototipu (sesija Dizajn) | | Design artifact objavljen | T1 |
+| D-2 | Daniel komentira dizajn; Dizajn sesija ispravlja; Daniel odobrava | D-1 | Daniel napiše "odobreno" | T1 |
+| K-2 | Citatni stil (D-83): FPZG stil kopiran iz Lekte (`katedra-lite/references/fakulteti/fpzg.json`, `fpzg-diplomski/references/stranice-i-izvori.md`) u konfiguracijsku datoteku Ductusa; čista funkcija za citat u tekstu i bibliografiju | P-1 | Testovi s primjerima iz Lekte zeleni | T2 |
+| K-3 | Izmišljeni podaci demoa: fakultet, kolegij, zadatak, nastavnik, dva studenta, i dvije povijesti koje Ductus ne može razlikovati (samostalan uvezeni tekst i postupno pretipkan tuđi tekst) s objašnjenjem granica zapisa (D-80 točka 3) | B-7, B-8 | Skripta puni bazu; nijedan stvarni osobni podatak | T3 |
+| K-4 | E2E prolaz demoa 1 do 5 kao jedan Playwright test s videom. Nastaje u T2 s prvim korakom i raste postupno (§7 t. 2); završni rok ostaje T4. Do 1. 11. obvezan je samo na Chromiumu; Firefox i WebKit su informativni (D-98 dopuna) | F-10, P-5, K-3 | Zelen u CI-ju; video priložen | T4 |
+| D-3 | Proba demoa u subotu 31. 10.: Daniel prolazi demo sam, zapisuje primjedbe. Prijava ne stvara ulogu nastavnika: `pnpm local:up` prije pokretanja aplikacije daje je samo računu `Demo nastavnik` (`db/local/demo-k3.sql`, ista dodjela kao `db/local/provision-demo-teacher.sql`). Nakon `pnpm local:prepare` i prve prijave računa ulogu daje `node scripts/local/provision-teacher.mjs` (za `Demo nastavnica` s argumentom `demo-teacher-2`) ili `pnpm local:bootstrap-accounts` za oba računa | K-4, P-7 | Primjedbe poslane orkestratoru | T4 |
+| D-4 | Snimka prolaza 1 do 5 za sastanak | D-3 | Snimka postoji | T4 |
 
 #### 5. Rezovi ako se kasni
 
@@ -2372,15 +2378,15 @@ Ne režu se: rekonstrukcija i blokada nepodudarne predaje, isti sažetak za oba,
 
 Detaljan plan faze nastaje tek kad je okidač ispunjen; do tada vrijedi tablica faza iz `PROGRAM.md`.
 
-| Faza                                                                            | Okidač za detaljan plan                                                                                               |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| M1 AAI                                                                          | FPZG ovlasti Daniela za AAI@EduHr Lab (nakon demoa)                                                                   |
-| M2 ostatak (komentor, povjerenstvo, pravno zadržavanje, jezik rada, mentorstvo) | Demo spojen; D-16 potvrđen                                                                                            |
-| M3 ostatak (lijepljenje s oznakom, vrsta dokaza, spike programskog unosa D-54)  | Demo spojen; B0.2 izmjeren                                                                                            |
-| M4 Lekta paket                                                                  | Odluka o licenci Lekte                                                                                                |
-| M5 do M7 ostatak                                                                | Demo spojen i Danielove primjedbe s probe; D-34 za izravne izmjene                                                    |
-| M10 Podaci                                                                      | D-30 (rokovi čuvanja) od FPZG-a                                                                                       |
-| M11 GO uvjeti                                                                   | dio D-08 o dobavljačima i trošku potvrđen nakon B0.1 (i B0.2, odnos nije odlučen; vidi `STATE.md`); računi dobavljača |
+| Faza | Okidač za detaljan plan |
+| --- | --- |
+| M1 AAI | FPZG ovlasti Daniela za AAI@EduHr Lab (nakon demoa) |
+| M2 ostatak (komentor, povjerenstvo, pravno zadržavanje, jezik rada, mentorstvo) | Demo spojen; D-16 potvrđen |
+| M3 ostatak (lijepljenje s oznakom, vrsta dokaza, spike programskog unosa D-54) | Demo spojen; B0.2 izmjeren |
+| M4 Lekta paket | Odluka o licenci Lekte |
+| M5 do M7 ostatak | Demo spojen i Danielove primjedbe s probe; D-34 za izravne izmjene |
+| M10 Podaci | D-30 (rokovi čuvanja) od FPZG-a |
+| M11 GO uvjeti | dio D-08 o dobavljačima i trošku potvrđen nakon B0.1 (i B0.2, odnos nije odlučen; vidi `STATE.md`); računi dobavljača |
 
 #### 7. Kritični put i rezerva [ODLUČENO D-98]
 
@@ -2402,6 +2408,7 @@ Potvrđeno 10. 10. 2026. (Daniel). Dopunjuje §3 do §5; gdje se razlikuju (K-4 
    - **Rekonstrukcija:** B-12 (§4), BACKEND §4.6 i ARCHITECTURE §6 t. 3 traže rekonstrukciju u workeru. U demou se izvodi u web procesu.
 
    Odstupanje ne vrijedi ni za jedno okruženje sa stvarnim podacima. BACKEND i ARCHITECTURE se zbog njega ne mijenjaju i ostaju mjerodavni za sve osim ovog demoa; brava koja sprječava razvojni potpisnik u produkciji (ARCHITECTURE §8 i §9) ostaje. PR koji provodi t. 4 otvara se kao `Risk: critical` (`docs/ENGINEERING_SYSTEM.md` §5: potpisi, rekonstrukcija, predaja).
+
 
 ### Program proizvoda i programske obveze
 
@@ -2429,21 +2436,21 @@ Paralelno s fazama teče tvoj red (`STATE.md`, Owner queue): Srce, FPZG, pravni 
 
 Backend (hosting, prijava, evidencija, korijen i žig, operacije) razrađen je u `docs/BACKEND.md` §8 kao okomiti rez kroz ove faze; dodatak realno 18 do 25 večeri (zaseban red u valu 1) uz spikeove B0.1 i B0.2 prije M2.
 
-| Faza                                                    | Sadržaj                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Izlazni kriterij                                                                                                                                                                                                                                                                                                                                                                                                                | Procjena                       |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **M0 Temelj**                                           | Prijenos jezgre iz `pisac-editor` s testovima; CI (lint, typecheck, unit, property, E2E, axe, Gitleaks, zizmor, Semgrep, OSV); lefthook; `docker compose` okruženje (Postgres, S3-kompatibilna pohrana, Mailpit, lažni OIDC; MinIO više nema sliku, lokalno RustFS) u CI-ju; kod iza sučelja dok dio D-08 o dobavljačima i trošku nije potvrđen                                                                                                                                   | Svi preneseni testovi zeleni; za svaki neprenesen izvorni test zapisan Ductus test koji ga pokriva, a nepokriveno vraćeno kao test (odluka vlasnika 31. 10. 2026., #87 c.6547174354); CI zelen na `main`                                                                                                                                                                                                                        | 2 do 3                         |
-| **M1 AAI spike**                                        | Prijava preko AAI@EduHr Laba kroz vlastiti OIDC klijent (D-73); provjera da nema spajanja računa po e-pošti i mapiranja hrEdu atributa; lažni pružatelj za CI; prije prvih stvarnih računa model računa za drugog izdavatelja identiteta (D-104, `critical`, uz plan napada; D-09 nepromijenjen)                                                                                                                                                                                  | **Tehnički M1** (D-203 t. 4): spojeni koraci M1.3 do M1.8; `app_user` vezan uz `hrEduPersonUniqueID`; test dokazuje da lažni pružatelj ne postoji u produkciji; model računa nije tvrdo vezan uz jedan izdavatelj (D-104). **Prije stvarne uporabe:** prijava na Labu radi (M1.1, M1.2), uz staging M11.4 i GO uvjete. Lažni OIDC i CI nisu dokaz stvarnog AAI toka (D-203 D1)                                                  | 1 do 2                         |
-| **M2 Model fakulteta**                                  | Fakultet, kolegij, članstvo, zadatak i verzije zadatka, potvrda obavijesti, mentorstvo, uloge, pravilo AI-ja kolegija (D-52), oznaka prilagodbe (D-50); upis kodom; pgTAP matrica pristupa                                                                                                                                                                                                                                                                                        | Matrica pristupa zelena za sve kombinacije uloga, uključujući mentora                                                                                                                                                                                                                                                                                                                                                           | 4 do 5                         |
-| **M3 Evidencija**                                       | Sažimanje transakcija u odsječke s autorom, ruta `ingest`, hash lanac, kontrolne točke, praznine, offline oznaka, oznaka lijepljenja (D-43), vrsta dokaza (D-44), spike programskog unosa (D-54); journal vezan uz korisnika i brisanje sinkroniziranog zapisa pri odjavi (D-118)                                                                                                                                                                                                 | Property testovi: izmjena, brisanje ili preslagivanje odsječka ruši provjeru; idempotentno ponovno slanje; oporavak prekida između Storagea, RPC-a i potpisa; izmjereno CPU vrijeme rekonstrukcije doktorskog rada                                                                                                                                                                                                              | 7 do 9                         |
-| **M4 Lekta paket**                                      | U Lekti: generirani paket pravila po uzoru na `katedra-pack` (FPZG profili, pravila oblika, citatni stilovi, predlošci naslovne stranice). U Ductusu: učitavanje profila i provjera oblika nad dokumentom editora                                                                                                                                                                                                                                                                 | FPZG profili učitani iz paketa s verzijom; test zanošenja (drift) u Lekti; provjera oblika javlja odstupanja na testnim radovima                                                                                                                                                                                                                                                                                                | 8 do 12                        |
-| **M5 Akademski editor**                                 | Numerirani naslovi, sadržaj, naslovna stranica i izjava, fusnote, tablice, slike s opisima, popisi tablica i slika, citiranje u tekstu, bibliografija u stilu fakulteta; provjera postojanja DOI-ja i URL-a (D-48, val 2); opseg po poglavlju (D-60), bilježnica izvora (D-59, uvoz iz Zotera u valu 2), poziv na prikaze, hrvatski navodnici, traži i zamijeni, fokus                                                                                                            | Testni rad od 15.000 riječi sa svim elementima uređuje se bez gubitka; citati i bibliografija usklađeni; napredak studenta iz verzija (D-63)                                                                                                                                                                                                                                                                                    | 19 do 26                       |
-| **M6 Suradnja**                                         | Prikaz uživo za nastavnika (kanal zadnjeg stanja po D-142, `docs/BACKEND.md` §4.12; polling iz D-74 vrijedi samo za obavijesti), komentari vezani uz odlomak, prijedlozi izmjena, izravne izmjene s pripisivanjem, pravilo D-34; val 2: zahtjev za doradu (D-45), odgođeno objavljivanje (D-51), konzultacije (D-47)                                                                                                                                                              | Komentar i prijedlog stižu studentu bez osvježavanja; svaka izmjena nastavnika pripisana u evidenciji; nema izgubljenih promjena kad oboje rade; izmjena prihvaćenog odlomka ponovno otvara pregled                                                                                                                                                                                                                             | 17 do 24                       |
-| **M7 Predaja i sažetak**                                | Obavijest (S3), ciklusi verzija, pregled prije predaje, zamrzavanje, rekonstrukcija, potvrda, sažetak procesa, usporedba verzija, produljenje roka, izjava po FPZG čl. 9 i 15 (D-40); val 2: prenosiv zapis s QR provjerom (D-49)                                                                                                                                                                                                                                                 | Rekonstrukcija podudarna na svim scenarijima, uključujući prazninu; nepodudarnost blokira predaju; student i nastavnik vide isti sažetak; nema zabranjenih riječi; rok testiran preko promjene sata; izjava sadrži sve zabilježene stavke; karta podrijetla bez zbroja (D-57); otvorena mjesta (D-61) i pravila zadatka s kontrolnim popisom (D-62) bez oznaka prolaza; valovi M7.Z1 i M7.Z2 u odjeljku „Valovi M7” (D-263 Q15) | 15 do 20                       |
-| **M8 Uvoz i izvoz**                                     | Uvoz DOCX-a i PDF-a kao označen događaj; izvoz DOCX-a, PDF-a i PDF/A u obliku fakulteta (izvoz u valu 1, D-203 A3)                                                                                                                                                                                                                                                                                                                                                                | Uvoz označen u evidenciji; izvoz DOCX, PDF i PDF/A prihvaćen prije nastavnog pilota; PDF/A-2u prolazi provjeru veraPDF-om (`isCompliant="true"`), a obični PDF nije označen kao PDF/A (D-206, D-203 A3); izvezeni DOCX prolazi Lektinu provjeru za FPZG profil kad stigne licenca Lekte, a do tada izvoz radi bez provjere oblika (D-203 t. 2)                                                                                  | 6 do 8; PDF/A nije procijenjen |
-| **M9 AI pomoćnik** (u pilotu, D-194; mijenja D-77)      | Pristup pomoćniku preko računa kod pružatelja (model računa i pružatelj su otvoreni, D-194 t. 6 i 7), popis dopuštenih pružatelja po fakultetu i zadatku bez kineskih pružatelja i modela (D-194 t. 2), sve namjene iz D-64 uključujući transkripciju i alate pružatelja (D-194 t. 4), prenošenje teksta s bilježenjem pružatelja, modela i svrhe (D-42), razgovori uz izjavu (D-41), zaštita sadržaja pri lekturi (D-46), poznato podrijetlo i podudaranje s AI odgovorom (D-58) | Nedopušten pružatelj nije dostupan; svako prenošenje u evidenciji; nepriloženi razgovori nisu vidljivi nastavniku; promijenjena brojka ili citat prikazani prije primjene; prepisan AI odgovor označen; svrhe razine 2 nedostupne dok ih nastavnik ne uključi, pomoćnik koji pita (D-64)                                                                                                                                        | 14 do 19                       |
-| **M10 Podaci**                                          | Klase podataka, brisanje po roku, izvoz za studenta i za bivšeg studenta preko referade (referada provjerava identitet, admin ustanove pokreće posao s referencom, jednokratna poveznica na 24 h; D-271 MQ02)                                                                                                                                                                                                                                                                     | Brisanje po roku testirano; lanac ostaje provjerljiv nakon brisanja sadržaja                                                                                                                                                                                                                                                                                                                                                    | 3                              |
-| **M11 GO uvjeti**                                       | Produkcijski okoliš u EU-u (D-08), staging s AAI@EduHr Labom, proba povrata iz kopije, DPIA i ugovor o obradi, obavijest o privatnosti, pristupačnost, `docs/OPERATIONS.md`                                                                                                                                                                                                                                                                                                       | Sve stavke iz tablice GO uvjeta zelene i zapisane                                                                                                                                                                                                                                                                                                                                                                               | 3 + vanjski rokovi             |
-| **M12 Pilot** (provedba pilota, ne faza razvoja; D-266) | Faza A tehnička proba, faza B nastava, faza C evaluacija                                                                                                                                                                                                                                                                                                                                                                                                                          | Pragovi korisnosti i razumijevanja iz `PRODUCT.md` §12 zapisani prije faze A (GO t. 11, Q-12 A); mjerila izmjerena i zapisana                                                                                                                                                                                                                                                                                                   | Ljetni semestar                |
+| Faza | Sadržaj | Izlazni kriterij | Procjena |
+| --- | --- | --- | --- |
+| **M0 Temelj** | Prijenos jezgre iz `pisac-editor` s testovima; CI (lint, typecheck, unit, property, E2E, axe, Gitleaks, zizmor, Semgrep, OSV); lefthook; `docker compose` okruženje (Postgres, S3-kompatibilna pohrana, Mailpit, lažni OIDC; MinIO više nema sliku, lokalno RustFS) u CI-ju; kod iza sučelja dok dio D-08 o dobavljačima i trošku nije potvrđen | Svi preneseni testovi zeleni; za svaki neprenesen izvorni test zapisan Ductus test koji ga pokriva, a nepokriveno vraćeno kao test (odluka vlasnika 31. 10. 2026., #87 c.6547174354); CI zelen na `main` | 2 do 3 |
+| **M1 AAI spike** | Prijava preko AAI@EduHr Laba kroz vlastiti OIDC klijent (D-73); provjera da nema spajanja računa po e-pošti i mapiranja hrEdu atributa; lažni pružatelj za CI; prije prvih stvarnih računa model računa za drugog izdavatelja identiteta (D-104, `critical`, uz plan napada; D-09 nepromijenjen) | **Tehnički M1** (D-203 t. 4): spojeni koraci M1.3 do M1.8; `app_user` vezan uz `hrEduPersonUniqueID`; test dokazuje da lažni pružatelj ne postoji u produkciji; model računa nije tvrdo vezan uz jedan izdavatelj (D-104). **Prije stvarne uporabe:** prijava na Labu radi (M1.1, M1.2), uz staging M11.4 i GO uvjete. Lažni OIDC i CI nisu dokaz stvarnog AAI toka (D-203 D1) | 1 do 2 |
+| **M2 Model fakulteta** | Fakultet, kolegij, članstvo, zadatak i verzije zadatka, potvrda obavijesti, mentorstvo, uloge, pravilo AI-ja kolegija (D-52), oznaka prilagodbe (D-50); upis kodom; pgTAP matrica pristupa | Matrica pristupa zelena za sve kombinacije uloga, uključujući mentora | 4 do 5 |
+| **M3 Evidencija** | Sažimanje transakcija u odsječke s autorom, ruta `ingest`, hash lanac, kontrolne točke, praznine, offline oznaka, oznaka lijepljenja (D-43), vrsta dokaza (D-44), spike programskog unosa (D-54); journal vezan uz korisnika i brisanje sinkroniziranog zapisa pri odjavi (D-118) | Property testovi: izmjena, brisanje ili preslagivanje odsječka ruši provjeru; idempotentno ponovno slanje; oporavak prekida između Storagea, RPC-a i potpisa; izmjereno CPU vrijeme rekonstrukcije doktorskog rada | 7 do 9 |
+| **M4 Lekta paket** | U Lekti: generirani paket pravila po uzoru na `katedra-pack` (FPZG profili, pravila oblika, citatni stilovi, predlošci naslovne stranice). U Ductusu: učitavanje profila i provjera oblika nad dokumentom editora | FPZG profili učitani iz paketa s verzijom; test zanošenja (drift) u Lekti; provjera oblika javlja odstupanja na testnim radovima | 8 do 12 |
+| **M5 Akademski editor** | Numerirani naslovi, sadržaj, naslovna stranica i izjava, fusnote, tablice, slike s opisima, popisi tablica i slika, citiranje u tekstu, bibliografija u stilu fakulteta; provjera postojanja DOI-ja i URL-a (D-48, val 2); opseg po poglavlju (D-60), bilježnica izvora (D-59, uvoz iz Zotera u valu 2), poziv na prikaze, hrvatski navodnici, traži i zamijeni, fokus | Testni rad od 15.000 riječi sa svim elementima uređuje se bez gubitka; citati i bibliografija usklađeni; napredak studenta iz verzija (D-63) | 19 do 26 |
+| **M6 Suradnja** | Prikaz uživo za nastavnika (kanal zadnjeg stanja po D-142, `docs/BACKEND.md` §4.12; polling iz D-74 vrijedi samo za obavijesti), komentari vezani uz odlomak, prijedlozi izmjena, izravne izmjene s pripisivanjem, pravilo D-34; val 2: zahtjev za doradu (D-45), odgođeno objavljivanje (D-51), konzultacije (D-47) | Komentar i prijedlog stižu studentu bez osvježavanja; svaka izmjena nastavnika pripisana u evidenciji; nema izgubljenih promjena kad oboje rade; izmjena prihvaćenog odlomka ponovno otvara pregled | 17 do 24 |
+| **M7 Predaja i sažetak** | Obavijest (S3), ciklusi verzija, pregled prije predaje, zamrzavanje, rekonstrukcija, potvrda, sažetak procesa, usporedba verzija, produljenje roka, izjava po FPZG čl. 9 i 15 (D-40); val 2: prenosiv zapis s QR provjerom (D-49) | Rekonstrukcija podudarna na svim scenarijima, uključujući prazninu; nepodudarnost blokira predaju; student i nastavnik vide isti sažetak; nema zabranjenih riječi; rok testiran preko promjene sata; izjava sadrži sve zabilježene stavke; karta podrijetla bez zbroja (D-57); otvorena mjesta (D-61) i pravila zadatka s kontrolnim popisom (D-62) bez oznaka prolaza; valovi M7.Z1 i M7.Z2 u odjeljku „Valovi M7” (D-263 Q15) | 15 do 20 |
+| **M8 Uvoz i izvoz** | Uvoz DOCX-a i PDF-a kao označen događaj; izvoz DOCX-a, PDF-a i PDF/A u obliku fakulteta (izvoz u valu 1, D-203 A3) | Uvoz označen u evidenciji; izvoz DOCX, PDF i PDF/A prihvaćen prije nastavnog pilota; PDF/A-2u prolazi provjeru veraPDF-om (`isCompliant="true"`), a obični PDF nije označen kao PDF/A (D-206, D-203 A3); izvezeni DOCX prolazi Lektinu provjeru za FPZG profil kad stigne licenca Lekte, a do tada izvoz radi bez provjere oblika (D-203 t. 2) | 6 do 8; PDF/A nije procijenjen |
+| **M9 AI pomoćnik** (u pilotu, D-194; mijenja D-77) | Pristup pomoćniku preko računa kod pružatelja (model računa i pružatelj su otvoreni, D-194 t. 6 i 7), popis dopuštenih pružatelja po fakultetu i zadatku bez kineskih pružatelja i modela (D-194 t. 2), sve namjene iz D-64 uključujući transkripciju i alate pružatelja (D-194 t. 4), prenošenje teksta s bilježenjem pružatelja, modela i svrhe (D-42), razgovori uz izjavu (D-41), zaštita sadržaja pri lekturi (D-46), poznato podrijetlo i podudaranje s AI odgovorom (D-58) | Nedopušten pružatelj nije dostupan; svako prenošenje u evidenciji; nepriloženi razgovori nisu vidljivi nastavniku; promijenjena brojka ili citat prikazani prije primjene; prepisan AI odgovor označen; svrhe razine 2 nedostupne dok ih nastavnik ne uključi, pomoćnik koji pita (D-64) | 14 do 19 |
+| **M10 Podaci** | Klase podataka, brisanje po roku, izvoz za studenta i za bivšeg studenta preko referade (referada provjerava identitet, admin ustanove pokreće posao s referencom, jednokratna poveznica na 24 h; D-271 MQ02) | Brisanje po roku testirano; lanac ostaje provjerljiv nakon brisanja sadržaja | 3 |
+| **M11 GO uvjeti** | Produkcijski okoliš u EU-u (D-08), staging s AAI@EduHr Labom, proba povrata iz kopije, DPIA i ugovor o obradi, obavijest o privatnosti, pristupačnost, `docs/OPERATIONS.md` | Sve stavke iz tablice GO uvjeta zelene i zapisane | 3 + vanjski rokovi |
+| **M12 Pilot** (provedba pilota, ne faza razvoja; D-266) | Faza A tehnička proba, faza B nastava, faza C evaluacija | Pragovi korisnosti i razumijevanja iz `PRODUCT.md` §12 zapisani prije faze A (GO t. 11, Q-12 A); mjerila izmjerena i zapisana | Ljetni semestar |
 
 **Zbroj prema tablici: 99 do 134 večeri** (69 do 93 prije dodataka D-40 do D-64). Procjene ovakvih projekata u pravilu se prekorače, pa je realan raspon **145 do 195 večeri**. Cijeli opseg ne stane u jedan semestar pripreme; zato vrijede valovi i kontrolna točka niže.
 
@@ -2484,13 +2491,13 @@ U pilot ulazi sve prihvaćeno (D-26, D-65), ali ne odjednom. Faze M0 do M11 iz t
 
 Od 3. 10. 2026. do 22. 2. 2027. ima 20 tjedana, od toga oko 2 tjedna blagdana. Uz prekoračenje procjena od oko 40 %:
 
-| Večeri tjedno za Ductus                               | Stvarnih večeri do 22. 2. | Nominalno (nakon prekoračenja) |
-| ----------------------------------------------------- | ------------------------- | ------------------------------ |
-| 3                                                     | oko 54                    | oko 38                         |
-| 4                                                     | oko 72                    | oko 51                         |
-| 5                                                     | oko 90                    | oko 64                         |
-| 6                                                     | oko 108                   | oko 77                         |
-| Puno radno vrijeme (oko 10 jedinica od 3 sata tjedno) | oko 180                   | oko 130                        |
+| Večeri tjedno za Ductus | Stvarnih večeri do 22. 2. | Nominalno (nakon prekoračenja) |
+| --- | --- | --- |
+| 3 | oko 54 | oko 38 |
+| 4 | oko 72 | oko 51 |
+| 5 | oko 90 | oko 64 |
+| 6 | oko 108 | oko 77 |
+| Puno radno vrijeme (oko 10 jedinica od 3 sata tjedno) | oko 180 | oko 130 |
 
 Od 3. 10. 2026. vlasnik radi na Ductusu puno radno vrijeme. Uz oko 10 jedinica tjedno (dvije dnevno, pet dana; ostalo vrijeme za druge projekte i odmor) do 22. 2. 2027. ima oko 130 nominalnih večeri, a **val 1 i val 2 zajedno traže 102 do 137 nominalnih večeri** (zbroj tablica niže, D-99). Donja granica stane uz oko 28 večeri rezerve; gornja prelazi kapacitet za oko 7. Cilj ostaje pustiti val 1 i val 2 na početku semestra, a val 3 tijekom semestra (D-36). Stane li opseg, provjerava se na kontrolnim točkama (D-100); ako val 2 kasni, pomiče se najkasnije do sredine svibnja; val 1 se zbog vala 2 ne skraćuje, nego samo rezovima iz kontrolne točke (D-100). Procjena od 10 jedinica tjedno je namjerno konzervativna: rad bez pauza ruši kvalitetu i rokove.
 
@@ -2512,37 +2519,37 @@ Radovi: podnesci i eseji. AI pomoćnik M9 ulazi u ovaj val (D-199 t. 1, zamjenju
 
 Prema D-203 (ODLUČENO 1. 11. 2026.) val 1 dobiva i: izvoz DOCX, PDF i PDF/A (A3); cijeli tok nastavničkih izmjena po D-34, bez novog modela istodobnog uređivanja (B1); puni B5 prije nastavnog pilota (C2); shemu v2 (DAN-453) i funkcije V11 koje pripadaju fazama vala 1: osnovni editor, komentari, D-34 i izvoz (D-201, D-203 t. 6). Ostale funkcije V11 idu u val 2 i 3 prema fazama M5 do M9. M2 napreduje uz sintetičke identitete, a stvarni AAI ostaje kriterij prije stvarne uporabe (D1). Retci D-203 su ispod zbroja D-99.
 
-| Dio                                       | Sadržaj                                                                                                                                                                                          | Procjena                            |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| M0, M1                                    | Temelj i AAI@EduHr (M1 ovisi o pristupu Labu Srca; do tada lažni pružatelj)                                                                                                                      | 3 do 5                              |
-| M2                                        | Model fakulteta s rupama: komentor, povjerenstvo, pravno zadržavanje, jezik rada, pravilo AI-ja kolegija, prilagodba                                                                             | 5 do 6                              |
-| M3                                        | Evidencija, oznaka lijepljenja (D-43), vrsta dokaza (D-44), spike programskog unosa (D-54), bilježenje ritma za mentorske radove ako je D-56 odobren                                             | 8 do 10                             |
-| M4 osnovno                                | Lekta paket: FPZG citatni stil, opseg, naslovna stranica                                                                                                                                         | 4 do 6                              |
-| M5 osnovno                                | Naslovi, citiranje, bibliografija, DOI i ISBN (S-08), opseg po poglavlju (D-60), pravopis po jeziku rada (S-07), navodnici, traži i zamijeni, osnovna bilježnica izvora (D-59)                   | 9 do 12                             |
-| M6 osnovno                                | Pogled na rad u nastajanju, komentari, prijedlozi                                                                                                                                                | 6 do 8                              |
-| M7 osnovno                                | Obavijest S3, predaja, rekonstrukcija, sažetak procesa, izjava D-40 s AI dijelom (D-199 t. 1), produljenje roka                                                                                  | 8 do 10                             |
-| M10 osnovno                               | Klase podataka, brisanje po roku, pravno zadržavanje (F-02)                                                                                                                                      | 2 do 3                              |
-| M11                                       | GO uvjeti, sučelje na engleskom (D-70), pristupačnost (F-03), statusna stranica (F-10)                                                                                                           | 5 do 6                              |
-| Uz to                                     | Obavijesti (N-01), podsjetnici (N-02), popis "tko treba pomoć" (N-12), uvodni vodič (S-11)                                                                                                       | 6 do 8                              |
-| Backend dodatak                           | Okomiti rez kroz faze vala 1 prema `docs/BACKEND.md` §8 (D-99)                                                                                                                                   | 18 do 25                            |
-| **Ukupno**                                |                                                                                                                                                                                                  | **74 do 99**                        |
-| M6 nastavničke izmjene (D-203 B1)         | Prijedlog koji primjenjuje studentov klijent, jedan pisac (D-34): ovlasti, pripisivanje, povijest, prikaz, scenariji sukoba i neuspjeha; dijelom se preklapa s „prijedlozima” u retku M6 osnovno | 3 do 4, NEPROVJERENO                |
-| M8 izvoz (D-203 A3)                       | Izvoz DOCX, PDF i PDF/A; provjera oblika FPZG-a kad stigne licenca Lekte (t. 2)                                                                                                                  | 3 do 5, NEPROVJERENO                |
-| B5 (D-203 C2)                             | Dnevni korijen i žig, CLI verifikator (D-72), seli iz vala 2                                                                                                                                     | 4 do 5                              |
-| Shema v2 i V11 vala 1 (D-201, D-203 t. 6) | Proširenje kanonske sheme (DAN-453) i funkcije V11 za osnovni editor, komentare, D-34 i izvoz                                                                                                    | nije procijenjeno                   |
-| **Ukupno s D-203**                        | Bez M9, dijela M8 iz D-198 i AI dijela izjave (D-199 t. 6)                                                                                                                                       | **84 do 113** uz neprocijenjeni V11 |
+| Dio | Sadržaj | Procjena |
+| --- | --- | --- |
+| M0, M1 | Temelj i AAI@EduHr (M1 ovisi o pristupu Labu Srca; do tada lažni pružatelj) | 3 do 5 |
+| M2 | Model fakulteta s rupama: komentor, povjerenstvo, pravno zadržavanje, jezik rada, pravilo AI-ja kolegija, prilagodba | 5 do 6 |
+| M3 | Evidencija, oznaka lijepljenja (D-43), vrsta dokaza (D-44), spike programskog unosa (D-54), bilježenje ritma za mentorske radove ako je D-56 odobren | 8 do 10 |
+| M4 osnovno | Lekta paket: FPZG citatni stil, opseg, naslovna stranica | 4 do 6 |
+| M5 osnovno | Naslovi, citiranje, bibliografija, DOI i ISBN (S-08), opseg po poglavlju (D-60), pravopis po jeziku rada (S-07), navodnici, traži i zamijeni, osnovna bilježnica izvora (D-59) | 9 do 12 |
+| M6 osnovno | Pogled na rad u nastajanju, komentari, prijedlozi | 6 do 8 |
+| M7 osnovno | Obavijest S3, predaja, rekonstrukcija, sažetak procesa, izjava D-40 s AI dijelom (D-199 t. 1), produljenje roka | 8 do 10 |
+| M10 osnovno | Klase podataka, brisanje po roku, pravno zadržavanje (F-02) | 2 do 3 |
+| M11 | GO uvjeti, sučelje na engleskom (D-70), pristupačnost (F-03), statusna stranica (F-10) | 5 do 6 |
+| Uz to | Obavijesti (N-01), podsjetnici (N-02), popis "tko treba pomoć" (N-12), uvodni vodič (S-11) | 6 do 8 |
+| Backend dodatak | Okomiti rez kroz faze vala 1 prema `docs/BACKEND.md` §8 (D-99) | 18 do 25 |
+| **Ukupno** | | **74 do 99** |
+| M6 nastavničke izmjene (D-203 B1) | Prijedlog koji primjenjuje studentov klijent, jedan pisac (D-34): ovlasti, pripisivanje, povijest, prikaz, scenariji sukoba i neuspjeha; dijelom se preklapa s „prijedlozima” u retku M6 osnovno | 3 do 4, NEPROVJERENO |
+| M8 izvoz (D-203 A3) | Izvoz DOCX, PDF i PDF/A; provjera oblika FPZG-a kad stigne licenca Lekte (t. 2) | 3 do 5, NEPROVJERENO |
+| B5 (D-203 C2) | Dnevni korijen i žig, CLI verifikator (D-72), seli iz vala 2 | 4 do 5 |
+| Shema v2 i V11 vala 1 (D-201, D-203 t. 6) | Proširenje kanonske sheme (DAN-453) i funkcije V11 za osnovni editor, komentare, D-34 i izvoz | nije procijenjeno |
+| **Ukupno s D-203** | Bez M9, dijela M8 iz D-198 i AI dijela izjave (D-199 t. 6) | **84 do 113** uz neprocijenjeni V11 |
 
 ##### Val 2: proširenje seminarskih radova (cilj: početak semestra; najkasnije sredina svibnja 2027.)
 
-| Dio                     | Sadržaj                                                                                                                                                                           | Procjena                                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| M5 ostatak              | Fusnote, tablice, slike, pozivi na prikaze                                                                                                                                        | 5 do 7                                      |
-| M6 ostatak              | Zahtjev za doradu (D-45), odgođeno objavljivanje (D-51), banka komentara (N-03), promjene od zadnjeg pregleda (N-05); izravne izmjene (D-21) po toku D-34 sele u val 1 (D-203 B1) | 5 do 8, NEPROVJERENO (prije D-203: 8 do 11) |
-| M7 ostatak              | Karta podrijetla (D-57), otvorena mjesta (D-61), pravila zadatka i kontrolni popis (D-62)                                                                                         | 5 do 7                                      |
-| M8                      | Uvoz DOCX-a; izvoz seli u val 1 (D-203 A3)                                                                                                                                        | 2 do 3, NEPROVJERENO                        |
-| Izjava o vanjskom AI-ju | Ispis razgovora iz vanjskog alata uz izjavu po čl. 15, kao izjavljeno (D-77)                                                                                                      | 2 do 3                                      |
-| B5                      | Seli u val 1 (D-203 C2)                                                                                                                                                           | 0                                           |
-| **Ukupno**              |                                                                                                                                                                                   | **19 do 28** (prije D-203: 28 do 38)        |
+| Dio | Sadržaj | Procjena |
+| --- | --- | --- |
+| M5 ostatak | Fusnote, tablice, slike, pozivi na prikaze | 5 do 7 |
+| M6 ostatak | Zahtjev za doradu (D-45), odgođeno objavljivanje (D-51), banka komentara (N-03), promjene od zadnjeg pregleda (N-05); izravne izmjene (D-21) po toku D-34 sele u val 1 (D-203 B1) | 5 do 8, NEPROVJERENO (prije D-203: 8 do 11) |
+| M7 ostatak | Karta podrijetla (D-57), otvorena mjesta (D-61), pravila zadatka i kontrolni popis (D-62) | 5 do 7 |
+| M8 | Uvoz DOCX-a; izvoz seli u val 1 (D-203 A3) | 2 do 3, NEPROVJERENO |
+| Izjava o vanjskom AI-ju | Ispis razgovora iz vanjskog alata uz izjavu po čl. 15, kao izjavljeno (D-77) | 2 do 3 |
+| B5 | Seli u val 1 (D-203 C2) | 0 |
+| **Ukupno** | | **19 do 28** (prije D-203: 28 do 38) |
 
 Izvan pilota (3. 10. 2026.): grupni radovi S-12 (D-78). Ugrađeni AI pomoćnik M9 ušao je u pilot 31. 10. 2026. (D-194, mijenja D-77); procjena tjedana za M9 u tablici faza gore nije uključena u zbroj iznad. M9 ide u val 1 (D-199 t. 1), pa zbroj vala 1 i oba vala zajedno bez M9 podcjenjuje potreban rad.
 
@@ -2556,11 +2563,11 @@ Konzultacije (D-47), ključni rokovi (N-07), komentor i povjerenstvo u sučelju 
 
 Ovaj odjeljak zapisuje D-263 Q15 (#87 c.6622685877), koji traži usklađenje `docs/PROGRAM.md` zasebnim PR-om (M7.0a), i tumačenje D-266 t. 7 (#87 c.6639423372). Koraci i potkoraci (P01, P02 …) su oni iz `docs/PROGRAM-RAZRADA.md`, odjeljak M7, kako ih navodi D-263. Procjene u retcima „M7 osnovno” i „M7 ostatak” ostaju iz D-99 i ovdje se ne mijenjaju.
 
-| Dio         | Sadržaj (riječi iz D-263 Q15)                                                                  | Rok                          | Izvor     |
-| ----------- | ---------------------------------------------------------------------------------------------- | ---------------------------- | --------- |
-| M7.Z1       | M7.1-P01 do P06, M7.2, M7.3, M7.4, M7.5 i M7.9-P01                                             | 5. 2. 2027.                  | D-263 Q15 |
-| M7.Z2       | Runde, usporedba, karta podrijetla, kontrolni popis, dopune, prenosivi zapis, M7.9-P02 i M7.13 | nije zapisan                 | D-263 Q15 |
-| Nakon M8/M9 | M7.9-P02 i M7.10-P03                                                                           | „nakon M8/M9 (15. 2. 2027.)” | D-263 Q15 |
+| Dio | Sadržaj (riječi iz D-263 Q15) | Rok | Izvor |
+| --- | --- | --- | --- |
+| M7.Z1 | M7.1-P01 do P06, M7.2, M7.3, M7.4, M7.5 i M7.9-P01 | 5. 2. 2027. | D-263 Q15 |
+| M7.Z2 | Runde, usporedba, karta podrijetla, kontrolni popis, dopune, prenosivi zapis, M7.9-P02 i M7.13 | nije zapisan | D-263 Q15 |
+| Nakon M8/M9 | M7.9-P02 i M7.10-P03 | „nakon M8/M9 (15. 2. 2027.)” | D-263 Q15 |
 
 - **Koraci M7.Z2 po nazivu:** D-263 Q15 navodi dijelove M7.Z2 nazivom, a izričito imenuje samo M7.7 (uz SUB-LOCAL). Runde su M7.1-P07 (D-263 Q08). U tablici koraka M7 u `docs/PROGRAM-RAZRADA.md` nazive nose M7.6 (usporedba), M7.7 (karta podrijetla, kontrolni popis), M7.8 (dopuna) i M7.10 (prenosiv zapis).
 - **Izjava u M7.Z1:** do 5. 2. 2027. izjava (M7.5) ima AI odjeljak nad zatvorenim formatom priloga. M9.5 dolazi nakon M7.5, do 15. 2. 2027., i daje proizvođača priloga i integracijski dokaz; izjava bez AI dijela ne vraća se u val 1 (D-266 t. 7). Popis dopuštenih vanjskih formata zatvara se prije koda (M7.5-P02, D-263 Q22).
@@ -2633,26 +2640,27 @@ Prijedlozi orkestratora po vlasnikovoj delegaciji (#87 c.6623105181, c.662344580
 
 Jedan crveni uvjet znači da val ne kreće.
 
-| Područje      | Uvjet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Dokaz                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Tehnički      | Prvi demo iz `PRODUCT.md` §13 prolazi za radove tog vala                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Snimljen prolaz i zeleni E2E na stagingu                                |
-| Tehnički      | Matrica pristupa i testovi između fakulteta zeleni                                                                                                                                                                                                                                                                                                                                                                                                                                                        | pgTAP izvještaj                                                         |
-| Tehnički      | Proba povrata iz kopije uspješna                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Zapis probe s datumom                                                   |
-| Tehnički      | Produkcijska konfiguracija nema lažnog OIDC pružatelja                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Test u CI-ju                                                            |
-| Tehnički      | Nema zabranjenih riječi u sučelju                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Automatska provjera u CI-ju                                             |
-| Pristupačnost | axe bez kritičnih nalaza; svi tokovi tipkovnicom; editor i pregled prije predaje provjereni čitačem zaslona                                                                                                                                                                                                                                                                                                                                                                                               | Izvještaj axe i zapis ručne provjere                                    |
-| Podatkovni    | DPIA i ugovor o obradi s FPZG-om potpisani; DPIA i pravno mišljenje (D-55, D-151) pokrivaju i AI pomoćnika, uključujući transkripciju i alate pružatelja (D-194 t. 4 i 5). Ugovor potpisuje pravna osoba operatera, koju vlasnik osniva odmah, usporedno s FPZG-om (D-266, Q-1 B; mijenja D-194 t. 3); ugovor o obradi potpisuje se prije tehničke probe, koja počinje kad je kod vala 1 spreman 22. 2. 2027. (D-203 E3), i ovisi o oboje; do tada pristup operatera ima samo vlasnikov račun (D-264 Q13) | Dokumenti                                                               |
-| Podatkovni    | Rokovi čuvanja i dopušteni AI pružatelji potvrđeni                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `DECISIONS.md` D-30, D-35                                               |
-| Podatkovni    | Obavijest o privatnosti objavljena i ugrađena u obavijest o zadatku                                                                                                                                                                                                                                                                                                                                                                                                                                       | Tekst obavijesti                                                        |
-| Nastavni      | Koordinator na FPZG-u, odabrani kolegiji i mentori, odluka o obveznosti (D-04)                                                                                                                                                                                                                                                                                                                                                                                                                            | Zapis dogovora                                                          |
-| Nastavni      | Pragovi za korisnost i razumijevanje iz `PRODUCT.md` §12 definirani prije tehničke probe (faza A; D-266, Q-12 A)                                                                                                                                                                                                                                                                                                                                                                                          | Zapis u `DECISIONS.md`                                                  |
-| Operativni    | Kontakt za podršku, postupak incidenta, imenovana osoba na FPZG-u koja smije zaustaviti pilot                                                                                                                                                                                                                                                                                                                                                                                                             | `docs/OPERATIONS.md` (nastaje u M11)                                    |
-| Operativni    | Registracija u AAI@EduHr Registru resursa odobrena                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Potvrda Srca                                                            |
-| Podatkovni    | Popis podizvršitelja (hosting, baza, objekti, KMS, e-pošta, praćenje grešaka, AI pružatelji koje ustanova odobri, GitHub ako objavljuje korijene) s DPA-ima priložen ugovoru s FPZG-om (čl. 28(2) GDPR-a)                                                                                                                                                                                                                                                                                                 | Dokument                                                                |
-| Tehnički      | Proba povrata baze **i** bucketa uspješna; sintetički prolaz evidencije na stagingu koji koristi iste vrste resursa kao produkcija                                                                                                                                                                                                                                                                                                                                                                        | Zapis probe                                                             |
-| Sigurnosni    | Kritični nalazi vanjskog pentesta zatvoreni i potvrđeni ponovnim testom; trošak pentesta unutar stropa koji odredi vlasnik (D-266, Q-7 A)                                                                                                                                                                                                                                                                                                                                                                 | Izvještaj ponovnog testa; vlasnikova potvrda da je trošak unutar stropa |
+| Područje | Uvjet | Dokaz |
+| --- | --- | --- |
+| Tehnički | Prvi demo iz `PRODUCT.md` §13 prolazi za radove tog vala | Snimljen prolaz i zeleni E2E na stagingu |
+| Tehnički | Matrica pristupa i testovi između fakulteta zeleni | pgTAP izvještaj |
+| Tehnički | Proba povrata iz kopije uspješna | Zapis probe s datumom |
+| Tehnički | Produkcijska konfiguracija nema lažnog OIDC pružatelja | Test u CI-ju |
+| Tehnički | Nema zabranjenih riječi u sučelju | Automatska provjera u CI-ju |
+| Pristupačnost | axe bez kritičnih nalaza; svi tokovi tipkovnicom; editor i pregled prije predaje provjereni čitačem zaslona | Izvještaj axe i zapis ručne provjere |
+| Podatkovni | DPIA i ugovor o obradi s FPZG-om potpisani; DPIA i pravno mišljenje (D-55, D-151) pokrivaju i AI pomoćnika, uključujući transkripciju i alate pružatelja (D-194 t. 4 i 5). Ugovor potpisuje pravna osoba operatera, koju vlasnik osniva odmah, usporedno s FPZG-om (D-266, Q-1 B; mijenja D-194 t. 3); ugovor o obradi potpisuje se prije tehničke probe, koja počinje kad je kod vala 1 spreman 22. 2. 2027. (D-203 E3), i ovisi o oboje; do tada pristup operatera ima samo vlasnikov račun (D-264 Q13) | Dokumenti |
+| Podatkovni | Rokovi čuvanja i dopušteni AI pružatelji potvrđeni | `DECISIONS.md` D-30, D-35 |
+| Podatkovni | Obavijest o privatnosti objavljena i ugrađena u obavijest o zadatku | Tekst obavijesti |
+| Nastavni | Koordinator na FPZG-u, odabrani kolegiji i mentori, odluka o obveznosti (D-04) | Zapis dogovora |
+| Nastavni | Pragovi za korisnost i razumijevanje iz `PRODUCT.md` §12 definirani prije tehničke probe (faza A; D-266, Q-12 A) | Zapis u `DECISIONS.md` |
+| Operativni | Kontakt za podršku, postupak incidenta, imenovana osoba na FPZG-u koja smije zaustaviti pilot | `docs/OPERATIONS.md` (nastaje u M11) |
+| Operativni | Registracija u AAI@EduHr Registru resursa odobrena | Potvrda Srca |
+| Podatkovni | Popis podizvršitelja (hosting, baza, objekti, KMS, e-pošta, praćenje grešaka, AI pružatelji koje ustanova odobri, GitHub ako objavljuje korijene) s DPA-ima priložen ugovoru s FPZG-om (čl. 28(2) GDPR-a) | Dokument |
+| Tehnički | Proba povrata baze **i** bucketa uspješna; sintetički prolaz evidencije na stagingu koji koristi iste vrste resursa kao produkcija | Zapis probe |
+| Sigurnosni | Kritični nalazi vanjskog pentesta zatvoreni i potvrđeni ponovnim testom; trošak pentesta unutar stropa koji odredi vlasnik (D-266, Q-7 A) | Izvještaj ponovnog testa; vlasnikova potvrda da je trošak unutar stropa |
 
 Pilot se zaustavlja ako se dogodi kritičan neovlašten pristup, gubitak rada ili lažan status (npr. "spremljeno" a nije).
+
 
 ### Funkcionalne cjeline M0–M11
 
@@ -2683,15 +2691,15 @@ M0 → M1 (čeka AAI@EduHr Lab) i M2 → M3 → M5 i M6 → M7 → M4 (čeka lic
 
 **Gotovo na mainu:** CI u `.github/workflows/ci.yml` (lint, typecheck, unit, property, integration, pgTAP preko `pg_prove`, E2E i E2E prijave); sigurnosni posao (Gitleaks nad cijelom poviješću, zizmor, Semgrep, OSV); axe (`e2e/accessibility.spec.ts`); `lefthook.yml`; `compose.yaml` (Postgres 17, RustFS, Mailpit, lažni OIDC); dbmate s 52 migracije i 50 pgTAP datoteka; provjera zabranjenih izraza u CI-ju. Provjereno na `main` `34b94dab` (1. 11. 2026.): E2E na Chromiumu, Firefoxu i WebKitu dio je obveznog statusa „Local stack (compose.yaml)” na svakom PR-u (#1097, M0.3); skener zabranjenih izraza čita i tekst svojstava izvan JSX-a (#552, `247efb68`, M0.4); testovi pravila hookova prolaze na Linuxu u obveznom poslu „Lint, typecheck, test and build” (DAN-136, M0.7). **Djelomično:** kriterij „isti broj prenesenih testova kao u izvoru” vlasnik je zamijenio dokumentiranom jednakovrijednošću (#87 c.6547174354); karta je u `docs/engineering/prijenos-jezgre-M0.1-jednakovrijednost.md`, a od 273 izvorna slučaja 124 su pokrivena Ductus testom, 149 nema koda u Ductusu (dizajn je drukčiji ili funkcija još nije izgrađena), a 0 ih nedostaje kao test (provjereno na `main` `1df28c3`, 2. 11. 2026., DAN-376); ljuska još nije u konačnom vizualnom smjeru D-188.
 
-| Korak | Naziv                                                                                                                                                                                                                                                                                                                           | Uloga | Ovisi o      | Tiket                                                                                                            |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| M0.1  | Zapis prijenosa jezgre: broj testova u izvoru i na mainu (`docs/engineering/prijenos-jezgre-M0.1.md`)                                                                                                                                                                                                                           | P     |              | DAN-376                                                                                                          |
-| M0.2  | Zaštitne mjere za dbmate (D-91) 1, 2, 4 i 6; mjere 3, 5 i 7 traže deploy i stvarna okruženja pa idu u B0.x (#87 c.6557413776); uvjet (mjere D-91 1, 2, 4 i 6 spojene) ispunjen 2. 11. 2026., dokaz u `docs/engineering/d91-mjere.md`                                                                                            | P     |              | DAN-71                                                                                                           |
-| M0.3  | E2E na Firefoxu i WebKitu kao obvezna provjera                                                                                                                                                                                                                                                                                  | P     |              | DAN-114, DAN-232; gotovo: #1097 (`34b94dab`)                                                                     |
-| M0.4  | Skener zabranjenih izraza i za tekst izvan JSX-a                                                                                                                                                                                                                                                                                | P     |              | DAN-133; gotovo: #552 (`247efb68`)                                                                               |
-| M0.5  | Ljuska u konačnom vizualnom smjeru „papir i grafit”: tokeni, navigacija, dijalozi, mobilni raspored                                                                                                                                                                                                                             | F     | D-188 (#972) | DAN-344 (#973, #974)                                                                                             |
-| M0.6  | Nalazi kontrolne ravnine i review gatea s rokom prije prvog stvarnog studenta (samo ID): F-010, F-011, F-012, F-013, F-014, F-015, F-017, F-023, F-027, F-033, F-035, F-039, F-040, F-041, F-045, F-046; F-040 i F-045 zatvaraju se za M0, ne tek prije M1, a dio F-010 koji je radnja vlasnika ide privatno (#87 c.6557413776) | P     |              | DAN-141 do DAN-144, DAN-153 do DAN-155, DAN-161, DAN-163, DAN-166, DAN-168, DAN-171 do DAN-173, DAN-177, DAN-178 |
-| M0.7  | Testovi pravila hookova prolaze na Linuxu                                                                                                                                                                                                                                                                                       | P     |              | DAN-136; gotovo na `main` `34b94dab`                                                                             |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M0.1 | Zapis prijenosa jezgre: broj testova u izvoru i na mainu (`docs/engineering/prijenos-jezgre-M0.1.md`) | P | | DAN-376 |
+| M0.2 | Zaštitne mjere za dbmate (D-91) 1, 2, 4 i 6; mjere 3, 5 i 7 traže deploy i stvarna okruženja pa idu u B0.x (#87 c.6557413776); uvjet (mjere D-91 1, 2, 4 i 6 spojene) ispunjen 2. 11. 2026., dokaz u `docs/engineering/d91-mjere.md` | P | | DAN-71 |
+| M0.3 | E2E na Firefoxu i WebKitu kao obvezna provjera | P | | DAN-114, DAN-232; gotovo: #1097 (`34b94dab`) |
+| M0.4 | Skener zabranjenih izraza i za tekst izvan JSX-a | P | | DAN-133; gotovo: #552 (`247efb68`) |
+| M0.5 | Ljuska u konačnom vizualnom smjeru „papir i grafit”: tokeni, navigacija, dijalozi, mobilni raspored | F | D-188 (#972) | DAN-344 (#973, #974) |
+| M0.6 | Nalazi kontrolne ravnine i review gatea s rokom prije prvog stvarnog studenta (samo ID): F-010, F-011, F-012, F-013, F-014, F-015, F-017, F-023, F-027, F-033, F-035, F-039, F-040, F-041, F-045, F-046; F-040 i F-045 zatvaraju se za M0, ne tek prije M1, a dio F-010 koji je radnja vlasnika ide privatno (#87 c.6557413776) | P | | DAN-141 do DAN-144, DAN-153 do DAN-155, DAN-161, DAN-163, DAN-166, DAN-168, DAN-171 do DAN-173, DAN-177, DAN-178 |
+| M0.7 | Testovi pravila hookova prolaze na Linuxu | P | | DAN-136; gotovo na `main` `34b94dab` |
 
 **Ekrani:** Z-01 ljuska i navigacija, Z-04 greška i 404, Z-06 učitavanje, Z-08 dijalozi, Z-13 tema.
 
@@ -2709,16 +2717,16 @@ M0 → M1 (čeka AAI@EduHr Lab) i M2 → M3 → M5 i M6 → M7 → M4 (čeka lic
 
 **Odluke plana M1:** atributi, istek sesije, adapter, odjava, proba na Labu, nositelj Test resursa i svježina podobnosti (P1 do P7) su D-200 u `docs/DECISIONS.md` (ODLUČENO 1. 11. 2026.).
 
-| Korak | Naziv                                                                                              | Uloga | Ovisi o    | Tiket                                              |
-| ----- | -------------------------------------------------------------------------------------------------- | ----- | ---------- | -------------------------------------------------- |
-| M1.1  | Ovlast za AAI@EduHr Lab i registracija usluge                                                      | V     | FPZG, Srce | DAN-196, DAN-198                                   |
-| M1.2  | Prijava na Labu: konfiguracija klijenta, mapiranje hrEdu atributa, zapis prolaza s testnim računom | B     | M1.1       | DAN-377                                            |
-| M1.3  | Afilijacija djelatnika pri potvrdi nastavničke uloge                                               | B     | M1.2       | DAN-304; ostatak u novi uski tiket (D-205 t. 4)    |
-| M1.4  | Odjava kod pružatelja (RP-initiated logout)                                                        | B     | M1.2       | DAN-212                                            |
-| M1.5  | Izravni unit testovi `flow.ts` i `oidc.ts`                                                         | B     |            | DAN-307                                            |
-| M1.6  | CSP, HSTS, Permissions-Policy i istek neaktivne sesije                                             | B     |            | DAN-296                                            |
-| M1.7  | Nalazi identiteta i sesija (samo ID): F-020, F-021, F-022, F-036, F-151                            | B     |            | DAN-158, DAN-159, DAN-160, DAN-169, DAN-342 (#861) |
-| M1.8  | Ekran „nema ovlasti” (401/403) i poruka o isteku sesije                                            | F     |            | DAN-378                                            |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M1.1 | Ovlast za AAI@EduHr Lab i registracija usluge | V | FPZG, Srce | DAN-196, DAN-198 |
+| M1.2 | Prijava na Labu: konfiguracija klijenta, mapiranje hrEdu atributa, zapis prolaza s testnim računom | B | M1.1 | DAN-377 |
+| M1.3 | Afilijacija djelatnika pri potvrdi nastavničke uloge | B | M1.2 | DAN-304; ostatak u novi uski tiket (D-205 t. 4) |
+| M1.4 | Odjava kod pružatelja (RP-initiated logout) | B | M1.2 | DAN-212 |
+| M1.5 | Izravni unit testovi `flow.ts` i `oidc.ts` | B | | DAN-307 |
+| M1.6 | CSP, HSTS, Permissions-Policy i istek neaktivne sesije | B | | DAN-296 |
+| M1.7 | Nalazi identiteta i sesija (samo ID): F-020, F-021, F-022, F-036, F-151 | B | | DAN-158, DAN-159, DAN-160, DAN-169, DAN-342 (#861) |
+| M1.8 | Ekran „nema ovlasti” (401/403) i poruka o isteku sesije | F | | DAN-378 |
 
 **Ekrani:** S-01 prijava, Z-03 sesija istekla, Z-05 nema ovlasti.
 
@@ -2734,25 +2742,25 @@ Napomena (D-203 t. 4): M1.3 i M1.4 ovise o M1.2 samo za provjeru na Labu. Za teh
 
 **Gotovo na mainu:** ustanova, uloge, kolegij s pravilom AI-ja (D-52, D-175), članstvo, upis kodom, zadatak i verzije, potvrda obavijesti, raspon riječi zadatka, mentorstvo kao tablica s RLS-om (#925); pgTAP 030 do 037; HTTP rute `app/api/institution/**`; revizijski trag upisa i članstva (#819, #840); ekrani `/zadaci`, `/upis`, `/zadatak/[id]`, `/nastavnik`, `/nastavnik/zadatak/novi`; ruta za novu verziju zadatka (#870). **Nema:** oznake prilagodbe (D-50), dodjele mentorstva i njezina sučelja, administracije ustanove, komentora i povjerenstva, jezika rada odvojenog od jezika sučelja (F-06).
 
-| Korak | Naziv                                                                                                                                                                                                         | Uloga | Ovisi o | Tiket                                                  |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ------------------------------------------------------ |
-| M2.1  | Rad nastaje tek na „Započni rad”, uz korak na poslužitelju                                                                                                                                                    | F, B  |         | DAN-330 (#830), DAN-331 (#831)                         |
-| M2.2  | HTTP rute za preostale institucijske RPC-ove                                                                                                                                                                  | B     |         | DAN-292; ostatak u novi uski tiket (D-205 t. 4)        |
-| M2.3  | Studentska projekcija kolegija, zadataka i radova; ekran Moji radovi (B1, B2)                                                                                                                                 | B, F  |         | DAN-309, #941                                          |
-| M2.4  | Zadatak u postojećem kolegiju, uređivanje s pregledom posljedica i čarobnjak zadatka (B3, B8)                                                                                                                 | F     | M2.2    | DAN-310                                                |
-| M2.5  | Popis studenata kolegija i zadatka s imenima                                                                                                                                                                  | B, F  |         | #948 (DAN-344)                                         |
-| M2.6  | Mentorstva: put evidencije, čitači i RPC: studentov zahtjev i nastavnikovo odobrenje, uz revizijski trag i provjeru ustanove; mentor samo uz potvrđenu nastavničku ulogu; administrator ne dodjeljuje (D-204) | B     |         | DAN-349 (#947); ostatak u novi uski tiket (D-205 t. 4) |
-| M2.7  | Nastavni tim kolegija i seminarske grupe                                                                                                                                                                      | B     |         | DAN-351                                                |
-| M2.8  | Komentor i povjerenstvo s vremenski ograničenim pristupom (model, N-08, N-09); komentor po radnjama, bez zadanog skupa ovlasti, a skup se određuje uz U-1 prije M6.12 (D-205 t. 3)                            | B     | M2.6    | DAN-379                                                |
-| M2.9  | Oznaka odobrene prilagodbe (D-50): nastavnik vidi oznaku, ne razlog                                                                                                                                           | B, F  |         | DAN-380                                                |
-| M2.10 | Jezik rada odvojen od jezika sučelja (F-06)                                                                                                                                                                   | B     |         | DAN-386                                                |
-| M2.11 | Administracija ustanove: pregled, korisnici i uloge, kolegiji i akademske godine (C1 do C3)                                                                                                                   | B, F  | M1.3    | DAN-313                                                |
-| M2.12 | Pravila fakulteta i njihove verzije (D-117, D-175)                                                                                                                                                            | B, F  | M2.11   | DAN-315                                                |
-| M2.13 | Potvrda obavijesti veže otisak teksta obavijesti                                                                                                                                                              | B     |         | DAN-306                                                |
-| M2.14 | Mentorovi radni zapisi navedeni u obavijesti studentu (D-130)                                                                                                                                                 | F     |         | DAN-235 (#553)                                         |
-| M2.15 | Nalazi granice baze (samo ID): F-018, F-019; RLS uz `current_actor()` kao initplan                                                                                                                            | B     |         | DAN-156, DAN-157, DAN-51                               |
-| M2.16 | Ključ ustanove kroz `assignment_version` (preuzima FK dio DAN-301 N-1; D-199)                                                                                                                                 | B     |         | DAN-442                                                |
-| M2.17 | Konfiguracija po ustanovi (D-199)                                                                                                                                                                             | B     |         | DAN-443                                                |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M2.1 | Rad nastaje tek na „Započni rad”, uz korak na poslužitelju | F, B | | DAN-330 (#830), DAN-331 (#831) |
+| M2.2 | HTTP rute za preostale institucijske RPC-ove | B | | DAN-292; ostatak u novi uski tiket (D-205 t. 4) |
+| M2.3 | Studentska projekcija kolegija, zadataka i radova; ekran Moji radovi (B1, B2) | B, F | | DAN-309, #941 |
+| M2.4 | Zadatak u postojećem kolegiju, uređivanje s pregledom posljedica i čarobnjak zadatka (B3, B8) | F | M2.2 | DAN-310 |
+| M2.5 | Popis studenata kolegija i zadatka s imenima | B, F | | #948 (DAN-344) |
+| M2.6 | Mentorstva: put evidencije, čitači i RPC: studentov zahtjev i nastavnikovo odobrenje, uz revizijski trag i provjeru ustanove; mentor samo uz potvrđenu nastavničku ulogu; administrator ne dodjeljuje (D-204) | B | | DAN-349 (#947); ostatak u novi uski tiket (D-205 t. 4) |
+| M2.7 | Nastavni tim kolegija i seminarske grupe | B | | DAN-351 |
+| M2.8 | Komentor i povjerenstvo s vremenski ograničenim pristupom (model, N-08, N-09); komentor po radnjama, bez zadanog skupa ovlasti, a skup se određuje uz U-1 prije M6.12 (D-205 t. 3) | B | M2.6 | DAN-379 |
+| M2.9 | Oznaka odobrene prilagodbe (D-50): nastavnik vidi oznaku, ne razlog | B, F | | DAN-380 |
+| M2.10 | Jezik rada odvojen od jezika sučelja (F-06) | B | | DAN-386 |
+| M2.11 | Administracija ustanove: pregled, korisnici i uloge, kolegiji i akademske godine (C1 do C3) | B, F | M1.3 | DAN-313 |
+| M2.12 | Pravila fakulteta i njihove verzije (D-117, D-175) | B, F | M2.11 | DAN-315 |
+| M2.13 | Potvrda obavijesti veže otisak teksta obavijesti | B | | DAN-306 |
+| M2.14 | Mentorovi radni zapisi navedeni u obavijesti studentu (D-130) | F | | DAN-235 (#553) |
+| M2.15 | Nalazi granice baze (samo ID): F-018, F-019; RLS uz `current_actor()` kao initplan | B | | DAN-156, DAN-157, DAN-51 |
+| M2.16 | Ključ ustanove kroz `assignment_version` (preuzima FK dio DAN-301 N-1; D-199) | B | | DAN-442 |
+| M2.17 | Konfiguracija po ustanovi (D-199) | B | | DAN-443 |
 
 ISVU adapter (F-07) nije korak ove tablice: ide u zaseban tiket s rokom „prije stvarne uporabe” (D-205 t. 2).
 
@@ -2768,20 +2776,20 @@ ISVU adapter (F-07) nije korak ove tablice: ide u zaseban tiket s rokom „prije
 
 **Odluke za plan (D-207 do D-216, #87 c.6567392018):** worker se gradi u `src/runtime/worker/` (`docs/ARCHITECTURE.md`), a spike B0.2 u postojećem `spikes/b0.2-reconstruction`; putanja `src/worker/` iz paketa ne usvaja se (D-214). Ostatak DAN-84 i DAN-453 ide u nove uske tikete (D-210).
 
-| Korak | Naziv                                                                                                                                                                 | Uloga | Ovisi o            | Tiket                                                                                                              |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| M3.1  | Zatvoriti preostali opseg B-8                                                                                                                                         | B     |                    | DAN-83 (#970)                                                                                                      |
-| M3.2  | Worker potpisuje potvrdu i oporavlja `pending_signature` (B-9); ostatak u novom uskom tiketu (D-210)                                                                  | B     |                    | DAN-84                                                                                                             |
-| M3.3  | Kontrolne točke rekonstrukcije u B-12 i čitanje snimki dokumenta                                                                                                      | B     | M3.2               | DAN-293                                                                                                            |
-| M3.4  | Spike B0.2: rekonstrukcija 15.000 i 80.000 riječi na stvarnom stroju; puni M3, ne osnovica (D-208)                                                                    | P     | stroj, B0.1 (D-08) | DAN-388                                                                                                            |
-| M3.5  | Spike programskog unosa (D-54); M3.5-P01 je `Risk: critical`, a ugovor zabranjuje bilježenje tipki i trajanja (pravilo 4, D-216)                                      | B     |                    | DAN-390                                                                                                            |
-| M3.6  | Ostaci evidencije i značenje odgovora na ponovljeni `ingest`; ponovno izdavanje nakon opoziva po varijanti A zapisuje se prije M3.6-P02 (D-212)                       | B     |                    | DAN-301, DAN-46                                                                                                    |
-| M3.7  | Nalazi evidencije, lokalnog zapisa i rekonstrukcije (samo ID): F-001, F-003 do F-008, F-028, F-029, F-030, F-034, F-037, F-038, F-043, F-048, F-049, F-154            | B, F  |                    | DAN-140, DAN-145, DAN-146, DAN-147 do DAN-152, DAN-164, DAN-165, DAN-167, DAN-170, DAN-175, DAN-180, DAN-181, #913 |
-| M3.8  | Produkcijski potpisnik preko KMS-a; puni M3, ne osnovica (D-208)                                                                                                      | B     | B0.1 (M11.1)       | DAN-295                                                                                                            |
-| M3.9  | Specifikacija i izvedba dnevnog korijena i žiga s CLI verifikatorom (B5, D-72, D-93); D-72 je ODLUČEN (D-209), a M3.9-P05 i P07 grade se tek nakon tog zapisa         | B     | M3.2               | DAN-55; izvedba DAN-391                                                                                            |
-| M3.10 | Fuzz parsera B-8 i B-12 (zasad fast-check, Jazzer tek nakon provjere licence i ovisnosti, D-213) te proba izgubljenog odgovora nakon prihvata bez Toxiproxyja (D-211) | P, B  |                    | DAN-320                                                                                                            |
-| M3.11 | Oznake stanja spremanja po rječniku i izlaz iz blokirane odjave; Z-02 slijedi D-118, bez blokirane odjave (D-216)                                                     | F     |                    | DAN-99, DAN-103                                                                                                    |
-| M3.12 | Kratki sintetički spike šifriranja i roka (D-122); datum unutar faze do 20. 12. 2026. (D-207)                                                                         | B     |                    | novo                                                                                                               |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M3.1 | Zatvoriti preostali opseg B-8 | B | | DAN-83 (#970) |
+| M3.2 | Worker potpisuje potvrdu i oporavlja `pending_signature` (B-9); ostatak u novom uskom tiketu (D-210) | B | | DAN-84 |
+| M3.3 | Kontrolne točke rekonstrukcije u B-12 i čitanje snimki dokumenta | B | M3.2 | DAN-293 |
+| M3.4 | Spike B0.2: rekonstrukcija 15.000 i 80.000 riječi na stvarnom stroju; puni M3, ne osnovica (D-208) | P | stroj, B0.1 (D-08) | DAN-388 |
+| M3.5 | Spike programskog unosa (D-54); M3.5-P01 je `Risk: critical`, a ugovor zabranjuje bilježenje tipki i trajanja (pravilo 4, D-216) | B | | DAN-390 |
+| M3.6 | Ostaci evidencije i značenje odgovora na ponovljeni `ingest`; ponovno izdavanje nakon opoziva po varijanti A zapisuje se prije M3.6-P02 (D-212) | B | | DAN-301, DAN-46 |
+| M3.7 | Nalazi evidencije, lokalnog zapisa i rekonstrukcije (samo ID): F-001, F-003 do F-008, F-028, F-029, F-030, F-034, F-037, F-038, F-043, F-048, F-049, F-154 | B, F | | DAN-140, DAN-145, DAN-146, DAN-147 do DAN-152, DAN-164, DAN-165, DAN-167, DAN-170, DAN-175, DAN-180, DAN-181, #913 |
+| M3.8 | Produkcijski potpisnik preko KMS-a; puni M3, ne osnovica (D-208) | B | B0.1 (M11.1) | DAN-295 |
+| M3.9 | Specifikacija i izvedba dnevnog korijena i žiga s CLI verifikatorom (B5, D-72, D-93); D-72 je ODLUČEN (D-209), a M3.9-P05 i P07 grade se tek nakon tog zapisa | B | M3.2 | DAN-55; izvedba DAN-391 |
+| M3.10 | Fuzz parsera B-8 i B-12 (zasad fast-check, Jazzer tek nakon provjere licence i ovisnosti, D-213) te proba izgubljenog odgovora nakon prihvata bez Toxiproxyja (D-211) | P, B | | DAN-320 |
+| M3.11 | Oznake stanja spremanja po rječniku i izlaz iz blokirane odjave; Z-02 slijedi D-118, bez blokirane odjave (D-216) | F | | DAN-99, DAN-103 |
+| M3.12 | Kratki sintetički spike šifriranja i roka (D-122); datum unutar faze do 20. 12. 2026. (D-207) | B | | novo |
 
 **Ekrani:** S-10 editor (stanja spremanja), Z-02 odjava i dijalog, Z-11 rad bez mreže, druga kartica i oporavak.
 
@@ -2797,16 +2805,15 @@ ISVU adapter (F-07) nije korak ove tablice: ide u zaseban tiket s rokom „prije
 
 **Gotovo na mainu:** FPZG citatni stil kopiran iz Lekte kao čista funkcija (`src/domain/citation/{style,format}.ts`, K-2). **Nema:** paketa, profila ni provjere oblika.
 
-| Korak    | Naziv                                                                                                                                                                                                                                                            | Uloga | Ovisi o    | Tiket                |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------- | -------------------- |
-| M4.1     | Licenca i pravo redistribucije Lekte                                                                                                                                                                                                                             | V     |            | Owner queue          |
-| M4.2     | U Lekti: generiran paket pravila (FPZG profili, oblik, citatni stilovi, naslovna stranica) s verzijom i testom zanošenja; izvodi ga Lekta sesija po Lektinim pravilima, uz Lekta tiket povezan s DAN-392, a Ductus orkestrator ne dodjeljuje Lekta pisce (D-224) | P     | M4.1       | DAN-392 (repo Lekta) |
-| M4.3     | Ductus učitava paket s verzijom; kopija iz K-2 prelazi na paket                                                                                                                                                                                                  | B     | M4.2       | DAN-393              |
-| M4.3-P06 | Uvoz prvog paketa; spaja se samo na vlasnikov „Spoji n” (D-217)                                                                                                                                                                                                  | B     | M4.2, M4.3 | novo                 |
-| M4.4     | Provjera oblika nad dokumentom i „S-11 — Panel Upute i provjera oblika”                                                                                                                                                                                          | F     | M4.3, M5.3 | DAN-394              |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M4.1 | Licenca i pravo redistribucije Lekte | V | | Owner queue |
+| M4.2 | U Lekti: generiran paket pravila (FPZG profili, oblik, citatni stilovi, naslovna stranica) s verzijom i testom zanošenja; izvodi ga Lekta sesija po Lektinim pravilima, uz Lekta tiket povezan s DAN-392, a Ductus orkestrator ne dodjeljuje Lekta pisce (D-224) | P | M4.1 | DAN-392 (repo Lekta) |
+| M4.3 | Ductus učitava paket s verzijom; kopija iz K-2 prelazi na paket | B | M4.2 | DAN-393 |
+| M4.3-P06 | Uvoz prvog paketa; spaja se samo na vlasnikov „Spoji n” (D-217) | B | M4.2, M4.3 | novo |
+| M4.4 | Provjera oblika nad dokumentom i „S-11 — Panel Upute i provjera oblika” | F | M4.3, M5.3 | DAN-394 |
 
 **Ovisnosti i podjela (plan M4 iz paketa „M4 v1.0”, nije u repou; uz D-217 do D-224):**
-
 - Pin paketa na `assignment_version` ide iza M2.12-P01, M2.13-P01 i M2.4-P02.
 - Citatni stil ima jedan izvor, pin paketa; M2.12-P02 ne uvodi vlastiti.
 - Puna DOCX provjera dijeli se na P05a (ugovor, sada) i P05b (stvarna provjera, nakon M8.4); samo formalne provjere, informativne, nikad ne blokiraju predaju (D-222).
@@ -2825,32 +2832,31 @@ ISVU adapter (F-07) nije korak ove tablice: ide u zaseban tiket s rokom „prije
 
 **V11 (D-201, D-203 t. 6):** prvo shema v2 (DAN-453, `Risk: critical`, ugovor i plan napada prije koda), s rezerviranim mjestom u formatu zapisa za prijedloge i izravne izmjene po D-34. U val 1 ulaze funkcije V11 koje pripadaju osnovnom editoru, komentarima, D-34 i izvozu; ostale idu u val 2 i 3 prema fazama M5 do M9. Koraci za funkcije V11 dodaju se s tiketima koje otvara orkestrator.
 
-| Korak  | Naziv                                                                                                                              | Uloga | Ovisi o                                                                                      | Tiket                          |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------- | ------------------------------ |
-| M5.1   | Citat u tekstu i bibliografija kao čvorovi dokumenta (D-191 t. 4)                                                                  | F     |                                                                                              | DAN-343 (#866)                 |
-| M5.2   | Traka alata, popis naslova i napredak naspram opsega; ljuska editora                                                               | F     | M0.5                                                                                         | DAN-211 (#976), DAN-214 (#980) |
-| M5.3   | Numerirani naslovi i sadržaj                                                                                                       | F     |                                                                                              | DAN-395                        |
-| M5.4   | Naslovna stranica: opća naslovnica bez paketa Lekte u valu 1, predložak iz paketa poslije; izjava tek u M7.5 (D-228)               | F     | M4.3 samo za predložak iz paketa                                                             | DAN-403                        |
-| M5.5   | Fusnote                                                                                                                            | F     |                                                                                              | DAN-404                        |
-| M5.6   | Tablice, slike s opisima, popisi tablica i slika, pozivi na prikaze; sve vrste slika uz sigurnu obradu i privatan spremnik (D-231) | F, B  |                                                                                              | DAN-405                        |
-| M5.7   | DOI i ISBN u bibliografskom zapisu (S-08); provjera „pronađeno / nije pronađeno” za DOI i URL (D-48)                               | B, F  | M5.1                                                                                         | DAN-406                        |
-| M5.8   | Opseg po poglavlju (D-60)                                                                                                          | F     | M5.3                                                                                         | DAN-407                        |
-| M5.9   | Bilježnica izvora (D-59), kasnije uvoz iz Zotera                                                                                   | F, B  | M5.1                                                                                         | DAN-408                        |
-| M5.10  | Hrvatski navodnici, traži i zamijeni, način fokusa                                                                                 | F     |                                                                                              | DAN-409                        |
-| M5.11  | Pravopis prema jeziku rada bez slanja teksta van (S-07)                                                                            | F     | M2.10                                                                                        | DAN-410                        |
-| M5.12  | Uvodni vodič od dvije minute (ekran S-45; S-11 iz `docs/FEATURES.md`)                                                              | F     |                                                                                              | DAN-418                        |
-| M5.13  | Nalaz identiteta blokova u editoru (samo ID): F-044                                                                                | F     |                                                                                              | DAN-176                        |
-| M5.14a | Panel Nacrt (S-14), ljuska kartice i prikaz Obrnuti nacrt, samo izvedeno iz dokumenta (`docs/design/PANEL-NACRT-SPEC.md`)          | F     | M5.2, M5.3, M0.5, M5.13; naziv kartice „Struktura” i prikaza „Prve rečenice” (D-234)         | novo                           |
-| M5.14b | Panel Nacrt: pohrana plana (pitanje rada, svrhe poglavlja, pojmovnik) kao zapis uz rad; tablica s RLS-om, RPC, pgTAP               | B     | M5.14a, M3.11; pohrana, vidljivost i dorada prema D-234                                      | novo                           |
-| M5.14c | Panel Nacrt: prikazi Nit i Pojmovnik nad pohranom                                                                                  | F     | M5.14b, M2.10                                                                                | novo                           |
-| M5.15  | Planer rada iz roka i opsega po poglavlju (S-06)                                                                                   | F     | M5.8, spajanje #1030 (izuzetak u PRODUCT §5 pravilu 4: napredak po poglavlju i dani do roka) | novo                           |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M5.1 | Citat u tekstu i bibliografija kao čvorovi dokumenta (D-191 t. 4) | F | | DAN-343 (#866) |
+| M5.2 | Traka alata, popis naslova i napredak naspram opsega; ljuska editora | F | M0.5 | DAN-211 (#976), DAN-214 (#980) |
+| M5.3 | Numerirani naslovi i sadržaj | F | | DAN-395 |
+| M5.4 | Naslovna stranica: opća naslovnica bez paketa Lekte u valu 1, predložak iz paketa poslije; izjava tek u M7.5 (D-228) | F | M4.3 samo za predložak iz paketa | DAN-403 |
+| M5.5 | Fusnote | F | | DAN-404 |
+| M5.6 | Tablice, slike s opisima, popisi tablica i slika, pozivi na prikaze; sve vrste slika uz sigurnu obradu i privatan spremnik (D-231) | F, B | | DAN-405 |
+| M5.7 | DOI i ISBN u bibliografskom zapisu (S-08); provjera „pronađeno / nije pronađeno” za DOI i URL (D-48) | B, F | M5.1 | DAN-406 |
+| M5.8 | Opseg po poglavlju (D-60) | F | M5.3 | DAN-407 |
+| M5.9 | Bilježnica izvora (D-59), kasnije uvoz iz Zotera | F, B | M5.1 | DAN-408 |
+| M5.10 | Hrvatski navodnici, traži i zamijeni, način fokusa | F | | DAN-409 |
+| M5.11 | Pravopis prema jeziku rada bez slanja teksta van (S-07) | F | M2.10 | DAN-410 |
+| M5.12 | Uvodni vodič od dvije minute (ekran S-45; S-11 iz `docs/FEATURES.md`) | F | | DAN-418 |
+| M5.13 | Nalaz identiteta blokova u editoru (samo ID): F-044 | F | | DAN-176 |
+| M5.14a | Panel Nacrt (S-14), ljuska kartice i prikaz Obrnuti nacrt, samo izvedeno iz dokumenta (`docs/design/PANEL-NACRT-SPEC.md`) | F | M5.2, M5.3, M0.5, M5.13; naziv kartice „Struktura” i prikaza „Prve rečenice” (D-234) | novo |
+| M5.14b | Panel Nacrt: pohrana plana (pitanje rada, svrhe poglavlja, pojmovnik) kao zapis uz rad; tablica s RLS-om, RPC, pgTAP | B | M5.14a, M3.11; pohrana, vidljivost i dorada prema D-234 | novo |
+| M5.14c | Panel Nacrt: prikazi Nit i Pojmovnik nad pohranom | F | M5.14b, M2.10 | novo |
+| M5.15 | Planer rada iz roka i opsega po poglavlju (S-06) | F | M5.8, spajanje #1030 (izuzetak u PRODUCT §5 pravilu 4: napredak po poglavlju i dani do roka) | novo |
 
 Svaki novi čvor sheme traži pravilo u formatu koraka uređivanja i test reprodukcije prije spajanja (B-12).
 
 Koraci M5.14a do M5.14c: odluka vlasnika 31. 10. 2026. da panel Nacrt ulazi u program (#87 c.6543799262, t. 5). Odgovori na pitanja 1, 2, 3, 4, 6 i 9 iz `docs/design/PANEL-NACRT-SPEC.md` §9 su D-234 (2. 11. 2026.): plan na poslužitelju izvan evidencije, mentor ga u valu 1 ne vidi, kartica „Struktura” i prikaz „Prve rečenice”, bez pragova, plan uređiv u doradi, podjela M5.14a/b/c prihvaćena. Pitanja 5, 7 i 8 ostaju PRIJEDLOG specifikacije; nisu bila uvjet za početak koraka.
 
 **Ovisnosti i podjela (plan M5 iz paketa M5, nije u repou; uz D-225 do D-236):**
-
 - Shema v2 ima vlastiti ugovor i plan napada prije koda (M5.0-S1); prihvaća se s prvim novim čvorom, navodom (M5.1-P04). Novi radovi počinju na v2, v1 ostaje v1 (D-225).
 - Navod, izvori i bibliografija slijede D-226; trajni popis izvora i bilježnica izvora (M5.9) dijele isti model.
 - Val 1 i val 2 prema D-227: dva prihvata, M5 osnovno (20. 1. 2027.) i puni uvjet faze.
@@ -2870,26 +2876,25 @@ Koraci M5.14a do M5.14c: odluka vlasnika 31. 10. 2026. da panel Nacrt ulazi u pr
 
 **Gotovo na mainu:** komentari uz odlomak (B-10, `app/api/comments/[action]`); prikaz uživo kroz zaseban kanal zadnjeg stanja (`docs/BACKEND.md` §4.12, `app/api/live/[documentId]`, `/nastavnik/rad/[id]`); „Kako vidi nastavnik” (#815); čitanje reprodukcije na poslužitelju (#927, pgTAP 089). Prikaz uživo od D-142 radi prema §4.12; „polling, D-74” u `docs/PROGRAM.md` ispravljen je u M6.0a, D-74 vrijedi za obavijesti. **Nema:** prijedloga izmjena, izravnih izmjena nastavnika, sučelja reprodukcije, zahtjeva za doradu, obavijesti.
 
-| Korak | Naziv                                                                                                                                                                                                              | Uloga | Ovisi o               | Tiket                                                             |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- | --------------------- | ----------------------------------------------------------------- |
-| M6.1  | Prikaz uživo: predani rad prikazan kao predan; mentorski prikaz s komentarom                                                                                                                                       | F, B  |                       | DAN-332 (#911), DAN-215                                           |
-| M6.2  | Reprodukcija za mentora, odnosno nastavnika zadatka, i za studenta (D-143, D-154); val 1 prikazuje samo redoslijed promjena, vremenski podaci tek uz DPIA (D-239)                                                  | F     | M3.1                  | DAN-344 (#932)                                                    |
-| M6.3  | Prijedlozi izmjena s prihvaćanjem kao zasebnom promjenom s izvorom                                                                                                                                                 | B, F  | M5.1                  | DAN-419                                                           |
-| M6.4  | Izravne izmjene nastavnika s pripisivanjem i postavkom vidljivom na radu (D-21, D-34); val 1, cijeli tok po D-34 (D-203 B1)                                                                                        | B, F  | M6.3                  | DAN-420                                                           |
-| M6.5  | Zahtjev za doradu i odgovor studenta (D-45), uključujući „promijenjeno nakon prihvaćanja”                                                                                                                          | B, F  |                       | DAN-314, DAN-266                                                  |
-| M6.6  | Obavijesti u aplikaciji, podsjetnici o roku (N-01, N-02); e-pošta tek nakon izbora pružatelja i DPA, bez tvrdnje „poslano točno jednom” (D-241)                                                                    | B, F  |                       | DAN-305 (#950) za spojeni dio, novi uski tiket za ostatak (D-246) |
-| M6.7  | Odgođeno objavljivanje komentara (D-51), banka komentara (N-03), promjene od zadnjeg pregleda (N-05)                                                                                                               | F, B  |                       | DAN-421, novi uski tiket (D-246)                                  |
-| M6.8  | Mentorov pregled rada i komentari na mobitelu                                                                                                                                                                      | F     | M6.1                  | DAN-422                                                           |
-| M6.9  | Konzultacije vezane uz verziju rada (D-47); dio „Bilješka mentora” je uvjetan (U-2, D-135)                                                                                                                         | B, F  | M2.6                  | DAN-423                                                           |
-| M6.10 | Zbirni pregled kolegija bez imena (N-11, ekran N-17); val 2, prag od najmanje 5 studenata, zaštita komplementa, zatvoren popis mjera, bez ljestvice (D-242)                                                        | B, F  |                       | DAN-425                                                           |
-| M6.11 | Ključni rokovi mentorskog rada (N-07 iz `docs/FEATURES.md`)                                                                                                                                                        | B, F  | M2.6, M6.6            | novo                                                              |
-| M6.12 | (uvjetno) Sučelje komentora i povjerenstva s vremenski ograničenim pristupom (N-08, N-09, ekran P-01 povjerenstvo); model je M2.8; povjerenstvo ne vidi reprodukciju dok se ne izmijene Ustav v1.4 i D-154 (D-238) | F, B  | M2.8, M6.1, uvjet U-1 | novo (D-246)                                                      |
-| M6.13 | (uvjetno) Etape mentorskog rada s odobravanjem (N-15 etape) — u M6 se ne gradi (D-249)                                                                                                                             | B, F  | M6.9, uvjet U-2       | novo                                                              |
-| M6.14 | (uvjetno) Rubrika i nacrt izvješća kao mentorovi radni zapisi (N-15 rubrika i izvješće, D-130, D-135) — u M6 se ne gradi (D-249)                                                                                   | B, F  | M6.13, uvjet U-2      | novo                                                              |
-| M6.15 | (uvjetno) Ocjena vidljiva studentu tek nakon objave (N-15 ocjena, D-135) — u M6 se ne gradi (D-249)                                                                                                                | B, F  | M6.14, uvjet U-2      | novo                                                              |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M6.1 | Prikaz uživo: predani rad prikazan kao predan; mentorski prikaz s komentarom | F, B | | DAN-332 (#911), DAN-215 |
+| M6.2 | Reprodukcija za mentora, odnosno nastavnika zadatka, i za studenta (D-143, D-154); val 1 prikazuje samo redoslijed promjena, vremenski podaci tek uz DPIA (D-239) | F | M3.1 | DAN-344 (#932) |
+| M6.3 | Prijedlozi izmjena s prihvaćanjem kao zasebnom promjenom s izvorom | B, F | M5.1 | DAN-419 |
+| M6.4 | Izravne izmjene nastavnika s pripisivanjem i postavkom vidljivom na radu (D-21, D-34); val 1, cijeli tok po D-34 (D-203 B1) | B, F | M6.3 | DAN-420 |
+| M6.5 | Zahtjev za doradu i odgovor studenta (D-45), uključujući „promijenjeno nakon prihvaćanja” | B, F | | DAN-314, DAN-266 |
+| M6.6 | Obavijesti u aplikaciji, podsjetnici o roku (N-01, N-02); e-pošta tek nakon izbora pružatelja i DPA, bez tvrdnje „poslano točno jednom” (D-241) | B, F | | DAN-305 (#950) za spojeni dio, novi uski tiket za ostatak (D-246) |
+| M6.7 | Odgođeno objavljivanje komentara (D-51), banka komentara (N-03), promjene od zadnjeg pregleda (N-05) | F, B | | DAN-421, novi uski tiket (D-246) |
+| M6.8 | Mentorov pregled rada i komentari na mobitelu | F | M6.1 | DAN-422 |
+| M6.9 | Konzultacije vezane uz verziju rada (D-47); dio „Bilješka mentora” je uvjetan (U-2, D-135) | B, F | M2.6 | DAN-423 |
+| M6.10 | Zbirni pregled kolegija bez imena (N-11, ekran N-17); val 2, prag od najmanje 5 studenata, zaštita komplementa, zatvoren popis mjera, bez ljestvice (D-242) | B, F | | DAN-425 |
+| M6.11 | Ključni rokovi mentorskog rada (N-07 iz `docs/FEATURES.md`) | B, F | M2.6, M6.6 | novo |
+| M6.12 | (uvjetno) Sučelje komentora i povjerenstva s vremenski ograničenim pristupom (N-08, N-09, ekran P-01 povjerenstvo); model je M2.8; povjerenstvo ne vidi reprodukciju dok se ne izmijene Ustav v1.4 i D-154 (D-238) | F, B | M2.8, M6.1, uvjet U-1 | novo (D-246) |
+| M6.13 | (uvjetno) Etape mentorskog rada s odobravanjem (N-15 etape) — u M6 se ne gradi (D-249) | B, F | M6.9, uvjet U-2 | novo |
+| M6.14 | (uvjetno) Rubrika i nacrt izvješća kao mentorovi radni zapisi (N-15 rubrika i izvješće, D-130, D-135) — u M6 se ne gradi (D-249) | B, F | M6.13, uvjet U-2 | novo |
+| M6.15 | (uvjetno) Ocjena vidljiva studentu tek nakon objave (N-15 ocjena, D-135) — u M6 se ne gradi (D-249) | B, F | M6.14, uvjet U-2 | novo |
 
 **Odluke M6 (D-237 do D-250, #87 c.6581656612):**
-
 - Usporedba poslanih verzija u oba profila, bez oznake i ocjene (D-237). Ponovni pregled nakon dorade je novi ciklus odgovora na novoj verziji zahtjeva, bez automatske presude (D-243).
 - Zadano su prijedlozi; izravne izmjene samo uz vidljivu i opozivu postavku koju uključi student (D-244; M6.3, M6.4).
 - Glasovni komentar (N-04) u val 2 sa sintetičkim podacima, za stvarne studente isključen do DPIA (D-240).
@@ -2908,24 +2913,23 @@ Koraci M5.14a do M5.14c: odluka vlasnika 31. 10. 2026. da panel Nacrt ulazi u pr
 
 **Gotovo na mainu** (za M7 ponovno provjereno na `main` `cb4fbde1`, 10. 11. 2026., zadatak M7.0a)**:** zahtjev za predaju, zapis predaje, potvrda v2 i zatvaranje paketa (pgTAP 060 do 067, 070, 071, 086, 087); predani rad samo za čitanje (#818); rekonstrukcija i odluka o predaji; sažetak procesa iz jedne funkcije (`app/api/process-summary`); obavijest S3 i njezina vrata; tri koraka predaje na `/rad/[assignmentId]/predaja`; brz put nastavnika i popis predaja zadatka (#878, #909). **Djelomično:** usporedba s ranijim nacrtom. **Nema:** produljenja roka (nema tablice povijesti produljenja), izjave po FPZG čl. 9 i 15, rekonstrukcije u workeru. **Preduvjeti za M7.1 spojeni na main:** red poslova workera (#1829, DAN-517), asinkrono spremanje odsječka uz potvrdu na čekanju (#1758, DAN-518) i kontrolne točke rekonstrukcije vezane uz lanac (#1824, #1827, DAN-293); status tiketa vodi Linear.
 
-| Korak | Naziv                                                                                                                                                                                                                | Uloga | Ovisi o                                                      | Tiket            |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------ | ---------------- |
-| M7.1  | Rekonstrukcija u workeru (D-191 t. 4)                                                                                                                                                                                | B     | M3.2, M3.3, DAN-517 i DAN-518 (Q-4)                          | DAN-381          |
-| M7.2  | Nastavnik vidi tko je predao, reviziju i „poslije roka”; detalj zadatka i pregled predane verzije (B6)                                                                                                               | B, F  |                                                              | DAN-290, DAN-311 |
-| M7.3  | Produljenje roka po studentu (B9)                                                                                                                                                                                    | B, F  |                                                              | DAN-312          |
-| M7.4  | Rok testiran preko promjene sata                                                                                                                                                                                     | B     | M7.3                                                         | DAN-382          |
-| M7.5  | Izjava po FPZG čl. 9 i 15 (D-40), izjava o ljudskoj pomoći (R-09), ispis razgovora iz vanjskog AI-ja uz izjavu (R-10, D-77)                                                                                          | F, B  |                                                              | DAN-383          |
-| M7.6  | Usporedba verzija i vremeplov za studenta (C5, S-02 iz `docs/FEATURES.md`)                                                                                                                                           | B, F  | M3.3                                                         | DAN-293          |
-| M7.7  | Karta podrijetla bez zbroja (D-57), otvorena mjesta (D-61), pravila zadatka s kontrolnim popisom bez oznaka prolaza (D-62)                                                                                           | F     |                                                              | DAN-384          |
-| M7.8  | Napomena, dopuna i osporavanje opisa događaja (R-08)                                                                                                                                                                 | B, F  |                                                              | DAN-385          |
-| M7.9  | Test jednakosti prikaza u sučelju, API-ju i izvozu kao uvjet builda (R-07)                                                                                                                                           | P     |                                                              | DAN-387          |
-| M7.10 | Prenosiv zapis s QR provjerom (D-49), javna provjera potvrde i otvoreni verifikator zapisa (A-07 iz `docs/FEATURES.md`)                                                                                              | B, F  | M3.9                                                         | DAN-389          |
-| M7.11 | (uvjetno) Priprema za razgovor: deterministički popis mjesta uz studentove izjave, „razgovor održan” bez polja za ocjenu (D-53; ekran N-14 priprema za razgovor i obranu)                                            | F, B  | M6.5, M7.5, M7.7, uvjet U-3                                  | novo             |
-| M7.12 | (uvjetno) Priprema za obranu, samo za studenta (A-04 iz `docs/FEATURES.md`)                                                                                                                                          | F     | M7.11, uvjet U-3                                             | novo             |
-| M7.13 | „Moj rad u brojkama” za studenta, bez ritma i usporedbe (A-10 iz `docs/FEATURES.md`, u mapi ekrana S-47; ne miješati s ekranom A-10 slučajevi i paket dokaza). Brojke samo iz verzija i samo za studenta, prema D-63 | F     | M7.1, M5.8, spajanje #1030 (izuzetak u PRODUCT §5 pravilu 4) | novo             |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M7.1 | Rekonstrukcija u workeru (D-191 t. 4) | B | M3.2, M3.3, DAN-517 i DAN-518 (Q-4) | DAN-381 |
+| M7.2 | Nastavnik vidi tko je predao, reviziju i „poslije roka”; detalj zadatka i pregled predane verzije (B6) | B, F | | DAN-290, DAN-311 |
+| M7.3 | Produljenje roka po studentu (B9) | B, F | | DAN-312 |
+| M7.4 | Rok testiran preko promjene sata | B | M7.3 | DAN-382 |
+| M7.5 | Izjava po FPZG čl. 9 i 15 (D-40), izjava o ljudskoj pomoći (R-09), ispis razgovora iz vanjskog AI-ja uz izjavu (R-10, D-77) | F, B | | DAN-383 |
+| M7.6 | Usporedba verzija i vremeplov za studenta (C5, S-02 iz `docs/FEATURES.md`) | B, F | M3.3 | DAN-293 |
+| M7.7 | Karta podrijetla bez zbroja (D-57), otvorena mjesta (D-61), pravila zadatka s kontrolnim popisom bez oznaka prolaza (D-62) | F | | DAN-384 |
+| M7.8 | Napomena, dopuna i osporavanje opisa događaja (R-08) | B, F | | DAN-385 |
+| M7.9 | Test jednakosti prikaza u sučelju, API-ju i izvozu kao uvjet builda (R-07) | P | | DAN-387 |
+| M7.10 | Prenosiv zapis s QR provjerom (D-49), javna provjera potvrde i otvoreni verifikator zapisa (A-07 iz `docs/FEATURES.md`) | B, F | M3.9 | DAN-389 |
+| M7.11 | (uvjetno) Priprema za razgovor: deterministički popis mjesta uz studentove izjave, „razgovor održan” bez polja za ocjenu (D-53; ekran N-14 priprema za razgovor i obranu) | F, B | M6.5, M7.5, M7.7, uvjet U-3 | novo |
+| M7.12 | (uvjetno) Priprema za obranu, samo za studenta (A-04 iz `docs/FEATURES.md`) | F | M7.11, uvjet U-3 | novo |
+| M7.13 | „Moj rad u brojkama” za studenta, bez ritma i usporedbe (A-10 iz `docs/FEATURES.md`, u mapi ekrana S-47; ne miješati s ekranom A-10 slučajevi i paket dokaza). Brojke samo iz verzija i samo za studenta, prema D-63 | F | M7.1, M5.8, spajanje #1030 (izuzetak u PRODUCT §5 pravilu 4) | novo |
 
 **Odluke M7 (D-263, #87 c.6622685877; D-266 t. 7, #87 c.6639423372):**
-
 - Valovi M7.Z1 i M7.Z2, rokovi i otvoreni neskladi s valovima zapisani su u `docs/PROGRAM.md`, odjeljak „Valovi M7” (D-263 Q15).
 - Usporedba: M6-O1 je odlučen; usporedba vrijedi u oba profila, samo između poslanih verzija, bez oznake i ocjene (D-237, #87 c.6581656612). **Otvoreno:** zadatak DAN-598 navodi da M7.6-P01 proširuje M6.7-P03 umjesto drugog čitača usporedbe, ali oznake M7.6-P01 i M6.7-P03 i to pravilo nemaju zapis u `docs/DECISIONS.md` ni na #87; redak M6.7 u ovoj razradi usporedbu ne navodi.
 - Rok: zahtjev za predaju zamrzava efektivni rok, a produljenje je zasebna dopuna; povijest produljenja dobiva novu tablicu (M7.3-P01). Model efektivnog roka još nije zapisan u `docs/BACKEND.md`; taj zapis otvara D-263 (D-263 Q07). M7.4 ovisi o M7.3, a oba su u M7.Z1 (D-263 Q15). **Otvoreno:** zadatak DAN-598 traži upis ovisnosti M7.4, a izvor koji bi mijenjao ovisnost o M7.3 nije pronađen u `docs/DECISIONS.md` ni na #87, pa ovisnost ostaje kako je zapisana.
@@ -2947,27 +2951,27 @@ Koraci M5.14a do M5.14c: odluka vlasnika 31. 10. 2026. da panel Nacrt ulazi u pr
 
 **Gotovo na mainu:** ništa od uvoza ni izvoza DOCX-a i PDF-a.
 
-| Korak   | Naziv                                                                                                                                                                                                                                                                                                                                                            | Uloga | Ovisi o                                                                             | Tiket                         |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------- | ----------------------------- |
-| M8.0-S1 | Ugovor i plan napada uvoza: izvor „uvoz” u novoj verziji formata segmenta (D-290), `import_event` i manifest s tri hasha, granice (D-291), naziv datoteke (D-292), idempotentna potvrda pregleda                                                                                                                                                                 | B     | M8.1-P03, M8.0a                                                                     | DAN-436 (isti tiket kao M8.9) |
-| M8.0-S2 | Ugovor i plan napada izvoza: `ExportSnapshot` nad spremljenom ili predanom revizijom, karta sposobnosti po čvoru iz M5, jedan manifest D-173 zajedno s M7.10-P01, opseg i rok trajanja izvoznog artefakta                                                                                                                                                        | B     | M8.0a, M5.0-S1 (DAN-589), M5.4 (DAN-403)                                            | DAN-636                       |
-| M8.1    | Lokalni sintetički spike čitanja DOCX-a (D-198 t. 5)                                                                                                                                                                                                                                                                                                             | B     | M8.8                                                                                | DAN-242                       |
-| M8.2    | Uvoz DOCX-a kao događaj s izvorom „uvoz”                                                                                                                                                                                                                                                                                                                         | B, F  | M8.1, M3.1, M8.0-S1                                                                 | DAN-396                       |
-| M8.2b   | Prekidač „Dopušten uvoz” pri stvaranju zadatka; nova verzija zadatka smije uvoz samo isključiti (`docs/PRODUCT.md` §6 t. 3, D-282)                                                                                                                                                                                                                               | F     | M8.2-P04, M8.UX-R, M8.0-S1                                                          | DAN-396                       |
-| M8.3    | Uvoz PDF-a kao događaj s izvorom                                                                                                                                                                                                                                                                                                                                 | B, F  | M8.2, M8.0-S1                                                                       | DAN-397                       |
-| M8.4    | Izvoz DOCX-a u obliku fakulteta: P01 zamrznuti izvozni snapshot, P02 DOCX pisac bibliotekom `docx` (D-254)                                                                                                                                                                                                                                                       | B     | P01: M5.1-P04, M8.0-S2; P02: M5.4-P03, M8.4-P01 (provjera oblika: M4.3, D-203 t. 2) | DAN-398                       |
-| M8.5-S  | Spike S-PDF (D-254): DOCX → PDF/A-2u preko LibreOfficea u izoliranom servisu bez mreže, OFL fontovi, pinana slika; 15.000 riječi, veraPDF `isCompliant="true"`, izmjereni CPU i RAM                                                                                                                                                                              | P     | M8.4-P02                                                                            | DAN-399                       |
-| M8.5    | Izvoz PDF-a u obliku fakulteta prema D-254 (kanonski dokument → DOCX → PDF); renderer prema ishodu M8.5-S, a ako spike ne prođe, varijanta pdfkit ide vlasniku                                                                                                                                                                                                   | B     | M8.4-P01, M8.5-S                                                                    | DAN-399                       |
-| M8.6    | Izvoz predanog rada, potvrde za referadu (R-06) i paket za Merlin (R-05); provjerljiv izvozni paket (D-173)                                                                                                                                                                                                                                                      | B, F  | M7.1                                                                                | DAN-316, DAN-341              |
-| M8.7-S  | Spike čitanja skeniranih uputa: Tesseract.js `hrv` (brzi i standardni model) i tekstni sloj PDF.js nad sintetičkim hrvatskim uputama i bibliografijama; točnost dijakritika i datuma, vrijeme, veličina paketa                                                                                                                                                   | F     |                                                                                     | DAN-441                       |
-| M8.7    | PDF izvori u bilježnici s isticanjem i citatom sa stranicom (S-09) te provjera doslovnog citata u učitanom PDF-u (A-03)                                                                                                                                                                                                                                          | F, B  | M5.1, M5.9, M8.3                                                                    | DAN-441                       |
-| M8.8    | Paket, lockfile, OSV skeniranje i testovi za `spikes/docx-provenance`                                                                                                                                                                                                                                                                                            | P     |                                                                                     | DAN-435                       |
-| M8.9    | Ugovor provenance i manifest uz `import_event`; `evidence-receipt-v2` se ne mijenja (D-198 t. 7)                                                                                                                                                                                                                                                                 | B     | M8.1, M8.2                                                                          | DAN-436                       |
-| M8.10   | Tragovi u PDF-u i ODT-u, bez povijesti pisanja                                                                                                                                                                                                                                                                                                                   | B     | M8.3, M8.9                                                                          | DAN-437                       |
-| M8.11   | Čitanje spremljenih verzija iz OneDrivea, SharePointa i Google Drivea za odabranu datoteku (D-198 t. 1; granica podataka i opseg dozvola po D-198 t. 5)                                                                                                                                                                                                          | B, F  | M8.2, M8.9                                                                          | DAN-438                       |
-| M8.12   | Word i Google Docs dodaci, sljedeći val, ne pilot (D-198 t. 2; uvjet U-7)                                                                                                                                                                                                                                                                                        | B, F  | M8.11                                                                               | DAN-439                       |
-| M8.13   | Ekran „Povijest dokumenta”: popis „uvezeno, tvrdnja iz datoteke”, isti za obje uloge (D-198 t. 6)                                                                                                                                                                                                                                                                | F     | M8.2, M8.9                                                                          | DAN-440                       |
-| M8.14   | Izvoz PDF/A-2u; valjanost provjerava veraPDF u CI-ju s fiksnim profilom `-f 2u`, pinanom verzijom i digestom; PDF se označava kao PDF/A samo uz `isCompliant="true"`, inače obični PDF bez oznake (D-206, D-203 A3, D-253, D-284). P01: opcija nad istim snapshotom s `outputSha256` i `reportHash`; P02: veraPDF u CI-ju, test da veraPDF nije u `package.json` | B     | M8.5                                                                                | DAN-527                       |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M8.0-S1 | Ugovor i plan napada uvoza: izvor „uvoz” u novoj verziji formata segmenta (D-290), `import_event` i manifest s tri hasha, granice (D-291), naziv datoteke (D-292), idempotentna potvrda pregleda | B | M8.1-P03, M8.0a | DAN-436 (isti tiket kao M8.9) |
+| M8.0-S2 | Ugovor i plan napada izvoza: `ExportSnapshot` nad spremljenom ili predanom revizijom, karta sposobnosti po čvoru iz M5, jedan manifest D-173 zajedno s M7.10-P01, opseg i rok trajanja izvoznog artefakta | B | M8.0a, M5.0-S1 (DAN-589), M5.4 (DAN-403) | DAN-636 |
+| M8.1 | Lokalni sintetički spike čitanja DOCX-a (D-198 t. 5) | B | M8.8 | DAN-242 |
+| M8.2 | Uvoz DOCX-a kao događaj s izvorom „uvoz” | B, F | M8.1, M3.1, M8.0-S1 | DAN-396 |
+| M8.2b | Prekidač „Dopušten uvoz” pri stvaranju zadatka; nova verzija zadatka smije uvoz samo isključiti (`docs/PRODUCT.md` §6 t. 3, D-282) | F | M8.2-P04, M8.UX-R, M8.0-S1 | DAN-396 |
+| M8.3 | Uvoz PDF-a kao događaj s izvorom | B, F | M8.2, M8.0-S1 | DAN-397 |
+| M8.4 | Izvoz DOCX-a u obliku fakulteta: P01 zamrznuti izvozni snapshot, P02 DOCX pisac bibliotekom `docx` (D-254) | B | P01: M5.1-P04, M8.0-S2; P02: M5.4-P03, M8.4-P01 (provjera oblika: M4.3, D-203 t. 2) | DAN-398 |
+| M8.5-S | Spike S-PDF (D-254): DOCX → PDF/A-2u preko LibreOfficea u izoliranom servisu bez mreže, OFL fontovi, pinana slika; 15.000 riječi, veraPDF `isCompliant="true"`, izmjereni CPU i RAM | P | M8.4-P02 | DAN-399 |
+| M8.5 | Izvoz PDF-a u obliku fakulteta prema D-254 (kanonski dokument → DOCX → PDF); renderer prema ishodu M8.5-S, a ako spike ne prođe, varijanta pdfkit ide vlasniku | B | M8.4-P01, M8.5-S | DAN-399 |
+| M8.6 | Izvoz predanog rada, potvrde za referadu (R-06) i paket za Merlin (R-05); provjerljiv izvozni paket (D-173) | B, F | M7.1 | DAN-316, DAN-341 |
+| M8.7-S | Spike čitanja skeniranih uputa: Tesseract.js `hrv` (brzi i standardni model) i tekstni sloj PDF.js nad sintetičkim hrvatskim uputama i bibliografijama; točnost dijakritika i datuma, vrijeme, veličina paketa | F | | DAN-441 |
+| M8.7 | PDF izvori u bilježnici s isticanjem i citatom sa stranicom (S-09) te provjera doslovnog citata u učitanom PDF-u (A-03) | F, B | M5.1, M5.9, M8.3 | DAN-441 |
+| M8.8 | Paket, lockfile, OSV skeniranje i testovi za `spikes/docx-provenance` | P | | DAN-435 |
+| M8.9 | Ugovor provenance i manifest uz `import_event`; `evidence-receipt-v2` se ne mijenja (D-198 t. 7) | B | M8.1, M8.2 | DAN-436 |
+| M8.10 | Tragovi u PDF-u i ODT-u, bez povijesti pisanja | B | M8.3, M8.9 | DAN-437 |
+| M8.11 | Čitanje spremljenih verzija iz OneDrivea, SharePointa i Google Drivea za odabranu datoteku (D-198 t. 1; granica podataka i opseg dozvola po D-198 t. 5) | B, F | M8.2, M8.9 | DAN-438 |
+| M8.12 | Word i Google Docs dodaci, sljedeći val, ne pilot (D-198 t. 2; uvjet U-7) | B, F | M8.11 | DAN-439 |
+| M8.13 | Ekran „Povijest dokumenta”: popis „uvezeno, tvrdnja iz datoteke”, isti za obje uloge (D-198 t. 6) | F | M8.2, M8.9 | DAN-440 |
+| M8.14 | Izvoz PDF/A-2u; valjanost provjerava veraPDF u CI-ju s fiksnim profilom `-f 2u`, pinanom verzijom i digestom; PDF se označava kao PDF/A samo uz `isCompliant="true"`, inače obični PDF bez oznake (D-206, D-203 A3, D-253, D-284). P01: opcija nad istim snapshotom s `outputSha256` i `reportHash`; P02: veraPDF u CI-ju, test da veraPDF nije u `package.json` | B | M8.5 | DAN-527 |
 
 Izvoz (M8.4, M8.5, M8.14) je u valu 1 (D-203 A3); uvozni opseg se ne mijenja.
 
@@ -2989,31 +2993,31 @@ Izvoz (M8.4, M8.5, M8.14) je u valu 1 (D-203 A3); uvozni opseg se ne mijenja.
 
 **Gotovo na mainu:** pravilo AI-ja i dopuštene svrhe na kolegiju i zadatku (#943). **Nema:** posrednika prema pružatelju ni sučelja pomoćnika.
 
-| Korak    | Naziv                                                                                                                                                                                                                                                                  | Uloga | Ovisi o                      | Tiket                 |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------- | --------------------- |
-| M9.0-S1  | Jedan ugovor nove verzije formata evidencije za „import” (M8) i „ai-transfer” (M9) te podrijetlo lijepljenja; `evidence-receipt-v2` i formati v2 i v3 ostaju (D-269 O8)                                                                                                | B     | M3.1, M3.2-P03, M8.0-S1      | novo; nositelj M3     |
-| M9.0-S2  | Port prema pružatelju i sintetički adapter; stvarni adapter tek nakon M9.1-P04; prazna konfiguracija troška znači da je AI isključen (D-267 O1, O5)                                                                                                                    | B     | M9.0-S1                      | novo                  |
-| M9.0-S3  | Prekidač po ustanovi, isključen po zadanom, za transkripciju i alate pružatelja; pretraga weba samo kroz Ductusov alat s poslužiteljskim popisom odredišta; bez gumba za snimanje (D-267 O9, O10)                                                                      | B     | M9.0-S2                      | novo                  |
-| M9.UX    | Referentne slike za S-16 panel Asistent, po D-183 (D-269 O7)                                                                                                                                                                                                           | F     |                              | novo                  |
-| M9.UX-R  | Odobrenje slika S-16 od vlasnika; UI koraci M9 čekaju ga, backend ne (D-269 O7)                                                                                                                                                                                        | V     | M9.UX                        | novo; radnja vlasnika |
-| M9.PRIV  | Privatnost: pitanje FPZG-u o „objašnjenju pojma” (D-264 Q09, D-268 O2), pravno mišljenje i DPIA (D-257) kao uvjet uključivanja prekidača iz M9.0-S3                                                                                                                    | V     |                              | novo; radnja vlasnika |
-| M9.AIACT | Klasifikacija AI pomoćnika prema Aktu o umjetnoj inteligenciji (D-256) prije uključivanja za stvarne studente                                                                                                                                                          | V     | M9.PRIV                      | novo                  |
-| M9.1     | Izbor pružatelja, model računa i ugovorni model (D-194 t. 6 i 7, PRIJEDLOG; razlog D-77), uz pravno mišljenje i DPIA. Rok 15. 12. 2026., kontrolna točka 30. 11. (D-270 O12)                                                                                           | V     |                              | DAN-400               |
-| M9.2     | Posrednik prema pružatelju: `provider.only`, ograničenje troška, tajne po modelu računa koji se odluči (D-74 pod preispitivanjem, D-194)                                                                                                                               | B     | M9.1                         | DAN-401               |
-| M9.3     | Dopušteni pružatelji po fakultetu i zadatku; popis iz verzionirane konfiguracije `config/faculties`, potvrda FPZG-a (D-270 O11)                                                                                                                                        | B     | M2.12, M9.2                  | DAN-402               |
-| M9.4     | Panel Asistent i prenošenje teksta s bilježenjem pružatelja, modela i svrhe (D-42); ponovna primjena bez mreže samo uz aktualnu provjeru prava (D-268 O4); katalog od 10 svrha (D-268 O2)                                                                              | F, B  | M9.3, M3.1, M9.0-S1, M9.UX-R | DAN-411               |
-| M9.5     | Razgovori priloženi uz izjavu; nepriloženi nisu vidljivi nastavniku (D-41); prijenos teksta koji je kasnije obrisan i dalje čini razgovor obveznim (D-268 O3, D-263 Q22)                                                                                               | B, F  | M9.4, M7.5                   | DAN-412               |
-| M9.6     | Zaštita brojki i citata pri lekturi (D-46); poznato podrijetlo i podudaranje s odgovorom pomoćnika (D-58; oznaka podudaranja je uvjetna, U-4); oznaka ostaje isključena do M9.6-P04 nakon pilota, poznati prijenos i podrijetlo lijepljenja vrijede bez nje (D-268 O6) | B, F  | M9.4                         | DAN-413               |
-| M9.7     | Svrhe razine 2 nedostupne dok ih nastavnik ne uključi, uključujući „objašnjenje pojma” (D-268 O2); pomoćnik koji pita (D-64)                                                                                                                                           | F, B  | M9.4                         | DAN-414               |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M9.0-S1 | Jedan ugovor nove verzije formata evidencije za „import” (M8) i „ai-transfer” (M9) te podrijetlo lijepljenja; `evidence-receipt-v2` i formati v2 i v3 ostaju (D-269 O8) | B | M3.1, M3.2-P03, M8.0-S1 | novo; nositelj M3 |
+| M9.0-S2 | Port prema pružatelju i sintetički adapter; stvarni adapter tek nakon M9.1-P04; prazna konfiguracija troška znači da je AI isključen (D-267 O1, O5) | B | M9.0-S1 | novo |
+| M9.0-S3 | Prekidač po ustanovi, isključen po zadanom, za transkripciju i alate pružatelja; pretraga weba samo kroz Ductusov alat s poslužiteljskim popisom odredišta; bez gumba za snimanje (D-267 O9, O10) | B | M9.0-S2 | novo |
+| M9.UX | Referentne slike za S-16 panel Asistent, po D-183 (D-269 O7) | F | | novo |
+| M9.UX-R | Odobrenje slika S-16 od vlasnika; UI koraci M9 čekaju ga, backend ne (D-269 O7) | V | M9.UX | novo; radnja vlasnika |
+| M9.PRIV | Privatnost: pitanje FPZG-u o „objašnjenju pojma” (D-264 Q09, D-268 O2), pravno mišljenje i DPIA (D-257) kao uvjet uključivanja prekidača iz M9.0-S3 | V | | novo; radnja vlasnika |
+| M9.AIACT | Klasifikacija AI pomoćnika prema Aktu o umjetnoj inteligenciji (D-256) prije uključivanja za stvarne studente | V | M9.PRIV | novo |
+| M9.1 | Izbor pružatelja, model računa i ugovorni model (D-194 t. 6 i 7, PRIJEDLOG; razlog D-77), uz pravno mišljenje i DPIA. Rok 15. 12. 2026., kontrolna točka 30. 11. (D-270 O12) | V | | DAN-400 |
+| M9.2 | Posrednik prema pružatelju: `provider.only`, ograničenje troška, tajne po modelu računa koji se odluči (D-74 pod preispitivanjem, D-194) | B | M9.1 | DAN-401 |
+| M9.3 | Dopušteni pružatelji po fakultetu i zadatku; popis iz verzionirane konfiguracije `config/faculties`, potvrda FPZG-a (D-270 O11) | B | M2.12, M9.2 | DAN-402 |
+| M9.4 | Panel Asistent i prenošenje teksta s bilježenjem pružatelja, modela i svrhe (D-42); ponovna primjena bez mreže samo uz aktualnu provjeru prava (D-268 O4); katalog od 10 svrha (D-268 O2) | F, B | M9.3, M3.1, M9.0-S1, M9.UX-R | DAN-411 |
+| M9.5 | Razgovori priloženi uz izjavu; nepriloženi nisu vidljivi nastavniku (D-41); prijenos teksta koji je kasnije obrisan i dalje čini razgovor obveznim (D-268 O3, D-263 Q22) | B, F | M9.4, M7.5 | DAN-412 |
+| M9.6 | Zaštita brojki i citata pri lekturi (D-46); poznato podrijetlo i podudaranje s odgovorom pomoćnika (D-58; oznaka podudaranja je uvjetna, U-4); oznaka ostaje isključena do M9.6-P04 nakon pilota, poznati prijenos i podrijetlo lijepljenja vrijede bez nje (D-268 O6) | B, F | M9.4 | DAN-413 |
+| M9.7 | Svrhe razine 2 nedostupne dok ih nastavnik ne uključi, uključujući „objašnjenje pojma” (D-268 O2); pomoćnik koji pita (D-64) | F, B | M9.4 | DAN-414 |
 
 **Ekrani:** S-16 panel Asistent. N-19 (AI pomoć nastavniku) je PRIJEDLOG i ne gradi se.
 
 **Zatvaranje M9:**
 
-| Korak | Naziv                                                                                                                                                                                                                                                                                                     | Uloga | Ovisi o                | Tiket |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------- | ----- |
-| M9.Z1 | Provjera cjeline M9 na sintetičkim podacima: svaki prijenos zapisan s pružateljem, modelom i svrhom; prekidači isključeni po zadanom; prazna konfiguracija troška isključuje AI                                                                                                                           | B     | M9.4, M9.5, M9.6, M9.7 | novo  |
-| M9.Z2 | Stanje na kontrolnoj točki 15. 1. 2027. i prijava vlasniku što je otvoreno (M9.1, M9.PRIV, M9.AIACT, M9.UX-R); M9 se ne reže bez vlasnika (D-199 t. 6, D-270 O12). Izvještaj je vezan za datum, ne za završetak koraka: ne čeka ni M9.1 (o njegovu stanju izvještava) ni M9.Z1 (zasebna završna provjera) | V     |                        | novo  |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M9.Z1 | Provjera cjeline M9 na sintetičkim podacima: svaki prijenos zapisan s pružateljem, modelom i svrhom; prekidači isključeni po zadanom; prazna konfiguracija troška isključuje AI | B | M9.4, M9.5, M9.6, M9.7 | novo |
+| M9.Z2 | Stanje na kontrolnoj točki 15. 1. 2027. i prijava vlasniku što je otvoreno (M9.1, M9.PRIV, M9.AIACT, M9.UX-R); M9 se ne reže bez vlasnika (D-199 t. 6, D-270 O12). Izvještaj je vezan za datum, ne za završetak koraka: ne čeka ni M9.1 (o njegovu stanju izvještava) ni M9.Z1 (zasebna završna provjera) | V | | novo |
 
 **Ovisnosti izvan M9:** M3.1 (B-8) i M3.2-P03 (nositelj formata evidencije) te M8.0-S1 (zajednički ugovor formata, D-269 O8) navode se kako ih navodi objedinjeni plan rb27; naziva M3.2-P03 još nema u ovom dokumentu (M8.0-S1 je u odjeljku M8), a tiketi se otvaraju nakon potvrde plana (M9.0b, D-270 O13). M7.5 je preduvjet za M9.5. **Redoslijed i rokovi (D-199 t. 6, D-266 t. 6):** M10 → M9 → M11; M9.1 do 15. 12. 2026., M9.2 i M9.3 oko 15. 1. 2027., M9.4 do M9.7 do 15. 2. 2027. (M9.5 nakon M7.5), M10 oko 10. 2., M11 22. 2.; kontrolne točke 30. 11. 2026. i 15. 1. 2027.
 
@@ -3025,25 +3029,25 @@ Izvoz (M8.4, M8.5, M8.14) je u valu 1 (D-203 A3); uvozni opseg se ne mijenja.
 
 **Gotovo na mainu:** revizijski trag pristupa (pgTAP 080 do 083), upisa i članstva. **Nema:** klasa podataka, brisanja po roku, pravnog zadržavanja ni izvoza za studenta.
 
-| Korak    | Naziv                                                                                                                                                                                                                                                                        | Uloga | Ovisi o                                        | Tiket                                     |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------------------- | ----------------------------------------- |
-| M10.0-S1 | Jedan ugovor brisanja: tablica `erasure` samo za dodavanje (nadgrobni zapis), uske SECURITY DEFINER funkcije samo za `ductus_retention`, zasebna migracija koja sužava okidač nad `audit.access_log`, potpisana kontrolna točka evidencije brisanja (D-272 MQ04, MQ05, MQ07) | B     | M3.2-P03                                       | novo                                      |
-| M10.0-S2 | Raspored u workeru (pg-boss) s prvim poslom `purge_ended_sessions`; prije potvrde D-30 izvršavaju se samo već odlučeni poslovi, ostalo je probni prolaz (D-273 MQ08, MQ14)                                                                                                   | B     | M10.0-S1                                       | novo                                      |
-| M10.1    | Rokovi čuvanja s FPZG-om (D-30); popis DATA-CLASS od 30 klasa u 8 kategorija (C-21) nad mainom u trenutku izrade (M10.1-P01, D-271 MQ01, MQ03); tiket prati D-264 Q11 (D-275 MQ16)                                                                                           | V     | FPZG                                           | Owner queue                               |
-| M10.2    | Klase podataka i brisanje po roku, uključujući stanje prikaza uživo, verzije i vrijeme po promjeni; hash i potvrde se čuvaju zasebno, radi dokaza predaje (D-272 MQ06)                                                                                                       | B     | M10.1, M10.0-S1, B0.1 (bucket kontrolne točke) | DAN-297                                   |
-| M10.3    | Pravno zadržavanje (F-02); postavlja ga admin ustanove s referencom (broj slučaja), skida drugi admin ili operater, više zadržavanja vrijedi neovisno (D-274 MQ11)                                                                                                           | B     | M10.2                                          | DAN-415                                   |
-| M10.4    | Student vidi tko je i kada otvorio njegov rad (pravilo 17, C4); M10.4-P02 popisuje sve putove koji vraćaju sadržaj ili sažetak, retci po 5 minuta grupirani po danu, bez zbroja posjeta i trajanja (D-274 MQ10)                                                              | B, F  | M3.11                                          | DAN-294                                   |
-| M10.5    | Izvoz za studenta i za bivšeg studenta preko referade: referada prima zahtjev i provjerava identitet, admin ustanove pokreće posao s referencom, jednokratna poveznica na 24 h (D-271 MQ02)                                                                                  | B, F  | M8.6, M3.11                                    | DAN-316 (dio)                             |
-| M10.6    | Izlaz iz usluge: izvoz svih podataka fakulteta (F-04); pokreće operater na pisani zahtjev ustanove, bez brisanja; P01 ugovor u valu 3, P02 i P03 nakon pilota a prije njegova kraja (D-274 MQ12)                                                                             | B     | M10.5                                          | DAN-416                                   |
-| M10.7    | Administracija čuvanja, pravnog zadržavanja i revizijskog traga                                                                                                                                                                                                              | F     | M10.2, M2.11                                   | DAN-417                                   |
-| M10.8    | (uvjetno) Studentova vlastita povijest rada (D-131); ne gradi se do pravnog mišljenja (D-55) i potvrde C-19, klasa 12 ostaje rezervirana u DATA-CLASS (D-274 MQ09, uvjet U-8)                                                                                                | B, F  | pravno mišljenje D-55, C-19, uvjet U-8         | DAN-424                                   |
-| M10.9    | (uvjetno) Paket za zaštitu studenta: proširenje prenosivog zapisa (D-49, S-01 iz `docs/FEATURES.md`; ekran S-46 paket zaštite)                                                                                                                                               | B, F  | M7.10, M10.5, uvjet U-5                        | novo                                      |
-| M10.10   | (uvjetno) Izvješće za evaluaciju smjernica (F-01, FPZG čl. 13), samo agregati                                                                                                                                                                                                | B, F  | M6.10, M10.7, uvjet U-6                        | novo                                      |
-| M10.11   | Portfelj nakon studija: izvoz predanog rada za portfelj (S-10)                                                                                                                                                                                                               | B, F  | M8.6, M10.5                                    | novo                                      |
-| M10.UX-R | Odobrenje referentnih slika ekrana M10 od vlasnika, prije UI koraka (D-183, `docs/SESSIONS.md` §6)                                                                                                                                                                           | V     |                                                | novo; radnja vlasnika                     |
-| M10.PRIV | Privatnost: potvrda rokova i hasha (D-264 Q09, Q11), postupak provjere identiteta u referadi (D-271 MQ02), klauzula o izlazu u ugovoru o obradi (D-264 Q13)                                                                                                                  | V     |                                                | novo; radnja vlasnika                     |
-| M10.Z1   | Proba povrata na sintetičkom obliku: kontrolna točka evidencije brisanja mora se podudarati prije otvaranja povrata (D-272 MQ07, D-273 MQ15)                                                                                                                                 | B     | M10.2, M10.3                                   | novo                                      |
-| M10.Z2   | Proba povrata na stagingu sa stvarnom infrastrukturom u valu 3 (D-273 MQ15)                                                                                                                                                                                                  | P     | M10.Z1, B0.1                                   | novo; računi i staging su radnja vlasnika |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M10.0-S1 | Jedan ugovor brisanja: tablica `erasure` samo za dodavanje (nadgrobni zapis), uske SECURITY DEFINER funkcije samo za `ductus_retention`, zasebna migracija koja sužava okidač nad `audit.access_log`, potpisana kontrolna točka evidencije brisanja (D-272 MQ04, MQ05, MQ07) | B | M3.2-P03 | novo |
+| M10.0-S2 | Raspored u workeru (pg-boss) s prvim poslom `purge_ended_sessions`; prije potvrde D-30 izvršavaju se samo već odlučeni poslovi, ostalo je probni prolaz (D-273 MQ08, MQ14) | B | M10.0-S1 | novo |
+| M10.1 | Rokovi čuvanja s FPZG-om (D-30); popis DATA-CLASS od 30 klasa u 8 kategorija (C-21) nad mainom u trenutku izrade (M10.1-P01, D-271 MQ01, MQ03); tiket prati D-264 Q11 (D-275 MQ16) | V | FPZG | Owner queue |
+| M10.2 | Klase podataka i brisanje po roku, uključujući stanje prikaza uživo, verzije i vrijeme po promjeni; hash i potvrde se čuvaju zasebno, radi dokaza predaje (D-272 MQ06) | B | M10.1, M10.0-S1, B0.1 (bucket kontrolne točke) | DAN-297 |
+| M10.3 | Pravno zadržavanje (F-02); postavlja ga admin ustanove s referencom (broj slučaja), skida drugi admin ili operater, više zadržavanja vrijedi neovisno (D-274 MQ11) | B | M10.2 | DAN-415 |
+| M10.4 | Student vidi tko je i kada otvorio njegov rad (pravilo 17, C4); M10.4-P02 popisuje sve putove koji vraćaju sadržaj ili sažetak, retci po 5 minuta grupirani po danu, bez zbroja posjeta i trajanja (D-274 MQ10) | B, F | M3.11 | DAN-294 |
+| M10.5 | Izvoz za studenta i za bivšeg studenta preko referade: referada prima zahtjev i provjerava identitet, admin ustanove pokreće posao s referencom, jednokratna poveznica na 24 h (D-271 MQ02) | B, F | M8.6, M3.11 | DAN-316 (dio) |
+| M10.6 | Izlaz iz usluge: izvoz svih podataka fakulteta (F-04); pokreće operater na pisani zahtjev ustanove, bez brisanja; P01 ugovor u valu 3, P02 i P03 nakon pilota a prije njegova kraja (D-274 MQ12) | B | M10.5 | DAN-416 |
+| M10.7 | Administracija čuvanja, pravnog zadržavanja i revizijskog traga | F | M10.2, M2.11 | DAN-417 |
+| M10.8 | (uvjetno) Studentova vlastita povijest rada (D-131); ne gradi se do pravnog mišljenja (D-55) i potvrde C-19, klasa 12 ostaje rezervirana u DATA-CLASS (D-274 MQ09, uvjet U-8) | B, F | pravno mišljenje D-55, C-19, uvjet U-8 | DAN-424 |
+| M10.9 | (uvjetno) Paket za zaštitu studenta: proširenje prenosivog zapisa (D-49, S-01 iz `docs/FEATURES.md`; ekran S-46 paket zaštite) | B, F | M7.10, M10.5, uvjet U-5 | novo |
+| M10.10 | (uvjetno) Izvješće za evaluaciju smjernica (F-01, FPZG čl. 13), samo agregati | B, F | M6.10, M10.7, uvjet U-6 | novo |
+| M10.11 | Portfelj nakon studija: izvoz predanog rada za portfelj (S-10) | B, F | M8.6, M10.5 | novo |
+| M10.UX-R | Odobrenje referentnih slika ekrana M10 od vlasnika, prije UI koraka (D-183, `docs/SESSIONS.md` §6) | V | | novo; radnja vlasnika |
+| M10.PRIV | Privatnost: potvrda rokova i hasha (D-264 Q09, Q11), postupak provjere identiteta u referadi (D-271 MQ02), klauzula o izlazu u ugovoru o obradi (D-264 Q13) | V | | novo; radnja vlasnika |
+| M10.Z1 | Proba povrata na sintetičkom obliku: kontrolna točka evidencije brisanja mora se podudarati prije otvaranja povrata (D-272 MQ07, D-273 MQ15) | B | M10.2, M10.3 | novo |
+| M10.Z2 | Proba povrata na stagingu sa stvarnom infrastrukturom u valu 3 (D-273 MQ15) | P | M10.Z1, B0.1 | novo; računi i staging su radnja vlasnika |
 
 **Ekrani:** S-18 vlastita povijest rada, S-42 dnevnik pristupa, S-44 izvoz vlastitih podataka, A-05 čuvanje i pravno zadržavanje, A-06 revizijski trag pristupa, A-08 izlaz iz usluge.
 
@@ -3057,20 +3061,20 @@ Izvoz (M8.4, M8.5, M8.14) je u valu 1 (D-203 A3); uvozni opseg se ne mijenja.
 
 **Gotovo na mainu:** axe E2E; test bez lažnog pružatelja u produkcijskom buildu; mapa `docs/privacy/`; `docs/OPERATIONS.md` (DAN-540). **Nema:** produkcijske i staging konfiguracije, statusne stranice, engleskog kataloga sučelja.
 
-| Korak  | Naziv                                                                                                                                                                                                                                                                         | Uloga | Ovisi o                | Tiket                       |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------- | --------------------------- |
-| M11.1  | Računi dobavljača i spike B0.1 (PITR, RTT, KMS); DAN-52 ostaje uski tiket za objektnu pohranu (M11.1-P03), kišobran B0.1 za M11.1-P01 i P02 otvara orkestrator (D-277 NQ04). Računi su radnja vlasnika (D-278 NQ18)                                                           | V, P  | računi                 | DAN-52                      |
-| M11.2  | Produkcijski Dockerfile, Caddy, OpenTofu, proba povrata baze i bucketa; jedini nositelj probe povrata je M11.2-P04 u `scripts/operations/restore-drill/`; D-91 t. 3 je spojen preko #1051, M11.2-P03 samo za eventualni ostatak (D-277 NQ05, NQ07)                            | P     | M11.1                  | DAN-298                     |
-| M11.3  | Health i readiness, provjera okoline pri pokretanju, strukturirani log u `src/server/log/`, kostur `docs/OPERATIONS.md`; DAN-299 ostaje Done, ostatak ide u tri uska nova tiketa (D-277 NQ03, NQ06)                                                                           | P, B  |                        | DAN-299                     |
-| M11.4  | Staging s AAI@EduHr Labom i sintetički prolaz evidencije na istim vrstama resursa                                                                                                                                                                                             | P     | M11.2, M1.2            | DAN-426                     |
-| M11.5  | Sučelje na engleskom (D-70) i postavke profila                                                                                                                                                                                                                                | F     |                        | DAN-427                     |
-| M11.6  | Pristupačnost WCAG 2.2 AA (D-276 NQ01, D-248), ručna provjera čitačem zaslona i izjava o pristupačnosti u obliku koji traži hrvatski propis, uz poziv na EN 301 549 (F-03)                                                                                                    | F     |                        | DAN-428                     |
-| M11.7  | Statusna stranica i postupak incidenta (F-10 iz `docs/FEATURES.md`)                                                                                                                                                                                                           | P     | M11.2                  | DAN-429                     |
-| M11.8  | Obavijest o privatnosti, DPIA, ugovor o obradi i popis podizvršitelja s DPA-ima; DAN-430 dijele M9.PRIV i M11.8, jedan nositelj dokumenta je M11.8-P01 (D-278 NQ11)                                                                                                           | V     | FPZG, pravno mišljenje | DAN-430                     |
-| M11.9  | Prije pilota: nadzor i uzbune, build bez source mapa, vanjski penetracijski test, ograničenja zahtjeva, SBOM                                                                                                                                                                  | P, B  | M11.2                  | DAN-184 do DAN-187, DAN-322 |
-| M11.10 | „Prijavi problem”, mobilni prikaz svih ekrana, stranica „Kako Ductura radi”                                                                                                                                                                                                   | F     |                        | DAN-431                     |
-| M11.11 | Licenca, uvjeti korištenja i odluka o vidljivosti repoa; M11.11-P01 priprema licencu, uvjete i popis onoga što ne smije biti javno, odluka je vlasnikova uz pravnika (D-277 NQ02)                                                                                             | V     |                        | DAN-188                     |
-| M11.12 | Brze bilješke s mobitela u bilježnicu projekta (S-03). Bilješka koja ulazi u rad je promjena dokumenta s vrstom izvora „mobilna bilješka” (pravilo 8). Nije GO uvjet i ne blokira M11.Z1; gradi se u valu 3 samo ako ostane kapaciteta, inače odmah nakon pilota (D-277 NQ09) | F, B  | M5.9, M11.10           | novo                        |
+| Korak | Naziv | Uloga | Ovisi o | Tiket |
+| --- | --- | --- | --- | --- |
+| M11.1 | Računi dobavljača i spike B0.1 (PITR, RTT, KMS); DAN-52 ostaje uski tiket za objektnu pohranu (M11.1-P03), kišobran B0.1 za M11.1-P01 i P02 otvara orkestrator (D-277 NQ04). Računi su radnja vlasnika (D-278 NQ18) | V, P | računi | DAN-52 |
+| M11.2 | Produkcijski Dockerfile, Caddy, OpenTofu, proba povrata baze i bucketa; jedini nositelj probe povrata je M11.2-P04 u `scripts/operations/restore-drill/`; D-91 t. 3 je spojen preko #1051, M11.2-P03 samo za eventualni ostatak (D-277 NQ05, NQ07) | P | M11.1 | DAN-298 |
+| M11.3 | Health i readiness, provjera okoline pri pokretanju, strukturirani log u `src/server/log/`, kostur `docs/OPERATIONS.md`; DAN-299 ostaje Done, ostatak ide u tri uska nova tiketa (D-277 NQ03, NQ06) | P, B | | DAN-299 |
+| M11.4 | Staging s AAI@EduHr Labom i sintetički prolaz evidencije na istim vrstama resursa | P | M11.2, M1.2 | DAN-426 |
+| M11.5 | Sučelje na engleskom (D-70) i postavke profila | F | | DAN-427 |
+| M11.6 | Pristupačnost WCAG 2.2 AA (D-276 NQ01, D-248), ručna provjera čitačem zaslona i izjava o pristupačnosti u obliku koji traži hrvatski propis, uz poziv na EN 301 549 (F-03) | F | | DAN-428 |
+| M11.7 | Statusna stranica i postupak incidenta (F-10 iz `docs/FEATURES.md`) | P | M11.2 | DAN-429 |
+| M11.8 | Obavijest o privatnosti, DPIA, ugovor o obradi i popis podizvršitelja s DPA-ima; DAN-430 dijele M9.PRIV i M11.8, jedan nositelj dokumenta je M11.8-P01 (D-278 NQ11) | V | FPZG, pravno mišljenje | DAN-430 |
+| M11.9 | Prije pilota: nadzor i uzbune, build bez source mapa, vanjski penetracijski test, ograničenja zahtjeva, SBOM | P, B | M11.2 | DAN-184 do DAN-187, DAN-322 |
+| M11.10 | „Prijavi problem”, mobilni prikaz svih ekrana, stranica „Kako Ductura radi” | F | | DAN-431 |
+| M11.11 | Licenca, uvjeti korištenja i odluka o vidljivosti repoa; M11.11-P01 priprema licencu, uvjete i popis onoga što ne smije biti javno, odluka je vlasnikova uz pravnika (D-277 NQ02) | V | | DAN-188 |
+| M11.12 | Brze bilješke s mobitela u bilježnicu projekta (S-03). Bilješka koja ulazi u rad je promjena dokumenta s vrstom izvora „mobilna bilješka” (pravilo 8). Nije GO uvjet i ne blokira M11.Z1; gradi se u valu 3 samo ako ostane kapaciteta, inače odmah nakon pilota (D-277 NQ09) | F, B | M5.9, M11.10 | novo |
 
 **Ekrani:** A-07 integracije i status AAI@EduHr, A-09 zdravlje sustava i kopije, J-01 naslovnica, J-02 kako Ductura radi, J-05 statusna stranica i izjava o pristupačnosti, Z-09 postavke, Z-10 prijavi problem, Z-12 mobilni prikaz.
 
@@ -3082,16 +3086,16 @@ Izvoz (M8.4, M8.5, M8.14) je u valu 1 (D-203 A3); uvozni opseg se ne mijenja.
 
 Sadržaj vala 3 raspoređen je po fazama prema odluci orkestratora T3 (#87 c.6544288967, opcija C; delegirano u #87 c.6543799262, t. 3): stavke bez vanjskog preduvjeta su koraci svojih faza (M5.14 do M5.15, M6.11, M7.13, M8.7, M10.11, M11.12), a već raspoređene stavke ostaju gdje jesu (M6.9 konzultacije, M6.10 zbirni pregled, M7.6 vremeplov, M7.10 prenosiv zapis, M8.3 uvoz PDF-a, M5.7 provjera izvora, M6.2 reprodukcija s poviješću odlomka, M10.8 povijest rada, od D-274 MQ09 uvjetna i bez osnovnog prijema). Stavke ispod imaju pravni ili ustavni uvjet, ne grade se dok se on ne riješi i nisu dio uvjeta završetka svoje faze. Odluku o svakom uvjetu donosi vlasnik.
 
-| Uvjet | Koraci         | Što treba riješiti                                                                                                                                                                                               | Granica                           |
-| ----- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| U-1   | M6.12          | Što komentor i povjerenstvo smiju vidjeti (tekst, sažetak, reprodukciju, prikaz uživo) i hoće li se mijenjati PRODUCT §3 i §5 pravilo 7. Model u M2.8 ostaje; sučelje čeka.                                      | Ustav C-23, D-154, pravilo 7      |
-| U-2   | M6.13 do M6.15 | Pravno mišljenje D-55 i vlasnikova zasebna odluka o gradnji (D-136). Dio „Bilješka mentora” u M6.9 (D-47) vrijedi pod istim uvjetom (D-135).                                                                     | D-130, D-135, D-136               |
-| U-3   | M7.11, M7.12   | Vlasnik potvrđuje tekst kriterija prihvaćanja: popis mjesta je činjenica, bez rangiranja, težine ni zbroja; „razgovor održan” bez ocjene; student vidi identičan popis.                                          | PRODUCT §5 pravila 1, 2, 3, 5, 13 |
-| U-4   | dio M9.6       | Oznaka „podudara se s odgovorom AI pomoćnika” ostaje oznaka mjesta, ne tvrdnja o autoru.                                                                                                                         | pravilo 1 (C-9, C-10); D-194      |
-| U-5   | M10.9          | Tekst paketa i QR provjere ne smije tvrditi autorstvo; dokument izlazi izvan sustava.                                                                                                                            | pravilo 9, C-13                   |
-| U-6   | M10.10         | Agregati bez rizika, ranga i ocjena; isti prag od najmanje 5 studenata kao N-11.                                                                                                                                 | pravilo 2                         |
-| U-7   | M8.12          | Dodaci idu u sljedeći val, ne u pilot (D-198 t. 2, ODLUČENO 1. 11. 2026.). Prije gradnje pisana potvrda FPZG-a, pravno mišljenje, DPIA i provjera ograničenja Microsofta i Googlea. Do tada vrijede D-79 i D-80. | D-79, D-80                        |
-| U-8   | M10.8          | Pravno mišljenje D-55 (razmjernost čuvanja obrisanog teksta) i potvrda C-19. Do tada se ne gradi, a klasa 12 ostaje rezervirana u DATA-CLASS. DAN-424 i DAN-463 se ne udvostručuju.                              | D-131, D-55, D-274 MQ09           |
+| Uvjet | Koraci | Što treba riješiti | Granica |
+| --- | --- | --- | --- |
+| U-1 | M6.12 | Što komentor i povjerenstvo smiju vidjeti (tekst, sažetak, reprodukciju, prikaz uživo) i hoće li se mijenjati PRODUCT §3 i §5 pravilo 7. Model u M2.8 ostaje; sučelje čeka. | Ustav C-23, D-154, pravilo 7 |
+| U-2 | M6.13 do M6.15 | Pravno mišljenje D-55 i vlasnikova zasebna odluka o gradnji (D-136). Dio „Bilješka mentora” u M6.9 (D-47) vrijedi pod istim uvjetom (D-135). | D-130, D-135, D-136 |
+| U-3 | M7.11, M7.12 | Vlasnik potvrđuje tekst kriterija prihvaćanja: popis mjesta je činjenica, bez rangiranja, težine ni zbroja; „razgovor održan” bez ocjene; student vidi identičan popis. | PRODUCT §5 pravila 1, 2, 3, 5, 13 |
+| U-4 | dio M9.6 | Oznaka „podudara se s odgovorom AI pomoćnika” ostaje oznaka mjesta, ne tvrdnja o autoru. | pravilo 1 (C-9, C-10); D-194 |
+| U-5 | M10.9 | Tekst paketa i QR provjere ne smije tvrditi autorstvo; dokument izlazi izvan sustava. | pravilo 9, C-13 |
+| U-6 | M10.10 | Agregati bez rizika, ranga i ocjena; isti prag od najmanje 5 studenata kao N-11. | pravilo 2 |
+| U-7 | M8.12 | Dodaci idu u sljedeći val, ne u pilot (D-198 t. 2, ODLUČENO 1. 11. 2026.). Prije gradnje pisana potvrda FPZG-a, pravno mišljenje, DPIA i provjera ograničenja Microsofta i Googlea. Do tada vrijede D-79 i D-80. | D-79, D-80 |
+| U-8 | M10.8 | Pravno mišljenje D-55 (razmjernost čuvanja obrisanog teksta) i potvrda C-19. Do tada se ne gradi, a klasa 12 ostaje rezervirana u DATA-CLASS. DAN-424 i DAN-463 se ne udvostručuju. | D-131, D-55, D-274 MQ09 |
 
 Planer (M5.15) i „Moj rad u brojkama” (M7.13) više nisu uvjetni prema odluci vlasnika o D-63 („1. da 2. da”, #87), ali izričiti izuzetak u PRODUCT §5 pravilu 4 (napredak po poglavlju, dani do roka, napredak iz verzija) upisuje tek docs PR #1030: **M5.15 i M7.13 ne počinju prije spajanja #1030.** A-08 (dnevni vremenski žig kod vanjskog pružatelja) ostaje izvan rasporeda.
 
@@ -3114,6 +3118,7 @@ Ovi ekrani iz mape nemaju mjesto u tablici faza i ne grade se dok vlasnik ne odl
 11. M8 Document Provenance (D-198): rok čuvanja uvezenih verzija uz FPZG DPO i pravno mišljenje (t. 3). Dodaci za Word i Google Docs odlučeni su za sljedeći val (t. 2, U-7).
 12. Uloge nastavnika i mentora (D-204). D-154 kaže da su mentor i nastavnik zadatka „jedna uloga općenito”, a D-204 da je ista osoba nastavnik na kolegiju i mentor na pisanom radu. Je li to jedna potvrđena uloga `teacher` s dva odnosa (kolegij, mentorstvo) ili dvije uloge, i treba li izmijeniti D-154? `docs/PRODUCT.md` §3 još navodi da administrator „potvrđuje ulogu nastavnika i mentora” i ulaz „dodjelom mentoru”, a popis vrsta mentorskog rada (završni, diplomski, specijalistički, doktorski) razlikuje se od D-204 (esej, završni, diplomski i drugi). Otvoreno je i što se događa s mentorstvima kad se nastavniku opozove uloga (D-200 P7). Točka 2 odluke o ulogama od 31. 10. 2026. (povjerenstvo u istrazi) čeka izmjenu Ustava.
 13. Trajanje produljene probe D-196 (D-205 t. 5): zapis ne navodi novi završni datum. Traje li do jezgre M2 (30. 11. 2026.) ili do kraja M2 (20. 12. 2026.)? `docs/ORKESTRATOR.md` §4a još navodi „do 14. 11. 2026.”.
+
 
 ### Podatkovni i korisnički tokovi
 
@@ -3166,54 +3171,54 @@ Pet najvažnijih rubnih slučajeva koje konkretni koraci moraju pokriti:
 
 #### 3. Stvarno postojeće i potrebno proširenje
 
-| Cjelina               | Postojeće u pregledanom mainu                                                                                         | Potrebno                                                           |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Baza                  | 34 migracije; identity, institution, evidence, collaboration i audit; RLS i RPC-i                                     | Nove projekcije, ciljane rute i nekoliko domenskih proširenja      |
-| Studentski editor     | /rad, LocalDocument, journal, komentari, lokalno spremanje, live publisher                                            | Završiti stvarni dokument zadatka i spoj trajne evidencije         |
-| Otvaranje rada        | readWorkDocument, readWorkContext, POST /api/evidence/open                                                            | Iskoristiti iste rezultate u svim površinama rada                  |
-| Sinkronizacija        | AtomicDexieJournal.startEvidence/adoptServerEvidence, createDrainRunner, createEvidenceTransport, evidenceVerifierFor | Povezati stvarnog UI pozivatelja prema postojećem 3d-2c ugovoru    |
-| Nastavnički ulaz      | /nastavnik i readTeacherCourses                                                                                       | Detalj kolegija/zadatka i navigacija do radova                     |
-| Veza zadatak → radovi | readAssignmentWorks i app.assignment_works                                                                            | F2 poveznice; kasnije puna projekcija predaja i studenata bez rada |
-| Novi kolegij/zadatak  | TeacherSetup i postojeći createAssignment/course API                                                                  | Samostalno stvaranje zadatka u postojećem kolegiju                 |
-| Predaja               | /rad/[assignmentId]/predaja, Submission, POST /api/submission                                                         | Završiti povezani tok; dopuniti postojeće auditne zadatke          |
-| Uloge                 | institution_role, confirm/revoke teacher; navigacija teacher/student                                                  | Minimalni institucijski admin i dopuštene projekcije korisnika     |
-| Dorade                | Čisti domenski automat revision-request.ts sa 6 stanja                                                                | Trajna pohrana, serverska autorizacija i UI                        |
-| Obavijesti            | N-01/N-02 u prihvaćenom FEATURES/PROGRAM                                                                              | Događaji, korisnički inbox, postavke i kasnije isporuka e-poštom   |
-| Dizajn                | v3 tokeni, AppShell, WorkspaceShell, fontovi, responsive i axe                                                        | Završiti postojeće popravke i provjeriti nove tokove               |
+| Cjelina | Postojeće u pregledanom mainu | Potrebno |
+|---|---|---|
+| Baza | 34 migracije; identity, institution, evidence, collaboration i audit; RLS i RPC-i | Nove projekcije, ciljane rute i nekoliko domenskih proširenja |
+| Studentski editor | /rad, LocalDocument, journal, komentari, lokalno spremanje, live publisher | Završiti stvarni dokument zadatka i spoj trajne evidencije |
+| Otvaranje rada | readWorkDocument, readWorkContext, POST /api/evidence/open | Iskoristiti iste rezultate u svim površinama rada |
+| Sinkronizacija | AtomicDexieJournal.startEvidence/adoptServerEvidence, createDrainRunner, createEvidenceTransport, evidenceVerifierFor | Povezati stvarnog UI pozivatelja prema postojećem 3d-2c ugovoru |
+| Nastavnički ulaz | /nastavnik i readTeacherCourses | Detalj kolegija/zadatka i navigacija do radova |
+| Veza zadatak → radovi | readAssignmentWorks i app.assignment_works | F2 poveznice; kasnije puna projekcija predaja i studenata bez rada |
+| Novi kolegij/zadatak | TeacherSetup i postojeći createAssignment/course API | Samostalno stvaranje zadatka u postojećem kolegiju |
+| Predaja | /rad/[assignmentId]/predaja, Submission, POST /api/submission | Završiti povezani tok; dopuniti postojeće auditne zadatke |
+| Uloge | institution_role, confirm/revoke teacher; navigacija teacher/student | Minimalni institucijski admin i dopuštene projekcije korisnika |
+| Dorade | Čisti domenski automat revision-request.ts sa 6 stanja | Trajna pohrana, serverska autorizacija i UI |
+| Obavijesti | N-01/N-02 u prihvaćenom FEATURES/PROGRAM | Događaji, korisnički inbox, postavke i kasnije isporuka e-poštom |
+| Dizajn | v3 tokeni, AppShell, WorkspaceShell, fontovi, responsive i axe | Završiti postojeće popravke i provjeriti nove tokove |
 
 **Baza ostaje jedna po prihvaćenom modelu, s odvojenim ovlastima i granicama ustanova.** Novi studentski dashboard ne traži novu bazu ni preseljenje na Supabase Auth. Objavljena instanca i primijenjene produkcijske migracije nisu provjerene ovim planom.
 
 #### 4. Mapa postojećih zadataka i aktivnog rada
 
-| Opseg                                        | Primarni postojeći trag                 | Uputa za izvršenje                                                        |
-| -------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| Dokument zadatka, stari lokalni nacrt, F2    | DAN-89; GitHub #711; otvoren #731       | Nastaviti postojeći ugovor, bez drugog F1 writera                         |
-| Potpisana sinkronizacija, bootstrap/recovery | DAN-37, DAN-49, DAN-285; #476 3d-2c     | Provjeriti stvarne dodjele; #734 je uski hardening, ne cijela integracija |
-| Puni K-4                                     | DAN-89, DAN-232; #655; otvoren #726     | Otvoreni PR ne znači izvršeni prihvatni tok                               |
-| Predana revizija, zatvaranje paketa          | DAN-289                                 | Dopuniti postojeći zadatak povezivanjem UI-ja                             |
-| Popis svih predaja                           | DAN-290                                 | Dodati roster/projekciju prije punog dashboarda                           |
-| Jednom izdana potvrda                        | DAN-291                                 | Iskoristiti postojeći receipt storage; ne uvoditi drugi potpisni put      |
-| Administrativne i verzijske rute             | DAN-292                                 | Podijeliti po postojećim RPC-ovima i provjerljivim radnjama               |
-| Snimke/verzije rada                          | DAN-293                                 | Dodati čitanje s provjerom hasha i pravima vidljivosti                    |
-| Studentov dnevnik pristupa                   | DAN-294; prethodni DAN-228 Done         | DAN-228 nije dokaz dovršenog studentskog prikaza                          |
-| Retention, infrastruktura i operacije        | DAN-297, DAN-298, DAN-299               | Ovisnosti za pilot; zasebno od izgleda frontend ekrana                    |
-| Odjava i spašene kopije                      | DAN-288; otvoren #751                   | Usuglasiti s D-166 i budućim radom s više dokumenata                      |
-| Dizajnerski popravci                         | #732; #742, #750; DAN-214/281           | #740 i #741 su već na mainu; ne ponavljati ih                             |
-| Studentski dashboard                         | GitHub #335                             | Pronaći/proširiti odgovarajući Linear opseg; po potrebi tek onda novi DAN |
-| Task wizard, roster, admin, policy           | GitHub #337, #327/#338, #331/#333, #328 | Povezati s postojećim DAN-ovima gdje se preklapaju                        |
-| Responsive i pristupačnost                   | #341; DAN-232                           | Kriteriji uz svaki ekran i završna provjera                               |
+| Opseg | Primarni postojeći trag | Uputa za izvršenje |
+|---|---|---|
+| Dokument zadatka, stari lokalni nacrt, F2 | DAN-89; GitHub #711; otvoren #731 | Nastaviti postojeći ugovor, bez drugog F1 writera |
+| Potpisana sinkronizacija, bootstrap/recovery | DAN-37, DAN-49, DAN-285; #476 3d-2c | Provjeriti stvarne dodjele; #734 je uski hardening, ne cijela integracija |
+| Puni K-4 | DAN-89, DAN-232; #655; otvoren #726 | Otvoreni PR ne znači izvršeni prihvatni tok |
+| Predana revizija, zatvaranje paketa | DAN-289 | Dopuniti postojeći zadatak povezivanjem UI-ja |
+| Popis svih predaja | DAN-290 | Dodati roster/projekciju prije punog dashboarda |
+| Jednom izdana potvrda | DAN-291 | Iskoristiti postojeći receipt storage; ne uvoditi drugi potpisni put |
+| Administrativne i verzijske rute | DAN-292 | Podijeliti po postojećim RPC-ovima i provjerljivim radnjama |
+| Snimke/verzije rada | DAN-293 | Dodati čitanje s provjerom hasha i pravima vidljivosti |
+| Studentov dnevnik pristupa | DAN-294; prethodni DAN-228 Done | DAN-228 nije dokaz dovršenog studentskog prikaza |
+| Retention, infrastruktura i operacije | DAN-297, DAN-298, DAN-299 | Ovisnosti za pilot; zasebno od izgleda frontend ekrana |
+| Odjava i spašene kopije | DAN-288; otvoren #751 | Usuglasiti s D-166 i budućim radom s više dokumenata |
+| Dizajnerski popravci | #732; #742, #750; DAN-214/281 | #740 i #741 su već na mainu; ne ponavljati ih |
+| Studentski dashboard | GitHub #335 | Pronaći/proširiti odgovarajući Linear opseg; po potrebi tek onda novi DAN |
+| Task wizard, roster, admin, policy | GitHub #337, #327/#338, #331/#333, #328 | Povezati s postojećim DAN-ovima gdje se preklapaju |
+| Responsive i pristupačnost | #341; DAN-232 | Kriteriji uz svaki ekran i završna provjera |
 
 Prije prvog izvršnog koraka osvježiti sve retke. Tijekom planiranja nisu mijenjani statusi ni tuđe rezervacije.
 
 #### 5. Redoslijed i granice isporuke
 
-| Faza                          | Ishod                                                                                      | Preduvjeti                                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| A — postojeći demo            | Isti studentski rad prolazi pisanje, trajnu sinkronizaciju, nastavnički komentar i predaju | Aktualni #711, #476 i K-4                             |
-| B — svakodnevni rad           | Moji radovi, postojeći kolegiji, roster, verzije zadatka i rokovi                          | A; dodatne projekcije i ugovori B4–B9                 |
-| C — upravljanje i privatnost  | Ovlašteni institucijski admin, studentov audit i verzije                                   | A/B; D-16/AAI i data-access odluke                    |
-| D — dodatni prihvaćeni tokovi | Obavijesti, dorade, institucionalna pravila i izvoz                                        | Odgovarajući B/C ugovori i prihvaćeni raspored valova |
-| E — pilot i operacije         | Provjerljiva spremnost, infrastruktura i zasebna ops granica                               | Postojeći M1/M10/M11 GO uvjeti                        |
+| Faza | Ishod | Preduvjeti |
+|---|---|---|
+| A — postojeći demo | Isti studentski rad prolazi pisanje, trajnu sinkronizaciju, nastavnički komentar i predaju | Aktualni #711, #476 i K-4 |
+| B — svakodnevni rad | Moji radovi, postojeći kolegiji, roster, verzije zadatka i rokovi | A; dodatne projekcije i ugovori B4–B9 |
+| C — upravljanje i privatnost | Ovlašteni institucijski admin, studentov audit i verzije | A/B; D-16/AAI i data-access odluke |
+| D — dodatni prihvaćeni tokovi | Obavijesti, dorade, institucionalna pravila i izvoz | Odgovarajući B/C ugovori i prihvaćeni raspored valova |
+| E — pilot i operacije | Provjerljiva spremnost, infrastruktura i zasebna ops granica | Postojeći M1/M10/M11 GO uvjeti |
 
 Faza A je postojeći odobreni posao prije demoa. Faze B–E su prijedlog redoslijeda unutar prihvaćenog programa, uz primjenu njegovih valova; ovaj dokument ih ne prebacuje automatski u demo ili prvi pilot.
 
@@ -3286,30 +3291,19 @@ Faza A je postojeći odobreni posao prije demoa. Faze B–E su prijedlog redosli
 **Create:** src/server/institution/student-workspace.ts i student-workspace.test.ts. **Test:** novi db/tests/090-student-workspace.sql; numeraciju provjeriti prije upisa.
 
 **Predloženi novi interface:**
-
 ```ts
 type StudentWorkspaceItem = {
-  assignmentId: string;
-  courseId: string;
-  courseName: string;
-  academicYear: string;
-  title: string;
-  opensAt: string;
-  dueAt: string;
-  currentVersion: number;
-  acknowledged: boolean;
-  documentId: string | null;
-  serverRevision: number | null;
-  submittedRevision: number | null;
-  submittedAt: string | null;
-  afterDeadline: boolean | null;
+  assignmentId: string; courseId: string; courseName: string; academicYear: string;
+  title: string; opensAt: string; dueAt: string; currentVersion: number;
+  acknowledged: boolean; documentId: string | null;
+  serverRevision: number | null; submittedRevision: number | null;
+  submittedAt: string | null; afterDeadline: boolean | null;
 };
 type StudentWorkspaceRead =
-  { kind: "ok"; items: StudentWorkspaceItem[] } | { kind: "unauthorized" | "unavailable" };
-declare function readStudentWorkspace(
-  token: string | undefined,
-  withActor: WithActor,
-): Promise<StudentWorkspaceRead>;
+  | { kind: "ok"; items: StudentWorkspaceItem[] }
+  | { kind: "unauthorized" | "unavailable" };
+declare function readStudentWorkspace(token: string | undefined, withActor: WithActor):
+  Promise<StudentWorkspaceRead>;
 ```
 
 - [ ] Testirati sintetičku studenticu s dva kolegija i radovima te drugu ustanovu: vidi samo vlastite dopuštene zadatke i predaje; zatvoreno članstvo ne otvara editor.
@@ -3370,15 +3364,11 @@ declare function readStudentWorkspace(
 **Create:** src/server/institution/assignment-roster.ts, assignment-roster.test.ts, nova migracija assignment_submissions i pgTAP datoteka assignment-submissions.sql. **Reuse:** institution.course_member, evidence.submission, app.assignment_works.
 
 **Predloženi interface:**
-
 ```ts
 type AssignmentRosterItem = {
-  studentId: string;
-  displayLabel: string | null;
-  documentId: string | null;
-  submissionId: string | null;
-  submittedRevision: number | null;
-  submittedAt: string | null;
+  studentId: string; displayLabel: string | null;
+  documentId: string | null; submissionId: string | null;
+  submittedRevision: number | null; submittedAt: string | null;
   afterDeadline: boolean | null;
 };
 type RosterCursor = { sortKey: string; studentId: string };
@@ -3386,10 +3376,8 @@ type AssignmentRosterRead =
   | { kind: "ok"; items: AssignmentRosterItem[]; nextCursor: RosterCursor | null }
   | { kind: "unauthorized" | "not_found" | "unavailable" };
 declare function readAssignmentRoster(
-  token: string | undefined,
-  assignmentId: string,
-  page: { limit: number; cursor: RosterCursor | null },
-  withActor: WithActor,
+  token: string | undefined, assignmentId: string,
+  page: { limit: number; cursor: RosterCursor | null }, withActor: WithActor
 ): Promise<AssignmentRosterRead>;
 ```
 
@@ -3480,21 +3468,15 @@ declare function readAssignmentRoster(
 **Create:** src/server/institution/admin-people.ts, teacher-role-route.ts; app/api/institution/teacher-grants/route.ts i teacher-revocations/route.ts. Nova migracija institution_admin_people dodaje ograničeno čitanje; audit_admin_action dodaje administrativni trag ako aktualni audit modul to još nema.
 
 **Predloženi interfaces:**
-
 ```ts
 type TeacherCandidate = {
-  id: string;
-  displayLabel: string | null;
-  eligibility: "verified" | "unknown";
-  teacherRole: "confirmed" | "unconfirmed";
+  id: string; displayLabel: string | null;
+  eligibility: "verified" | "unknown"; teacherRole: "confirmed" | "unconfirmed";
 };
 declare function readTeacherCandidates(
-  token: string | undefined,
-  withActor: WithActor,
-): Promise<
-  | { kind: "ok"; people: TeacherCandidate[] }
-  | { kind: "unauthorized" | "not_found" | "unavailable" }
->;
+  token: string | undefined, withActor: WithActor
+): Promise<{kind: "ok"; people: TeacherCandidate[]} |
+           {kind: "unauthorized" | "not_found" | "unavailable"}>;
 ```
 
 HTTP POST grant prima candidateId; opoziv prima teacherId. Akter i ustanova uvijek se izvode iz sesije. Rezultat ne vraća podatke druge ustanove.
@@ -3625,7 +3607,7 @@ HTTP POST grant prima candidateId; opoziv prima teacherId. Akter i ustanova uvij
 
 **Vlasnici:** vlasnik/Platforma/Backend za ADR, zatim odvojeni Backend i Frontend zadaci. **Trag:** uloga operatera u PRODUCT; DAN-299 za operativne izvore. Zaseban razrađen Linear zadatak za portal nije nađen. **Risk:** critical.
 
-**Predloženi oblik:** zasebno zaštićena grupa ruta u postojećem Next.js procesu, npr. app/operacije/_, src/server/operations/_ i src/components/operations/*. Konačna ruta i session granica prihvaćaju se u ADR-u prije koda.
+**Predloženi oblik:** zasebno zaštićena grupa ruta u postojećem Next.js procesu, npr. app/operacije/*, src/server/operations/* i src/components/operations/*. Konačna ruta i session granica prihvaćaju se u ADR-u prije koda.
 
 - [ ] ADR mora zaključiti identitet operatera, prijavu/MFA, odvojenu privilegiranu sesiju, opoziv, audit, dozvoljene projekcije i iznimni pristup podrške. Poddomena sama nije sigurnosna granica.
 - [ ] Nakon toga definirati read-only prvi rez: ustanove po operativnom statusu, zdravlje servisa, posljednji potvrđeni restore, odgođeni poslovi i incidenti. Svako polje ima asOf i healthy/degraded/down/unknown/not_configured.
@@ -3649,19 +3631,19 @@ HTTP POST grant prima candidateId; opoziv prima teacherId. Akter i ustanova uvij
 
 Ova tablica ide u kriterije zadataka/PR-ova gdje je primjenjiva; ne uvodi novi statusni registar ili novu automatiziranu provjeru.
 
-| Stanje               | Primjer                                   | UI ishod                                                           |
-| -------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
-| loading              | Čeka se roster                            | Vidljiva poruka učitavanja, bez lažne nule                         |
-| empty                | Ovlašteni student nema zadatke            | Objašnjenje i Upis u kolegij                                       |
-| unauthorized/expired | Sesija istekla                            | Postojeća AAI prijava; čuvanje lokalnog rada prema ugovoru         |
-| denied/not_found     | Tuđi ili nepostojeći rad                  | Neutralna poruka bez identiteta i sadržaja                         |
-| pending_role         | Uloga još nije potvrđena                  | Vlastiti status i kontakt/postupak potvrde nakon C1/C2             |
-| offline              | Trenutno nema mreže                       | Samo stvarno dostupne lokalne radnje, jasna granica server potvrde |
-| conflict             | Drugi uređaj ili novija verzija zadatka   | Eksplicitni recovery/reload; nema tihog overwritea                 |
-| unknown              | Lokalni journal/health feed nije dostupan | Ne tvrditi da je sve poslano ili zdravo                            |
-| unavailable/error    | Baza ili servis nedostupan                | Poruka i siguran retry; ne prazna lista                            |
-| success              | Objavljena verzija/predaja                | Potvrđeni serverski rezultat i identifikator/verzija               |
-| stale/changed        | Na serveru postoji novija verzija         | Prikaz razlike i nova dozvoljena radnja                            |
+| Stanje | Primjer | UI ishod |
+|---|---|---|
+| loading | Čeka se roster | Vidljiva poruka učitavanja, bez lažne nule |
+| empty | Ovlašteni student nema zadatke | Objašnjenje i Upis u kolegij |
+| unauthorized/expired | Sesija istekla | Postojeća AAI prijava; čuvanje lokalnog rada prema ugovoru |
+| denied/not_found | Tuđi ili nepostojeći rad | Neutralna poruka bez identiteta i sadržaja |
+| pending_role | Uloga još nije potvrđena | Vlastiti status i kontakt/postupak potvrde nakon C1/C2 |
+| offline | Trenutno nema mreže | Samo stvarno dostupne lokalne radnje, jasna granica server potvrde |
+| conflict | Drugi uređaj ili novija verzija zadatka | Eksplicitni recovery/reload; nema tihog overwritea |
+| unknown | Lokalni journal/health feed nije dostupan | Ne tvrditi da je sve poslano ili zdravo |
+| unavailable/error | Baza ili servis nedostupan | Poruka i siguran retry; ne prazna lista |
+| success | Objavljena verzija/predaja | Potvrđeni serverski rezultat i identifikator/verzija |
+| stale/changed | Na serveru postoji novija verzija | Prikaz razlike i nova dozvoljena radnja |
 
 Server odbijanje ne prevoditi u uspjeh. Vizualno skriven gumb ne zamjenjuje server provjeru.
 
@@ -3670,82 +3652,70 @@ Server odbijanje ne prevoditi u uspjeh. Vizualno skriven gumb ne zamjenjuje serv
 ##### 12.1 Profili koje koraci gore koriste
 
 **UNIT — za promijenjene servise, parsere i domenski automat**
-
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm exec vitest run --project unit src/server/institution/student-workspace.test.ts
 ```
-
 Posljednji argument zamjenjuje se točnom testnom datotekom navedenom u zadatku. Očekivanje: svaki konkretni novi test prolazi; privremena mutacija relevantne zaštite mora srušiti odgovarajući negativni test.
 
 **DB — samo izolirani sintetički stack namijenjen zadatku**
-
 ```bash
 pnpm stack:up
 pnpm db:migrate
 pnpm db:seed
 pnpm test:db
 ```
-
 Za ciljanu matricu može se koristiti postojeći pg_prove:
-
 ```bash
 docker compose exec -T postgres pg_prove -U ductus -d ductus /db/tests/090-student-workspace.sql
 ```
-
 Očekivanje: planirani broj pgTAP asercija i svi relevantni akteri imaju stvarno provjerene ishode. Odbijanje zbog nedostajućeg USAGE nije samo po sebi dokaz RLS-a.
 
 Za novi RPC/migraciju izvršitelj slijedi .agents/skills/ductus-new-table: migrator bez superuser prečaca, grantovi, FORCE RLS, testovi mutacija i lokalni rollback/reapply u vlastitoj potrošnoj testnoj bazi. Produkcija migrira samo prema odobrenom postupku.
 
 **UI — stvarni novi tok i postojeća pristupačnost**
-
 ```bash
 pnpm test:e2e:login student-workspace.spec.ts
 pnpm test:e2e accessibility.spec.ts --project=desktop --project=mobile
 pnpm test:e2e screenshots.spec.ts --project=desktop --project=mobile
 ```
-
 Prvi argument login suitea zamijeniti konkretnim novim spec-om, npr. assignment-roster.spec.ts. Login suite u pregledanom configu nema project nazvan chromium; standardni suite ima desktop/mobile/firefox/webkit. Nazive se ne smije zamijeniti napamet.
 
 **TRUST — evidencija, oporavak, auth, predaja i RLS**
-
 ```bash
 pnpm test:integration
 pnpm test:e2e:login demo-flow.spec.ts
 pnpm test:db
 ```
-
 Uz to izvesti ciljane property, offline/concurrency i relevantne browser provjere koje traži TESTING. D-168 dopušta odgodu WebKita/Safarija nakon demoa; odgoda ne vrijedi automatski za stvarni pilot.
 
 **Obvezna predaja**
-
 ```bash
 pnpm test
 pnpm build
 pnpm orch:overlap
 ```
-
 Primijeniti važeći pre-push/CI profil iz repoa. Ciljani brzi testovi tijekom rada ne zamjenjuju obvezne testove, formalni review ili QA. Ako projektna iznimka vrijedi, navesti je uz točan opseg.
 
 ##### 12.2 Točne predložene nove testne putanje
 
 Postojeći testovi se proširuju gdje već pokrivaju ponašanje. Ovo su predložene putanje za nove provjere; brojeve pgTAP datoteka izvršitelj usklađuje s aktualnim mainom prije preuzimanja.
 
-| Korak | Unit/DB test                                                                                                 | Browser dokaz                                |
-| ----- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| B1/B2 | src/server/institution/student-workspace.test.ts; db/tests/090-student-workspace.sql                         | e2e/login/student-workspace.spec.ts          |
-| B3    | src/components/teacher/AssignmentForm.test.ts                                                                | e2e/login/existing-course-assignment.spec.ts |
-| B5/B6 | src/server/institution/assignment-roster.test.ts; db/tests/091-assignment-submissions.sql                    | e2e/login/assignment-roster.spec.ts          |
-| B7/B8 | src/server/institution/assignment-version-route.test.ts; proširenje db/tests/032-institution-assignments.sql | e2e/login/assignment-version.spec.ts         |
-| B9    | src/server/institution/deadline-extension.test.ts; db/tests/092-deadline-extension.sql                       | e2e/login/deadline-extension.spec.ts         |
-| C2/C3 | src/server/institution/admin-people.test.ts; db/tests/093-institution-admin.sql                              | e2e/login/institution-admin.spec.ts          |
-| C4    | src/server/audit/work-access.test.ts; db/tests/094-work-access-read.sql                                      | e2e/login/work-access.spec.ts                |
-| C5    | src/server/evidence/checkpoint-read.test.ts; db/tests/095-document-checkpoints.sql                           | e2e/login/work-versions.spec.ts              |
-| D1    | src/server/notifications/notifications.test.ts; db/tests/096-notifications.sql                               | e2e/login/notifications.spec.ts              |
-| D2    | src/server/collaboration/revision-requests.test.ts; db/tests/097-revision-requests.sql                       | e2e/login/revision-requests.spec.ts          |
-| D3    | src/server/institution/policy-versions.test.ts; db/tests/098-institution-policy.sql                          | e2e/login/institution-policy.spec.ts         |
-| D4    | src/server/exports/request-export.test.ts; db/tests/099-exports.sql                                          | e2e/login/exports.spec.ts                    |
+| Korak | Unit/DB test | Browser dokaz |
+|---|---|---|
+| B1/B2 | src/server/institution/student-workspace.test.ts; db/tests/090-student-workspace.sql | e2e/login/student-workspace.spec.ts |
+| B3 | src/components/teacher/AssignmentForm.test.ts | e2e/login/existing-course-assignment.spec.ts |
+| B5/B6 | src/server/institution/assignment-roster.test.ts; db/tests/091-assignment-submissions.sql | e2e/login/assignment-roster.spec.ts |
+| B7/B8 | src/server/institution/assignment-version-route.test.ts; proširenje db/tests/032-institution-assignments.sql | e2e/login/assignment-version.spec.ts |
+| B9 | src/server/institution/deadline-extension.test.ts; db/tests/092-deadline-extension.sql | e2e/login/deadline-extension.spec.ts |
+| C2/C3 | src/server/institution/admin-people.test.ts; db/tests/093-institution-admin.sql | e2e/login/institution-admin.spec.ts |
+| C4 | src/server/audit/work-access.test.ts; db/tests/094-work-access-read.sql | e2e/login/work-access.spec.ts |
+| C5 | src/server/evidence/checkpoint-read.test.ts; db/tests/095-document-checkpoints.sql | e2e/login/work-versions.spec.ts |
+| D1 | src/server/notifications/notifications.test.ts; db/tests/096-notifications.sql | e2e/login/notifications.spec.ts |
+| D2 | src/server/collaboration/revision-requests.test.ts; db/tests/097-revision-requests.sql | e2e/login/revision-requests.spec.ts |
+| D3 | src/server/institution/policy-versions.test.ts; db/tests/098-institution-policy.sql | e2e/login/institution-policy.spec.ts |
+| D4 | src/server/exports/request-export.test.ts; db/tests/099-exports.sql | e2e/login/exports.spec.ts |
 
 Scenariji/asercije nalaze se u odgovarajućem koraku. Namjena testova je dokazati ovlasti i stvarne ishode, bez testiranja same činjenice da komponenta vraća markup.
 
@@ -3777,13 +3747,13 @@ Scenariji/asercije nalaze se u odgovarajućem koraku. Namjena testova je dokazat
 
 **Kasnije prema PROGRAM:** D1, D2, D3 i D4 ne uvode se svi odjednom; obavijesti i osnovni izvoz imaju prednost prema cilju konkretnog pilota. Puni institucionalni policy editor, prenosivi paket i vremeplov poštuju odabrani val. E1 prati svaki korak; E2 čeka ADR, E3 stvarne GO ovisnosti.
 
-| Paket                             |        Gruba procjena implementacijskog rada | Napomena                                                                                |
-| --------------------------------- | -------------------------------------------: | --------------------------------------------------------------------------------------- |
-| B: svakodnevni tokovi             |                            14–24 writer-dana | Zbroj Backend + Frontend, uz postojeće temelje i B4 podkorake                           |
-| C: minimalni admin i privatnost   |                            10–18 writer-dana | C1 vanjsko čekanje nije u broju; C5 može ostati u kasnijem valu                         |
-| D: obavijesti/dorade/policy/izvoz |                            18–32 writer-dana | Više odvojenih isporuka prema programu; opseg izvoza i policy ugovor mijenjaju procjenu |
-| E2: početni ops portal            |                         Procjena nakon ADR-a | Neoznačena auth arhitektura nije vjerodostojno procjenjiva                              |
-| E3: infrastruktura                | Postojeći zadaci i njihova aktualna procjena | Vanjski računi, AAI i institucionalni uvjeti imaju vlastite rokove                      |
+| Paket | Gruba procjena implementacijskog rada | Napomena |
+|---|---:|---|
+| B: svakodnevni tokovi | 14–24 writer-dana | Zbroj Backend + Frontend, uz postojeće temelje i B4 podkorake |
+| C: minimalni admin i privatnost | 10–18 writer-dana | C1 vanjsko čekanje nije u broju; C5 može ostati u kasnijem valu |
+| D: obavijesti/dorade/policy/izvoz | 18–32 writer-dana | Više odvojenih isporuka prema programu; opseg izvoza i policy ugovor mijenjaju procjenu |
+| E2: početni ops portal | Procjena nakon ADR-a | Neoznačena auth arhitektura nije vjerodostojno procjenjiva |
+| E3: infrastruktura | Postojeći zadaci i njihova aktualna procjena | Vanjski računi, AAI i institucionalni uvjeti imaju vlastite rokove |
 
 To su planerske procjene, nisu izmjereni sati ni obećani datumi. Uz jedan Backend i jedan Frontend rad se djelomično preklapa, ali jedan Frontend ostaje usko grlo za više novih ekrana. Postojeći Platforma writer radi infrastrukturu i potrebne ovisnosti. Nitko nije pokrenut ili dodijeljen ovim dokumentom.
 
@@ -3791,14 +3761,14 @@ Ne uvoditi drugi pisac na iste datoteke. Poruke, PREUZETO i ograničenja gatea o
 
 #### 14. Teme koje ostaju vidljive u postojećem programu
 
-| Tema                                       | Kada se uključuje                           | Zašto nije dio prvog frontend reza                                                                 |
-| ------------------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Više grupa i zamjenski/sunastavnici        | M2 ako odabrani pilot to traži              | Potreban model izvedbe kolegija i prijenos odgovornosti                                            |
-| Gubitak uređaja / opoziv ostalih sesija    | Uz DAN-212/DAN-296 prije relevantnog pilota | Odvojeno od odjave trenutne kartice                                                                |
-| Offline ponovno otvaranje/PWA              | Nakon posebnog auth/cache ugovora           | Trenutni offline editor ne dokazuje siguran offline startup                                        |
-| Live skaliranje                            | Mjerenje 50/200/500 sintetičkih autora      | Ne mijenjati kanal i arhitekturu bez mjerenja                                                      |
-| Samostalni mentorski radovi i povjerenstvo | PROGRAM val 3                               | Trenutni evidence projekt vezan je uz zadatak; tip master_thesis sam ne čini puni mentorski sustav |
-| AI pomoćnik i integracije                  | Prema prihvaćenim flagovima/valovima        | Nisu preduvjet povezivanja osnovnih radova i predaje                                               |
+| Tema | Kada se uključuje | Zašto nije dio prvog frontend reza |
+|---|---|---|
+| Više grupa i zamjenski/sunastavnici | M2 ako odabrani pilot to traži | Potreban model izvedbe kolegija i prijenos odgovornosti |
+| Gubitak uređaja / opoziv ostalih sesija | Uz DAN-212/DAN-296 prije relevantnog pilota | Odvojeno od odjave trenutne kartice |
+| Offline ponovno otvaranje/PWA | Nakon posebnog auth/cache ugovora | Trenutni offline editor ne dokazuje siguran offline startup |
+| Live skaliranje | Mjerenje 50/200/500 sintetičkih autora | Ne mijenjati kanal i arhitekturu bez mjerenja |
+| Samostalni mentorski radovi i povjerenstvo | PROGRAM val 3 | Trenutni evidence projekt vezan je uz zadatak; tip master_thesis sam ne čini puni mentorski sustav |
+| AI pomoćnik i integracije | Prema prihvaćenim flagovima/valovima | Nisu preduvjet povezivanja osnovnih radova i predaje |
 
 #### 15. Preporučeni prvi provedbeni nalog
 
@@ -3827,110 +3797,111 @@ Ako vlasnik naknadno zatraži implementaciju, prvi nalog treba ostati u postoje�
 - [Postojeći #711](https://github.com/danielrisavi77-create/Ductus/issues/711), [#731](https://github.com/danielrisavi77-create/Ductus/pull/731), [#476](https://github.com/danielrisavi77-create/Ductus/issues/476), [#655](https://github.com/danielrisavi77-create/Ductus/issues/655), [#732](https://github.com/danielrisavi77-create/Ductus/issues/732)
 - Prethodni datirani izvještaji služe kao navigacija; činjenične tvrdnje plana vezane su uz gornji repo i aktualno pročitane Linear zadatke.
 
+
 ### Karta ovisnosti i vlasničkih radnji
 
 Povijesna mapa ID-eva i ovisnosti iz [izvorne revizije](https://github.com/ductura/.github/blob/265ea93a2e14a22902e17d259e31304278c30982/docs/plan/KARTA.md).
 
 #### 1. Plan servera i weba: koraci
 
-| Stavka plana                          | ID-evi                                                                                                                          | Repo                                                        | Paket                                               | Paritet / napomena                                                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1 zapis odluka                      | S-0.1                                                                                                                           | Ductus                                                      | —                                                   |                                                                                                                                        |
-| 0.2 mapa modula                       | S-0.12                                                                                                                          | server                                                      | —                                                   | uz B3 granice                                                                                                                          |
-| 0.3 tiketi                            | —                                                                                                                               | orkestrator (Linear)                                        | —                                                   | ID-eve za U*, 2.c* dodjeljuje ovdje                                                                                                    |
-| 1A.0 pravila koda                     | S-0.5, S-0.7, S-0.8                                                                                                             | server                                                      | preseti iz `.github`                                |                                                                                                                                        |
-| 1A mape po područjima                 | S-1A-a, S-1A-b                                                                                                                  | server                                                      | —                                                   | B3: pet pravila granica u CI-ju                                                                                                        |
-| 1B jedan `server.js`                  | S-1B-a, S-1B-b, S-1B-c                                                                                                          | server                                                      | —                                                   |                                                                                                                                        |
-| 1F baze                               | S-1F-a … S-1F-e                                                                                                                 | server                                                      | S-1F-e puni `test-fakes`                            |                                                                                                                                        |
-| 1J vrste računa                       | S-1J.1-a, S-1J.1-b, S-1J-c, S-1J-d, S-1J.2, S-1J.4                                                                              | server                                                      | —                                                   |                                                                                                                                        |
-| 3a postavke po razinama               | S-1J-e, S-1J-f, S-1J-g                                                                                                          | server (API); ekrani u web (2.c4)                           | contracts                                           |                                                                                                                                        |
-| 1L lokale                             | S-1L.1, S-1L.2, S-1L.3, S-1L.4, S-1L.5                                                                                          | server                                                      | —                                                   | lokale sučelja u web `packages/ui`                                                                                                     |
-| 1K.1–1K.3 zapisi                      | S-1K.1, S-1K.2-a, S-1K.2-b, S-1K.3-a, S-1K.3-b                                                                                  | server                                                      | lažna baza zapisa u `test-fakes`                    |                                                                                                                                        |
-| 1C promet i IP                        | S-1C.1 … S-1C.6                                                                                                                 | server                                                      | —                                                   |                                                                                                                                        |
-| 1D sesije                             | S-1D-a … S-1D-d                                                                                                                 | server                                                      | —                                                   |                                                                                                                                        |
-| 1E vanjski servisi                    | S-1E-a … S-1E-g                                                                                                                 | server                                                      | lažni OIDC i FIDO2 u `test-fakes`                   |                                                                                                                                        |
-| 1K.4–1K.6 metrika, pregledi, izvoz    | S-1K.4-a, S-1K.4-b, S-1K.5-a, S-1K.5-b, S-1K.6                                                                                  | server (API); pregledi u web                                | contracts                                           |                                                                                                                                        |
-| 1K.7–1K.9                             | S-1K.7-a, S-1K.7-b, S-1K.7-c, S-1K.8, S-1K.9                                                                                    | server                                                      | —                                                   |                                                                                                                                        |
-| 1M stanje, kontekst, katalog grešaka  | S-1M-a, S-1M-b, S-1M-c                                                                                                          | server                                                      | contracts                                           | ulaz za P-0.4, P-0.5, P-0.8                                                                                                            |
-| 1N i 3d pravni dio                    | S-1N-a … S-1N-d                                                                                                                 | server (API, baza); prikaz u preloader (P-0.6, P-0.9) i web | contracts                                           |                                                                                                                                        |
-| 3b brisanje radova                    | S-3B-a … S-3B-e                                                                                                                 | server; ekrani u web                                        | contracts                                           | S-3B-e i izvršni dio S-3B-b/d čekaju D-30, Q-16                                                                                        |
-| uski rez za VS-1 (O-3)                | ID-eve dodjeljuje orkestrator                                                                                                   | server                                                      | —                                                   | sesija, `open`, `commit`, `replay`; zasebni `critical` PR-ovi redom iza S-0.19, usporedno s valovima 1–5; nije izdanje (migracija §4c) |
-| val 6 prijenos područja               | S-M-1, S-M-2a, S-M-2b, S-M-3, S-M-4, S-M-5, S-M-6, S-M-7, S-M-8, S-M-10                                                         | server                                                      | —                                                   | A2: s testovima; S-M-9 namjerno izostavljen u zadacima                                                                                 |
-| 1G backup                             | S-1G-a … S-1G-f                                                                                                                 | server                                                      | —                                                   |                                                                                                                                        |
-| 1H ugovori (ranije dio)               | S-1H.1-a, S-1H.1-b, S-1H.1-c, S-1H.4 (= U4–U7)                                                                                  | server                                                      | contracts                                           | **A3/B1: pomaknuto odmah nakon kostura**                                                                                               |
-| 1H ugovori (kasniji dio)              | S-1H.2, S-1H.3, S-1H.5, S-1H.6, S-1H.7, S-1H.8                                                                                  | server                                                      | contracts, test-fakes                               | S-1H.8 = kostur pariteta                                                                                                               |
-| lažni server iz ugovora               | U8                                                                                                                              | server                                                      | test-fakes                                          | nov (A3)                                                                                                                               |
-| zajednički paket lažnih zamjena       | U9                                                                                                                              | server                                                      | test-fakes                                          | nov (B4)                                                                                                                               |
-| objava paketa                         | T-0.5 (= U10)                                                                                                                   | server                                                      | contracts, test-fakes                               | GitHub Packages (B1)                                                                                                                   |
-| 1I završni CI                         | S-1I                                                                                                                            | server                                                      | —                                                   |                                                                                                                                        |
-| val 0 temelj repoa                    | S-0.4, S-0.6, S-0.9, S-0.10-a, S-0.10-b, S-0.11, S-0.13, S-0.14, S-0.15, S-0.16, S-0.17, S-0.18, S-0.19 (S-0.20 ukinut 17. 11.) | server                                                      | S-0.16 → test-fakes; S-0.10-a/b skripte u `.github` |                                                                                                                                        |
-| val 0 u Ductusu                       | S-0.2, S-0.3, S-0.21                                                                                                            | Ductus                                                      | —                                                   | S-0.2 ulaz u U4; S-0.3 odlučuje PGlite u test-fakes                                                                                    |
-| 2.0 i 3c preloader                    | P-0.1 … P-0.11                                                                                                                  | preloader                                                   | contracts, test-fakes, ui                           | A3: ovise o shemi, ne o serveru (osim P-0.10)                                                                                          |
-| 2.1 i 3e info stranica                | P-0.9                                                                                                                           | preloader                                                   | ui                                                  |                                                                                                                                        |
-| 2.c1 popis i katalog komponenti       | —                                                                                                                               | web                                                         | ui                                                  | B5: vizualni testovi od prvog zadatka                                                                                                  |
-| 2.c2 testovi komponenti               | —                                                                                                                               | web                                                         | ui                                                  |                                                                                                                                        |
-| 2.c3 tipizirani klijent               | —                                                                                                                               | web                                                         | contracts                                           | ← U10                                                                                                                                  |
-| 2.c4 komponente po području           | —                                                                                                                               | web                                                         | contracts, ui, editor-core                          | ← 2.c3, shema rute, vektori U7 i U8, oznake iz 2.c1 (§1b migracije)                                                                    |
-| 2.c5 `src/platform`                   | —                                                                                                                               | web                                                         | —                                                   | uključuje bivše 2.c7 i 2.c8 (A1)                                                                                                       |
-| 2.c6 e2e                              | —                                                                                                                               | web                                                         | parity, test-fakes                                  | matrica: Chromium/Chrome, Firefox, WebKit, Edge, mobilna emulacija; Opera ručno                                                        |
-| 2.c7 mobilni web                      | —                                                                                                                               | web                                                         | —                                                   | A1: spojeno u 2.c5/2.c6                                                                                                                |
-| 2.c8 ostali preglednici               | —                                                                                                                               | web                                                         | —                                                   | A1: spojeno u 2.c5/2.c6                                                                                                                |
-| 2.c9 stranica za preuzimanje          | P-0.9                                                                                                                           | preloader                                                   | contracts                                           | vidi §4                                                                                                                                |
-| faza 3 desktop                        | D-0.1, „Faza E · aktivacija desktop razvoja”                                                                                    | Ductus (D-0.1), desktop-windows, desktop-macos              | contracts (C#/Swift klijent)                        | kasnije                                                                                                                                |
-| gate prema riziku uz ugovorne testove | U11                                                                                                                             | `.github`                                                   | —                                                   | B6: zadnje; zaseban PR pravila, vlasnik potvrđuje                                                                                      |
+| Stavka plana | ID-evi | Repo | Paket | Paritet / napomena |
+|---|---|---|---|---|
+| 0.1 zapis odluka | S-0.1 | Ductus | — | |
+| 0.2 mapa modula | S-0.12 | server | — | uz B3 granice |
+| 0.3 tiketi | — | orkestrator (Linear) | — | ID-eve za U*, 2.c* dodjeljuje ovdje |
+| 1A.0 pravila koda | S-0.5, S-0.7, S-0.8 | server | preseti iz `.github` | |
+| 1A mape po područjima | S-1A-a, S-1A-b | server | — | B3: pet pravila granica u CI-ju |
+| 1B jedan `server.js` | S-1B-a, S-1B-b, S-1B-c | server | — | |
+| 1F baze | S-1F-a … S-1F-e | server | S-1F-e puni `test-fakes` | |
+| 1J vrste računa | S-1J.1-a, S-1J.1-b, S-1J-c, S-1J-d, S-1J.2, S-1J.4 | server | — | |
+| 3a postavke po razinama | S-1J-e, S-1J-f, S-1J-g | server (API); ekrani u web (2.c4) | contracts | |
+| 1L lokale | S-1L.1, S-1L.2, S-1L.3, S-1L.4, S-1L.5 | server | — | lokale sučelja u web `packages/ui` |
+| 1K.1–1K.3 zapisi | S-1K.1, S-1K.2-a, S-1K.2-b, S-1K.3-a, S-1K.3-b | server | lažna baza zapisa u `test-fakes` | |
+| 1C promet i IP | S-1C.1 … S-1C.6 | server | — | |
+| 1D sesije | S-1D-a … S-1D-d | server | — | |
+| 1E vanjski servisi | S-1E-a … S-1E-g | server | lažni OIDC i FIDO2 u `test-fakes` | |
+| 1K.4–1K.6 metrika, pregledi, izvoz | S-1K.4-a, S-1K.4-b, S-1K.5-a, S-1K.5-b, S-1K.6 | server (API); pregledi u web | contracts | |
+| 1K.7–1K.9 | S-1K.7-a, S-1K.7-b, S-1K.7-c, S-1K.8, S-1K.9 | server | — | |
+| 1M stanje, kontekst, katalog grešaka | S-1M-a, S-1M-b, S-1M-c | server | contracts | ulaz za P-0.4, P-0.5, P-0.8 |
+| 1N i 3d pravni dio | S-1N-a … S-1N-d | server (API, baza); prikaz u preloader (P-0.6, P-0.9) i web | contracts | |
+| 3b brisanje radova | S-3B-a … S-3B-e | server; ekrani u web | contracts | S-3B-e i izvršni dio S-3B-b/d čekaju D-30, Q-16 |
+| uski rez za VS-1 (O-3) | ID-eve dodjeljuje orkestrator | server | — | sesija, `open`, `commit`, `replay`; zasebni `critical` PR-ovi redom iza S-0.19, usporedno s valovima 1–5; nije izdanje (migracija §4c) |
+| val 6 prijenos područja | S-M-1, S-M-2a, S-M-2b, S-M-3, S-M-4, S-M-5, S-M-6, S-M-7, S-M-8, S-M-10 | server | — | A2: s testovima; S-M-9 namjerno izostavljen u zadacima |
+| 1G backup | S-1G-a … S-1G-f | server | — | |
+| 1H ugovori (ranije dio) | S-1H.1-a, S-1H.1-b, S-1H.1-c, S-1H.4 (= U4–U7) | server | contracts | **A3/B1: pomaknuto odmah nakon kostura** |
+| 1H ugovori (kasniji dio) | S-1H.2, S-1H.3, S-1H.5, S-1H.6, S-1H.7, S-1H.8 | server | contracts, test-fakes | S-1H.8 = kostur pariteta |
+| lažni server iz ugovora | U8 | server | test-fakes | nov (A3) |
+| zajednički paket lažnih zamjena | U9 | server | test-fakes | nov (B4) |
+| objava paketa | T-0.5 (= U10) | server | contracts, test-fakes | GitHub Packages (B1) |
+| 1I završni CI | S-1I | server | — | |
+| val 0 temelj repoa | S-0.4, S-0.6, S-0.9, S-0.10-a, S-0.10-b, S-0.11, S-0.13, S-0.14, S-0.15, S-0.16, S-0.17, S-0.18, S-0.19 (S-0.20 ukinut 17. 11.) | server | S-0.16 → test-fakes; S-0.10-a/b skripte u `.github` | |
+| val 0 u Ductusu | S-0.2, S-0.3, S-0.21 | Ductus | — | S-0.2 ulaz u U4; S-0.3 odlučuje PGlite u test-fakes |
+| 2.0 i 3c preloader | P-0.1 … P-0.11 | preloader | contracts, test-fakes, ui | A3: ovise o shemi, ne o serveru (osim P-0.10) |
+| 2.1 i 3e info stranica | P-0.9 | preloader | ui | |
+| 2.c1 popis i katalog komponenti | — | web | ui | B5: vizualni testovi od prvog zadatka |
+| 2.c2 testovi komponenti | — | web | ui | |
+| 2.c3 tipizirani klijent | — | web | contracts | ← U10 |
+| 2.c4 komponente po području | — | web | contracts, ui, editor-core | ← 2.c3, shema rute, vektori U7 i U8, oznake iz 2.c1 (§1b migracije) |
+| 2.c5 `src/platform` | — | web | — | uključuje bivše 2.c7 i 2.c8 (A1) |
+| 2.c6 e2e | — | web | parity, test-fakes | matrica: Chromium/Chrome, Firefox, WebKit, Edge, mobilna emulacija; Opera ručno |
+| 2.c7 mobilni web | — | web | — | A1: spojeno u 2.c5/2.c6 |
+| 2.c8 ostali preglednici | — | web | — | A1: spojeno u 2.c5/2.c6 |
+| 2.c9 stranica za preuzimanje | P-0.9 | preloader | contracts | vidi §4 |
+| faza 3 desktop | D-0.1, „Faza E · aktivacija desktop razvoja” | Ductus (D-0.1), desktop-windows, desktop-macos | contracts (C#/Swift klijent) | kasnije |
+| gate prema riziku uz ugovorne testove | U11 | `.github` | — | B6: zadnje; zaseban PR pravila, vlasnik potvrđuje |
 
 #### 2. Plan migracije: novi zadaci (§10b)
 
-| ID                         | Repo                     | Napomena                                                                                                                                                               |
-| -------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T-0.1, T-0.2, T-0.4, T-0.7 | `.github`                | T-0.3 ukinut 17. 11.; B2: T-0.1, T-0.2, T-0.4 odmah nakon kostura (U2); preseti nov zadatak                                                                            |
-| T-0.5                      | server                   | = U10                                                                                                                                                                  |
-| T-0.6                      | Ductus                   | skripte orkestratora za više repoa (popis: 5 + `.github` + Ductus)                                                                                                     |
-| P-0.1 … P-0.11             | preloader                |                                                                                                                                                                        |
-| D-0.1                      | Ductus (`spikes/`)       | nakon faze B                                                                                                                                                           |
-| E-0.1, E-0.2               | Ductus                   | editor-core nastaje u Ductusu                                                                                                                                          |
-| E-0.3                      | web                      |                                                                                                                                                                        |
-| VS-1                       | preloader + web + server | jedini zadatak preko tri repoa; nositelj PRIJEDLOG web. O-2: samo sintetički podaci, protokol 1 (potpis u istom odgovoru), uključuje VS-1.13; ovisi o uskom rezu (O-3) |
-| VS-1b                      | server + web             | O-2: `202 pending_signature`, worker, red poslova, oporavak; bezuvjetan; uvjet za osnovicu 20. 12. 2026. i za stvarne podatke (D-71); ovisi o VS-1                     |
-| VS-2                       | web                      | A1: mobilni prikaz u istom repou                                                                                                                                       |
-| M-0.1                      | Ductus                   | mjere                                                                                                                                                                  |
+| ID | Repo | Napomena |
+|---|---|---|
+| T-0.1, T-0.2, T-0.4, T-0.7 | `.github` | T-0.3 ukinut 17. 11.; B2: T-0.1, T-0.2, T-0.4 odmah nakon kostura (U2); preseti nov zadatak |
+| T-0.5 | server | = U10 |
+| T-0.6 | Ductus | skripte orkestratora za više repoa (popis: 5 + `.github` + Ductus) |
+| P-0.1 … P-0.11 | preloader | |
+| D-0.1 | Ductus (`spikes/`) | nakon faze B |
+| E-0.1, E-0.2 | Ductus | editor-core nastaje u Ductusu |
+| E-0.3 | web | |
+| VS-1 | preloader + web + server | jedini zadatak preko tri repoa; nositelj PRIJEDLOG web. O-2: samo sintetički podaci, protokol 1 (potpis u istom odgovoru), uključuje VS-1.13; ovisi o uskom rezu (O-3) |
+| VS-1b | server + web | O-2: `202 pending_signature`, worker, red poslova, oporavak; bezuvjetan; uvjet za osnovicu 20. 12. 2026. i za stvarne podatke (D-71); ovisi o VS-1 |
+| VS-2 | web | A1: mobilni prikaz u istom repou |
+| M-0.1 | Ductus | mjere |
 
 #### 3. Vlasničke radnje
 
-| ID   | Što (sažeto)                                                                                                                     | Repo                                                                                                                                                                     |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| V-0  | domena `ductura.org` (odlučeno 17. 11., Ductus#2012 c.6934113245) i adresa e-pošte (otvoreno); konačan prije zahtjeva Srcu (R-4) | sve (preloader proxy)                                                                                                                                                    |
-| V-1  | organizacija `Ductura` i repo `server` (gotovo 14. 11.)                                                                          | server; B2 dodaje `.github`                                                                                                                                              |
-| V-1b | aktivacija repoa po fazama (migracija)                                                                                           | preloader i web (odobreno 14. 11., ne čeka fazu C); desktop je zasebna radnja „Faza E · aktivacija desktop razvoja”; arhiviranje `web-mobile`, `web-other` nakon potvrde |
-| V-2  | zaštita grane, `ci-ok`, statusi gatea                                                                                            | svaki repo                                                                                                                                                               |
-| V-3  | aplikacija botova                                                                                                                | svaki repo                                                                                                                                                               |
-| V-4  | tajne i CI runneri                                                                                                               | server                                                                                                                                                                   |
-| V-5  | zahtjev Srcu (registracija, ne-preglednički klijent); tek nakon konačnog V-0 (R-4)                                               | server (S-1E-b, S-1E-e)                                                                                                                                                  |
-| V-6  | backup u produkciji                                                                                                              | server (nakon S-1G-e)                                                                                                                                                    |
-| V-7  | račun admina aplikacije izvan aplikacije                                                                                         | server (nakon S-1J.1-b)                                                                                                                                                  |
+| ID | Što (sažeto) | Repo |
+|---|---|---|
+| V-0 | domena `ductura.org` (odlučeno 17. 11., Ductus#2012 c.6934113245) i adresa e-pošte (otvoreno); konačan prije zahtjeva Srcu (R-4) | sve (preloader proxy) |
+| V-1 | organizacija `Ductura` i repo `server` (gotovo 14. 11.) | server; B2 dodaje `.github` |
+| V-1b | aktivacija repoa po fazama (migracija) | preloader i web (odobreno 14. 11., ne čeka fazu C); desktop je zasebna radnja „Faza E · aktivacija desktop razvoja”; arhiviranje `web-mobile`, `web-other` nakon potvrde |
+| V-2 | zaštita grane, `ci-ok`, statusi gatea | svaki repo |
+| V-3 | aplikacija botova | svaki repo |
+| V-4 | tajne i CI runneri | server |
+| V-5 | zahtjev Srcu (registracija, ne-preglednički klijent); tek nakon konačnog V-0 (R-4) | server (S-1E-b, S-1E-e) |
+| V-6 | backup u produkciji | server (nakon S-1G-e) |
+| V-7 | račun admina aplikacije izvan aplikacije | server (nakon S-1J.1-b) |
 
 #### 4. Plan prvog vala (13. 11.)
 
-| Stavka                                                                  | Repo                                                                                                  | Napomena                                           |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| §1 koraci 1–3 (domena, preusmjeravanje, dijelovi)                       | preloader (proxy), V-0                                                                                | domena `ductura.org` (17. 11.)                     |
-| §2 sedam dijelova u jednom `main`                                       | zamijenjeno: 5 repoa + `.github`                                                                      | shared-core → paketi u serveru i webu              |
-| §2 shared-core                                                          | `@ductura/contracts`, `@ductura/test-fakes`, `@ductura/ui`, `@ductura/editor-core`, `@ductura/parity` |                                                    |
-| §3 redak Win Chrome                                                     | preloader                                                                                             | A1: web, prikaz računalo, gumb Windows             |
-| §3 redak Mac Chrome                                                     | preloader                                                                                             | web, računalo, macOS                               |
-| §3 redak Win Edge/Firefox/Opera                                         | preloader                                                                                             | web, računalo, Windows                             |
-| §3 redak Mac Safari/Firefox                                             | preloader                                                                                             | web, računalo, macOS                               |
-| §3 redak mobitel/tablet                                                 | preloader                                                                                             | web, prikaz mobilno, bez paketa                    |
-| §3 redak Linux/nepoznat                                                 | preloader                                                                                             | web, računalo, ručni izbor paketa                  |
-| §3 rubni: iPad desktop, uski prozor, nema paketa                        | preloader                                                                                             |                                                    |
-| §4 server: vlastiti/tuđi; prazan/neispravan ID                          | server                                                                                                | S-1H.3, S-1H.1-c                                   |
-| §4 Chrome: otvori, spremi, osvježi; zamjena                             | web                                                                                                   |                                                    |
-| §4 mobitel: tipkovnica, okretanje iPada                                 | web                                                                                                   | A1                                                 |
-| §4 ostali: učitavanje, navigacija, međuspremnik, dopuštenje             | web                                                                                                   | A1; Opera ručno                                    |
-| §4 Windows: preuzimanje, instalacija, Start; razmaci i hrvatski znakovi | desktop-windows                                                                                       | faza E                                             |
-| §4 macOS: preuzimanje, Applications, arhitektura                        | desktop-macos                                                                                         | faza E                                             |
-| §4 shared-core/preloader: matrica                                       | preloader                                                                                             | P-0.2, P-0.11                                      |
-| §5 koraci 1–5                                                           | po stavkama iznad                                                                                     | prihvat vala s instalacijom desktopa: **otvoreno** |
+| Stavka | Repo | Napomena |
+|---|---|---|
+| §1 koraci 1–3 (domena, preusmjeravanje, dijelovi) | preloader (proxy), V-0 | domena `ductura.org` (17. 11.) |
+| §2 sedam dijelova u jednom `main` | zamijenjeno: 5 repoa + `.github` | shared-core → paketi u serveru i webu |
+| §2 shared-core | `@ductura/contracts`, `@ductura/test-fakes`, `@ductura/ui`, `@ductura/editor-core`, `@ductura/parity` | |
+| §3 redak Win Chrome | preloader | A1: web, prikaz računalo, gumb Windows |
+| §3 redak Mac Chrome | preloader | web, računalo, macOS |
+| §3 redak Win Edge/Firefox/Opera | preloader | web, računalo, Windows |
+| §3 redak Mac Safari/Firefox | preloader | web, računalo, macOS |
+| §3 redak mobitel/tablet | preloader | web, prikaz mobilno, bez paketa |
+| §3 redak Linux/nepoznat | preloader | web, računalo, ručni izbor paketa |
+| §3 rubni: iPad desktop, uski prozor, nema paketa | preloader | |
+| §4 server: vlastiti/tuđi; prazan/neispravan ID | server | S-1H.3, S-1H.1-c |
+| §4 Chrome: otvori, spremi, osvježi; zamjena | web | |
+| §4 mobitel: tipkovnica, okretanje iPada | web | A1 |
+| §4 ostali: učitavanje, navigacija, međuspremnik, dopuštenje | web | A1; Opera ručno |
+| §4 Windows: preuzimanje, instalacija, Start; razmaci i hrvatski znakovi | desktop-windows | faza E |
+| §4 macOS: preuzimanje, Applications, arhitektura | desktop-macos | faza E |
+| §4 shared-core/preloader: matrica | preloader | P-0.2, P-0.11 |
+| §5 koraci 1–5 | po stavkama iznad | prihvat vala s instalacijom desktopa: **otvoreno** |
 
 #### 5. Stavke koje ne pašu čisto (s preporukom)
 
@@ -3955,22 +3926,22 @@ Dio plana backenda. Verzija, status i popis svih odjeljaka su u indeksu `docs/BA
 
 #### 5. Što još nije potvrđeno (spike prije odluke)
 
-| Stavka                                                                                                                                                                                                                                                                                                                    | Provjera                                                                                                                                                                           | Gdje        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Uvjetni upis kod dobavljača pohrane (dodana provjera, odluka 11. 10. 2026., D-08)                                                                                                                                                                                                                                         | Provjera kod dobavljača pohrane                                                                                                                                                    | B0.1        |
-| Ključevi po spremniku kod dobavljača pohrane (dodana provjera, odluka 11. 10. 2026., D-08)                                                                                                                                                                                                                                | Provjera kod dobavljača pohrane                                                                                                                                                    | B0.1        |
-| PostgreSQL 17 i ovlasti nad ulogama kod upravljane baze (dodana provjera, odluka 11. 10. 2026., D-08)                                                                                                                                                                                                                     | Provjera kod upravljane baze                                                                                                                                                       | B0.1        |
-| Povrat u točku na UpCloud Developer: postupak (Hub, API ili podrška), stvarni RPO, trajanje, stvara li novu instancu                                                                                                                                                                                                      | Dodatak A, oko 30 minuta i nekoliko centi                                                                                                                                          | B0.1        |
-| Cijene UpCloud VM-a: sažeci cjenika se razlikuju (Cloud Native 4 GB / 1 vCPU 12 EUR i 8 GB / 2 vCPU 24 EUR prema jednom, 2 vCPU / 4 GB 15 EUR prema drugom) i je li disk uključen                                                                                                                                         | Pogledati cjenik u konzoli pri otvaranju računa                                                                                                                                    | B0.1        |
-| Uloge na upravljanoj bazi: `CREATE ROLE NOLOGIN`, `ALTER FUNCTION OWNER`, `GRANT role TO role`, `max_connections`, promjena log parametara, ekstenzije                                                                                                                                                                    | Pokrenuti skriptu uloga i pgTAP                                                                                                                                                    | B0.1        |
-| Zapisivanje parametara naredbi za aplikacijsku prijavu (F-036, DAN-169): smiju li se postaviti `log_parameter_max_length = 0` i `log_parameter_max_length_on_error = 0`, vodi li pružatelj zapis upita izvan PostgreSQL postavki, i prolazi li provjera web procesa (`src/server/db/log-settings.ts`) na upravljanoj bazi | Postavke u konzoli pružatelja i prvi `withActor` poziv na stagingu                                                                                                                 | B0.1        |
-| Latencija VM do baze i trajanje `reserve`                                                                                                                                                                                                                                                                                 | Mjerenje                                                                                                                                                                           | B0.1        |
-| Jesu li UpCloud Cloud Native tipovi dostupni i po kojoj cijeni za računalo koje ne guši pri rekonstrukciji                                                                                                                                                                                                                | Cjenik i narudžba                                                                                                                                                                  | B0.1        |
-| Rekonstrukcija 15.000 i 80.000 riječi (vrijeme, memorija, volumen kontrolnih točaka)                                                                                                                                                                                                                                      | Lokalna osnovica gotova 3. 10. 2026. (`docs/spikes/B0.2.md`): CPU i memorija nisu problem, volumen točaka svakih 200 koraka jest. Ostaje ponoviti na stroju koji se stvarno kupuje | B0.2        |
-| AWS KMS Ed25519 u eu-central-1: latencija potpisa                                                                                                                                                                                                                                                                         | Mjerenje                                                                                                                                                                           | B0.1        |
-| Uvjeti za partnera AAI@EduHr (može li obrt ili fizička osoba), rokovi, trajnost identifikatora                                                                                                                                                                                                                            | Pitati Srce, ali tek ako FPZG put ne uspije (§4.3)                                                                                                                                 | Owner queue |
-| FINA: minimalna mjesečna naknada, uvjeti, tko je ugovorna strana                                                                                                                                                                                                                                                          | Upit                                                                                                                                                                               | Owner queue |
-| Sentry EU na besplatnom planu                                                                                                                                                                                                                                                                                             | Pročitati                                                                                                                                                                          | B9          |
+| Stavka | Provjera | Gdje |
+| --- | --- | --- |
+| Uvjetni upis kod dobavljača pohrane (dodana provjera, odluka 11. 10. 2026., D-08) | Provjera kod dobavljača pohrane | B0.1 |
+| Ključevi po spremniku kod dobavljača pohrane (dodana provjera, odluka 11. 10. 2026., D-08) | Provjera kod dobavljača pohrane | B0.1 |
+| PostgreSQL 17 i ovlasti nad ulogama kod upravljane baze (dodana provjera, odluka 11. 10. 2026., D-08) | Provjera kod upravljane baze | B0.1 |
+| Povrat u točku na UpCloud Developer: postupak (Hub, API ili podrška), stvarni RPO, trajanje, stvara li novu instancu | Dodatak A, oko 30 minuta i nekoliko centi | B0.1 |
+| Cijene UpCloud VM-a: sažeci cjenika se razlikuju (Cloud Native 4 GB / 1 vCPU 12 EUR i 8 GB / 2 vCPU 24 EUR prema jednom, 2 vCPU / 4 GB 15 EUR prema drugom) i je li disk uključen | Pogledati cjenik u konzoli pri otvaranju računa | B0.1 |
+| Uloge na upravljanoj bazi: `CREATE ROLE NOLOGIN`, `ALTER FUNCTION OWNER`, `GRANT role TO role`, `max_connections`, promjena log parametara, ekstenzije | Pokrenuti skriptu uloga i pgTAP | B0.1 |
+| Zapisivanje parametara naredbi za aplikacijsku prijavu (F-036, DAN-169): smiju li se postaviti `log_parameter_max_length = 0` i `log_parameter_max_length_on_error = 0`, vodi li pružatelj zapis upita izvan PostgreSQL postavki, i prolazi li provjera web procesa (`src/server/db/log-settings.ts`) na upravljanoj bazi | Postavke u konzoli pružatelja i prvi `withActor` poziv na stagingu | B0.1 |
+| Latencija VM do baze i trajanje `reserve` | Mjerenje | B0.1 |
+| Jesu li UpCloud Cloud Native tipovi dostupni i po kojoj cijeni za računalo koje ne guši pri rekonstrukciji | Cjenik i narudžba | B0.1 |
+| Rekonstrukcija 15.000 i 80.000 riječi (vrijeme, memorija, volumen kontrolnih točaka) | Lokalna osnovica gotova 3. 10. 2026. (`docs/spikes/B0.2.md`): CPU i memorija nisu problem, volumen točaka svakih 200 koraka jest. Ostaje ponoviti na stroju koji se stvarno kupuje | B0.2 |
+| AWS KMS Ed25519 u eu-central-1: latencija potpisa | Mjerenje | B0.1 |
+| Uvjeti za partnera AAI@EduHr (može li obrt ili fizička osoba), rokovi, trajnost identifikatora | Pitati Srce, ali tek ako FPZG put ne uspije (§4.3) | Owner queue |
+| FINA: minimalna mjesečna naknada, uvjeti, tko je ugovorna strana | Upit | Owner queue |
+| Sentry EU na besplatnom planu | Pročitati | B9 |
 
 B0.1 je pomaknut naprijed (odluka vlasnika 11. 10. 2026., D-08), rok 16. 11. 2026.; preduvjet su računi dobavljača (Owner queue u `STATE.md`). **Odluka vlasnika 11. 10. 2026. (tumačenje točke 3, potvrđeno; issue #87, komentar 6105263690):** migracije na kritičnom putu demoa (#240 i sljedeći korak B-8) se ne zaustavljaju; B0.1 kreće čim postoje računi dobavljača; rizik prepisa migracija do tada ostaje zapisan.
 
@@ -3978,20 +3949,20 @@ Riješeno 3. 10. 2026.: cijena KMS-a (službeni cjenik), uvjeti besplatnih TSA-o
 
 #### 7. Trošak (procjena 3. 10. 2026., EUR godišnje)
 
-| Stavka                                                                               | Bez PDV-a          | Napomena                                                                                 |
-| ------------------------------------------------------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------- |
-| UpCloud Cloud Native VM (2 vCPU / 4 GB, 15 EUR mjesečno)                             | oko 180            | Veći tip (4 vCPU / 8 GB, 32 EUR mjesečno, oko 384) ako B0.2 traži; disk možda dodatno    |
-| UpCloud Managed PG Developer 2 GB (14 EUR mjesečno)                                  | oko 168            | PITR 3 dana; bez HA i SLA; disk NEPROVJEREN                                              |
-| Scaleway Object Storage                                                              | 5 do 10            |                                                                                          |
-| Scaleway TEM                                                                         | oko 14             |                                                                                          |
-| Replika bucketa (drugi račun)                                                        | 10 do 40           |                                                                                          |
-| AWS KMS (2 ključa, 100.000 potpisa mjesečno)                                         | oko 40             | 1 USD po ključu mjesečno + 0,15 USD na 10.000 potpisa, službeni cjenik                   |
-| Domena `.hr`                                                                         | 15 do 30           | sekundarni izvor                                                                         |
-| TSA žigovi                                                                           | 0                  | Dva besplatna TSA-a; FINA kasnije oko 40 EUR godišnje + certifikat 86,27 EUR na 5 godina |
-| Praćenje grešaka i vanjski monitor                                                   | 0 do 20            |                                                                                          |
-| Staging (privremeni resursi tjednima prije aktivacije, naplata po satu NEPROVJERENA) | 30 do 100          | Staging mora koristiti upravljanu bazu, KMS i S3 (§6 točka 12)                           |
-| **Ukupno**                                                                           | **oko 460 do 600** |                                                                                          |
-| **S PDV-om (oko +25 %)**                                                             | **oko 575 do 750** | PDV se naplaćuje fizičkoj osobi bez obrta u sustavu PDV-a; potvrditi sa računovođom      |
+| Stavka | Bez PDV-a | Napomena |
+| --- | --- | --- |
+| UpCloud Cloud Native VM (2 vCPU / 4 GB, 15 EUR mjesečno) | oko 180 | Veći tip (4 vCPU / 8 GB, 32 EUR mjesečno, oko 384) ako B0.2 traži; disk možda dodatno |
+| UpCloud Managed PG Developer 2 GB (14 EUR mjesečno) | oko 168 | PITR 3 dana; bez HA i SLA; disk NEPROVJEREN |
+| Scaleway Object Storage | 5 do 10 | |
+| Scaleway TEM | oko 14 | |
+| Replika bucketa (drugi račun) | 10 do 40 | |
+| AWS KMS (2 ključa, 100.000 potpisa mjesečno) | oko 40 | 1 USD po ključu mjesečno + 0,15 USD na 10.000 potpisa, službeni cjenik |
+| Domena `.hr` | 15 do 30 | sekundarni izvor |
+| TSA žigovi | 0 | Dva besplatna TSA-a; FINA kasnije oko 40 EUR godišnje + certifikat 86,27 EUR na 5 godina |
+| Praćenje grešaka i vanjski monitor | 0 do 20 | |
+| Staging (privremeni resursi tjednima prije aktivacije, naplata po satu NEPROVJERENA) | 30 do 100 | Staging mora koristiti upravljanu bazu, KMS i S3 (§6 točka 12) |
+| **Ukupno** | **oko 460 do 600** | |
+| **S PDV-om (oko +25 %)** | **oko 575 do 750** | PDV se naplaćuje fizičkoj osobi bez obrta u sustavu PDV-a; potvrditi sa računovođom |
 
 To je bilo **iznad D-66** (infrastruktura 300 do 500 plus domena i e-pošta 50 do 100). Od 1. 11. 2026. proračun pilota je 10.000 EUR (D-199 t. 2), a PRIJEDLOG raspodjele daje infrastrukturi oko 1.000 EUR, pa obje varijante stanu bez rezanja sigurnosne stavke. Izbor varijante i dalje je odluka vlasnika nakon B0.1:
 
@@ -4004,21 +3975,21 @@ To je bilo **iznad D-66** (infrastruktura 300 do 500 plus domena i e-pošta 50 d
 
 Backend nije posebna faza nego okomiti rez kroz M0 do M11. **Procjena dodatka prema `PROGRAM.md`: realno 18 do 25 večeri** (v0.1 je rekao +6 do +10 bez osnove; uklonjeni Supabase poslovi nikad nisu bili zasebno procijenjeni, pa se "neto" ne može izračunati). Preporučujem da se dodatak vodi kao zaseban red u valu 1.
 
-| Korak                     | Sadržaj                                                                                                                                                                                                                                                                                               | Izlazni kriterij                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Faza                                                                                                                            | Večeri                                            |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| B0.1 Spike okruženja      | UpCloud VM + Managed PG, skripta uloga, PITR povrat u točku, RTT, log parametri, KMS ključ                                                                                                                                                                                                            | Zapis s brojkama; PITR radi ili se odabire varijanta B                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | prije M2 (migracije demoa ne čekaju B0.1, §5); pomaknut naprijed 11. 10. 2026., rok 16. 11. 2026., uz tri dodatne provjere (§5) | 2 do 3                                            |
-| B0.2 Spike rekonstrukcije | ProseMirror u Nodeu za 15.000 i 80.000 riječi na stvarnom stroju                                                                                                                                                                                                                                      | Vrijeme, memorija, volumen; granice posla određene                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | prije M3                                                                                                                        | 1 do 2                                            |
-| B0.3 Odluka               | Vlasnik potvrđuje dio D-08 o dobavljačima i trošku, D-72, D-73 (samo izbor biblioteke; vlastiti OIDC klijent odlučen 11. 10. 2026., a sesije u bazi i identitet u RLS-u potvrđeni u D-90) i D-75 prema rezultatima (D-71 i D-74 potvrđene 10. 10. 2026.; dio D-08 o aplikaciji odlučen 11. 10. 2026.) | ODLUČENO u `DECISIONS.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                                                                                                                                 | 0                                                 |
-| B0.4 Prepis ARCHITECTURE  | Cijeli dokument (uključujući §2, §3, §8, §11), §12 s točnim popisom prijenosa                                                                                                                                                                                                                         | Bez Supabasea i Netlifyja                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | M0                                                                                                                              | 1 do 2                                            |
-| B1 Okruženja              | `docker compose` (Postgres, S3-kompatibilna pohrana (RustFS), Mailpit, lažni OIDC), OpenTofu (dva računa), CI deploy, migracijski alat, `sops`/`age`, uloge, Caddy, deploy s VM-a                                                                                                                     | `docker compose up` i `npm test` zeleno; staging se podiže iz koda                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | M0                                                                                                                              | 5 do 7                                            |
-| B2 Identitet              | OIDC klijent s popisom iz §4.3, sesije, `current_actor()`, `withActor`, test GUC-a, odjava                                                                                                                                                                                                            | Prijava na AAI Labu; svi testovi iz §4.3 zeleni; nema lažnog pružatelja u produkciji                                                                                                                                                                                                                                                                                                                                                                                                                                                        | M1                                                                                                                              | 3 do 5 (uz sigurnosni pregled, neovisan o autoru) |
-| B3 Ovlasti                | Novi referentni model, `can()`, RLS, pgTAP matrica, diferencijalni test                                                                                                                                                                                                                               | Matrica zelena                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | M2                                                                                                                              | uključeno u M2, +1                                |
-| B4 Evidencija             | Točan popis prijenosa (§2), novi RPC-i, okidači, uloge, jedan RPC za commit i `reserve`, worker potpis preko KMS-a, kontrolne točke, praznine                                                                                                                                                         | Ugovorni testovi nad in-memory i pg/S3; B4 test dokazuje 0-based indekse bez praznina pod konkurentnim prihvatima, rollbackom i idempotentnim retryjem; property testovi; sintetički prolaz na stagingu s povratom                                                                                                                                                                                                                                                                                                                          | M3                                                                                                                              | +5 do 8                                           |
-| B5 Dnevni korijen i žig   | Kumulativni log i dnevna kontrolna točka (D-93), consistency dokaz, KMS potpis uz usporedbu s potpunom vanjskom append-only poviješću, TSA, objava, neovisni primatelji i CLI verifikator                                                                                                             | Neovisna provjera prolazi; C2SP known-answer vektor kontrolne točke iz §4.1 prolazi standardnim verifierom, uključujući negativne slučajeve; promjena odsječka ruši provjeru; dan bez TSA-a se oporavlja; test povrata baze dokazuje da se regresivni ili razgranati checkpoint ne potpisuje, žigoše ni objavljuje; konkurentni `reserve` tijekom cutovera s praznim inventarom ne može upasti između snapshot-a i prve vanjski pohranjene kontrolne točke, a nakon otvaranja gatea dobiva indeks 0; kvar cutovera ostavlja gate zatvorenim | M3 do M7                                                                                                                        | 4 do 5                                            |
-| B6 Poslovi i obavijesti   | pg-boss, retention (uklj. verzije), e-pošta, `notification` s prozorom P-03                                                                                                                                                                                                                           | Ponovljen posao ne duplicira učinak; nastavnik ne dobiva obavijest češće od P-03                                                                                                                                                                                                                                                                                                                                                                                                                                                            | M6, M7, M10                                                                                                                     | +1 do 2                                           |
-| B7 AI proxy               | U pilotu (D-194, mijenja D-77); pružatelj i model računa su otvoreni, pa je sadržaj paketa PRIJEDLOG                                                                                                                                                                                                  | Samo odobreni pružatelji; kineski pružatelji i modeli nedostupni; regija obrade zabilježena uz odgovor                                                                                                                                                                                                                                                                                                                                                                                                                                      | M9                                                                                                                              | procjena nije dana                                |
-| B8 Predaja                | `requested_at`, rekonstrukcija u workeru, usporedba JCS                                                                                                                                                                                                                                               | Točna na svim scenarijima uključujući prazninu i pred-rokovni val                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | M7                                                                                                                              | uključeno u M7                                    |
-| B9 Operacije i GO         | Backup i replika bucketa, mjesečna proba povrata (baza i bucket), alarmi, statusna stranica, `OPERATIONS.md`, load test, OWASP, popis podizvršitelja s DPA-ima                                                                                                                                        | Svi crveni GO uvjeti zeleni; zapisana proba povrata                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | M11                                                                                                                             | +3 do 4                                           |
+| Korak | Sadržaj | Izlazni kriterij | Faza | Večeri |
+| --- | --- | --- | --- | --- |
+| B0.1 Spike okruženja | UpCloud VM + Managed PG, skripta uloga, PITR povrat u točku, RTT, log parametri, KMS ključ | Zapis s brojkama; PITR radi ili se odabire varijanta B | prije M2 (migracije demoa ne čekaju B0.1, §5); pomaknut naprijed 11. 10. 2026., rok 16. 11. 2026., uz tri dodatne provjere (§5) | 2 do 3 |
+| B0.2 Spike rekonstrukcije | ProseMirror u Nodeu za 15.000 i 80.000 riječi na stvarnom stroju | Vrijeme, memorija, volumen; granice posla određene | prije M3 | 1 do 2 |
+| B0.3 Odluka | Vlasnik potvrđuje dio D-08 o dobavljačima i trošku, D-72, D-73 (samo izbor biblioteke; vlastiti OIDC klijent odlučen 11. 10. 2026., a sesije u bazi i identitet u RLS-u potvrđeni u D-90) i D-75 prema rezultatima (D-71 i D-74 potvrđene 10. 10. 2026.; dio D-08 o aplikaciji odlučen 11. 10. 2026.) | ODLUČENO u `DECISIONS.md` | | 0 |
+| B0.4 Prepis ARCHITECTURE | Cijeli dokument (uključujući §2, §3, §8, §11), §12 s točnim popisom prijenosa | Bez Supabasea i Netlifyja | M0 | 1 do 2 |
+| B1 Okruženja | `docker compose` (Postgres, S3-kompatibilna pohrana (RustFS), Mailpit, lažni OIDC), OpenTofu (dva računa), CI deploy, migracijski alat, `sops`/`age`, uloge, Caddy, deploy s VM-a | `docker compose up` i `npm test` zeleno; staging se podiže iz koda | M0 | 5 do 7 |
+| B2 Identitet | OIDC klijent s popisom iz §4.3, sesije, `current_actor()`, `withActor`, test GUC-a, odjava | Prijava na AAI Labu; svi testovi iz §4.3 zeleni; nema lažnog pružatelja u produkciji | M1 | 3 do 5 (uz sigurnosni pregled, neovisan o autoru) |
+| B3 Ovlasti | Novi referentni model, `can()`, RLS, pgTAP matrica, diferencijalni test | Matrica zelena | M2 | uključeno u M2, +1 |
+| B4 Evidencija | Točan popis prijenosa (§2), novi RPC-i, okidači, uloge, jedan RPC za commit i `reserve`, worker potpis preko KMS-a, kontrolne točke, praznine | Ugovorni testovi nad in-memory i pg/S3; B4 test dokazuje 0-based indekse bez praznina pod konkurentnim prihvatima, rollbackom i idempotentnim retryjem; property testovi; sintetički prolaz na stagingu s povratom | M3 | +5 do 8 |
+| B5 Dnevni korijen i žig | Kumulativni log i dnevna kontrolna točka (D-93), consistency dokaz, KMS potpis uz usporedbu s potpunom vanjskom append-only poviješću, TSA, objava, neovisni primatelji i CLI verifikator | Neovisna provjera prolazi; C2SP known-answer vektor kontrolne točke iz §4.1 prolazi standardnim verifierom, uključujući negativne slučajeve; promjena odsječka ruši provjeru; dan bez TSA-a se oporavlja; test povrata baze dokazuje da se regresivni ili razgranati checkpoint ne potpisuje, žigoše ni objavljuje; konkurentni `reserve` tijekom cutovera s praznim inventarom ne može upasti između snapshot-a i prve vanjski pohranjene kontrolne točke, a nakon otvaranja gatea dobiva indeks 0; kvar cutovera ostavlja gate zatvorenim | M3 do M7 | 4 do 5 |
+| B6 Poslovi i obavijesti | pg-boss, retention (uklj. verzije), e-pošta, `notification` s prozorom P-03 | Ponovljen posao ne duplicira učinak; nastavnik ne dobiva obavijest češće od P-03 | M6, M7, M10 | +1 do 2 |
+| B7 AI proxy | U pilotu (D-194, mijenja D-77); pružatelj i model računa su otvoreni, pa je sadržaj paketa PRIJEDLOG | Samo odobreni pružatelji; kineski pružatelji i modeli nedostupni; regija obrade zabilježena uz odgovor | M9 | procjena nije dana |
+| B8 Predaja | `requested_at`, rekonstrukcija u workeru, usporedba JCS | Točna na svim scenarijima uključujući prazninu i pred-rokovni val | M7 | uključeno u M7 |
+| B9 Operacije i GO | Backup i replika bucketa, mjesečna proba povrata (baza i bucket), alarmi, statusna stranica, `OPERATIONS.md`, load test, OWASP, popis podizvršitelja s DPA-ima | Svi crveni GO uvjeti zeleni; zapisana proba povrata | M11 | +3 do 4 |
 
 Redoslijed i kontrolna točka 15. 12. 2026.:
 
