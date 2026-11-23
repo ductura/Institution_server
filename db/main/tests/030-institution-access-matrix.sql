@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3342);
+SELECT plan(3343);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -122,7 +122,7 @@ SELECT bag_eq(
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
         'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
         'declaration.is_fresh(declaration.statement,text,bigint,integer)',
-        'declaration.bound_declaration_of(uuid,uuid,uuid)', 'declaration.submission_gate(text,bigint)'],
+        'declaration.bound_declaration_of(uuid,uuid,uuid)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -134,9 +134,8 @@ SELECT bag_eq(
        AND has_function_privilege(r.rolname, p.oid, 'EXECUTE') $$,
   ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
         'ductus_app declaration.upload_attachment(uuid,text,bytea)',
-        'ductus_app declaration.submission_gate(text,bigint)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
-  'the web role executes only the three student RPCs and the submission gate, and identity only the teacher''s bound-declaration helper'
+  'the web role executes only the three student RPCs, and identity only the teacher''s bound-declaration helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname
@@ -532,6 +531,9 @@ SELECT bag_eq(
     'submission_withdrawal_setting(p_assignment_id uuid) definer app',
     'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app',
     'set_declaration_required(p_assignment_id uuid, p_required boolean) definer app',
+    'declaration_requirement(p_assignment_id uuid) definer app',
+    'declaration_requirement_of(p_assignment_id uuid)',
+    'require_assignment_teacher(p_assignment_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'reject_work_milestone_event_change()',
     'reject_milestone_template_change()',
     'is_milestone_title(p_title text)',
@@ -770,6 +772,15 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'PIL-P1-RITAM-SRV: audit.input_rhythm_switch_event has forced RLS, the identity owner and no privilege for another role')
   FROM pg_class c WHERE c.oid = 'audit.input_rhythm_switch_event'::regclass;
+-- The trail of the declaration requirement (audit.declaration_requirement_event), PIL-K-IZJAVA-SRV;
+-- the cells per actor are in 228-declaration-required.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'PIL-K-IZJAVA-SRV: audit.declaration_requirement_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.declaration_requirement_event'::regclass;
 
 -- 1c4. SRV-1230: the match with the assistant (evidence.assistant_match_finding,
 -- assistant_match_attachment, assistant_match_setting) only through the RPCs; the

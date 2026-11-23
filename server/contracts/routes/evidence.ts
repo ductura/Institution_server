@@ -289,6 +289,57 @@ export const SignedSubmissionReceipt = closed({
   }),
 });
 
+// The body, answer and refusals of a submission, the same on both submission routes.
+const SUBMIT_REQUEST = {
+  contentType: "application/json" as const,
+  maxBodyBytes: 1024,
+  body: closed({
+    documentId: Type.String({ minLength: 1 }),
+    // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
+    // work has none either, else 409 stale_revision (app.request_submission).
+    revision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+  }),
+};
+const SUBMIT_RESPONSES = [
+  {
+    status: 200,
+    description: "submitted",
+    body: closed({ status: Type.Literal("submitted"), receipt: SignedSubmissionReceipt }),
+  },
+];
+const SUBMIT_ERRORS = [
+  refusal(403, "forbidden"),
+  refusal(426, "upgrade_required"),
+  refusal(415, "unsupported_media_type"),
+  refusal(401, "unauthenticated"),
+  refusal(413, "too_large"),
+  refusal(408, "timeout"),
+  refusal(400, "bad_request"),
+  refusal(422, "invalid"),
+  refusal(404, "not_found"),
+  refusal(409, "blocked", {
+    reason: Type.Union(
+      ["segment_unsigned", "record_mismatch", "record_discontinuous", "no_evidence"].map((r) =>
+        Type.Literal(r),
+      ),
+    ),
+  }),
+  refusal(409, "stale_revision", { currentRevision: Count }),
+  refusal(409, "already_requested", { revision: Positive }),
+  refusal(409, "not_acknowledged"),
+  refusal(409, "not_open"),
+  unavailable([
+    "context",
+    "request",
+    "record",
+    "chain",
+    "storage",
+    "verification",
+    "submission",
+    "signing",
+  ]),
+];
+
 export const submit = defineRoute({
   id: "submission.submit.post",
   method: "POST",
@@ -302,55 +353,31 @@ export const submit = defineRoute({
     "matches, the submission is recorded and its signed receipt returned. The first click binds: " +
     "another revision later is 409 already_requested. Another student's or a missing work is " +
     "404. 503 carries the stage and `retry-after: 5`.",
-  request: {
-    contentType: "application/json",
-    maxBodyBytes: 1024,
-    body: closed({
-      documentId: Type.String({ minLength: 1 }),
-      // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
-      // work has none either, else 409 stale_revision (app.request_submission).
-      revision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
-    }),
-  },
-  responses: [
-    {
-      status: 200,
-      description: "submitted",
-      body: closed({ status: Type.Literal("submitted"), receipt: SignedSubmissionReceipt }),
-    },
-  ],
-  errors: [
-    refusal(403, "forbidden"),
-    refusal(426, "upgrade_required"),
-    refusal(415, "unsupported_media_type"),
-    refusal(401, "unauthenticated"),
-    refusal(413, "too_large"),
-    refusal(408, "timeout"),
-    refusal(400, "bad_request"),
-    refusal(422, "invalid"),
-    refusal(404, "not_found"),
-    refusal(409, "blocked", {
-      reason: Type.Union(
-        ["segment_unsigned", "record_mismatch", "record_discontinuous", "no_evidence"].map((r) =>
-          Type.Literal(r),
-        ),
-      ),
-    }),
-    refusal(409, "stale_revision", { currentRevision: Count }),
-    refusal(409, "already_requested", { revision: Positive }),
-    refusal(409, "not_acknowledged"),
-    refusal(409, "not_open"),
-    unavailable([
-      "context",
-      "request",
-      "record",
-      "chain",
-      "storage",
-      "verification",
-      "submission",
-      "signing",
-    ]),
-  ],
+  request: SUBMIT_REQUEST,
+  responses: SUBMIT_RESPONSES,
+  errors: SUBMIT_ERRORS,
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; declaration-v1 §6.7): the
+// same submission, with the refusal of an assignment that requires a
+// declaration named. submission.submit.post has no answer for it, and a new
+// 409 branch there breaks its clients (scripts/check-breaking.ts), so that
+// route keeps answering 503 request and this one is the route a client uses
+// to tell the refusal apart. Same body, guards and answers otherwise.
+export const submitChecked = defineRoute({
+  id: "submission.submit-checked.post",
+  method: "POST",
+  path: "/api/v1/submission/checked",
+  inventory: "app/api/submission/checked/route.ts",
+  access: "student_owner",
+  summary:
+    "As submission.submit.post, and while the assignment requires a declaration " +
+    "(declarationRequired of student.declaration.get) a revision without a declaration confirmed " +
+    "for it is 409 declaration_required: nothing is written, and the student confirms the " +
+    "declaration and submits again. The same refusal on submission.submit.post is 503 request.",
+  request: SUBMIT_REQUEST,
+  responses: SUBMIT_RESPONSES,
+  errors: [...SUBMIT_ERRORS, refusal(409, "declaration_required")],
 });
 
 // Port of Ductus src/server/evidence/replay-route.ts and
@@ -426,4 +453,4 @@ export const replay = defineRoute({
   ],
 });
 
-export const evidenceRoutes = [open, commit, submit, replay] as const;
+export const evidenceRoutes = [open, commit, submit, submitChecked, replay] as const;

@@ -163,6 +163,33 @@ describe("POST /api/submission", () => {
     expect(JSON.stringify(log.mock.calls)).not.toContain("dokument-1");
   });
 
+  // PIL-K-IZJAVA-SRV: declaration.pin_request refuses the row with ZD428 while
+  // the assignment requires a declaration and none is confirmed for the revision.
+  it.each<[string, string, number, Record<string, unknown>]>([
+    ["ZD428 (a required declaration is missing)", "ZD428", 409, { status: "declaration_required" }],
+    ["any other database error", "ZD403", 503, { status: "unavailable", stage: "request" }],
+  ])("a request that throws %s is answered without a record", async (_name, code, status, body) => {
+    const { deps, queries } = setup();
+    deps.withActor = (async (
+      _token: string | null,
+      fn: (tx: ActorTransaction) => Promise<unknown>,
+    ) =>
+      fn({
+        async query(text) {
+          queries.push(text);
+          if (text.includes("request_submission"))
+            throw Object.assign(new Error("izmišljeno"), { code });
+          return {
+            rows: [{ user_id: "00000000-0000-4000-8000-0000000000e1" }] as never[],
+            rowCount: 1,
+          };
+        },
+      })) as unknown as WithActor;
+    const response = await handleSubmissionRequest(post(BODY), deps);
+    expect([response.status, await response.json()]).toEqual([status, body]);
+    expect(queries.some((text) => text.includes("record_submission"))).toBe(false);
+  });
+
   it("takes revision 0 to the database, which blocks a work with nothing saved as no_evidence", async () => {
     const { deps, queries } = setup({ request: [{ outcome: "no_evidence" }] });
     const response = await handleSubmissionRequest(post({ ...BODY, revision: 0 }), deps);
@@ -206,6 +233,7 @@ describe("POST /api/submission", () => {
     ],
     [{ status: "not_found" }, 404, { status: "not_found" }],
     [{ status: "unauthenticated" }, 401, { status: "unauthenticated" }],
+    [{ status: "declaration_required" }, 409, { status: "declaration_required" }],
     [{ status: "unknown" } as never, 503, { status: "unavailable", stage: "submission" }],
   ])(
     "puts %o on the wire without a code, and an unknown status never as a success",

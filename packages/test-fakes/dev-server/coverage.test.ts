@@ -1194,6 +1194,27 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.input-rhythm-setting.get": {
     request: { path: `/api/v1/works/${IDS.document}/input-rhythm/setting`, as: "student" },
   },
+  // PIL-K-IZJAVA-SRV: the checked submission and the teacher's declaration requirement.
+  "submission.submit-checked.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { ...SUBMIT, path: "/api/v1/submission/checked" },
+  },
+  "teacher.declaration-requirement.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-requirement`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.declaration-requirement.put": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-requirement`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { required: true },
+    },
+  },
   "teacher.input-rhythm.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/input-rhythm`,
@@ -1959,4 +1980,22 @@ it("returns a submitted work for revision and lets the student submit anew (SRV-
   expect(JSON.parse((await run(state, read)).body)).toEqual({ state: "none" });
   expect((await run(state, scenario.request)).status).toBe(409);
   expect((await run(state, SUBMIT)).status).toBe(200);
+});
+
+it("refuses the checked submission while the declaration is required and missing (PIL-K-IZJAVA-SRV)", async () => {
+  const state = createState();
+  const checked = SCENARIOS["submission.submit-checked.post"];
+  const turnOn = SCENARIOS["teacher.declaration-requirement.put"].request;
+  const read = SCENARIOS["teacher.declaration-requirement.get"].request;
+  expect((await run(state, read)).json).toEqual({ required: false, changedAt: null });
+  expect((await run(state, turnOn)).status).toBe(200);
+  expect((await run(state, read)).json).toMatchObject({ required: true });
+  for (const step of checked.before ?? []) expect((await run(state, step)).status).toBe(200);
+  const refused = await run(state, checked.request);
+  expect([refused.status, refused.json]).toEqual([409, { status: "declaration_required" }]);
+  expect((await run(state, { ...turnOn, as: "student", body: { required: false } })).status).toBe(
+    404,
+  );
+  expect((await run(state, { ...turnOn, body: { required: false } })).status).toBe(200);
+  expect((await run(state, checked.request)).status).toBe(200);
 });

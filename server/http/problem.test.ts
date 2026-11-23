@@ -83,6 +83,8 @@ const CODE_IN_STATUS = new Set([
   "evidence.open.post",
   "evidence.commit.post",
   "submission.submit.post",
+  // PIL-K-IZJAVA-SRV: the checked submission answers as submission.submit.post.
+  "submission.submit-checked.post",
   "evidence.replay.post",
 ]);
 

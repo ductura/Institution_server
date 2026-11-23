@@ -386,6 +386,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // PIL-K-IZJAVA-SRV (Ductus#2052 c.7089705769, review c.7090474307 on ductura/Institution_server#646): the submission that names the refusal of a required declaration (409), and the teacher's declaration requirement; Ductus has no such route.
+  "app/api/submission/checked/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7089705769",
+  },
+  "app/api/teacher/assignments/[assignmentId]/declaration-requirement/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7089705769",
+  },
   // PIL-P1-RITAM-SRV (Ductus#2052 c.7086920979, P-1 rule 4): the rhythm of typing and the teacher's switch; Ductus has no such route.
   "app/api/works/[documentId]/input-rhythm/route.ts": {
     methods: ["GET", "POST", "DELETE"],

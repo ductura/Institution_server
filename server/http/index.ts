@@ -37,6 +37,7 @@ export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
 export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
 export { createAssistantMatchRoutesFor } from "./assistant-match/index.ts";
 export { createInputRhythmRoutesFor } from "./input-rhythm/index.ts";
+export { createDeclarationRequirementRoutesFor } from "./declaration-requirement/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
@@ -170,6 +171,7 @@ export {
   type LiveRouteOptions,
 } from "./live.ts";
 export {
+  createCheckedSubmissionRouteFor,
   createSubmissionRoute,
   createSubmissionRouteFor,
   SUBMISSION_MAX_BYTES,

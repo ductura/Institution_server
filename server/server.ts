@@ -40,6 +40,7 @@ import {
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createInputRhythmRoutesFor,
+  createDeclarationRequirementRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -113,6 +114,7 @@ import {
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createCheckedSubmissionRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
@@ -253,6 +255,8 @@ async function main(): Promise<void> {
       ...createAssistantMatchRoutesFor(databases.main),
       // The rhythm of typing and the teacher's switch of it (PIL-P1-RITAM-SRV, P-1 rule 4).
       ...createInputRhythmRoutesFor(databases.main),
+      // PIL-K-IZJAVA-SRV: the teacher's declaration requirement of an assignment.
+      ...createDeclarationRequirementRoutesFor(databases.main),
       // The thresholds of a faculty per kind of origin and the comparison of a work (SRV-1111, P-1).
       ...createFacultyThresholdRoutesFor(databases.main),
       // The guidance of a teacher on sources (SRV-1605, WEB-2133).
@@ -347,6 +351,8 @@ async function main(): Promise<void> {
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
       createSubmissionRouteFor(databases.main, evidenceDeps),
+      // PIL-K-IZJAVA-SRV: the same submission, naming 409 declaration_required.
+      createCheckedSubmissionRouteFor(databases.main, evidenceDeps),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),

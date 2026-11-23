@@ -14,27 +14,23 @@ import type { ActorReader } from "../database/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
-import {
-  createSubmissionRoute,
-  DECLARATION_REQUIRED_CODE,
-  gatedSubmit,
-  type SubmissionOutcome,
-  submissionAnswer,
-} from "./submission.ts";
+import { createSubmissionRoute, type SubmissionOutcome, submissionAnswer } from "./submission.ts";
 
 type Vector = {
   name: string;
   request: { headers: Record<string, string>; body?: unknown; rawBody?: string };
   response: { status: number; body: Record<string, unknown>; headers?: Record<string, string> };
 };
-const VECTORS = (
-  JSON.parse(
-    readFileSync(
-      new URL("../contracts/vectors/submission.submit.post.json", import.meta.url),
-      "utf8",
-    ),
-  ) as { vectors: Vector[] }
-).vectors;
+const vectorsOf = (route: string) =>
+  (
+    JSON.parse(
+      readFileSync(new URL(`../contracts/vectors/${route}.json`, import.meta.url), "utf8"),
+    ) as { vectors: Vector[] }
+  ).vectors;
+const VECTORS = vectorsOf("submission.submit.post");
+// PIL-K-IZJAVA-SRV: the checked route, which names 409 declaration_required.
+const CHECKED_VECTORS = vectorsOf("submission.submit-checked.post");
+const CHECKED_PATH = "/api/v1/submission/checked";
 const ORIGIN = "https://ductura.example.invalid";
 const PATH = "/api/v1/submission";
 
@@ -42,16 +38,8 @@ let server: Running | undefined;
 const calls: unknown[][] = [];
 const activity: string[] = [];
 let outcome: SubmissionOutcome | (() => never) = { status: "invalid" };
-// PIL-K-IZJAVA-SRV: the declaration gate in front of the port; null is no gate.
-let gate: (() => Promise<"proceed" | "declaration_required">) | null = null;
-const gated: unknown[][] = [];
 
-async function start() {
-  const port = async (token: string, input: { documentId: string; revision: number }) => {
-    calls.push([token, input]);
-    return typeof outcome === "function" ? outcome() : outcome;
-  };
-  const current = gate;
+async function start(checked = false) {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
@@ -59,24 +47,20 @@ async function start() {
     databases: createDatabases(),
     routes: [
       createSubmissionRoute({
-        submit:
-          current === null
-            ? port
-            : gatedSubmit(async (token, input) => {
-                gated.push([token, input]);
-                return current();
-              }, port),
+        submit: async (token, input) => {
+          calls.push([token, input]);
+          return typeof outcome === "function" ? outcome() : outcome;
+        },
         actors: {} as ActorReader,
         recordActivity: async (token) => activity.push(token),
         timeoutMs: 300,
+        checked,
       }),
     ],
   });
 }
 afterEach(async () => {
   calls.length = 0;
-  gated.length = 0;
-  gate = null;
   activity.length = 0;
   await server?.close();
   server = undefined;
@@ -142,6 +126,8 @@ function outcomeOf(v: Vector): SubmissionOutcome | undefined {
       return { status: "not_acknowledged" };
     case "not-open":
       return { status: "not_open" };
+    case "declaration-required":
+      return { status: "declaration_required" };
     case "unavailable-signing":
     case "unavailable-verification":
       return { status: "unavailable", stage: body.stage as "signing", code: "izmisljeno" };
@@ -242,61 +228,56 @@ describe("the body before the port", () => {
   });
 });
 
-// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026): while the assignment
-// requires a declaration, the port runs only after the gate's pass; nothing is
-// requested otherwise. The contract has no 409 for it (a new 409 branch breaks
-// its clients), so the refusal is the contract's 503 request.
-describe("the declaration gate", () => {
-  const v = VECTORS.find((x) => x.name === "submitted")!;
-  const headers = Object.entries(v.request.headers);
-  const token = v.request.headers.cookie?.slice("__Host-ductus_session=".length);
-  const unavailableRequest = [503, { status: "unavailable", stage: "request" }];
-
-  it("a missing declaration never reaches the port", async () => {
-    gate = async () => "declaration_required";
-    outcome = { status: "submitted", receipt: v.response.body.receipt };
-    await start();
-    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
-    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
-    expect(got.head["retry-after"]).toBe("5");
-    expect(gated).toEqual([[token, v.request.body]]);
-    expect(calls).toEqual([]);
-    expect(activity).toEqual([]);
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026): the same submission on
+// the checked route; a missing required declaration is 409 there and 503
+// request on submission.submit.post, whose contract has no 409 for it.
+describe("every vector of the checked route a socket can reach", () => {
+  it.each(CHECKED_VECTORS.map((v) => [v.name, v] as const))("%s", async (_name, v) => {
+    const arranged = outcomeOf(v);
+    outcome = arranged ?? { status: "invalid" };
+    await start(true);
+    const body = v.request.rawBody ?? JSON.stringify(v.request.body);
+    const got = await send(raw(CHECKED_PATH, Object.entries(v.request.headers), body));
+    expect(got.status).toBe(v.response.status);
+    if (v.name === "bad-request") return;
+    expect(got.head["cache-control"]).toBe("no-store");
+    if (v.name.startsWith("forbidden")) return;
+    for (const [name, value] of Object.entries(v.response.headers ?? {})) {
+      expect(got.head[name]).toBe(value);
+    }
+    expect(JSON.parse(got.body)).toEqual(v.response.body);
+    const token = v.request.headers.cookie?.slice("__Host-ductus_session=".length);
+    const sent = v.request.body as { documentId: string; revision: number } | undefined;
+    expect(calls).toEqual(arranged === undefined ? [] : [[token, sent]]);
+    expect(activity).toEqual(got.status === 200 ? [token] : []);
   });
 
-  it("a gate that fails is never a pass", async () => {
-    gate = async () => {
-      throw new Error("izmišljeno");
-    };
-    outcome = { status: "submitted", receipt: v.response.body.receipt };
-    await start();
-    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
-    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
-    expect(calls).toEqual([]);
-    expect(activity).toEqual([]);
+  it("the checked route has every vector of submission.submit.post and declaration-required", () => {
+    expect(CHECKED_VECTORS.map((v) => v.name).sort()).toEqual(
+      [...VECTORS.map((v) => v.name), "declaration-required"].sort(),
+    );
   });
 
-  it("a pass reaches the port with the same input, and its answer goes out", async () => {
-    gate = async () => "proceed";
-    outcome = { status: "submitted", receipt: v.response.body.receipt };
-    await start();
-    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
-    expect([got.status, JSON.parse(got.body)]).toEqual([200, v.response.body]);
-    expect(gated).toEqual([[token, v.request.body]]);
-    expect(calls).toEqual([[token, v.request.body]]);
-  });
-
-  it("the refusal carries its own code inside the process", async () => {
-    const refused = await gatedSubmit(
-      async () => "declaration_required",
-      () => {
-        throw new Error("the port must not run");
-      },
-    )("t", { documentId: "izmisljeni-rad", revision: 1 });
-    expect(refused).toEqual({
-      status: "unavailable",
-      stage: "request",
-      code: DECLARATION_REQUIRED_CODE,
+  it("a missing required declaration is 503 request on submission.submit.post, never a success", async () => {
+    expect(submissionAnswer({ status: "declaration_required" })).toEqual({
+      status: 503,
+      body: { status: "unavailable", stage: "request" },
+      headers: { "retry-after": "5" },
     });
+    expect(submissionAnswer({ status: "declaration_required" }, true)).toEqual({
+      status: 409,
+      body: { status: "declaration_required" },
+    });
+    outcome = { status: "declaration_required" };
+    await start();
+    const v = VECTORS.find((x) => x.name === "submitted")!;
+    const got = await send(
+      raw(PATH, Object.entries(v.request.headers), JSON.stringify(v.request.body)),
+    );
+    expect([got.status, JSON.parse(got.body)]).toEqual([
+      503,
+      { status: "unavailable", stage: "request" },
+    ]);
+    expect(activity).toEqual([]);
   });
 });

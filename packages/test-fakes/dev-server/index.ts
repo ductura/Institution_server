@@ -34,6 +34,7 @@ import { EVENT_DISPUTE_HANDLERS } from "./event-dispute-routes.ts";
 import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
+import { DECLARATION_REQUIREMENT_HANDLERS } from "./declaration-requirement-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
 import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
@@ -124,6 +125,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ORIGIN_HANDLERS,
   ...ASSISTANT_MATCH_HANDLERS,
   ...INPUT_RHYTHM_HANDLERS,
+  ...DECLARATION_REQUIREMENT_HANDLERS,
   ...FACULTY_THRESHOLD_HANDLERS,
   ...TEACHER_SOURCE_HANDLERS,
   ...MILESTONE_HANDLERS,

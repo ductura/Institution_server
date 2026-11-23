@@ -2000,6 +2000,8 @@ export const hr = {
     contentLengthMismatch: "Zahtjev nije jednake duljine kao što je navedeno.",
     counterNotIncreased: "Sigurnosni ključ nije prihvaćen. Obratite se administratoru.",
     crossSite: "Zahtjev s druge stranice nije dopušten.",
+    declarationRequired:
+      "Predaja ovog zadatka traži izjavu potvrđenu za ovu verziju teksta. Potvrdite izjavu pa predajte ponovno.",
     documentMismatch: "Tekst rada ne odgovara poslanim izmjenama. Učitajte rad ponovno.",
     draining: "Poslužitelj se ponovno pokreće. Pokušajte za nekoliko sekundi.",
     expiredCode: "Kod za upis je istekao. Zatražite novi od nastavnika.",

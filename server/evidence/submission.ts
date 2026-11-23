@@ -26,6 +26,9 @@ export type SubmissionOutcome =
   | { status: "stale_revision"; currentRevision: number }
   | { status: "already_requested"; revision: number }
   | { status: "not_acknowledged" | "not_open" | "not_found" | "unauthenticated" | "invalid" }
+  // PIL-K-IZJAVA-SRV: the assignment requires a declaration confirmed for this
+  // revision and there is none; nothing was written (ZD428 of declaration.pin_request).
+  | { status: "declaration_required" }
   | { status: "unavailable"; stage: SubmissionStage; code: string };
 
 export type SubmissionDependencies = {
@@ -44,6 +47,9 @@ const RECORD_SQL = "SELECT outcome, submission_id FROM app.record_submission($1:
 const STORED_SQL = `SELECT id::text, assignment_id::text, assignment_version, revision::text, artifact_hash,
        ${US("requested_at")} AS requested_at, ${US("due_at")} AS due_at, after_deadline
   FROM evidence.submission WHERE id = $1::uuid`;
+
+/** declaration.pin_request refused the request: a required declaration is missing (20261214110000). */
+const DECLARATION_REQUIRED_SQLSTATE = "ZD428";
 
 const unavailable = (stage: SubmissionStage, code: string): SubmissionOutcome => ({
   status: "unavailable",
@@ -125,7 +131,11 @@ export async function submitWork(
   let requested: Awaited<ReturnType<typeof request>>;
   try {
     requested = await request(deps, token, input.documentId, input.revision);
-  } catch {
+  } catch (error) {
+    // The transaction rolled back: nothing of the request was written.
+    if ((error as { code?: unknown } | null)?.code === DECLARATION_REQUIRED_SQLSTATE) {
+      return { status: "declaration_required" };
+    }
     return unavailable("request", "request_failed");
   }
   if (requested.status !== "requested") return requested;

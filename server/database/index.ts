@@ -489,9 +489,10 @@ export {
   type OriginRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
-  createSubmissionDeclarationGate,
-  type SubmissionDeclarationGate,
-  type SubmissionDeclarationGateAnswer,
+  createDeclarationRequirement,
+  type DeclarationRequirement,
+  type DeclarationRequirementOutcome,
+  type DeclarationRequirementState,
 } from "./declaration/index.ts";
 export {
   createInputRhythm,

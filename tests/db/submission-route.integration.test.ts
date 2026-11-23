@@ -40,6 +40,7 @@ import {
   createEvidenceOpenRoute,
   createLayers,
   createStudentSubmissionRoutesFor,
+  createCheckedSubmissionRouteFor,
   createSubmissionRouteFor,
   type Running,
   startServer,
@@ -61,7 +62,8 @@ const ROOT = join(import.meta.dirname, "../..");
 const PATH = "/api/v1/submission";
 const password = randomBytes(24).toString("hex");
 const suffix = randomBytes(4).toString("hex");
-const STUDENTS = ["ana", "bruno", "cvita", "dora", "ema"] as const;
+// PIL-K-IZJAVA-SRV: fran submits while the assignment requires a declaration.
+const STUDENTS = ["ana", "bruno", "cvita", "dora", "ema", "fran"] as const;
 type Student = (typeof STUDENTS)[number];
 const id = {
   a: randomUUID(),
@@ -108,6 +110,7 @@ const admin = new pg.Pool({ connectionString: ADMIN_URL, max: 2 });
 let app: pg.Pool;
 let worker: pg.Pool;
 let server: Running;
+let studentTx: ReturnType<typeof createWithActor>;
 
 async function createLogin(login: string, role: string): Promise<pg.Pool> {
   await admin.query(`DROP ROLE IF EXISTS ${login}`);
@@ -230,6 +233,7 @@ beforeAll(async () => {
   worker = await createLogin(WORKER_LOGIN, "ductus_worker");
   await fixture();
   const withActor = createWithActor(app);
+  studentTx = withActor;
   const main = {
     withActor,
     actorReader: createActorReader(withActor),
@@ -246,6 +250,7 @@ beforeAll(async () => {
       createEvidenceOpenRoute(main),
       createEvidenceCommitRouteFor(main, { signer, payloads }),
       createSubmissionRouteFor(main, { signer, payloads }),
+      createCheckedSubmissionRouteFor(main, { signer, payloads }),
       ...createStudentSubmissionRoutesFor(main),
     ],
   });
@@ -626,5 +631,73 @@ describe("GET the student's submission state and word range (SRV-22)", () => {
     expect(none.text).toBe('{"wordRange":null}');
     const range = await get(`${id.z2}/requirements`, "ana");
     expect(range.text).toBe('{"wordRange":{"min":800,"max":1200}}');
+  });
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; declaration-v1 §6.7): the
+// real submitWork over real PostgreSQL. While the assignment requires a
+// declaration, declaration.pin_request refuses a request without one confirmed
+// for the submitted revision (ZD428) and nothing is written: the checked route
+// answers 409 declaration_required, submission.submit.post 503 request. Once
+// the student confirms the declaration for that revision the same click goes
+// through and the request pins it. The switch is set by the fixture's owner
+// here; the teacher's route is tested in pgTAP 228 and its HTTP test.
+describe("a submission while the assignment requires a declaration (PIL-K-IZJAVA-SRV)", () => {
+  const CHECKED = "/api/v1/submission/checked";
+  const FORM =
+    '{"formId":"test-izjava","formSchema":"ductura-declaration-form-v1","formVersion":1,"text":"Izmišljeni obrazac."}';
+  const requests = async () =>
+    (
+      await admin.query<{ n: string; pinned: string }>(
+        `SELECT count(*)::text AS n, count(declaration_version_id)::text AS pinned
+           FROM evidence.submission_request WHERE principal_id = $1`,
+        [user.fran],
+      )
+    ).rows[0]!;
+  const requireDeclaration = (on: boolean) =>
+    admin.query("UPDATE institution.assignment SET declaration_required = $1 WHERE id = $2", [
+      on,
+      id.z1,
+    ]);
+
+  it("refuses without a confirmed declaration, writes nothing, and goes through once it is confirmed", async () => {
+    const fran = await write("fran", [
+      [{ source: "editor", text: "Izmišljena misao o oblacima. " }],
+    ]);
+    await requireDeclaration(true);
+    try {
+      const checked = await post(CHECKED, fran, "fran");
+      expect([checked.status, checked.body]).toEqual([409, { status: "declaration_required" }]);
+      const plain = await post(PATH, fran, "fran");
+      expect([plain.status, plain.body]).toEqual([
+        503,
+        { status: "unavailable", stage: "request" },
+      ]);
+      expect(await requests()).toEqual({ n: "0", pinned: "0" });
+
+      const body = {
+        baseVersion: 0,
+        revision: fran.revision,
+        confirm: true,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: sha256(FORM) },
+        ownWork: { confirmed: true },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: "not_used", attachments: [], declaredTools: [], externalAttachmentIds: [] },
+      };
+      const saved = await studentTx(token.fran, async (tx) =>
+        tx.query<{ result: { statement?: { state?: string } } }>(
+          "SELECT declaration.save_statement($1, $2, $3) AS result",
+          [id.z1, body, FORM],
+        ),
+      );
+      expect(saved.rows[0]?.result.statement?.state).toBe("confirmed");
+
+      const submitted = await post(CHECKED, fran, "fran");
+      expect(submitted.status, submitted.text).toBe(200);
+      await expectVerifiable(submitted.body.receipt);
+      expect(await requests()).toEqual({ n: "1", pinned: "1" });
+    } finally {
+      await requireDeclaration(false);
+    }
   });
 });

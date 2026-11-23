@@ -20,6 +20,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["content_length_mismatch", "errors.contentLengthMismatch"],
   ["counter_not_increased", "errors.counterNotIncreased"],
   ["cross_site", "errors.crossSite"],
+  ["declaration_required", "errors.declarationRequired"],
   ["document_mismatch", "errors.documentMismatch"],
   ["draining", "errors.draining"],
   ["expired_code", "errors.expiredCode"],

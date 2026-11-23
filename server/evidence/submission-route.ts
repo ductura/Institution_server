@@ -35,6 +35,7 @@ export function submissionResponse(outcome: SubmissionOutcome): Response {
       return reply(409, { status: "already_requested", revision: outcome.revision });
     case "not_acknowledged":
     case "not_open":
+    case "declaration_required":
       return reply(409, { status: outcome.status });
     case "not_found":
       return reply(404, { status: "not_found" });

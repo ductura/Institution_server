@@ -142,12 +142,6 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     callers: ["server/database/statement/index.ts"],
   },
   {
-    fn: "declaration.submission_gate",
-    why: "owner_only",
-    note: "PIL-K-IZJAVA-SRV: whether the owner's own declaration is confirmed for the revision they submit; one word, never text",
-    callers: ["server/database/declaration/index.ts"],
-  },
-  {
     fn: "app.evidence_commit_context",
     why: "write",
     note: "the state the owner's next commit continues from (principal_id = actor)",

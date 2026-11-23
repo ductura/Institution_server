@@ -16,22 +16,16 @@
 // process's one signer and storage (evidence-deps.ts), the same the commit
 // route writes with. The time of a submission is the database's clock.
 //
-// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; declaration-v1 OD-6,
-// OD-15): while the assignment requires a declaration, the submission goes to
-// submitWork only after declaration.submission_gate found one confirmed for
-// the submitted revision; otherwise nothing is written and nothing is
-// requested. The contract of this route has no 409 for it (a new 409 branch
-// breaks its clients, scripts/check-breaking.ts), so the refusal is 503
-// request, as a failed read of the gate is: never a pass (PRODUCT §5 rule 11).
-// The web reads declarationRequired and the state from student.declaration.get
-// before it offers the submission. The trigger that pins the declaration to
-// the request stays the guarantee.
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; declaration-v1 §6.7):
+// while the assignment requires a declaration and none is confirmed for the
+// submitted revision, the database refuses the request and nothing is written
+// (declaration.pin_request, ZD428); submitWork answers declaration_required.
+// The checked route (submission.submit-checked.post) puts it on the wire as
+// 409 declaration_required. This route's contract has no answer for it (a new
+// 409 branch breaks its clients, scripts/check-breaking.ts), so here it is
+// 503 request: never a success (PRODUCT §5 rule 11).
 import { ROUTES } from "../contracts/index.ts";
-import {
-  type ActorReader,
-  createSubmissionDeclarationGate,
-  type SubmissionDeclarationGate,
-} from "../database/index.ts";
+import type { ActorReader } from "../database/index.ts";
 import { DUCTUS_PROTOCOL_VERSION, submitWork } from "../evidence/index.ts";
 import type { SigningKeyProvider } from "../external/keys/index.ts";
 import { recordActivity } from "../session/index.ts";
@@ -66,7 +60,12 @@ export type SubmissionOutcome =
   | { readonly status: "already_requested"; readonly revision: number }
   | {
       readonly status:
-        "not_acknowledged" | "not_open" | "not_found" | "unauthenticated" | "invalid";
+        | "not_acknowledged"
+        | "not_open"
+        | "not_found"
+        | "unauthenticated"
+        | "invalid"
+        | "declaration_required";
     }
   | { readonly status: "unavailable"; readonly stage: SubmissionStage; readonly code: string };
 
@@ -83,13 +82,20 @@ export type SubmissionRouteOptions = {
   readonly recordActivity: (token: string) => Promise<unknown>;
   /** For tests: a shorter body deadline. */
   readonly timeoutMs?: number;
+  /**
+   * The checked route (submission.submit-checked.post), whose contract names
+   * 409 declaration_required; without it, the route of submission.submit.post.
+   */
+  readonly checked?: boolean;
 };
 
-const CONTRACT = (() => {
-  const found = ROUTES.find((route) => route.id === "submission.submit.post");
-  if (found === undefined) throw new Error("no contract submission.submit.post");
+function contractOf(id: string) {
+  const found = ROUTES.find((route) => route.id === id);
+  if (found === undefined) throw new Error(`no contract ${id}`);
   return found;
-})();
+}
+const CONTRACT = contractOf("submission.submit.post");
+const CHECKED_CONTRACT = contractOf("submission.submit-checked.post");
 
 const unavailable = (stage: string): EvidenceAnswer => ({
   status: 503,
@@ -99,9 +105,13 @@ const unavailable = (stage: string): EvidenceAnswer => ({
 
 /**
  * The closed mapping onto the wire (Ductus submissionResponse); a status not
- * named here is never a success. Null is the 200 of a submission.
+ * named here is never a success. Null is the 200 of a submission. A missing
+ * required declaration is 409 only on the checked route, 503 request otherwise.
  */
-export function submissionAnswer(outcome: SubmissionOutcome): EvidenceAnswer | null {
+export function submissionAnswer(
+  outcome: SubmissionOutcome,
+  checked = false,
+): EvidenceAnswer | null {
   switch (outcome.status) {
     case "submitted":
       return null;
@@ -117,6 +127,10 @@ export function submissionAnswer(outcome: SubmissionOutcome): EvidenceAnswer | n
     case "not_acknowledged":
     case "not_open":
       return { status: 409, body: { status: outcome.status } };
+    case "declaration_required":
+      return checked
+        ? { status: 409, body: { status: "declaration_required" } }
+        : unavailable("request");
     case "not_found":
       return { status: 404, body: { status: "not_found" } };
     case "unauthenticated":
@@ -132,10 +146,12 @@ export function submissionAnswer(outcome: SubmissionOutcome): EvidenceAnswer | n
 
 export function createSubmissionRoute(options: SubmissionRouteOptions): Route {
   const timeoutMs = options.timeoutMs ?? SUBMISSION_TIMEOUT_MS;
+  const checked = options.checked === true;
+  const contract = checked ? CHECKED_CONTRACT : CONTRACT;
   return {
-    contract: CONTRACT,
+    contract,
     async handle(request, response) {
-      const refuse = (answer: EvidenceAnswer) => sendEvidenceAnswer(response, CONTRACT, answer);
+      const refuse = (answer: EvidenceAnswer) => sendEvidenceAnswer(response, contract, answer);
       const read = await readEvidenceBody(request, options.actors, {
         protocols: [DUCTUS_PROTOCOL_VERSION],
         maxBytes: SUBMISSION_MAX_BYTES,
@@ -160,10 +176,10 @@ export function createSubmissionRoute(options: SubmissionRouteOptions): Route {
       try {
         outcome = await options.submit(read.token, { documentId, revision });
       } catch (error) {
-        reportServerError("route", error, requestIdOf(response), CONTRACT.id);
+        reportServerError("route", error, requestIdOf(response), contract.id);
         return refuse(unavailable("submission"));
       }
-      const answer = submissionAnswer(outcome);
+      const answer = submissionAnswer(outcome, checked);
       if (answer !== null) return refuse(answer);
       if (outcome.status === "submitted") {
         sendJson(response, 200, { status: "submitted", receipt: outcome.receipt });
@@ -171,29 +187,6 @@ export function createSubmissionRoute(options: SubmissionRouteOptions): Route {
         void options.recordActivity(read.token).catch(() => undefined);
       }
     },
-  };
-}
-
-/** The code of a submission the declaration gate refused (503 request on the wire). */
-export const DECLARATION_REQUIRED_CODE = "declaration_required";
-
-/**
- * The submission behind the declaration gate: `submit` runs only on proceed.
- * A missing declaration and a gate that fails are both 503 request, so
- * nothing is requested without the gate's pass.
- */
-export function gatedSubmit(gate: SubmissionDeclarationGate, submit: SubmitWork): SubmitWork {
-  return async (token, input) => {
-    let answer: Awaited<ReturnType<SubmissionDeclarationGate>>;
-    try {
-      answer = await gate(token, input);
-    } catch {
-      return { status: "unavailable", stage: "request", code: "declaration_gate_failed" };
-    }
-    if (answer === "declaration_required") {
-      return { status: "unavailable", stage: "request", code: DECLARATION_REQUIRED_CODE };
-    }
-    return submit(token, input);
   };
 }
 
@@ -205,15 +198,29 @@ export function createSubmissionRouteFor(
   main: Pick<Databases["main"], "withActor" | "actorReader">,
   deps: Pick<EvidenceIngestDependencies, "payloads"> & { readonly signer: SigningKeyProvider },
 ): Route {
-  const submit = gatedSubmit(createSubmissionDeclarationGate(main.withActor), (token, input) =>
+  return createSubmissionRoute(submissionOptionsFor(main, deps));
+}
+
+/** The same submission on the checked route, which names 409 declaration_required. */
+export function createCheckedSubmissionRouteFor(
+  main: Pick<Databases["main"], "withActor" | "actorReader">,
+  deps: Pick<EvidenceIngestDependencies, "payloads"> & { readonly signer: SigningKeyProvider },
+): Route {
+  return createSubmissionRoute({ ...submissionOptionsFor(main, deps), checked: true });
+}
+
+function submissionOptionsFor(
+  main: Pick<Databases["main"], "withActor" | "actorReader">,
+  deps: Pick<EvidenceIngestDependencies, "payloads"> & { readonly signer: SigningKeyProvider },
+): SubmissionRouteOptions {
+  const submit: SubmitWork = (token, input) =>
     submitWork({ withActor: main.withActor, payloads: deps.payloads, signer: deps.signer }, token, {
       documentId: input.documentId,
       revision: input.revision,
-    }),
-  );
-  return createSubmissionRoute({
+    });
+  return {
     submit,
     actors: main.actorReader,
     recordActivity: (token) => recordActivity(token, main.withActor),
-  });
+  };
 }

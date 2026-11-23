@@ -2018,6 +2018,8 @@ const en = {
     contentLengthMismatch: "The request is not as long as stated.",
     counterNotIncreased: "The security key was not accepted. Contact your administrator.",
     crossSite: "A request from another site is not allowed.",
+    declarationRequired:
+      "This assignment requires a declaration confirmed for this version of the text. Confirm the declaration and submit again.",
     documentMismatch: "The text of the work does not match the changes sent. Load the work again.",
     draining: "The server is restarting. Please try again in a few seconds.",
     expiredCode: "The enrolment code has expired. Ask your teacher for a new one.",

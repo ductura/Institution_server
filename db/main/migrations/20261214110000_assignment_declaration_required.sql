@@ -4,8 +4,8 @@
 -- declaration before a submission. Expand only: a new column with a constant
 -- default, so every assignment that exists, and every one made by a path that
 -- does not name the switch, keeps today's behaviour (OD-6: off unless the
--- assignment asks for it). The pilot turns it on per assignment through
--- institution.set_declaration_required (the teacher of the assignment, C-23).
+-- assignment asks for it). The pilot turns it on per assignment: the teacher
+-- of the assignment (C-23) through teacher.declaration-requirement.put.
 --
 -- While the switch is on, a submission request is written only together with
 -- a declaration version that is fresh for the submitted revision
@@ -14,27 +14,35 @@
 -- of the request is written. A technical failure while reading the
 -- declaration then refuses too (rule 11 as the owner decided on 23. 11.: a
 -- confirmation that failed technically never lets a submission through).
--- While the switch is off, the trigger behaves as 20261204100000.
+-- While the switch is off, the trigger behaves as 20261204100000. The web
+-- process reads ZD428 as declaration_required (server/evidence/submission.ts).
 --
--- declaration.submission_gate is the same rule, read before the request, so
--- the web process can answer 409 declaration_required; the trigger stays the
--- guarantee. view_statement tells the student whether the assignment requires
--- the declaration (declarationRequired), so the web never guesses.
+-- A request is the frozen context of its submission (D-263 Q07): the switch in
+-- force at the click decides, and the setter waits for a request in progress
+-- (the request holds the assignment FOR SHARE, the setter FOR UPDATE). A
+-- request written while the switch was off is recorded as it was requested,
+-- even if the teacher turns the switch on before its receipt is bound.
+--
+-- view_statement tells the student whether the assignment requires the
+-- declaration (declarationRequired), so the web never guesses.
 -- submission-receipt-v2 is unchanged and stays byte-equal.
 --
 --   institution.assignment.declaration_required  the switch, false by default.
+--   audit.declaration_requirement_event  append-only trail of every change,
+--                   with its author and time, written in the same call.
+--   institution.declaration_requirement()  the teacher of the assignment reads
+--                   the switch and when it was last changed.
 --   institution.set_declaration_required()  the teacher of the assignment sets
---                   it; the assignment row is taken FOR UPDATE, so a request
---                   in progress (FOR SHARE) finishes under the old value.
+--                   it; setting the value in force writes nothing.
 --   app.assignment_declaration_required()  the bridge for the evidence role,
 --                   which does not read schema institution; no grant to the
 --                   app, only the evidence functions below call it.
 --
--- Errors carry no input: ZD401 no session, ZD403 no relation, ZD422 invalid
--- input, ZD428 a required declaration is missing.
+-- Errors carry no input: ZD401 no session, ZD403 no relation (also an unknown
+-- assignment), ZD422 invalid input, ZD428 a required declaration is missing.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
-GRANT CREATE ON SCHEMA institution, app TO ductus_identity;
+GRANT CREATE ON SCHEMA institution, app, audit TO ductus_identity;
 GRANT CREATE ON SCHEMA declaration TO ductus_evidence;
 
 SET LOCAL ROLE ductus_identity;
@@ -42,29 +50,104 @@ SET LOCAL ROLE ductus_identity;
 -- squawk-ignore adding-not-nullable-field
 ALTER TABLE institution.assignment ADD COLUMN declaration_required boolean NOT NULL DEFAULT false;
 
+-- Every change of the switch, append-only, in the same call as the change.
+CREATE TABLE audit.declaration_requirement_event (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seq bigint GENERATED ALWAYS AS IDENTITY UNIQUE,
+  institution_id uuid NOT NULL REFERENCES identity.institution (id),
+  assignment_id uuid NOT NULL,
+  required boolean NOT NULL,
+  actor_id uuid NOT NULL,
+  occurred_at timestamptz NOT NULL DEFAULT statement_timestamp(),
+  FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
+  FOREIGN KEY (actor_id, institution_id) REFERENCES identity.user_account (id, institution_id)
+);
+CREATE INDEX declaration_requirement_event_assignment_idx
+  ON audit.declaration_requirement_event (assignment_id, institution_id, seq);
+CREATE INDEX declaration_requirement_event_actor_idx
+  ON audit.declaration_requirement_event (actor_id, institution_id);
+CREATE TRIGGER declaration_requirement_event_append_only BEFORE UPDATE OR DELETE
+  ON audit.declaration_requirement_event FOR EACH ROW EXECUTE FUNCTION audit.reject_change();
+CREATE TRIGGER declaration_requirement_event_no_truncate BEFORE TRUNCATE
+  ON audit.declaration_requirement_event FOR EACH STATEMENT EXECUTE FUNCTION audit.reject_change();
+ALTER TABLE audit.declaration_requirement_event ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit.declaration_requirement_event FORCE ROW LEVEL SECURITY;
+CREATE POLICY declaration_requirement_event_owner ON audit.declaration_requirement_event
+  TO ductus_identity USING (true) WITH CHECK (true);
+
+-- The switch in force and when it was last changed (null: never). No access
+-- check: only the two RPCs below, which check first, call it.
+CREATE FUNCTION institution.declaration_requirement_of(p_assignment_id uuid)
+RETURNS TABLE (required boolean, changed_at timestamptz)
+LANGUAGE sql STABLE SET search_path = ''
+AS $$
+  SELECT a.declaration_required,
+         (SELECT e.occurred_at FROM audit.declaration_requirement_event e
+           WHERE (e.assignment_id, e.institution_id) = (a.id, a.institution_id)
+           ORDER BY e.seq DESC LIMIT 1)
+    FROM institution.assignment a WHERE a.id = p_assignment_id
+$$;
+REVOKE ALL ON FUNCTION institution.declaration_requirement_of(uuid) FROM PUBLIC;
+
+-- The caller's user and institution when the caller is the teacher of the
+-- assignment of the own institution; ZD403 for everyone else and for an
+-- unknown assignment (C-23: a role alone opens nothing).
+CREATE FUNCTION institution.require_assignment_teacher(p_assignment_id uuid,
+  OUT user_id uuid, OUT institution_id uuid)
+LANGUAGE plpgsql STABLE SET search_path = ''
+AS $$
+BEGIN
+  SELECT r.user_id, r.institution_id INTO user_id, institution_id FROM institution.require_actor() r;
+  IF p_assignment_id IS NULL
+     OR institution.work_relation(user_id, p_assignment_id) IS DISTINCT FROM 'teacher'
+     OR NOT EXISTS (SELECT 1 FROM institution.assignment a
+                     WHERE a.id = p_assignment_id AND a.institution_id = require_assignment_teacher.institution_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+END
+$$;
+REVOKE ALL ON FUNCTION institution.require_assignment_teacher(uuid) FROM PUBLIC;
+
+-- The teacher of the assignment reads the switch.
+CREATE FUNCTION institution.declaration_requirement(p_assignment_id uuid)
+RETURNS TABLE (required boolean, changed_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM institution.require_assignment_teacher(p_assignment_id);
+  RETURN QUERY SELECT s.required, s.changed_at FROM institution.declaration_requirement_of(p_assignment_id) s;
+END
+$$;
+REVOKE ALL ON FUNCTION institution.declaration_requirement(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION institution.declaration_requirement(uuid) TO ductus_app;
+
+-- The teacher of the assignment sets the switch. The assignment row is taken
+-- FOR UPDATE, so a submission request in progress (FOR SHARE) finishes under
+-- the old value and one that starts later reads the new one. Setting the
+-- value in force writes nothing and returns it unchanged; every change writes
+-- its event in the same transaction.
 CREATE FUNCTION institution.set_declaration_required(p_assignment_id uuid, p_required boolean)
-RETURNS boolean
+RETURNS TABLE (required boolean, changed_at timestamptz)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
-  v_user uuid;
-  v_institution uuid;
-  v_value boolean;
+  v_actor record;
+  v_current boolean;
 BEGIN
-  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
+  SELECT * INTO v_actor FROM institution.require_assignment_teacher(p_assignment_id);
   IF p_required IS NULL THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
-  IF institution.work_relation(v_user, p_assignment_id) IS DISTINCT FROM 'teacher' THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  SELECT a.declaration_required INTO v_current FROM institution.assignment a
+   WHERE a.id = p_assignment_id AND a.institution_id = v_actor.institution_id
+   FOR UPDATE;
+  IF v_current IS DISTINCT FROM p_required THEN
+    UPDATE institution.assignment a SET declaration_required = p_required
+     WHERE a.id = p_assignment_id AND a.institution_id = v_actor.institution_id;
+    INSERT INTO audit.declaration_requirement_event (institution_id, assignment_id, required, actor_id)
+    VALUES (v_actor.institution_id, p_assignment_id, p_required, v_actor.user_id);
   END IF;
-  UPDATE institution.assignment a SET declaration_required = p_required
-   WHERE a.id = p_assignment_id AND a.institution_id = v_institution
-  RETURNING a.declaration_required INTO v_value;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
-  END IF;
-  RETURN v_value;
+  RETURN QUERY SELECT s.required, s.changed_at FROM institution.declaration_requirement_of(p_assignment_id) s;
 END
 $$;
 REVOKE ALL ON FUNCTION institution.set_declaration_required(uuid, boolean) FROM PUBLIC;
@@ -123,52 +206,6 @@ BEGIN
   RETURN NEW;
 END $$;
 
--- The rule of pin_request for the caller's own document and the revision they
--- submit, read before the request: 'declaration_required' when the assignment
--- requires a declaration and none is fresh for that revision, else 'proceed'
--- (also for anything app.request_submission answers itself: no session, not
--- the caller's document, an inaccessible assignment, a live request).
-CREATE FUNCTION declaration.submission_gate(p_document_id text, p_revision bigint) RETURNS text
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
-DECLARE
-  v_actor record;
-  v_assignment uuid;
-  v_version integer;
-  v_saved declaration.statement%ROWTYPE;
-BEGIN
-  SELECT * INTO v_actor FROM app.current_actor();
-  IF v_actor.user_id IS NULL OR v_actor.institution_id IS NULL THEN RETURN 'proceed'; END IF;
-  SELECT pr.assignment_id INTO v_assignment
-    FROM evidence.document d
-    JOIN evidence.project pr ON pr.id = d.project_id AND pr.institution_id = d.institution_id
-   WHERE d.id = p_document_id AND d.institution_id = v_actor.institution_id
-     AND d.principal_id = v_actor.user_id AND pr.principal_id = v_actor.user_id;
-  IF NOT FOUND THEN RETURN 'proceed'; END IF;
-  IF NOT app.assignment_declaration_required(v_assignment) THEN
-    RETURN 'proceed';
-  END IF;
-  -- A live request binds (P5, P8): request_submission answers it.
-  IF EXISTS (SELECT 1 FROM evidence.submission_request q
-              WHERE (q.institution_id, q.assignment_id, q.principal_id)
-                  = (v_actor.institution_id, v_assignment, v_actor.user_id)
-                AND evidence.request_live(q.id, q.institution_id)) THEN
-    RETURN 'proceed';
-  END IF;
-  SELECT a.current_version INTO v_version FROM app.lock_student_assignment(v_assignment) a;
-  IF NOT FOUND THEN RETURN 'proceed'; END IF;
-  SELECT * INTO v_saved FROM declaration.statement s
-   WHERE (s.institution_id, s.assignment_id, s.principal_id)
-       = (v_actor.institution_id, v_assignment, v_actor.user_id)
-     AND s.payload_jcs IS NOT NULL
-   ORDER BY s.version DESC LIMIT 1;
-  IF FOUND AND declaration.is_fresh(v_saved, p_document_id, p_revision, v_version) THEN
-    RETURN 'proceed';
-  END IF;
-  RETURN 'declaration_required';
-END $$;
-REVOKE ALL ON FUNCTION declaration.submission_gate(text, bigint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION declaration.submission_gate(text, bigint) TO ductus_app;
-
 -- As 20261204100000, with declarationRequired.
 CREATE OR REPLACE FUNCTION declaration.view_statement(p_institution uuid, p_assignment uuid, p_student uuid,
   p_revision bigint, p_assignment_version integer) RETURNS jsonb
@@ -202,7 +239,7 @@ BEGIN
 END $$;
 
 SET LOCAL ROLE ductus_migrator;
-REVOKE CREATE ON SCHEMA institution, app FROM ductus_identity;
+REVOKE CREATE ON SCHEMA institution, app, audit FROM ductus_identity;
 REVOKE CREATE ON SCHEMA declaration FROM ductus_evidence;
 
 -- migrate:down
@@ -238,7 +275,6 @@ BEGIN
     'version', coalesce(v_saved.version, 0), 'formText', v_saved.form_text, 'draft', v_saved.draft,
     'payload', v_saved.payload_jcs::jsonb, 'declarationSha256', v_saved.content_sha256, 'uploads', v_uploads));
 END $$;
-DROP FUNCTION declaration.submission_gate(text, bigint);
 CREATE OR REPLACE FUNCTION declaration.pin_request() RETURNS trigger
 LANGUAGE plpgsql SET search_path = '' AS $$
 DECLARE
@@ -267,6 +303,10 @@ END $$;
 SET LOCAL ROLE ductus_identity;
 DROP FUNCTION app.assignment_declaration_required(uuid);
 DROP FUNCTION institution.set_declaration_required(uuid, boolean);
+DROP FUNCTION institution.declaration_requirement(uuid);
+DROP FUNCTION institution.require_assignment_teacher(uuid);
+DROP FUNCTION institution.declaration_requirement_of(uuid);
+DROP TABLE audit.declaration_requirement_event;
 ALTER TABLE institution.assignment DROP COLUMN declaration_required;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA declaration FROM ductus_evidence;

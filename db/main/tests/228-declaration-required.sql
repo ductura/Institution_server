@@ -2,8 +2,8 @@
 -- OD-15; PRODUCT §5 rule 11): an assignment that requires a declaration
 -- refuses a submission request without a declaration confirmed for the
 -- submitted revision, and nothing of the request is written. The switch is
--- off by default (as today) and only the teacher of the assignment sets it
--- (C-23). Synthetic students, documents and conversations only; each case is
+-- off by default (as today), only the teacher of the assignment reads and
+-- sets it (C-23), and every change leaves an append-only audit event. Synthetic students, documents and conversations only; each case is
 -- rolled back, so they do not depend on each other.
 BEGIN;
 SET LOCAL lc_messages TO 'C';
@@ -43,13 +43,17 @@ BEGIN
 END $$;
 
 CREATE FUNCTION pg_temp.require(p_actor text, p_value text) RETURNS text LANGUAGE sql AS $$
-  SELECT pg_temp.ask(p_actor, format('SELECT institution.set_declaration_required({z1}, %s)::text', p_value))
+  SELECT pg_temp.ask(p_actor, format('SELECT required::text FROM institution.set_declaration_required({z1}, %s)', p_value))
 $$;
 CREATE FUNCTION pg_temp.submit(p_revision bigint DEFAULT 1) RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask('ana', format('SELECT outcome FROM app.request_submission(%L, %s)', 'doc-a', p_revision))
 $$;
-CREATE FUNCTION pg_temp.gate(p_revision bigint DEFAULT 1) RETURNS text LANGUAGE sql AS $$
-  SELECT pg_temp.ask('ana', format('SELECT declaration.submission_gate(%L, %s)', 'doc-a', p_revision))
+CREATE FUNCTION pg_temp.teacher_read(p_actor text) RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, 'SELECT required::text FROM institution.declaration_requirement({z1})')
+$$;
+CREATE FUNCTION pg_temp.events() RETURNS text LANGUAGE sql AS $$
+  SELECT coalesce(string_agg(e.required::text || ':' || (e.actor_id = pg_temp.id('vesna'))::text, ',' ORDER BY e.seq), '')
+    FROM audit.declaration_requirement_event e
 $$;
 CREATE FUNCTION pg_temp.read(p_key text) RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask('ana', format('SELECT declaration.read_statement({z1}) #>> ''{statement,%s}''', p_key))
@@ -79,13 +83,39 @@ SELECT is(pg_temp.require('iva', 'true'), 'ZD403: forbidden', 'the administrator
 SELECT is(pg_temp.require('nina', 'true'), 'ZD403: forbidden', 'an unconfirmed teacher cannot set it');
 SELECT is(pg_temp.require('petra', 'true'), 'ZD403: forbidden', 'a teacher of another faculty cannot set it');
 SELECT is(pg_temp.require('vesna', 'NULL'), 'ZD422: invalid input', 'a null value is invalid');
-SELECT alike(pg_temp.ask('vesna', 'SELECT institution.set_declaration_required({z3}, true)::text'), 'ZD403:%',
+SELECT alike(pg_temp.ask('vesna', 'SELECT required::text FROM institution.set_declaration_required({z3}, true)'), 'ZD403:%',
   'the teacher cannot set it on an assignment of another faculty');
 SELECT is((SELECT count(*) FROM institution.assignment WHERE declaration_required), 0::bigint,
   'no refused call changed a switch');
+SELECT is(pg_temp.events(), '', 'no refused call wrote an audit event');
+SELECT is(pg_temp.teacher_read('vesna'), 'false', 'the teacher reads the switch off');
+SELECT is(pg_temp.ask('vesna', 'SELECT changed_at IS NULL FROM institution.declaration_requirement({z1})'), 'true',
+  'never changed: no time of change');
 SELECT is(pg_temp.require('vesna', 'true'), 'true', 'the teacher of the assignment turns it on');
 SELECT is(pg_temp.read('declarationRequired'), 'true', 'the student reads the switch on');
+SELECT is(pg_temp.teacher_read('vesna'), 'true', 'the teacher reads the switch on');
+SELECT is(pg_temp.ask('vesna', 'SELECT changed_at IS NOT NULL FROM institution.declaration_requirement({z1})'), 'true',
+  'the teacher reads when it was changed');
+SELECT is(pg_temp.events(), 'true:true', 'the change wrote one event with its author');
+SELECT is(pg_temp.require('vesna', 'true'), 'true', 'setting the value in force answers it');
+SELECT is(pg_temp.events(), 'true:true', 'setting the value in force writes no event');
 SELECT is(pg_temp.require('vesna', 'false'), 'false', 'the teacher turns it off again');
+SELECT is(pg_temp.events(), 'true:true,false:true', 'each change has its own event, in order');
+
+-- The teacher's read is the teacher's only (C-23).
+SELECT is(pg_temp.teacher_read('ana'), 'ZD403: forbidden', 'a student cannot read the teacher''s switch');
+SELECT is(pg_temp.teacher_read('marko'), 'ZD403: forbidden', 'a teacher of another course cannot read it');
+SELECT is(pg_temp.teacher_read('iva'), 'ZD403: forbidden', 'the administrator cannot read it');
+SELECT is(pg_temp.teacher_read('petra'), 'ZD403: forbidden', 'a teacher of another faculty cannot read it');
+SELECT alike(pg_temp.teacher_read('anon'), 'ZD401:%', 'without a session nothing is read');
+
+-- The audit trail is append-only, for its owner too, and closed to the app.
+SELECT throws_ok($$ UPDATE audit.declaration_requirement_event SET required = NOT required $$,
+  'ZD403', NULL, 'an event cannot be changed');
+SELECT throws_ok($$ DELETE FROM audit.declaration_requirement_event $$,
+  'ZD403', NULL, 'an event cannot be deleted');
+SELECT ok(NOT has_table_privilege('ductus_app', 'audit.declaration_requirement_event', 'SELECT,INSERT,UPDATE,DELETE'),
+  'the web role has no privilege on the audit events');
 
 -- The bridge is the evidence role's only: the app and the public do not call it.
 SELECT ok(NOT has_function_privilege('ductus_app', 'app.assignment_declaration_required(uuid)', 'EXECUTE')
@@ -99,7 +129,6 @@ SELECT is(pg_temp.call('ana','pkg-a','req-declaration-required',pg_temp.descript
 -- 2. On, nothing confirmed: refused, nothing written (acceptance 1).
 SAVEPOINT none_confirmed;
 SELECT pg_temp.require('vesna', 'true');
-SELECT is(pg_temp.gate(), 'declaration_required', 'the gate names the missing declaration');
 SELECT is(pg_temp.submit(), 'ZD428: declaration_required', 'the request is refused');
 SELECT is(pg_temp.requests(), 0::bigint, 'nothing of the request is written');
 SELECT is(pg_temp.read('state'), 'none', 'the student still reads no declaration');
@@ -109,7 +138,6 @@ ROLLBACK TO SAVEPOINT none_confirmed;
 SAVEPOINT draft_only;
 SELECT pg_temp.require('vesna', 'true');
 SELECT is(pg_temp.save(0, false) #>> '{statement,state}', 'draft', 'the student saves a draft');
-SELECT is(pg_temp.gate(), 'declaration_required', 'the gate refuses a draft');
 SELECT is(pg_temp.submit(), 'ZD428: declaration_required', 'a draft does not let the request through');
 SELECT is(pg_temp.requests(), 0::bigint, 'nothing is written for a draft');
 ROLLBACK TO SAVEPOINT draft_only;
@@ -122,7 +150,6 @@ SELECT is(pg_temp.call('ana','pkg-a','req-declaration-required-2',
   pg_temp.descriptor(p_segment=>'segment-a-2',p_sequence_from=>2,p_sequence_to=>2,p_hash=>repeat('c',64),
     p_predecessor=>repeat('b',64)),
   1,repeat('d',64),repeat('e',64),repeat('c',64)), 'reserved', 'the student commits revision 2');
-SELECT is(pg_temp.gate(2), 'declaration_required', 'the gate refuses a declaration of another revision');
 SELECT is(pg_temp.submit(2), 'ZD428: declaration_required', 'revision 2 is refused without its declaration');
 SELECT is(pg_temp.requests(), 0::bigint, 'nothing is written for revision 2');
 ROLLBACK TO SAVEPOINT other_revision;
@@ -131,12 +158,10 @@ ROLLBACK TO SAVEPOINT other_revision;
 SAVEPOINT confirmed;
 SELECT pg_temp.require('vesna', 'true');
 SELECT is(pg_temp.save(0, true) #>> '{statement,state}', 'confirmed', 'the student confirms revision 1');
-SELECT is(pg_temp.gate(), 'proceed', 'the gate lets the confirmed revision through');
 SELECT is(pg_temp.submit(), 'requested', 'the request is written');
 SELECT is(pg_temp.pinned(), (SELECT s.id::text FROM declaration.statement s
   WHERE s.document_id = 'doc-a' AND s.payload_jcs IS NOT NULL), 'the confirmed version is pinned');
 SELECT is(pg_temp.read('state'), 'bound', 'the student reads the declaration bound');
-SELECT is(pg_temp.gate(), 'proceed', 'a live request is answered by request_submission, not the gate');
 SELECT is(pg_temp.submit(), 'existing', 'a second click returns the bound request');
 ROLLBACK TO SAVEPOINT confirmed;
 
@@ -147,7 +172,6 @@ SELECT is(pg_temp.save(0, true) #>> '{statement,state}', 'confirmed', 'the stude
 INSERT INTO demo_conversation VALUES
   (pg_temp.id('ana'), pg_temp.id('ana'), 'pasted_known', 1, ARRAY[repeat('b',64)]);
 SELECT is(pg_temp.read('state'), 'stale', 'the version is stale');
-SELECT is(pg_temp.gate(), 'declaration_required', 'the gate refuses a stale version');
 SELECT is(pg_temp.submit(), 'ZD428: declaration_required', 'a stale version does not let the request through');
 SELECT is(pg_temp.requests(), 0::bigint, 'nothing is written for a stale version');
 ROLLBACK TO SAVEPOINT stale;
@@ -170,17 +194,21 @@ ROLLBACK TO SAVEPOINT read_error;
 
 -- 8. Off: submitted without a declaration, as today (OD-6; acceptance 4).
 SAVEPOINT off;
-SELECT is(pg_temp.gate(), 'proceed', 'the gate lets the request through while off');
 SELECT is(pg_temp.submit(), 'requested', 'the request is written without a declaration');
 SELECT is(pg_temp.pinned(), 'none', 'no version is pinned');
 ROLLBACK TO SAVEPOINT off;
 
--- 9. The gate answers nothing about another student's document.
-SELECT pg_temp.require('vesna', 'true');
-SELECT is(pg_temp.ask('dora', 'SELECT declaration.submission_gate(''doc-a'', 1)'), 'proceed',
-  'another student learns nothing from the gate; request_submission refuses her');
-SELECT is(pg_temp.ask('anon', 'SELECT declaration.submission_gate(''doc-a'', 1)'), 'proceed',
-  'without a session the gate says nothing either');
+-- 9. A request is the frozen context of its submission (D-263 Q07): one
+-- written while the switch was off is recorded as requested, even if the
+-- teacher turns the switch on before the record.
+SAVEPOINT frozen;
+SELECT is(pg_temp.submit(), 'requested', 'the request is written while the switch is off');
+SELECT is(pg_temp.require('vesna', 'true'), 'true', 'the teacher turns the switch on after the click');
+SELECT is(pg_temp.ask('ana', format('SELECT outcome FROM app.record_submission(%L::uuid, %L)',
+    (SELECT q.id::text FROM evidence.submission_request q WHERE q.document_id = 'doc-a'), pg_temp.h('d'))),
+  'recorded', 'the request is recorded under the switch in force at its click');
+SELECT is(pg_temp.submit(), 'existing', 'the bound request is answered as before');
+ROLLBACK TO SAVEPOINT frozen;
 
 SELECT is(pg_temp.requests(), 0::bigint, 'every case was rolled back');
 
