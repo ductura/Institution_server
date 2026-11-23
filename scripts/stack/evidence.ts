@@ -15,7 +15,7 @@ import {
   realpathSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, posix, win32 } from "node:path";
 
 import { PersistentDevelopmentEd25519SigningKeyProvider } from "../../server/external/keys/index.ts";
 
@@ -31,8 +31,28 @@ export type Psql = { socket: string; port: number; env: Env };
 export type EvidenceSetup = { institutionId: string; seed: string };
 export type S3Credentials = { keyId: string; secret: string };
 
-const inside = (path: string, root: string): boolean =>
-  path === root || path.startsWith(`${root}/`);
+/**
+ * Whether `path` is `root` or lies under it, with either separator: on Windows
+ * `resolve` and `realpathSync` give backslashes, and a check against `${root}/`
+ * alone let a seed inside the checkout through. Windows paths are compared as
+ * Windows does (either separator, any case); POSIX paths stay case-sensitive.
+ * A Windows device path (`\\?\` or `\\.\`) can name the checkout in a form
+ * `relative` does not see through, so it counts as inside and is refused.
+ */
+export const inside = (
+  path: string,
+  root: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean => {
+  const paths = platform === "win32" ? win32 : posix;
+  if (platform === "win32" && [path, root].some((p) => /^[\\/]{2}[?.][\\/]/u.test(p))) {
+    return true;
+  }
+  const rest = paths.relative(root, path);
+  return (
+    rest === "" || (rest !== ".." && !rest.startsWith(`..${paths.sep}`) && !paths.isAbsolute(rest))
+  );
+};
 
 /**
  * The seed file: in the stack directory when that lies outside the checkout
@@ -41,7 +61,7 @@ const inside = (path: string, root: string): boolean =>
  */
 export function seedFile(stackDir: string, root: string, home: string): string {
   if (!inside(stackDir, root)) return join(stackDir, "signing-seed");
-  if (!home.startsWith("/") || inside(home, root)) {
+  if (!isAbsolute(home) || inside(home, root)) {
     throw new Error("HOME must be an absolute path outside the checkout for the signing seed");
   }
   const id = createHash("sha256").update(stackDir).digest("hex").slice(0, 16);
@@ -80,7 +100,11 @@ export function ensureSeed(file: string, root: string): void {
   // An existing directory keeps its mode under mkdir: it must be this user's
   // own real directory, and it is made 0700 here, so no one else can swap the seed.
   const holder = lstatSync(dirname(file));
-  if (!holder.isDirectory() || holder.uid !== process.getuid?.()) {
+  // Windows has no POSIX uid (process.getuid is undefined, lstat reports 0):
+  // there only the uid comparison is skipped; the real-directory, regular-file,
+  // no-link and outside-the-checkout checks still hold.
+  const holderUid = process.getuid?.();
+  if (!holder.isDirectory() || (holderUid !== undefined && holder.uid !== holderUid)) {
     throw new Error("the signing seed's directory is not this user's own directory");
   }
   chmodSync(dirname(file), 0o700);
@@ -92,7 +116,9 @@ export function ensureSeed(file: string, root: string): void {
   // The same for the seed itself, new or kept: a regular file of this user,
   // never a link, and 0600 at most.
   const seed = lstatSync(file);
-  if (!seed.isFile() || seed.uid !== process.getuid?.()) {
+  // Read again for this check, as each check asks for its own owner.
+  const seedUid = process.getuid?.();
+  if (!seed.isFile() || (seedUid !== undefined && seed.uid !== seedUid)) {
     throw new Error("the signing seed is not this user's own regular file");
   }
   if ((seed.mode & 0o777) !== 0o600) chmodSync(file, 0o600);

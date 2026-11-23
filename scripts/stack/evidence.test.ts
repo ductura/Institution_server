@@ -30,6 +30,7 @@ import {
   ensureBucketIdentity,
   ensureSeed,
   IDENTITY_KEY,
+  inside,
   newS3Credentials,
   S3_BUCKET,
   seedFile,
@@ -47,6 +48,33 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "vs1-evidence-"));
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+describe("inside (Windows paths)", () => {
+  const repo = "D:\\Ductura\\Institution_server";
+
+  it.each([
+    [repo, true],
+    [`${repo}\\.local`, true],
+    [`${repo}\\.local\\signing-seed`, true],
+    ["d:\\ductura\\institution_server\\.local", true],
+    ["D:/Ductura/Institution_server/.local", true],
+    ["D:\\Ductura\\Institution_server-drugi\\.local", false],
+    ["D:\\Ductura", false],
+    ["C:\\Users\\izmisljeni\\.ductura\\stack-vs1-x", false],
+    // Device paths fail closed: they can name the checkout behind a prefix.
+    ["\\\\?\\D:\\Ductura\\Institution_server\\.local", true],
+    ["\\\\.\\D:\\Ductura\\Institution_server\\.local", true],
+    ["//?/C:/Users/izmisljeni/.ductura/stack-vs1-x", true],
+  ])("judges %j inside the checkout: %s", (path, expected) => {
+    expect(inside(path, repo, "win32")).toBe(expected);
+  });
+
+  it("keeps POSIX paths case-sensitive", () => {
+    expect(inside("/srv/Repo/.local", "/srv/repo", "linux")).toBe(false);
+    expect(inside("/srv/repo/.local", "/srv/repo", "linux")).toBe(true);
+    expect(inside("/srv/repo-drugi", "/srv/repo", "linux")).toBe(false);
+  });
+});
 
 describe("the signing seed (K1)", () => {
   it("lies outside the checkout when the stack directory is inside it", () => {

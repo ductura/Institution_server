@@ -16,7 +16,7 @@ import { spawnSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
 import { connect, type AddressInfo } from "node:net";
 import { networkInterfaces, tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -643,6 +643,21 @@ describe("faults of the disk and of the root (review FAIL on 5ecd3a0)", () => {
       ).toThrow(/VS1_S3_ROOT/u);
     },
   );
+
+  it("accepts an absolute normal root in this platform's own form (C:\... on Windows)", () => {
+    const given = resolve(tmpdir(), "vs1-s3-korijen");
+    expect(
+      localS3Config({
+        NODE_ENV: "test",
+        PORT: "4190",
+        VS1_S3_ROOT: given,
+        VS1_S3_BUCKET: BUCKET,
+        VS1_S3_REGION: REGION,
+        EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+        EVIDENCE_S3_VS1_SECRET: SECRET,
+      }).root,
+    ).toBe(given);
+  });
 
   it("refuses a root that is a link, or reached through one, and writes nothing there", async () => {
     const target = mkdtempSync(join(tmpdir(), "vs1-s3-target-"));
