@@ -221,7 +221,7 @@ export async function answerDev(
     await new Promise((resolve) => setTimeout(resolve, Math.min(delay, MAX_DELAY_MS)));
   if (url.pathname === "/__lazni/uloga" && req.method === "GET") return roleSwitch(state, req, url);
   if (url.pathname === "/__lazni/ponovno" && req.method === "POST") {
-    Object.assign(state, createState(state.receiptSigner));
+    Object.assign(state, createState(state.receiptSigner, state.workSchema));
     return json(200, { ponovno: true });
   }
   const match = matchRoute(req.method, url.pathname);

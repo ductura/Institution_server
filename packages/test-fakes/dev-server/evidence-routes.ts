@@ -11,12 +11,13 @@ import {
 import { FAKE_DOMAIN, minute, type SignedReceipt } from "./receipt-signer.ts";
 import type { Handlers } from "./server.ts";
 import {
-  EMPTY_DOCUMENT,
+  emptyDocumentOf,
   readerOf,
   recordOpening,
   type Account,
   type State,
   type Work,
+  workVersion,
 } from "./state.ts";
 
 const PROFILE = "lazni-profil";
@@ -87,7 +88,8 @@ export const EVIDENCE_HANDLERS: Handlers = {
         submittedAt: null,
         submissionReceipt: null,
         submittedDocument: null,
-        document: EMPTY_DOCUMENT,
+        document: emptyDocumentOf(state.workSchema),
+        revisionZero: emptyDocumentOf(state.workSchema),
         versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,
@@ -103,6 +105,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         documentId: work.documentId,
         evidenceProfileId: PROFILE,
         ...workState(work),
+        ...workVersion(work),
         document: work.document,
         receiptKeys: [state.receiptSigner.key],
         submitted: work.state === "submitted",
@@ -223,7 +226,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         from: body.from,
         next: body.from + REPLAY_PAGE < work.segments.length ? body.from + REPLAY_PAGE : null,
         startDocument:
-          head === null ? null : Buffer.from(EMPTY_DOCUMENT, "base64").toString("utf8"),
+          head === null ? null : Buffer.from(work.revisionZero, "base64").toString("utf8"),
         segments: work.segments.slice(body.from, body.from + REPLAY_PAGE),
         resumeDocuments: {},
       },

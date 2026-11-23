@@ -78,11 +78,14 @@ export {
   ACCOUNT_KEYS,
   CODES,
   createState,
+  devWorkSchema,
   EMPTY_DOCUMENT,
+  EMPTY_DOCUMENT_V3,
   IDS,
   INSTITUTION,
   type AccountKey,
   type State,
+  type WorkSchema,
 } from "./state.ts";
 
 /**

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
+import { REVISION_ZERO_V3_JCS } from "../../../server/domain/index.ts";
 import { createReceiptSigner, type ReceiptSigner, type SignedReceipt } from "./receipt-signer.ts";
 
 // The in-memory state of the dev fake server and its invented starting data.
@@ -113,6 +114,11 @@ export type Work = {
   submittedDocument: string | null;
   /** The document of `revision`: standard base64 of its JSON bytes. */
   document: string;
+  /**
+   * Revision 0 of the work, standard base64 of its JSON bytes. Its schemaVersion is the
+   * version of the work, as the real server reads it (SRV-7F).
+   */
+  readonly revisionZero: string;
   versionSnapshots: Map<number, string>;
   /** Segment texts in chain order (decoded from the commits). */
   segments: string[];
@@ -198,6 +204,39 @@ type SubmissionNote = Operations["student.submission-notes.post"]["success"]["bo
 export const EMPTY_DOCUMENT = Buffer.from(
   '{"nodes":[{"children":[],"id":"0a000000-0000-4000-8000-000000000001","type":"paragraph"}],"schemaVersion":1}',
 ).toString("base64");
+
+/**
+ * LOK-SRV-V3: an empty v3 work, the revision 0 the real server writes for schema 3
+ * (REVISION_ZERO_V3_JCS of server/domain), as base64 of its JSON bytes.
+ */
+export const EMPTY_DOCUMENT_V3 = Buffer.from(REVISION_ZERO_V3_JCS).toString("base64");
+
+/** The schema versions the fake can start works with: 1 (default) or 3. */
+export type WorkSchema = 1 | 3;
+
+/** Revision 0 of a new work of this schema. */
+export const emptyDocumentOf = (schema: WorkSchema): string =>
+  schema === 3 ? EMPTY_DOCUMENT_V3 : EMPTY_DOCUMENT;
+
+/** The schema of the works from DUCTURA_LAZNI_SHEMA, or an error text for a bad value. */
+export function devWorkSchema(
+  env: Readonly<Record<string, string | undefined>>,
+): WorkSchema | string {
+  const raw = env.DUCTURA_LAZNI_SHEMA;
+  if (raw === undefined || raw === "" || raw === "1") return 1;
+  if (raw === "3") return 3;
+  return `DUCTURA_LAZNI_SHEMA=${raw}: only 1 or 3`;
+}
+
+/** The version of a work and the SHA-256 of its revision 0, as evidence.open.post sends them. */
+export function workVersion(work: Work): { schemaVersion: 1 | 3; revisionZeroHash: string } {
+  const bytes = Buffer.from(work.revisionZero, "base64");
+  const parsed = JSON.parse(bytes.toString("utf8")) as { schemaVersion?: unknown };
+  return {
+    schemaVersion: parsed.schemaVersion === 3 ? 3 : 1,
+    revisionZeroHash: createHash("sha256").update(bytes).digest("hex"),
+  };
+}
 
 export type Comment = {
   readonly id: string;
@@ -286,6 +325,8 @@ export type State = {
   courses: Course[];
   assignments: Assignment[];
   works: Work[];
+  /** LOK-SRV-V3: the schema version of the starting and new works (DUCTURA_LAZNI_SHEMA). */
+  readonly workSchema: WorkSchema;
   submissionNotes: SubmissionNote[];
   deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
     assignmentId: string;
@@ -455,9 +496,13 @@ function account(
 }
 
 /** A fresh state with the starting data; each call is independent. */
-export function createState(receiptSigner = createReceiptSigner()): State {
+export function createState(
+  receiptSigner = createReceiptSigner(),
+  workSchema: WorkSchema = 1,
+): State {
   return {
     receiptSigner,
+    workSchema,
     accounts: [
       account("student", IDS.student, "Lucija", "Đaković", ["student"]),
       account("student-2", IDS.student2, "Marko", "Ljubić", ["student"]),
@@ -538,7 +583,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
         submittedAt: null,
         submissionReceipt: null,
         submittedDocument: null,
-        document: EMPTY_DOCUMENT,
+        document: emptyDocumentOf(workSchema),
+        revisionZero: emptyDocumentOf(workSchema),
         versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,
