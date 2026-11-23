@@ -76,6 +76,9 @@ describe("server/server.ts", () => {
         ),
       );
     }
+    expect(ENTRY_TEXT).toMatch(
+      /excludePracticeAssignment\(\s*createWorkPdfRouteFor\([^)]*\),\s*databases\.main,\s*\),/u,
+    );
   });
 
   it("names every area with routes, and only those", () => {
