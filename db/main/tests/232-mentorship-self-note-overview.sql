@@ -1,6 +1,6 @@
 -- SRV-MENTOR-3 (Ductus#2055; MK-8, MK-9, MK-11, PG-9): the student's note to
 -- self and reading place, the "student je vidio" marks and the mentor's
--- overview of the own students (20261214150000). Personas of institution.inc,
+-- overview of the own students (20261214160000). Personas of institution.inc,
 -- evidence-acceptance.inc and mentorship.inc, all invented: Ana writes zm1
 -- under her mentor Marko (ms1) and doc-a in Vesna's course K1; Dora, Petra,
 -- Tomo and the others have no part in Ana's works.

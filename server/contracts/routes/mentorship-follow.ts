@@ -23,7 +23,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 //     the mentor has not opened. No score, no rank, no comparison.
 //
 // Identity, role and institution are never in a request: the RPCs of
-// 20261214150000 take them from the session (server/database/mentorship-follow).
+// 20261214160000 take them from the session (server/database/mentorship-follow).
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 const END = "(?![\\s\\S])";
