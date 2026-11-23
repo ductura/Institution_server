@@ -74,6 +74,10 @@ const SQL = {
     'SELECT thread_id AS "threadId", comment_id AS "commentId", comment_position AS position, body AS text, anchor, state, created_window AS "createdWindow" FROM collaboration.list_comment_drafts($1)',
   discardDraft: "SELECT collaboration.discard_comment_draft($1::uuid)",
   publish: "SELECT collaboration.publish_comments($1) AS published",
+  // The key of create, discard and publish_comments, so no draft of this teacher on this work
+  // is written or discarded between the list and the publish of one transaction.
+  lockDrafts:
+    "SELECT pg_advisory_xact_lock(hashtextextended('comment_draft:' || $1::uuid || app.current_user_id(), 0))",
   markReviewed:
     'SELECT reviewed_revision::text AS "reviewedRevision", reviewed_at AS "reviewedAt" FROM collaboration.mark_work_reviewed($1)',
   reviewState:
@@ -190,12 +194,12 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
         status: "ok" as const,
         published: await published(tx, documentId),
       })),
-    // The drafts are read through list_comment_drafts, so the rows cannot be
-    // locked here without a migration. A draft written between the list and
-    // the publish shows as a count above the list and rolls everything back;
-    // a discard and a new draft in that same moment would still pass.
+    // The list and the publish run under the advisory lock the draft functions
+    // take, so a discard and a new draft cannot fall between them; a count
+    // other than the list still rolls everything back.
     publishListed: (token, documentId, draftIds) =>
       run(token, async (tx) => {
+        await rowsOf(tx, SQL.lockDrafts, [documentId]);
         const seen = new Set(draftIds.map((id) => id.toLowerCase()));
         const drafts = (await rowsOf(tx, SQL.listDrafts, [documentId])).map(toDraft);
         const own = new Set(drafts.map((d) => d.commentId.toLowerCase()));

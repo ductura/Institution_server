@@ -152,8 +152,15 @@ export const COMMENTS_HANDLERS: Handlers = {
     const drafts = draftsOf(state);
     const mine = (d: Draft) => d.authorId === account.id && d.documentId === params.documentId;
     const own = new Set(drafts.filter(mine).map((d) => d.commentId.toLowerCase()));
-    const seen = new Set((body as { draftIds: string[] }).draftIds.map((id) => id.toLowerCase()));
-    if (own.size === 0 || own.size !== seen.size || [...own].some((id) => !seen.has(id))) {
+    const draftIds = (body as { draftIds: string[] }).draftIds;
+    const seen = new Set(draftIds.map((id) => id.toLowerCase()));
+    // As the real route: a repeated id is not a draft seen twice, it is a list that does not match.
+    if (
+      own.size === 0 ||
+      seen.size !== draftIds.length ||
+      own.size !== seen.size ||
+      [...own].some((id) => !seen.has(id))
+    ) {
       return { error: "conflict" };
     }
     DRAFTS.set(
