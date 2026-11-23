@@ -134,6 +134,8 @@ const ENV_NAMES = [
   "METRICS_INTERVAL_MS",
   // The test mode of the server (S-1H.7, DAN-938-1, server/settings).
   "DUCTURA_MODE",
+  // The staging deployment (STG-PRIJAVA, Ductus#2055, server/settings).
+  "DUCTURA_DEPLOYMENT",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",

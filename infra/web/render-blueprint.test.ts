@@ -81,6 +81,8 @@ describe("render.yaml", () => {
     for (const name of [
       "NODE_ENV",
       "DUCTURA_MODE",
+      // STG-PRIJAVA: the production Blueprint is never staging; staging is set by hand.
+      "DUCTURA_DEPLOYMENT",
       "DUCTUS_DEV_SIGNING_KEY_FILE",
       "HOST",
       "PORT",

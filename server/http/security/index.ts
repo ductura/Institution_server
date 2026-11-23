@@ -5,6 +5,7 @@
 export {
   CONTENT_SECURITY_POLICY,
   CSP_HEADER,
+  DEPLOYMENT_HEADER,
   ENFORCED_HEADER_NAMES,
   enforcedHeaders,
   enforceSecurityHeaders,
@@ -12,6 +13,7 @@ export {
   PERMISSIONS_POLICY,
   PERMISSIONS_POLICY_HEADER,
   PRODUCTION_SECURITY,
+  STAGING_DEPLOYMENT,
   STRICT_TRANSPORT_SECURITY,
   type SecurityMode,
 } from "./headers.ts";
