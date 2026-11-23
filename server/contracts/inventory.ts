@@ -567,6 +567,27 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423523",
   },
+  // SRV-MENTOR-3 (Ductus#2055 c.7116185492; NF-6 MK-8, MK-9, MK-11, NF-5 PG-9): note to self, reading place, seen marks and the mentor's overview; Ductus has no such routes.
+  "app/api/works/[documentId]/self-note/route.ts": {
+    methods: ["GET", "PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
+  },
+  "app/api/works/[documentId]/reading-place/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
+  },
+  "app/api/works/[documentId]/seen/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
+  },
+  "app/api/works/[documentId]/seen-by-student/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
+  },
+  "app/api/teacher/mentorship-overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
+  },
   // SRV-1703 (M6.7, Ductus#2052 c.7060877557; D-51, N-03, N-05): delayed comments, the comment bank and the changes since the last review; Ductus has no such routes.
   "app/api/works/[documentId]/comment-drafts/route.ts": {
     methods: ["GET", "POST"],

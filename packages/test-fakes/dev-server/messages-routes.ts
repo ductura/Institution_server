@@ -18,7 +18,7 @@ type Message = {
 /** The conversations of each fake state, by work. */
 const CONVERSATIONS = new WeakMap<State, Map<string, Message[]>>();
 
-function conversationOf(state: State, documentId: string): Message[] {
+export function conversationOf(state: State, documentId: string): Message[] {
   let all = CONVERSATIONS.get(state);
   if (all === undefined) CONVERSATIONS.set(state, (all = new Map()));
   let one = all.get(documentId);

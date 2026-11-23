@@ -30,6 +30,15 @@ export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {
+  mentorshipFollowRoutes,
+  ReadingPlaceInput,
+  SeenInput,
+  SEEN_MARKS_MAX,
+  SelfNoteInput,
+  SelfNoteState,
+  WorkPlace,
+} from "./mentorship-follow.ts";
+export {
   NotificationId,
   NotificationsPage,
   RevisionNotificationsPage,

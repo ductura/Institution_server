@@ -1,0 +1,119 @@
+{
+  "route": "mentorship.overview.get",
+  "vectors": [
+    {
+      "name": "nobody",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": []
+        }
+      }
+    },
+    {
+      "name": "students",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": [
+            {
+              "mentorshipId": "3e000000-0000-4000-8000-000000000001",
+              "assignmentId": "3e000000-0000-4000-8000-000000000011",
+              "documentId": "izmisljeni-rad-mentor-0001",
+              "givenName": "Ana",
+              "familyName": "Izmišljena",
+              "workType": "bachelor_thesis",
+              "title": "Završni rad: zelene površine u izmišljenom gradu",
+              "stage": {
+                "milestoneId": "3e000000-0000-4000-8000-000000000021",
+                "title": "Nacrt",
+                "position": 1,
+                "state": "submitted"
+              },
+              "stageCount": 3,
+              "waitingOn": "mentor",
+              "nextDeadlineAt": "2026-12-03T23:00:00.000Z",
+              "daysToNextDeadline": 10,
+              "newMessages": 2
+            },
+            {
+              "mentorshipId": "3e000000-0000-4000-8000-000000000002",
+              "assignmentId": "3e000000-0000-4000-8000-000000000011",
+              "documentId": null,
+              "givenName": "Ivan",
+              "familyName": "Izmišljeni",
+              "workType": "bachelor_thesis",
+              "title": "Završni rad: zelene površine u izmišljenom gradu",
+              "stage": null,
+              "stageCount": 0,
+              "waitingOn": "student",
+              "nextDeadlineAt": null,
+              "daysToNextDeadline": null,
+              "newMessages": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-0000000000a0"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-0000000000a2"
+        }
+      }
+    }
+  ]
+}

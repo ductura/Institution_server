@@ -365,6 +365,10 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export {
+  createMentorshipFollowRoutes,
+  createMentorshipFollowRoutesFor,
+} from "./mentorship-follow/index.ts";
 export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,
