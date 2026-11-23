@@ -143,6 +143,8 @@ describe("route inventory", () => {
       "teacher.course-input-rhythm.put: app/api/teacher/courses/[courseId]/input-rhythm/route.ts is not in the inventory",
       "teacher.declaration-required.get: app/api/teacher/assignments/[assignmentId]/declaration-required/route.ts is not in the inventory",
       "teacher.declaration-required.put: app/api/teacher/assignments/[assignmentId]/declaration-required/route.ts is not in the inventory",
+      "teacher.declaration-question.get: app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts is not in the inventory",
+      "teacher.declaration-question.put: app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts is not in the inventory",
       "institution.origin-thresholds.get: app/api/institution/origin-thresholds/route.ts is not in the inventory",
       "institution.origin-threshold.put: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",
       "institution.origin-threshold.delete: app/api/institution/origin-thresholds/[origin]/route.ts is not in the inventory",

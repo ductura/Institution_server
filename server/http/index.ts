@@ -186,6 +186,10 @@ export {
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
 export {
+  createDeclarationQuestionRoutes,
+  createDeclarationQuestionRoutesFor,
+} from "./declaration-question.ts";
+export {
   createProcessSummaryDetailsRouteFor,
   createProcessSummaryRoute,
   createProcessSummaryRouteFor,

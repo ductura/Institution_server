@@ -116,6 +116,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createDeclarationRequiredRoutesFor,
+  createDeclarationQuestionRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -371,6 +372,8 @@ async function main(): Promise<void> {
       // PIL-K-IZJAVA-SRV: the second major, with 409 declaration_required, and the teacher's switch.
       createSubmissionRouteFor(databases.main, evidenceDeps, 2),
       ...createDeclarationRequiredRoutesFor(databases.main),
+      // SRV-IZJAVA-PITANJE: the teacher's optional question with the declaration.
+      ...createDeclarationQuestionRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
