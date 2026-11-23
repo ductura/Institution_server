@@ -41,12 +41,14 @@ import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
+import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
 import { LEGAL_HOLD_HANDLERS } from "./legal-hold-routes.ts";
 import { STUDENT_DATA_EXPORT_HANDLERS } from "./student-data-export-routes.ts";
 import { FACULTY_RULE_HANDLERS } from "./faculty-rule-routes.ts";
+import { ASSISTANT_SETTING_HANDLERS } from "./assistant-setting-routes.ts";
 import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
@@ -136,12 +138,14 @@ export const DEV_HANDLERS: Handlers = {
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...DECLARATION_REQUIRED_HANDLERS,
+  ...DECLARATION_QUESTION_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,
   ...LEGAL_HOLD_HANDLERS,
   ...STUDENT_DATA_EXPORT_HANDLERS,
   ...FACULTY_RULE_HANDLERS,
+  ...ASSISTANT_SETTING_HANDLERS,
   ...INSTITUTION_CONFIG_HANDLERS,
   ...ACCESS_LOG_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {

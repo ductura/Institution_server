@@ -1510,6 +1510,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "institution.faculty-rules.get": {
     request: { path: "/api/v1/institution/faculty-rules", as: "administrator" },
   },
+  "institution.assistant-setting.get": {
+    request: { path: "/api/v1/institution/assistant-setting", as: "administrator" },
+  },
   "institution.faculty-rules.post": {
     request: {
       path: "/api/v1/institution/faculty-rules",
@@ -1754,6 +1757,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "teacher.declaration-question.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-question`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.declaration-question.put": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-question`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { question: "Koji ti je izmišljeni izvor najviše pomogao?" },
     },
   },
   "teacher.submission-withdrawal.get": {

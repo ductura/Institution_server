@@ -43,6 +43,13 @@ export {
   type PutConversationRef,
 } from "./put-body.ts";
 export {
+  MAX_DECLARATION_ANSWER_CODE_POINTS,
+  MAX_DECLARATION_QUESTION_CODE_POINTS,
+  isDeclarationQuestion,
+  parseDeclarationQuestionAnswer,
+  type DeclarationQuestionAnswer,
+} from "./question.ts";
+export {
   DECLARATION_FORM_SCHEMA,
   MAX_FORM_TEXT_CODE_POINTS,
   isDeclarationFormFile,

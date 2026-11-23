@@ -7848,6 +7848,152 @@
     }
   },
   {
+    "route": "institution.assistant-setting.get",
+    "name": "faculty-setting",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assistant": true,
+        "transcription": false,
+        "tools": false,
+        "settingVersion": 1,
+        "changeable": false
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "no-setting",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assistant": false,
+        "transcription": false,
+        "tools": false,
+        "settingVersion": null,
+        "changeable": false
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000161000001"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "teacher-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000161000002"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000161000003"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "invalid-input",
+    "request": {
+      "query": {
+        "faculty": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000161000004"
+      }
+    }
+  },
+  {
+    "route": "institution.assistant-setting.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000161000005"
+      }
+    }
+  },
+  {
     "route": "institution.config-versions.post",
     "name": "publish-first",
     "request": {
@@ -15956,7 +16102,9 @@
             "retentionDays": 30,
             "mode": "execute",
             "candidates": 2,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "decided",
+            "periodStatusKey": "adminSettings.retentionPeriod.decided"
           },
           {
             "key": "live-state",
@@ -15964,7 +16112,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 1,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "versions",
@@ -15972,7 +16122,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 3,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "change-times",
@@ -15980,7 +16132,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "access-log",
@@ -15988,7 +16142,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 3,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "receipts",
@@ -15996,7 +16152,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "never_deleted",
+            "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
           }
         ]
       }
@@ -16024,7 +16182,9 @@
             "retentionDays": 30,
             "mode": "execute",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "decided",
+            "periodStatusKey": "adminSettings.retentionPeriod.decided"
           },
           {
             "key": "live-state",
@@ -16032,7 +16192,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "versions",
@@ -16040,7 +16202,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "change-times",
@@ -16048,7 +16212,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "access-log",
@@ -16056,7 +16222,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": 0,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "awaiting_decision",
+            "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
           },
           {
             "key": "receipts",
@@ -16064,7 +16232,9 @@
             "retentionDays": null,
             "mode": "dry-run",
             "candidates": null,
-            "lastRunAt": null
+            "lastRunAt": null,
+            "periodStatus": "never_deleted",
+            "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
           }
         ]
       }
@@ -18247,7 +18417,9 @@
         "code": "conflict",
         "messageKey": "errors.conflict",
         "status": 409,
-        "requestId": "00000000-0000-4000-8000-000000001391"
+        "requestId": "00000000-0000-4000-8000-000000001391",
+        "reason": "export_already_open",
+        "reasonKey": "adminSettings.exportAlreadyOpen"
       }
     }
   },
@@ -26530,7 +26702,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.98.0",
+        "apiVersion": "1.99.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -26546,7 +26718,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.98.0",
+        "apiVersion": "1.99.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -33021,7 +33193,52 @@
         "payload": null,
         "declarationSha256": null,
         "uploads": [],
-        "declarationRequired": true
+        "declarationRequired": true,
+        "teacherQuestion": null,
+        "questionAnswer": null
+      }
+    }
+  },
+  {
+    "route": "student.declaration.get",
+    "name": "with-question",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "none",
+        "submitted": false,
+        "currentRevision": 1,
+        "version": 0,
+        "formText": null,
+        "currentForm": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "text": "Izmisljeni obrazac."
+        },
+        "draft": null,
+        "payload": null,
+        "declarationSha256": null,
+        "uploads": [],
+        "declarationRequired": true,
+        "teacherQuestion": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Koji ti je izvor najviše pomogao u radu?"
+        },
+        "questionAnswer": null
       }
     }
   },
@@ -33201,7 +33418,107 @@
         "payload": null,
         "declarationSha256": null,
         "uploads": [],
-        "declarationRequired": true
+        "declarationRequired": true,
+        "teacherQuestion": null,
+        "questionAnswer": null
+      }
+    }
+  },
+  {
+    "route": "student.declaration.put",
+    "name": "with-answer",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        "origin": "https://ductura.example.invalid",
+        "content-type": "application/json"
+      },
+      "body": {
+        "baseVersion": 0,
+        "revision": 1,
+        "form": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "ownWork": {
+          "confirmed": false
+        },
+        "humanHelp": {
+          "received": false,
+          "entries": []
+        },
+        "ai": {
+          "use": null,
+          "declaredTools": [],
+          "attachments": [],
+          "externalAttachmentIds": []
+        },
+        "confirm": false,
+        "questionAnswer": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Izmišljeni udžbenik iz metodologije."
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "draft",
+        "submitted": false,
+        "currentRevision": 1,
+        "version": 1,
+        "formText": "Izmisljeni obrazac.",
+        "currentForm": {
+          "formId": "test-izjava",
+          "formVersion": 1,
+          "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "text": "Izmisljeni obrazac."
+        },
+        "draft": {
+          "baseVersion": 0,
+          "revision": 1,
+          "form": {
+            "formId": "test-izjava",
+            "formVersion": 1,
+            "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
+          "ai": {
+            "use": null,
+            "declaredTools": [],
+            "attachments": [],
+            "externalAttachmentIds": []
+          },
+          "confirm": false
+        },
+        "payload": null,
+        "declarationSha256": null,
+        "uploads": [],
+        "declarationRequired": true,
+        "teacherQuestion": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Koji ti je izvor najviše pomogao u radu?"
+        },
+        "questionAnswer": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "questionText": "Koji ti je izvor najviše pomogao u radu?",
+          "text": "Izmišljeni udžbenik iz metodologije."
+        }
       }
     }
   },
@@ -48432,6 +48749,593 @@
     }
   },
   {
+    "route": "teacher.declaration-question.get",
+    "name": "none",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": null,
+        "changedAt": null
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.get",
+    "name": "asked",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?",
+        "changedAt": "2026-11-21T10:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000228316"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000228317"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000228318"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "ask",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?",
+        "changedAt": "2026-11-21T10:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "remove",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": null
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": null,
+        "changedAt": "2026-11-21T10:05:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000228319"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000022831a"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000022831b"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "16385"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-00000022831c"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "22"
+      },
+      "rawBody": "{\"question\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-00000022831d"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000022831e"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000022831f"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "22"
+      },
+      "rawBody": "{\"all"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000228320"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000228321"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"question\":null}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000228322"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"question\":null"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000228323"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "too-long",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000228324"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?",
+        "reason": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000228325"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000228326"
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-question.put",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Koji ti je izvor najviše pomogao u radu?"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000228327"
+      }
+    }
+  },
+  {
     "route": "teacher.declaration-required.get",
     "name": "default",
     "request": {
@@ -49072,7 +49976,16 @@
           },
           "confirmedAt": "2026-11-20T10:00:00.000000Z"
         },
-        "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "question": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Koji ti je izvor najviše pomogao u radu?"
+        },
+        "questionAnswer": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "questionText": "Koji ti je izvor najviše pomogao u radu?",
+          "text": "Izmišljeni udžbenik iz metodologije."
+        }
       }
     }
   },
@@ -49097,7 +50010,12 @@
       "body": {
         "state": "none",
         "payload": null,
-        "declarationSha256": null
+        "declarationSha256": null,
+        "question": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Koji ti je izvor najviše pomogao u radu?"
+        },
+        "questionAnswer": null
       }
     }
   },

@@ -6,7 +6,7 @@ SRV-ADMIN-1 `admin-dnevnik-prijave`, `Risk: critical`. Serverski dio prijedloga 
 - **(4)** dnevnik radnji administratora i operatera u pilotu, samo za čitanje, bez osobnih podataka studenata (OA-3);
 - **(8)** popis prijava problema u pilotu; prijavu rješava onaj kome pripada po vrsti: tehnički problem operater, pitanje o kolegiju ili zadatku nastavnik, račun i uloge administrator fakulteta; stanje „zaprimljeno” ili „riješeno” (OA-7).
 
-Ugovor je aditivan i unatrag kompatibilan: postojeće rute i odgovori se ne mijenjaju, a jedina promjena postojeće rute je novo neobavezno polje `courseId` u zatvorenom tijelu `support.problem-reports.post` (dopuštena promjena po `server/contracts/breaking.ts`). Verzija API-ja je 1.98.0.
+Ugovor je aditivan i unatrag kompatibilan: postojeće rute i odgovori se ne mijenjaju, a jedina promjena postojeće rute je novo neobavezno polje `courseId` u zatvorenom tijelu `support.problem-reports.post` (dopuštena promjena po `server/contracts/breaking.ts`). Verzija API-ja je 1.99.0.
 
 ## 1. Prijave problema po primatelju (OA-7)
 
