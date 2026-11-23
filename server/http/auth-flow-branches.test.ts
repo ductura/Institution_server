@@ -100,6 +100,7 @@ describe("startLogin", () => {
       "codeVerifier",
       "nonce",
       "returnTo",
+      "startedAt",
       "state",
       "v",
     ]);

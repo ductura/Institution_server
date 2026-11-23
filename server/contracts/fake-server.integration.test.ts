@@ -64,7 +64,8 @@ function send(
 function multipartOf(v: FakeVector, body: Record<string, string>): Buffer {
   const boundary = /boundary=([^;]+)/u.exec(v.request.headers?.["content-type"] ?? "")?.[1];
   const schema = ROUTES.find((r) => r.id === v.route)?.request.body as
-    { properties?: Record<string, { contentMediaType?: string }> } | undefined;
+    | { properties?: Record<string, { contentMediaType?: string }> }
+    | undefined;
   const parts = Object.entries(body).map(([name, value]) => {
     const type = schema?.properties?.[name]?.contentMediaType;
     const head =
@@ -153,9 +154,10 @@ describe("fake server over HTTP", () => {
     // SRV-1606: five framing vectors for work.return-for-revision.post.
     // SRV-1230: work.assistant-match.post five.
     // PIL-P1-RITAM-SRV: work.input-rhythm.post, .delete and teacher.input-rhythm.put five each.
+    // PIL-K-RAZGOVOR-SRV: work.interview-notes.post two.
     // INT-21 C: work.restore.post five.
     // PIL-K-IZJAVA-SRV: teacher.declaration-required.put five, submission.submit-second.post two (as submit).
-    expect(VECTORS.length - overHttp.length).toBe(554);
+    expect(VECTORS.length - overHttp.length).toBe(556);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

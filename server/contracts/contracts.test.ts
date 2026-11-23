@@ -185,6 +185,7 @@ describe("route inventory", () => {
       "work.interview-appointment.put: app/api/works/[documentId]/interview/appointment/route.ts is not in the inventory",
       "work.interview-held.post: app/api/works/[documentId]/interview/held/route.ts is not in the inventory",
       "work.interview-explanations.post: app/api/works/[documentId]/interview/explanations/route.ts is not in the inventory",
+      "work.interview-notes.post: app/api/works/[documentId]/interview/notes/route.ts is not in the inventory",
       "work.interview-pdf.get: app/api/works/[documentId]/interview/pdf/route.ts is not in the inventory",
       "mentorship.requests.post: app/api/mentorship-requests/route.ts is not in the inventory",
       "mentorship.request-approve.post: app/api/mentorship-requests/[requestId]/approve/route.ts is not in the inventory",

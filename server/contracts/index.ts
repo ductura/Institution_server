@@ -93,6 +93,7 @@ export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { RESTORE_MAX_FROM_REVISION, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
+export { WORK_INTERVIEW_NOTE_MAX_BYTES } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export {
   WorkMilestoneApprovalInput,

@@ -217,6 +217,125 @@ describe("work interview preparation", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  describe("a note attached by the student", () => {
+    const text = Buffer.from("Moja bilješka uz razgovor.\n", "utf8");
+    const pdf = Buffer.from("%PDF-1.4\n%izmisljeni\n", "latin1");
+    const dbNote = {
+      id: ID,
+      fileName: "biljeska.txt",
+      mediaType: "text/plain",
+      byteSize: text.length,
+      sha256: "a".repeat(64),
+      createdAt: "2026-11-24T10:00:00.000000+01:00",
+    };
+    const note = (fileName: string, mediaType: string, bytes: Buffer | string) =>
+      JSON.stringify({
+        fileName,
+        mediaType,
+        contentBase64: typeof bytes === "string" ? bytes : bytes.toString("base64"),
+      });
+
+    it("keeps a text note of the owner after the invitation (201)", async () => {
+      query.mockReturnValueOnce([{ result: dbNote }]);
+      const response = await call(
+        "POST",
+        `${PATH}/notes`,
+        STUDENT,
+        note("biljeska.txt", "text/plain", text),
+      );
+      expect(response.status).toBe(201);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(await response.json()).toEqual({ ...dbNote, createdAt: CREATED });
+      const [token, sql, values] = query.mock.calls[0]!;
+      expect(token).toBe(STUDENT);
+      expect(sql).toContain("institution.add_work_interview_note($1, $2, $3, $4::bytea)");
+      expect(values?.slice(0, 3)).toEqual(["doc-izmisljeni", "biljeska.txt", "text/plain"]);
+      expect(Buffer.from(values![3] as Uint8Array).equals(text)).toBe(true);
+    });
+
+    it("keeps a PDF note", async () => {
+      query.mockReturnValueOnce([
+        { result: { ...dbNote, fileName: "skica.pdf", mediaType: "application/pdf" } },
+      ]);
+      const response = await call(
+        "POST",
+        `${PATH}/notes`,
+        STUDENT,
+        note("skica.pdf", "application/pdf", pdf),
+      );
+      expect(response.status).toBe(201);
+      expect(Buffer.from(query.mock.calls[0]![2]![3] as Uint8Array).equals(pdf)).toBe(true);
+    });
+
+    it.each([
+      ["ZD403", 403, "forbidden", "before the invitation, another student or a teacher"],
+      ["ZD409", 409, "conflict", "a held interview"],
+      ["ZD422", 422, "invalid_input", "a work at its bound of notes"],
+    ] as const)(
+      "answers the database refusal %s as %i (%s: %s)",
+      async (dbCode, status, code, _why) => {
+        query.mockImplementationOnce(() => {
+          throw Object.assign(new Error("test refusal"), { code: dbCode });
+        });
+        const response = await call(
+          "POST",
+          `${PATH}/notes`,
+          TEACHER,
+          note("biljeska.txt", "text/plain", text),
+        );
+        expect(response.status).toBe(status);
+        expect(await response.json()).toMatchObject({ code });
+      },
+    );
+
+    it.each([
+      ["an image", note("slika.png", "image/png", Buffer.from([0x89, 0x50, 0x4e, 0x47]))],
+      ["a PDF without its header", note("lazni.pdf", "application/pdf", text)],
+      ["a text that is not UTF-8", note("b.txt", "text/plain", Buffer.from([0xff, 0xfe, 0x00]))],
+      ["a text with a control character", note("b.txt", "text/plain", Buffer.from("a\u0007b"))],
+      ["Base64 that is not canonical", note("b.txt", "text/plain", "YWJjZA=x")],
+      ["Base64 with padding bits", note("b.txt", "text/plain", "YR==")],
+      ["a file name with a path", note("mapa/b.txt", "text/plain", text)],
+      ["a file name with surrounding spaces", note(" b.txt", "text/plain", text)],
+      ["an empty file name", note("", "text/plain", text)],
+      ["a file over 1 MiB", note("v.txt", "text/plain", Buffer.alloc(1_048_577, 0x61))],
+      [
+        "an extra field",
+        JSON.stringify({ ...JSON.parse(note("b.txt", "text/plain", text)), grade: 5 }),
+      ],
+    ])("refuses %s before querying the database (422)", async (_why, body) => {
+      const response = await call("POST", `${PATH}/notes`, STUDENT, body);
+      expect(response.status).toBe(422);
+      expect(query).not.toHaveBeenCalled();
+    });
+
+    it("takes a file of exactly 1 MiB", async () => {
+      query.mockReturnValueOnce([{ result: { ...dbNote, byteSize: 1_048_576 } }]);
+      const response = await call(
+        "POST",
+        `${PATH}/notes`,
+        STUDENT,
+        note("t.txt", "text/plain", Buffer.alloc(1_048_576, 0x62)),
+      );
+      expect(response.status).toBe(201);
+    });
+
+    it("refuses a note without a session (401) and a cross-origin one (403)", async () => {
+      expect(
+        (await call("POST", `${PATH}/notes`, undefined, note("b.txt", "text/plain", text))).status,
+      ).toBe(401);
+      const crossSite = await call(
+        "POST",
+        `${PATH}/notes`,
+        STUDENT,
+        note("b.txt", "text/plain", text),
+        "https://druga.invalid",
+      );
+      expect(crossSite.status).toBe(403);
+      expect(query).not.toHaveBeenCalled();
+    });
+  });
+
   it.each([
     ["GET", PATH, "ZD403", 403, "forbidden"],
     ["POST", `${PATH}/invite`, "ZD409", 409, "conflict"],

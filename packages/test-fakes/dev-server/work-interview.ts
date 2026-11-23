@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
 import { successBody } from "./contract.ts";
@@ -17,7 +19,14 @@ function role(state: State, documentId: string, account: Account | null) {
 function entryOf(state: State, documentId: string): Entry {
   let entry = state.workInterviews.get(documentId);
   if (entry === undefined) {
-    entry = { invitedAt: null, questions: [], explanations: [], appointment: null, heldOn: null };
+    entry = {
+      invitedAt: null,
+      questions: [],
+      explanations: [],
+      notes: [],
+      appointment: null,
+      heldOn: null,
+    };
     state.workInterviews.set(documentId, entry);
   }
   return entry;
@@ -159,5 +168,39 @@ export const WORK_INTERVIEW_HANDLERS: Handlers = {
     };
     entry.explanations.push(explanation);
     return { status: 201, body: explanation };
+  },
+  // PIL-K-RAZGOVOR-SRV: as institution.add_work_interview_note; 1 MiB, 20 notes.
+  "work.interview-notes.post": ({ state, account, params, body, now }) => {
+    const entry = state.workInterviews.get(params.documentId);
+    if (role(state, params.documentId, account) !== "owner" || entry?.invitedAt == null)
+      return { error: "forbidden" };
+    const bytes = Buffer.from(body.contentBase64, "base64");
+    let valid = bytes.toString("base64") === body.contentBase64 && bytes.length <= 1_048_576;
+    if (valid && body.mediaType === "application/pdf") {
+      valid = bytes.subarray(0, 5).toString("latin1") === "%PDF-";
+    } else if (valid) {
+      try {
+        const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        valid = !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text);
+      } catch {
+        valid = false;
+      }
+    }
+    if (!valid) return { error: "invalid_input" };
+    if (entry.heldOn !== null) return { error: "conflict" };
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const kept = entry.notes.find((note) => note.sha256 === sha256);
+    if (kept !== undefined) return { status: 201, body: kept };
+    if (entry.notes.length >= 20) return { error: "invalid_input" };
+    const note = {
+      id: `c0320000-0000-4000-8000-${String(entry.notes.length + 1).padStart(12, "0")}`,
+      fileName: body.fileName,
+      mediaType: body.mediaType,
+      byteSize: bytes.length,
+      sha256,
+      createdAt: now.toISOString(),
+    };
+    entry.notes.push(note);
+    return { status: 201, body: note };
   },
 };

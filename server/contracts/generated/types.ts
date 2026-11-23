@@ -1478,6 +1478,13 @@ export type Operations = {
     success: { status: 200; body: { "invitedAt": string | null; "questions": ({ "id": string; "paragraphRef": string | null; "questionText": string; "createdAt": string; "mine": boolean })[]; "explanations": ({ "id": string; "questionId": string | null; "text": string; "createdAt": string })[]; "appointment": { "consultationSlotId": string; "startsAt": string } | { "place": string; "at": string } | null; "heldOn": string | null }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "conflict";
   };
+  "work.interview-notes.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "fileName": string; "mediaType": "text/plain" | "application/pdf"; "contentBase64": string };
+    success: { status: 201; body: { "id": string; "fileName": string; "mediaType": "text/plain" | "application/pdf"; "byteSize": number; "sha256": string; "createdAt": string }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input" | "conflict";
+  };
   "work.interview-pdf.get": {
     params: { "documentId": string };
     query: undefined;

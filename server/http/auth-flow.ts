@@ -110,6 +110,12 @@ function hasSignedOutMark(request: Request): boolean {
 type Attempt = LoginChecks & {
   returnTo: string;
   /**
+   * The second the attempt started (INT-20g). The callback refuses an
+   * attempt older than its cookie may live, so its age does not rest on the
+   * browser dropping the cookie in time.
+   */
+  startedAt: number;
+  /**
    * Set only for an attempt started with the sign-out mark (INT-20d): the
    * second the attempt started. Its callback then needs an ID token whose
    * `auth_time` is not before it (within the clock tolerance). An attempt
@@ -133,17 +139,22 @@ function decodeAttempt(value: string | undefined): Attempt | undefined {
   try {
     const raw: unknown = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
     if (typeof raw !== "object" || raw === null) return undefined;
-    const { v, state, nonce, codeVerifier, returnTo, freshSince } = raw as Record<string, unknown>;
+    const { v, state, nonce, codeVerifier, returnTo, startedAt, freshSince } = raw as Record<
+      string,
+      unknown
+    >;
     if (v !== 1) return undefined;
     for (const random of [state, nonce, codeVerifier]) {
       if (typeof random !== "string" || !RANDOM_VALUE.test(random)) return undefined;
     }
+    if (!isEpochSeconds(startedAt)) return undefined;
     if (freshSince !== undefined && !isEpochSeconds(freshSince)) return undefined;
     return {
       state: state as string,
       nonce: nonce as string,
       codeVerifier: codeVerifier as string,
       returnTo: safeReturnTo(returnTo),
+      startedAt,
       ...(freshSince === undefined ? {} : { freshSince }),
     };
   } catch {
@@ -215,6 +226,22 @@ export function authTimeRefusal(
   return undefined;
 }
 
+/**
+ * Whether an attempt started at `startedAt` may still finish (INT-20g): not
+ * older than its cookie may live and not started in the future, each within
+ * the allowed clock skew.
+ */
+export function attemptExpired(
+  startedAt: number,
+  toleranceSeconds: number,
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): boolean {
+  return (
+    nowSeconds - startedAt > LOGIN_COOKIE_MAX_AGE + toleranceSeconds ||
+    startedAt > nowSeconds + toleranceSeconds
+  );
+}
+
 /** GET /api/v1/auth/login?returnTo=/path */
 export async function startLogin(request: Request, deps: AuthDeps): Promise<Response> {
   const returnTo = safeReturnTo(new URL(request.url).searchParams.get("returnTo"));
@@ -224,7 +251,8 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   // spend it. `max_age=0` (INT-20d) makes the provider report when the
   // person signed in, and the attempt keeps its start to compare (finishLogin).
   const signedOut = hasSignedOutMark(request);
-  const fresh = signedOut ? { freshSince: Math.floor(Date.now() / 1000) } : {};
+  const startedAt = Math.floor(Date.now() / 1000);
+  const fresh = signedOut ? { freshSince: startedAt } : {};
   let location: URL;
   try {
     location = await deps.oidc.authorizationUrl(
@@ -239,9 +267,9 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   // non-ASCII path, percent-encoded by URL) would give an attempt that
   // finishLogin refuses; such an attempt returns to the default page instead
   // (Codex on #104; the same gap is in Ductus flow.ts at 078c780).
-  let attempt = encodeAttempt({ ...checks, returnTo, ...fresh });
+  let attempt = encodeAttempt({ ...checks, returnTo, startedAt, ...fresh });
   if (attempt.length > MAX_ATTEMPT_CHARS) {
-    attempt = encodeAttempt({ ...checks, returnTo: DEFAULT_RETURN_TO, ...fresh });
+    attempt = encodeAttempt({ ...checks, returnTo: DEFAULT_RETURN_TO, startedAt, ...fresh });
   }
   return redirect(location.href, [
     cookie(LOGIN_COOKIE_NAME, attempt, `Max-Age=${LOGIN_COOKIE_MAX_AGE}`),
@@ -258,6 +286,15 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   const attempt = decodeAttempt(readCookie(request, LOGIN_COOKIE_NAME));
   if (!attempt) {
     logFailure("callback", "no_attempt");
+    return failurePage(400, cleared);
+  }
+  // The server bounds the attempt's age itself (INT-20g), before the
+  // provider is asked: a browser that keeps the cookie past Max-Age, or a
+  // stale copy of it sent again later, does not finish an old attempt. The
+  // cookie is not signed, so this bounds a stale cookie, not one the browser
+  // rewrites itself.
+  if (attemptExpired(attempt.startedAt, deps.config.clockToleranceSeconds)) {
+    logFailure("callback", "attempt_expired");
     return failurePage(400, cleared);
   }
   // While the sign-out mark is there, only an attempt started with it counts

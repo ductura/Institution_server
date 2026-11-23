@@ -2777,6 +2777,36 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.interview-notes.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.interview-notes.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF/\\])+(?<!\s)(?![\s\S])/;
+  const local1 = /^[A-Za-z0-9+/]+={0,2}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['fileName'] === 'string') &&
+      value['fileName'].length <= 200 &&
+      value['fileName'].length >= 1 &&
+      local0.test(value['fileName']) &&
+      (((value['mediaType'] === 'text/plain')) || ((value['mediaType'] === 'application/pdf'))) &&
+      (typeof value['contentBase64'] === 'string') &&
+      value['contentBase64'].length <= 1398104 &&
+      value['contentBase64'].length >= 4 &&
+      local1.test(value['contentBase64']) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
   "work.interview-pdf.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
