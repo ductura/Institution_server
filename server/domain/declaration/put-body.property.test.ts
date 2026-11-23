@@ -52,9 +52,31 @@ test.prop([
   const b = structuredClone(body()) as unknown as Obj;
   const target = LEVELS[level]!(b);
   fc.pre(!Object.hasOwn(target, key));
-  target[key] = value;
+  // An own key, as JSON.parse makes it: plain assignment of "__proto__" would
+  // set the prototype instead and leave the body without an extra key.
+  Object.defineProperty(target, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
   expect(parseDeclarationPutBody(b)).toEqual({ ok: false, reason: "invalid_input" });
 });
+
+test.each(LEVELS.map((_, level) => level))(
+  'an own "__proto__" key from JSON.parse at level %i gives invalid_input',
+  (level) => {
+    const b = structuredClone(body()) as unknown as Obj;
+    const target = LEVELS[level]!(b);
+    const own = JSON.parse('{"__proto__": {"confirm": true}}') as Obj;
+    Object.defineProperty(target, "__proto__", Object.getOwnPropertyDescriptor(own, "__proto__")!);
+    // The same body as a request carries it: JSON text, parsed again.
+    const parsed = JSON.parse(JSON.stringify(b)) as unknown;
+    expect(Object.hasOwn(target, "__proto__")).toBe(true);
+    expect(parseDeclarationPutBody(b)).toEqual({ ok: false, reason: "invalid_input" });
+    expect(parseDeclarationPutBody(parsed)).toEqual({ ok: false, reason: "invalid_input" });
+  },
+);
 
 test.prop([fc.integer({ min: 0, max: LEVELS.length - 1 }), fc.nat()])(
   "a missing key at any level gives invalid_input",

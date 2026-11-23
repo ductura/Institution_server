@@ -15,7 +15,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { userInfo } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -212,7 +212,8 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   });
   // DAN-817: the invented institutions, the receipt key of demo-fakultet and
   // its bucket. The seed lies outside the checkout (the signer refuses it inside).
-  const seed = seedFile(DIR, ROOT, process.env.HOME ?? "");
+  // HOME is often unset in PowerShell and cmd: fall back to the OS home directory.
+  const seed = seedFile(DIR, ROOT, process.env.HOME || homedir());
   ensureSeed(seed, ROOT);
   const institutionId = await registerEvidenceKey(
     { socket: DIR, port: postgres, env: base() },
