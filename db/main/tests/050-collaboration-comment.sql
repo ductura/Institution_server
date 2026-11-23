@@ -111,8 +111,9 @@ SELECT bag_eq(
             ('collaboration.publish_teacher_direct_edit(text,text,text)'),
             ('collaboration.import_gate(text)'),
             ('collaboration.prepare_import(text,uuid,text,text,text)'),
-            ('collaboration.confirm_import(text,uuid,text)') $$,
-  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202');
+            ('collaboration.confirm_import(text,uuid,text)'),
+            ('collaboration.create_revision_comment(text,text,jsonb,bigint)') $$,
+  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,
@@ -135,8 +136,8 @@ SELECT ok(NOT has_schema_privilege('ductus_evidence', 'collaboration', 'USAGE')
 SELECT is(pg_get_function_arguments('collaboration.create_comment(text,text,jsonb)'::regprocedure),
   'p_document_id text, p_body text, p_anchor jsonb', 'no RPC takes an author: it comes from the session (attack 3)');
 SELECT is(pg_get_function_result('collaboration.list_comments(text)'::regprocedure),
-  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone)',
-  'list_comments returns no person id, exact time or document content (attack 8)');
+  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint)',
+  'list_comments returns no person id, exact time or document content (attack 8); the thread''s revision is a number (231)');
 
 -- Creating a thread: the teacher of the assignment's course and, since
 -- DAN-215 (D-201 t. 3(c)), the student who owns the work; nobody else.

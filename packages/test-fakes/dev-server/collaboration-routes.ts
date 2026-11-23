@@ -191,7 +191,13 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "collaboration.comments.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
-    if (!hasKeys(body, COMMENT_KEYS[params.action])) return { error: "invalid_input" };
+    // create also takes an optional revision (INT-15-SRV).
+    const keys: readonly string[] = COMMENT_KEYS[params.action];
+    if (
+      !hasKeys(body, keys) &&
+      !(params.action === "create" && hasKeys(body, [...keys, "revision"]))
+    )
+      return { error: "invalid_input" };
     const input = body as Partial<Record<string, unknown>> & CommentBody;
     const threadOf = (id: unknown) => state.comments.find((c) => c.threadId === id);
     const documentId =
@@ -206,6 +212,14 @@ export const COLLABORATION_HANDLERS: Handlers = {
     const at = now.toISOString();
     switch (params.action) {
       case "create": {
+        // As create_revision_comment: a teacher must name a revision, which must
+        // exist and be readable (here: 1 to the work's current revision).
+        const revision = typeof input.revision === "number" ? input.revision : null;
+        if (
+          (reader === "teacher" && revision === null) ||
+          (revision !== null && (revision < 1 || revision > work.revision))
+        )
+          return { error: "invalid_input" };
         const threadId = randomUUID();
         const anchor = (input.anchor ?? null) as Record<string, unknown> | null;
         state.comments.push({
@@ -215,6 +229,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
           authorId: account.id,
           body: String(input.body),
           anchor,
+          revision,
           at,
           deletedAt: null,
         });
@@ -233,6 +248,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
           authorId: account.id,
           body: String(input.body),
           anchor: null,
+          revision: first.revision,
           at,
           deletedAt: null,
         });
@@ -264,6 +280,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
             anchor: c.anchor,
             state: state.threads.get(c.threadId) ?? "open",
             createdWindow: windowOf(c.at),
+            revision: c.revision,
           };
           return c.deletedAt === null
             ? { ...base, body: c.body, deletedWindow: null }

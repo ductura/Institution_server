@@ -55,10 +55,12 @@ export function createCollaborationCommentsRouteFor(main: { withActor: WithActor
       if (!json.ok) return sendProblem(response, 400, "invalid_json");
       if (!Value.Check(BODY, json.value)) return sendProblem(response, 422, "invalid_input");
       const input = json.value as Record<string, unknown>;
-      const keys = ACTS[action].keys;
+      const act: { keys: readonly string[]; optional?: readonly string[] } = ACTS[action];
+      const keys = act.keys;
+      const extra = Object.keys(input).filter((key) => !keys.includes(key));
       if (
-        Object.keys(input).length !== keys.length ||
-        !keys.every((key) => Object.hasOwn(input, key))
+        !keys.every((key) => Object.hasOwn(input, key)) ||
+        extra.some((key) => !act.optional?.includes(key))
       ) {
         return sendProblem(response, 422, "invalid_input");
       }

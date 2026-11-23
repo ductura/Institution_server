@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.96.0",
+    "version": "1.97.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -2966,6 +2966,12 @@
                       "documentId": {
                         "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                         "type": "string"
+                      },
+                      "revision": {
+                        "minimum": 1,
+                        "maximum": 9007199254740991,
+                        "description": "The revision of the work the thread is written on: required of a teacher, optional for the owning student. It must exist for the document and be one the caller may read (a teacher's: up to the newest standing submission, or the current revision before there is one; not only the newest); otherwise 422.",
+                        "type": "integer"
                       }
                     }
                   },
@@ -3045,6 +3051,12 @@
                       "documentId": {
                         "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                         "type": "string"
+                      },
+                      "revision": {
+                        "minimum": 1,
+                        "maximum": 9007199254740991,
+                        "description": "The revision of the work the thread is written on: required of a teacher, optional for the owning student. It must exist for the document and be one the caller may read (a teacher's: up to the newest standing submission, or the current revision before there is one; not only the newest); otherwise 422.",
+                        "type": "integer"
                       }
                     }
                   }
@@ -3165,6 +3177,19 @@
                                   },
                                   "deletedWindow": {
                                     "type": "null"
+                                  },
+                                  "revision": {
+                                    "description": "The revision of the work the thread was written on; a reply has its thread's. Null for a thread written before revisions were recorded.",
+                                    "anyOf": [
+                                      {
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991,
+                                        "type": "integer"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -3249,6 +3274,19 @@
                                   "deletedWindow": {
                                     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
                                     "type": "string"
+                                  },
+                                  "revision": {
+                                    "description": "The revision of the work the thread was written on; a reply has its thread's. Null for a thread written before revisions were recorded.",
+                                    "anyOf": [
+                                      {
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991,
+                                        "type": "integer"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 }
                               }

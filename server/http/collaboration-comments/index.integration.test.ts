@@ -70,15 +70,15 @@ it.each(["state", "submitted"])(
     query
       .mockResolvedValueOnce({ rows: [{ outcome, hash: HASH, body: SNAPSHOT }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [{ id: ID }], rowCount: 1 });
-    const result = await post("create", INPUT);
+    const result = await post("create", { ...INPUT, revision: 3 });
     expect(result.status).toBe(200);
     expect(await result.json()).toEqual({ id: ID });
     expect(actor.mock.calls).toEqual([[TEACHER]]);
     expect(query.mock.calls).toEqual([
       [expect.stringContaining("collaboration.read_live_state("), [INPUT.documentId]],
       [
-        expect.stringContaining("collaboration.create_comment("),
-        [INPUT.documentId, INPUT.body, JSON.stringify(INPUT.anchor)],
+        expect.stringContaining("collaboration.create_revision_comment("),
+        [INPUT.documentId, INPUT.body, JSON.stringify(INPUT.anchor), 3],
       ],
     ]);
   },
@@ -99,13 +99,44 @@ it.each([{ quote: "odsjeci" }, { nodeId: ID }, { prefix: "drukčiji " }])(
 
 it("creates a general comment without reading the work", async () => {
   query.mockResolvedValueOnce({ rows: [{ id: ID }], rowCount: 1 });
-  expect((await post("create", { ...INPUT, anchor: null })).status).toBe(200);
+  expect((await post("create", { ...INPUT, anchor: null, revision: 1 })).status).toBe(200);
   expect(query.mock.calls).toEqual([
     [
-      expect.stringContaining("collaboration.create_general_comment("),
-      [INPUT.documentId, INPUT.body],
+      expect.stringContaining("collaboration.create_revision_comment("),
+      [INPUT.documentId, INPUT.body, null, 1],
     ],
   ]);
+});
+
+// INT-15-SRV: the revision is optional in the body; the database requires it of
+// a teacher and checks that it exists and is the caller's to read (ZD422).
+it("passes no revision as null and leaves the decision to the database", async () => {
+  query.mockRejectedValueOnce(Object.assign(new Error("private detail"), { code: "ZD422" }));
+  const result = await post("create", { ...INPUT, anchor: null });
+  expect(result.status).toBe(422);
+  expect(await result.json()).toMatchObject({ code: "invalid_input" });
+  expect(query.mock.calls).toEqual([
+    [
+      expect.stringContaining("collaboration.create_revision_comment("),
+      [INPUT.documentId, INPUT.body, null, null],
+    ],
+  ]);
+});
+
+it.each([0, -1, 1.5, "3", null, Number.MAX_SAFE_INTEGER + 1])(
+  "refuses the revision %j before the database",
+  async (revision) => {
+    expect((await post("create", { ...INPUT, anchor: null, revision })).status).toBe(422);
+    expect(actor).not.toHaveBeenCalled();
+  },
+);
+
+it.each([
+  ["reply", { threadId: ID, body: INPUT.body }],
+  ["list", { documentId: INPUT.documentId }],
+] as const)("refuses a revision in a %s body", async (action, payload) => {
+  expect((await post(action, { ...payload, revision: 1 })).status).toBe(422);
+  expect(actor).not.toHaveBeenCalled();
 });
 
 it.each([
@@ -137,15 +168,24 @@ it("lists shared comments under each session with no cache", async () => {
     deletedWindow: null,
   };
   for (const token of [TEACHER, STUDENT]) {
-    const expected = { ...comment, isOwn: token === TEACHER };
+    const expected = [
+      { ...comment, isOwn: token === TEACHER, revision: 3 },
+      { ...comment, position: 2, isOwn: token === STUDENT, revision: 3 },
+      { ...comment, threadId: ID.replace("01", "02"), revision: null },
+    ];
+    // node-postgres gives a bigint as a string.
     query.mockResolvedValueOnce({
-      rows: [{ ...expected, createdWindow: new Date(window) }],
-      rowCount: 1,
+      rows: expected.map((row) => ({
+        ...row,
+        createdWindow: new Date(window),
+        revision: row.revision === null ? null : String(row.revision),
+      })),
+      rowCount: 3,
     });
     const result = await post("list", { documentId: INPUT.documentId }, token);
     expect(result.status).toBe(200);
     expect(result.headers.get("cache-control")).toBe("no-store");
-    expect(await result.json()).toEqual({ comments: [expected] });
+    expect(await result.json()).toEqual({ comments: expected });
   }
   expect(actor.mock.calls).toEqual([[TEACHER], [STUDENT]]);
   expect(query.mock.calls).toEqual(
