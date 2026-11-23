@@ -1,4 +1,6 @@
-// SRV-9A keeps its existing list. SRV-1511 adds the detail and diff.
+// SRV-9A keeps its existing list. SRV-1511 adds the detail and diff. INT-21 C
+// records a restore the way app.record_revision_restore does: against the
+// lowest later revision with the same text that has no record yet.
 import { blocksOf, diffBlocks, MAX_COMPARE_BLOCKS } from "../../../server/evidence/index.ts";
 
 import type { Handlers } from "./server.ts";
@@ -21,6 +23,16 @@ function mayRead(state: State, work: Work, account: Account): boolean {
         m.mentorId === account.id,
     )
   );
+}
+
+/** The restores recorded per work: revision -> the revision whose text it restored. */
+const RESTORES = new WeakMap<object, Map<string, Map<number, number>>>();
+function restoresOf(state: State, documentId: string): Map<number, number> {
+  const works = RESTORES.get(state) ?? new Map<string, Map<number, number>>();
+  RESTORES.set(state, works);
+  const restores = works.get(documentId) ?? new Map<number, number>();
+  works.set(documentId, restores);
+  return restores;
 }
 
 function isSent(state: State, work: Work, revision: number): boolean {
@@ -60,6 +72,9 @@ export const VERSIONS_HANDLERS: Handlers = {
         revision: work.revision,
         savedMinute: minuteOf(work.lastChangeAt),
       });
+      const restored = restoresOf(state, work.documentId).get(work.revision);
+      if (restored !== undefined)
+        Object.assign(versions.at(-1)!, { restoredFromRevision: restored });
     }
     return { status: 200, body: { versions, nextBeforeRevision: null } };
   },
@@ -91,6 +106,31 @@ export const VERSIONS_HANDLERS: Handlers = {
       return { error: "invalid_input" };
     }
     return { status: 200, body: { from, to: revision, blocks: diffBlocks(before, after) } };
+  },
+  "work.restore.post": ({ state, account, params, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) !== "owner") {
+      return { error: "not_found" };
+    }
+    const from = body.fromRevision;
+    const text = work.versionSnapshots.get(from);
+    const restores = restoresOf(state, work.documentId);
+    const later = [...work.versionSnapshots.entries()]
+      .filter(([revision, snapshot]) => revision > from && snapshot === text)
+      .map(([revision]) => revision)
+      .sort((a, b) => a - b);
+    const open = text === undefined ? undefined : later.find((revision) => !restores.has(revision));
+    if (open !== undefined) {
+      restores.set(open, from);
+      return { status: 200, body: { outcome: "recorded", revision: open } };
+    }
+    const already = [...restores.entries()]
+      .filter(([, restored]) => text !== undefined && restored === from)
+      .map(([revision]) => revision);
+    return already.length === 0
+      ? { status: 200, body: { outcome: "no_matching_revision" } }
+      : { status: 200, body: { outcome: "already_recorded", revision: Math.max(...already) } };
   },
   // SRV-2004: the owner and the teacher get the same difference; only the teacher is held to sent revisions.
   "work.compare.get": ({ state, account, params, query }) => {

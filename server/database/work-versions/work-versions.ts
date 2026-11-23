@@ -10,14 +10,23 @@
 // writes. The answer names no text, hash, submission id or exact time: a
 // version has a kind, a revision and a whole minute (D-24), and a submission
 // whether it came after the deadline. Every row is checked before it leaves
-// this folder; one it cannot vouch for answers for the whole page.
+// this folder; one it cannot vouch for answers for the whole page. A
+// checkpoint that restored an earlier revision names it (INT-21 C,
+// 20261214100000): the database recorded it against a later revision of the
+// same student with the same committed text.
 import type { WithActor } from "../index.ts";
 
 /** The most versions in one page; the function returns one more to tell that more follow. */
 export const WORK_VERSIONS_PAGE_SIZE = 200;
 
 export type WorkVersionsItem =
-  | { readonly kind: "checkpoint"; readonly revision: number; readonly savedMinute: string }
+  | {
+      readonly kind: "checkpoint";
+      readonly revision: number;
+      readonly savedMinute: string;
+      /** The earlier revision whose text this checkpoint restored; absent when none. */
+      readonly restoredFromRevision?: number;
+    }
   | {
       readonly kind: "submission";
       readonly revision: number;
@@ -48,7 +57,7 @@ export type WorkVersionsReader = (
 type Row = Record<string, unknown>;
 
 const SQL = `SELECT outcome, kind, revision::text AS revision, saved_minute AS "savedMinute",
-    after_deadline AS "afterDeadline"
+    after_deadline AS "afterDeadline", restored_from_revision::text AS "restoredFromRevision"
   FROM app.read_work_versions($1, $2::bigint)`;
 // int8 travels as text; revision 0 is the empty document and never a version.
 const REVISION = /^[1-9][0-9]{0,15}$/;
@@ -68,6 +77,17 @@ function isBeforeRevision(value: unknown): value is number | null {
   return value === null || (Number.isSafeInteger(value) && (value as number) >= 2);
 }
 
+/**
+ * The restored revision of a row: absent (undefined: a reader that does not
+ * select it, or null), a revision below `revision`, or null when malformed.
+ */
+function restoredFromOf(value: unknown, revision: number): number | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string" || !REVISION.test(value)) return null;
+  const from = Number(value);
+  return Number.isSafeInteger(from) && from < revision ? from : null;
+}
+
 /** One `found` row as a version, or null when it is not what the function returns. */
 export function versionOf(row: Row): WorkVersionsItem | null {
   const { kind, savedMinute: minute, afterDeadline } = row;
@@ -83,8 +103,14 @@ export function versionOf(row: Row): WorkVersionsItem | null {
     return null;
   }
   const savedMinute = minute.toISOString();
-  if (kind === "checkpoint" && afterDeadline === null) return { kind, revision, savedMinute };
-  if (kind === "submission" && typeof afterDeadline === "boolean") {
+  const restoredFrom = restoredFromOf(row.restoredFromRevision, revision);
+  if (restoredFrom === null) return null;
+  if (kind === "checkpoint" && afterDeadline === null) {
+    return restoredFrom === undefined
+      ? { kind, revision, savedMinute }
+      : { kind, revision, savedMinute, restoredFromRevision: restoredFrom };
+  }
+  if (kind === "submission" && typeof afterDeadline === "boolean" && restoredFrom === undefined) {
     return { kind, revision, savedMinute, afterDeadline };
   }
   return null;

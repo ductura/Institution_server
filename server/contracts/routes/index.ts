@@ -22,7 +22,7 @@ export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { sourceNotebookRoutes } from "./source-notebook.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
-export { versionsRoutes } from "./versions.ts";
+export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";
