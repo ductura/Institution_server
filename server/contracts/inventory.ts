@@ -419,6 +419,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
   },
+  // SRV-IZJAVA-PITANJE (Ductus#2055 c.7114546002, owner decision of 23. 11. 2026): the
+  // teacher's optional question with the declaration.
+  "app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7114546002",
+  },
   "app/api/submission/v2/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
@@ -696,6 +702,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/faculty-rules/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7074314666",
+  },
+  // SRV-ADMIN-3 (Ductus#2055 c.7116134498; NF-7 OA-9, OC-1): the faculty's assistant setting, read only by its administrator; Ductus has no such route.
+  "app/api/institution/assistant-setting/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116134498",
   },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {

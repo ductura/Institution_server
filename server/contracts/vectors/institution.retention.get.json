@@ -23,7 +23,9 @@
               "retentionDays": 30,
               "mode": "execute",
               "candidates": 2,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "decided",
+              "periodStatusKey": "adminSettings.retentionPeriod.decided"
             },
             {
               "key": "live-state",
@@ -31,7 +33,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 1,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "versions",
@@ -39,7 +43,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 3,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "change-times",
@@ -47,7 +53,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": null,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "access-log",
@@ -55,7 +63,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 3,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "receipts",
@@ -63,7 +73,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": null,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "never_deleted",
+              "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
             }
           ]
         }
@@ -91,7 +103,9 @@
               "retentionDays": 30,
               "mode": "execute",
               "candidates": 0,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "decided",
+              "periodStatusKey": "adminSettings.retentionPeriod.decided"
             },
             {
               "key": "live-state",
@@ -99,7 +113,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 0,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "versions",
@@ -107,7 +123,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 0,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "change-times",
@@ -115,7 +133,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": null,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "access-log",
@@ -123,7 +143,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": 0,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "awaiting_decision",
+              "periodStatusKey": "adminSettings.retentionPeriod.awaitingDecision"
             },
             {
               "key": "receipts",
@@ -131,7 +153,9 @@
               "retentionDays": null,
               "mode": "dry-run",
               "candidates": null,
-              "lastRunAt": null
+              "lastRunAt": null,
+              "periodStatus": "never_deleted",
+              "periodStatusKey": "adminSettings.retentionPeriod.neverDeleted"
             }
           ]
         }

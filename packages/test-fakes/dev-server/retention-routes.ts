@@ -8,6 +8,8 @@
 import type { Handlers } from "./server.ts";
 
 type DryRunKey = "live-state" | "versions" | "change-times" | "access-log" | "receipts";
+// SRV-ADMIN-3: every null period waits for a decision, except the receipts,
+// which are never deleted; no period is made up.
 const dryRun = (key: DryRunKey, label: string, candidates: number | null) => ({
   key,
   label,
@@ -15,6 +17,15 @@ const dryRun = (key: DryRunKey, label: string, candidates: number | null) => ({
   mode: "dry-run" as const,
   candidates,
   lastRunAt: null,
+  ...(key === "receipts"
+    ? {
+        periodStatus: "never_deleted" as const,
+        periodStatusKey: "adminSettings.retentionPeriod.neverDeleted" as const,
+      }
+    : {
+        periodStatus: "awaiting_decision" as const,
+        periodStatusKey: "adminSettings.retentionPeriod.awaitingDecision" as const,
+      }),
 });
 
 export const RETENTION_HANDLERS: Handlers = {
@@ -36,6 +47,8 @@ export const RETENTION_HANDLERS: Handlers = {
             mode: "execute",
             candidates: 0,
             lastRunAt: null,
+            periodStatus: "decided",
+            periodStatusKey: "adminSettings.retentionPeriod.decided",
           },
           dryRun("live-state", "retention.liveState", submitted),
           dryRun("versions", "retention.versions", 0),

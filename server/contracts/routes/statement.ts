@@ -53,6 +53,33 @@ const Tools = Type.Array(
   { maxItems: 20 },
 );
 const OwnWork = closed({ confirmed: Type.Boolean() });
+// SRV-IZJAVA-PITANJE (declaration-v1 section 6.8): the teacher's optional
+// question and the student's optional answer. The answer is no part of the
+// hashed payload; it is bound to the saved row (draft or version) and is
+// stale or bound exactly as that row is.
+const QuestionId = Type.String({
+  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+});
+const QuestionText = Type.String({
+  minLength: 1,
+  maxLength: 1000,
+  description: "Up to 500 Unicode code points.",
+});
+const AnswerText = Type.String({
+  minLength: 1,
+  maxLength: 4000,
+  description:
+    "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+});
+const TeacherQuestion = Type.Union([
+  closed({ questionId: QuestionId, text: QuestionText }),
+  Type.Null(),
+]);
+const QuestionAnswer = Type.Union([
+  closed({ questionId: QuestionId, questionText: QuestionText, text: AnswerText }),
+  Type.Null(),
+]);
+const PutAnswer = Type.Union([closed({ questionId: QuestionId, text: AnswerText }), Type.Null()]);
 const Put = closed({
   baseVersion: DraftVersion,
   revision: Version,
@@ -87,6 +114,9 @@ const PutRequest = closed({
         "Closed declaration-v1 object with use, declaredTools, empty attachments, and externalAttachmentIds.",
     },
   ),
+  // SRV-IZJAVA-PITANJE: the answer to the question the student read (its
+  // questionId from teacherQuestion). Omitted or null: no answer.
+  questionAnswer: Type.Optional(PutAnswer),
 });
 const Attachment = closed({
   externalAttachmentId: ID,
@@ -141,6 +171,11 @@ const Statement = closed({
   // declaration confirmed for the submitted revision. Always sent; optional
   // only so older clients keep validating.
   declarationRequired: Type.Optional(Type.Boolean()),
+  // SRV-IZJAVA-PITANJE: the question in force (null: none) and the answer of
+  // the row the state is about (null: none). Always sent; optional only so
+  // older clients keep validating.
+  teacherQuestion: Type.Optional(TeacherQuestion),
+  questionAnswer: Type.Optional(QuestionAnswer),
 });
 const Params = closed({ assignmentId: Type.String({ minLength: 1 }) });
 const READ_ERRORS = [
@@ -249,3 +284,7 @@ export const statementRoutes = [
 
 // The confirmed declaration payload, shared with the teacher's read (SRV-1213).
 export { Payload as DeclarationPayload, SHA256 as DeclarationSha256 };
+export {
+  QuestionAnswer as DeclarationQuestionAnswer,
+  TeacherQuestion as DeclarationTeacherQuestion,
+};

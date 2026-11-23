@@ -2,7 +2,7 @@
 // POST /api/v1/institution/admin/roster-imports/{importId}/confirm
 // (SRV-ADMIN-2, NF-7 OA-10; contracts institution.roster-imports.post and
 // institution.roster-import-confirm.post) over institution.preview_roster_import
-// and confirm_roster_import (20261215100000), behind the same JSON reader as
+// and confirm_roster_import (20261215120000), behind the same JSON reader as
 // the course routes. The preview reads the CSV here (server/institution
 // parseRosterCsv): rows the file already rules out (identifier, names,
 // duplicate) never reach the database; the others are judged there. Who may

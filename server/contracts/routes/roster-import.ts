@@ -12,7 +12,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // preview's new rows; confirmed again it answers its first result. Enrolment
 // by code (institution.enrollments.post, student.enrollments.post) is
 // unchanged. Who may: the SECURITY DEFINER RPCs institution.preview_roster_import
-// and institution.confirm_roster_import (20261215100000): a confirmed
+// and institution.confirm_roster_import (20261215120000): a confirmed
 // administrator of the course's institution only.
 //
 // The file format is a PROPOSAL waiting for an example of a real Merlin or
@@ -27,12 +27,13 @@ import { MUTATION_GUARD } from "./shared.ts";
 export const ROSTER_IMPORT_MAX_CSV_LENGTH = 200_000;
 export const ROSTER_IMPORT_MAX_ROWS = 1000;
 export const ROSTER_IMPORT_SOURCES = ["merlin", "isvu"] as const;
-/** Why a row is not enrolled: three from reading the file, four from the database. */
+/** Why a row is not enrolled: three from reading the file, five from the database. */
 export const ROSTER_IMPORT_REASONS = [
   "invalid_identifier",
   "missing_name",
   "duplicate",
   "unknown_account",
+  "ineligible_account",
   "name_mismatch",
   "removed",
   "course_teacher",
@@ -86,7 +87,7 @@ export const rosterImportsPost = defineRoute({
   inventory: "app/api/institution/admin/courses/[courseId]/roster-imports/route.ts",
   access: "institution_admin",
   summary:
-    "Step one of the import of a course's students from Merlin or ISVU (NF-7 OA-10): the preview. Exactly {source, csv} as application/json, at most 256 KiB; source is merlin or isvu, csv the file's text, at most 200 000 UTF-16 units and 1000 rows after the header. The format is a proposal waiting for a real export: a header with identifikator (AAI@EduHr identifier), ime and prezime in any case and order, other columns ignored, semicolon or comma, RFC 4180 quotes. Every row answers its line, its cells as the file has them (trimmed, identifier in lower case) and a status: new (an account of the institution, to enrol), already_enrolled, or unsuitable with a reason (invalid_identifier, missing_name, duplicate of an earlier row, unknown_account (no account of the institution: the student has not signed in yet), name_mismatch, removed from the course by a teacher, course_teacher). Nothing is enrolled. importId confirms it with institution.roster-import-confirm.post until expiresAt (30 minutes). A file without the three columns is 422 roster_columns_missing, more rows than allowed 422 roster_too_many_rows, a quote left open 422 roster_malformed. Only an administrator of the institution (403 otherwise); a course that is not the institution's is 404.",
+    "Step one of the import of a course's students from Merlin or ISVU (NF-7 OA-10): the preview. Exactly {source, csv} as application/json, at most 256 KiB; source is merlin or isvu, csv the file's text, at most 200 000 UTF-16 units and 1000 rows after the header. The format is a proposal waiting for a real export: a header with identifikator (AAI@EduHr identifier), ime and prezime in any case and order, other columns ignored, semicolon or comma, RFC 4180 quotes. Every row answers its line, its cells as the file has them (trimmed, identifier in lower case) and a status: new (an account of the institution, to enrol), already_enrolled, or unsuitable with a reason (invalid_identifier, missing_name, duplicate of an earlier row, unknown_account (no account of the institution: the student has not signed in yet), ineligible_account (an account the import never enrols; it enrols by code), name_mismatch, removed from the course by a teacher, course_teacher). Nothing is enrolled. importId confirms it with institution.roster-import-confirm.post until expiresAt (30 minutes). A file without the three columns is 422 roster_columns_missing, more rows than allowed 422 roster_too_many_rows, a quote left open 422 roster_malformed. Only an administrator of the institution (403 otherwise); a course that is not the institution's is 404.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 256 * 1024,

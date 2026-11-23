@@ -132,8 +132,9 @@ SELECT is_empty(
 -- network_engineer_appointment to know a network engineer, and the two
 -- functions of DAN-809 that appoint and revoke one (133), and
 -- identity.session_state (DAN-827, 135), settings.read_values (DAN-826-3,
--- 139) and app.my_account (Ductus#2028 c.6993786629 §3.3, 142), which read it
--- like set_value; no SECURITY
+-- 139), app.my_account (Ductus#2028 c.6993786629 §3.3, 142) and
+-- institution.roster_import_ineligible (SRV-ADMIN-2), which read it like
+-- set_value; no SECURITY
 -- DEFINER function runs dynamic SQL, which could name a table without
 -- spelling it; and no view, rule or materialised view reads one. Each
 -- function and table it names is one row, marked "writes" when the source
@@ -163,8 +164,9 @@ SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
         'identity.revoke_network_engineer(uuid) network_engineer_appointment writes',
         'identity.session_state(uuid) network_engineer_appointment reads',
         'settings.read_values(text,uuid) network_engineer_appointment reads',
-        'app.my_account() network_engineer_appointment reads'],
-  'only settings.set_value, since DAN-809 (133) the appointment and revocation, since DAN-827 (135) session_state, since DAN-826-3 (139) read_values and since 142 my_account, which only read it, name a new table, and none names app_admin');
+        'app.my_account() network_engineer_appointment reads',
+        'institution.roster_import_ineligible(uuid,uuid) network_engineer_appointment reads'],
+  'only settings.set_value, since DAN-809 (133) the appointment and revocation, since DAN-827 (135) session_state, since DAN-826-3 (139) read_values, since 142 my_account and since SRV-ADMIN-2 roster_import_ineligible, which only read it, name a new table, and none names app_admin');
 SELECT is_empty('SELECT found FROM pg_temp.dynamic_definer',
   'no SECURITY DEFINER function runs dynamic SQL');
 CREATE FUNCTION identity.test_atomic_write(p_institution uuid, p_user uuid, p_by uuid) RETURNS void
@@ -187,6 +189,7 @@ SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
         'identity.session_state(uuid) network_engineer_appointment reads',
         'settings.read_values(text,uuid) network_engineer_appointment reads',
         'app.my_account() network_engineer_appointment reads',
+        'institution.roster_import_ineligible(uuid,uuid) network_engineer_appointment reads',
         'identity.test_atomic_write(uuid,uuid,uuid) network_engineer_appointment writes',
         'identity.test_plain_read() app_admin reads',
         'identity.test_plain_write() network_engineer_appointment writes'],

@@ -41,6 +41,13 @@ const isAdmin = (account: Account | null): account is Account =>
   account?.roles.includes("institution_admin") ?? false;
 type PreviewRow = Operations["institution.roster-imports.post"]["success"]["body"]["rows"][number];
 const key = (name: string) => name.trim().replace(/\s+/gu, " ").toLowerCase();
+/**
+ * As institution.roster_import_ineligible: the caller or an administrator (the
+ * fake has no engineer accounts).
+ */
+const ineligible = (state: State, caller: Account, id: string) =>
+  id === caller.id ||
+  (state.accounts.find((a) => a.id === id)?.roles.includes("institution_admin") ?? false);
 
 /** For tests: an unconfirmed import of these accounts, valid until expiresAt. */
 export function plantRosterImport(
@@ -75,17 +82,19 @@ export const ROSTER_IMPORT_HANDLERS: Handlers = {
       const reason =
         found === undefined
           ? "unknown_account"
-          : found.id === course.holderId ||
-              course.groups.some((g) => g.teacherIds.includes(found.id))
-            ? "course_teacher"
-            : course.studentIds.includes(found.id)
-              ? null
-              : course.removed.includes(found.id)
-                ? "removed"
-                : key(found.givenName) !== key(row.givenName) ||
-                    key(found.familyName) !== key(row.familyName)
-                  ? "name_mismatch"
-                  : null;
+          : ineligible(state, account, found.id)
+            ? "ineligible_account"
+            : found.id === course.holderId ||
+                course.groups.some((g) => g.teacherIds.includes(found.id))
+              ? "course_teacher"
+              : course.studentIds.includes(found.id)
+                ? null
+                : course.removed.includes(found.id)
+                  ? "removed"
+                  : key(found.givenName) !== key(row.givenName) ||
+                      key(found.familyName) !== key(row.familyName)
+                    ? "name_mismatch"
+                    : null;
       if (found !== undefined && reason === null && !course.studentIds.includes(found.id)) {
         userIds.push(found.id);
         return { ...cells, status: "new" as const, reason: null };
@@ -123,7 +132,7 @@ export const ROSTER_IMPORT_HANDLERS: Handlers = {
     const result = { enrolled: 0, alreadyEnrolled: 0, skipped: 0 };
     for (const id of found.userIds) {
       if (course.studentIds.includes(id)) result.alreadyEnrolled += 1;
-      else if (course.removed.includes(id)) result.skipped += 1;
+      else if (course.removed.includes(id) || ineligible(state, account, id)) result.skipped += 1;
       else {
         course.studentIds.push(id);
         result.enrolled += 1;

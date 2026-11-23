@@ -1,7 +1,7 @@
 // SRV-ADMIN-2 admin-uvoz-popisa (Ductus#2055, NF-7 OA-10): the reading of
 // the list of a course's students that an administrator uploads from Merlin
 // or ISVU. Pure: text in, rows out; the database decides the rest
-// (institution.preview_roster_import, 20261215100000).
+// (institution.preview_roster_import, 20261215120000).
 //
 // The format is a PROPOSAL waiting for an example of a real export ("čeka
 // primjer stvarnog izvoza"; contract institution.roster-imports.post):

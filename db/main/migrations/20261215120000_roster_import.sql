@@ -154,6 +154,22 @@ BEGIN
 END
 $$;
 
+-- An account the import never enrols: the caller's own, and one that holds an
+-- administrator role of the institution (confirmed or not, while not
+-- revoked) or an engineer appointment that is not revoked. Enrolment of such
+-- an account goes only by code, by the person themselves. An account belongs
+-- to one institution and so do its roles, so the account alone says which;
+-- the callers pass only accounts of the caller's institution.
+CREATE FUNCTION institution.roster_import_ineligible(p_user uuid, p_actor uuid) RETURNS boolean
+LANGUAGE sql STABLE SET search_path = ''
+AS $$
+  SELECT p_user = p_actor
+      OR EXISTS (SELECT 1 FROM institution.institution_role r
+                  WHERE r.user_id = p_user AND r.role = 'admin' AND r.revoked_at IS NULL)
+      OR EXISTS (SELECT 1 FROM identity.network_engineer_appointment n
+                  WHERE n.user_id = p_user AND n.revoked_at IS NULL)
+$$;
+
 -- p_rows: a JSON array of at most 1000 objects of exactly {identifier,
 -- givenName, familyName}, the rows of the file the server already found well
 -- formed and distinct (by identifier in lower case). The answer: the import
@@ -161,6 +177,7 @@ $$;
 --   new               an account of the institution, not in the course;
 --   already_enrolled  a student of the course already;
 --   unknown_account   no account of the institution with this identifier;
+--   ineligible_account an account the import never enrols (above);
 --   name_mismatch     the account's known name is another;
 --   removed           removed from the course by a teacher, return not allowed;
 --   course_teacher    a teacher of the course.
@@ -204,6 +221,8 @@ BEGIN
       SELECT e.n, u.id AS user_id,
              CASE
                WHEN u.id IS NULL THEN 'unknown_account'
+               WHEN institution.roster_import_ineligible(u.id, actor.user_id)
+                 THEN 'ineligible_account'
                WHEN EXISTS (SELECT 1 FROM institution.course_member m
                              WHERE m.course_id = p_course_id AND m.user_id = u.id
                                AND m.member_to IS NULL AND m.role = 'teacher') THEN 'course_teacher'
@@ -251,7 +270,8 @@ $$;
 -- Enrols the accounts of a preview, each as enroll_with_code would: under the
 -- same lock per student (remove_student and enroll_with_code take it), the
 -- student's open seminar group places held FOR SHARE first. An account that
--- became a member or was removed meanwhile is counted, not enrolled. The
+-- became a member or was removed meanwhile, the confirming administrator's
+-- own, or one that became ineligible meanwhile is counted, not enrolled. The
 -- answer: {enrolled, already_enrolled, skipped, already_confirmed}.
 CREATE FUNCTION institution.confirm_roster_import(p_import_id uuid) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
@@ -289,9 +309,10 @@ BEGIN
       v_already := v_already + 1;
       CONTINUE;
     END IF;
-    IF EXISTS (SELECT 1 FROM institution.course_member m
-                WHERE m.course_id = v_import.course_id AND m.user_id = v_user
-                  AND m.removed_by IS NOT NULL AND m.return_allowed_at IS NULL) THEN
+    IF institution.roster_import_ineligible(v_user, actor.user_id)
+       OR EXISTS (SELECT 1 FROM institution.course_member m
+                   WHERE m.course_id = v_import.course_id AND m.user_id = v_user
+                     AND m.removed_by IS NOT NULL AND m.return_allowed_at IS NULL) THEN
       v_skipped := v_skipped + 1;
       CONTINUE;
     END IF;
@@ -320,6 +341,7 @@ REVOKE ALL ON FUNCTION institution.roster_import_max_rows() FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.roster_import_valid_for() FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.roster_name_key(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.roster_import_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION institution.roster_import_ineligible(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.preview_roster_import(uuid, text, jsonb) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.confirm_roster_import(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION institution.preview_roster_import(uuid, text, jsonb) TO ductus_app;
@@ -336,6 +358,7 @@ GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 DROP FUNCTION institution.confirm_roster_import(uuid);
 DROP FUNCTION institution.preview_roster_import(uuid, text, jsonb);
+DROP FUNCTION institution.roster_import_ineligible(uuid, uuid);
 DROP FUNCTION institution.roster_import_admin();
 DROP FUNCTION institution.roster_name_key(text);
 DROP FUNCTION institution.roster_import_valid_for();

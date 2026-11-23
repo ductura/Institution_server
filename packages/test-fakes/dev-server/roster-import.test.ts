@@ -14,6 +14,7 @@ const CSV = [
   "nepoznata@demo.ductus.test;Netko;Nepoznat",
   `${FAKE_AAI_IDENTIFIERS["bez-uloge"]};Ivana;Neimenić`,
   "bez-domene;A;B",
+  `${FAKE_AAI_IDENTIFIERS.administrator};Ana;Upravić`,
 ].join("\r\n");
 
 describe("dev fake server: roster import", () => {
@@ -36,8 +37,9 @@ describe("dev fake server: roster import", () => {
       "unknown_account",
       "name_mismatch",
       "invalid_identifier",
+      "ineligible_account",
     ]);
-    expect(answer.counts).toEqual({ new: 1, alreadyEnrolled: 1, unsuitable: 4 });
+    expect(answer.counts).toEqual({ new: 1, alreadyEnrolled: 1, unsuitable: 5 });
     expect(state.courses.find((c) => c.id === IDS.course)!.studentIds).toEqual(before);
 
     const confirm = `/api/v1/institution/admin/roster-imports/${answer.importId}/confirm`;

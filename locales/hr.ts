@@ -2084,6 +2084,15 @@ export const hr = {
     gatewayTimeout: "Poslužitelj nije odgovorio na vrijeme. Pokušajte ponovno.",
     sessionExpired: "Prijava je istekla. Prijavite se ponovno.",
   },
+  adminSettings: {
+    exportAlreadyOpen:
+      "Za ovog studenta već postoji otvoren zahtjev za izvoz podataka. Pratite njegovo stanje na popisu zahtjeva umjesto da podnosite novi.",
+    retentionPeriod: {
+      decided: "Rok čuvanja je određen.",
+      awaitingDecision: "Rok čuvanja nije određen: čeka odluku.",
+      neverDeleted: "Ne briše se: dokazuje predaju i nakon brisanja sadržaja.",
+    },
+  },
 } as const;
 
 /** A text table with the keys of `hr`, any text in place of each Croatian one. */

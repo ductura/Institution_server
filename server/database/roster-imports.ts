@@ -1,5 +1,5 @@
 // The port of institution.preview_roster_import and confirm_roster_import
-// (SRV-ADMIN-2, NF-7 OA-10; migration 20261215100000): the administrator's
+// (SRV-ADMIN-2, NF-7 OA-10; migration 20261215120000): the administrator's
 // two-step import of a course's students. In the form of admin-courses.ts:
 // an outcome, never a throw; who may is the RPC's; the caller comes only from
 // the session. One call is one withActor transaction of one statement. The
@@ -13,6 +13,7 @@ export const ROSTER_DATABASE_STATUSES = [
   "new",
   "already_enrolled",
   "unknown_account",
+  "ineligible_account",
   "name_mismatch",
   "removed",
   "course_teacher",

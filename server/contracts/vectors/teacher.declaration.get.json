@@ -55,7 +55,16 @@
             },
             "confirmedAt": "2026-11-20T10:00:00.000000Z"
           },
-          "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "question": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "text": "Koji ti je izvor najviše pomogao u radu?"
+          },
+          "questionAnswer": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "questionText": "Koji ti je izvor najviše pomogao u radu?",
+            "text": "Izmišljeni udžbenik iz metodologije."
+          }
         }
       }
     },
@@ -80,7 +89,12 @@
         "body": {
           "state": "none",
           "payload": null,
-          "declarationSha256": null
+          "declarationSha256": null,
+          "question": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "text": "Koji ti je izvor najviše pomogao u radu?"
+          },
+          "questionAnswer": null
         }
       }
     },

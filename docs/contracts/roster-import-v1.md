@@ -51,6 +51,7 @@ Obje su `access: institution_admin`. API 1.98.0. Sheme su u `server/contracts/ro
 | `missing_name`       | čitač        | ime ili prezime nedostaje ili nije običan tekst                          |
 | `duplicate`          | čitač        | isti identifikator već je u ranijem retku                                |
 | `unknown_account`    | baza         | fakultet nema račun s tim identifikatorom (student se još nije prijavio) |
+| `ineligible_account` | baza         | račun koji se uvozom ne upisuje; upisuje se samo kodom                   |
 | `name_mismatch`      | baza         | poznato ime računa razlikuje se od imena u datoteci                      |
 | `removed`            | baza         | nastavnik je studenta uklonio iz kolegija i nije dopustio povratak       |
 | `course_teacher`     | baza         | osoba je nastavnik tog kolegija                                          |
@@ -59,7 +60,7 @@ Pregled vrijedi 30 minuta (`expiresAt`).
 
 ### Odgovor potvrde
 
-`{enrolled, alreadyEnrolled, skipped, alreadyConfirmed}`. Student koji je u međuvremenu upisan broji se u `alreadyEnrolled`, a onaj kojeg je nastavnik u međuvremenu uklonio u `skipped`.
+`{enrolled, alreadyEnrolled, skipped, alreadyConfirmed}`. Student koji je u međuvremenu upisan broji se u `alreadyEnrolled`, a onaj kojeg je nastavnik u međuvremenu uklonio ili koji se uvozom više ne upisuje u `skipped`.
 
 ### Greške
 
@@ -96,7 +97,7 @@ marko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;B
 
 ## 4. Baza
 
-Migracija `20261215100000_roster_import.sql`:
+Migracija `20261215120000_roster_import.sql`:
 
 - `institution.roster_import`: kolegij, izvor, tko i kada je napravio pregled, istek, broj redaka i novih, te potvrda (tko, kada, brojevi). Mijenja se samo potvrdom; brisanje i TRUNCATE odbija okidač.
 - `institution.roster_import_entry`: računi koje bi pregled upisao. Nepromjenjivo.

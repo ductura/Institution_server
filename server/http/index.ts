@@ -43,6 +43,7 @@ export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export { createRetentionRouteFor } from "./retention/index.ts";
 export { createFacultyRuleRoutesFor } from "./faculty-rules/index.ts";
+export { createAssistantSettingRouteFor } from "./assistant-setting/index.ts";
 export { createInstitutionConfigRoutesFor } from "./institution-config/index.ts";
 export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
@@ -185,6 +186,10 @@ export {
   createDeclarationRequiredRoutes,
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
+export {
+  createDeclarationQuestionRoutes,
+  createDeclarationQuestionRoutesFor,
+} from "./declaration-question.ts";
 export {
   createProcessSummaryDetailsRouteFor,
   createProcessSummaryRoute,

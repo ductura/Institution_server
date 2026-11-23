@@ -8,7 +8,7 @@
 BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
-SELECT plan(65);
+SELECT plan(72);
 
 -- Fixed rows: Boris (fak-a, in no course) is new in K1, Ana is already a
 -- student of K1, Vesna is its teacher, Tomo belongs to fak-b, nobody has the
@@ -209,6 +209,65 @@ SELECT is(pg_temp.ask('iva', 'SELECT count(*)::text FROM institution.roster_impo
           '42501: permission denied for table roster_import', 'the web role cannot read an import, even as administrator');
 SELECT is(pg_temp.ask('iva', 'SELECT count(*)::text FROM institution.roster_import_entry'),
           '42501: permission denied for table roster_import_entry', 'nor an entry');
+
+-- 9. The import never enrols the caller's own account, nor an account with an
+-- administrator role or an engineer appointment of the institution; such a
+-- row is unsuitable in the preview and not enrolled at the confirmation.
+INSERT INTO person VALUES
+  ('zora', '00000000-0000-4000-8000-000000000112', pg_temp.id('fak_a'), 'fak-a'),
+  ('eno', '00000000-0000-4000-8000-000000000113', pg_temp.id('fak_a'), 'fak-a'),
+  ('rade', '00000000-0000-4000-8000-000000000114', pg_temp.id('fak_a'), 'fak-a'),
+  ('sara', '00000000-0000-4000-8000-000000000115', pg_temp.id('fak_a'), 'fak-a'),
+  ('tea', '00000000-0000-4000-8000-000000000116', pg_temp.id('fak_a'), 'fak-a');
+INSERT INTO ref SELECT name, id::text FROM person WHERE name IN ('zora', 'eno', 'rade', 'sara', 'tea');
+INSERT INTO identity.user_account (id, institution_id, oidc_issuer, oidc_subject, hr_edu_person_unique_id)
+SELECT p.id, p.institution_id, 'https://issuer.test', 'sub-' || p.name, p.name || '@fak-a.example'
+  FROM person p WHERE p.name IN ('zora', 'eno', 'rade', 'sara', 'tea');
+-- Zora an administrator, appointed but not yet confirmed; Eno an engineer;
+-- Rade's appointment revoked.
+INSERT INTO institution.institution_role (institution_id, user_id, role)
+VALUES (pg_temp.id('fak_a'), pg_temp.id('zora'), 'admin');
+INSERT INTO identity.network_engineer_appointment (institution_id, user_id, appointed_by, appointed_at, revoked_at)
+VALUES (pg_temp.id('fak_a'), pg_temp.id('eno'), pg_temp.id('iva'), now() - interval '1 day', NULL),
+       (pg_temp.id('fak_a'), pg_temp.id('rade'), pg_temp.id('iva'), now() - interval '1 day', now());
+CREATE TEMP TABLE staff AS
+SELECT pg_temp.preview('iva', '{k2}', 'merlin', jsonb_build_array(
+         pg_temp.row('iva@fak-a.example', 'Iva', 'I'),
+         pg_temp.row('lea@fak-b.example', 'Lea', 'I'),
+         pg_temp.row('zora@fak-a.example', 'Zora', 'I'),
+         pg_temp.row('eno@fak-a.example', 'Eno', 'I'),
+         pg_temp.row('rade@fak-a.example', 'Rade', 'I')))::jsonb AS answer;
+GRANT SELECT ON staff TO PUBLIC;
+SELECT is((SELECT answer -> 'statuses' FROM staff),
+          '["ineligible_account", "unknown_account", "ineligible_account", "ineligible_account", "new"]'::jsonb,
+          'Iva''s own account, administrator Zora and engineer Eno are ineligible; Lea of fak-b unknown; Rade, revoked, new');
+SELECT is((SELECT array_agg(e.user_id) FROM institution.roster_import_entry e
+            WHERE e.import_id = (SELECT answer ->> 'import_id' FROM staff)::uuid),
+          ARRAY[pg_temp.id('rade')], 'the import keeps only Rade''s account to enrol');
+SELECT is(pg_temp.confirm('iva', (SELECT answer ->> 'import_id' FROM staff))::jsonb,
+          '{"enrolled": 1, "already_enrolled": 0, "skipped": 0, "already_confirmed": false}'::jsonb,
+          'confirmed, it enrols Rade alone');
+SELECT is((SELECT array_agg(m.user_id ORDER BY m.user_id) FROM institution.course_member m
+            WHERE m.course_id = pg_temp.id('k2') AND m.role = 'student' AND m.member_to IS NULL),
+          ARRAY[pg_temp.id('rade')], 'K2 has Rade as its one student, neither Iva, Zora nor Eno');
+-- Sara and Tea are new in the preview; Sara becomes an engineer and Tea an
+-- administrator before the confirmation: both counted as skipped.
+CREATE TEMP TABLE meanwhile AS
+SELECT pg_temp.preview('iva', '{k2}', 'isvu', jsonb_build_array(
+         pg_temp.row('sara@fak-a.example', 'Sara', 'I'),
+         pg_temp.row('tea@fak-a.example', 'Tea', 'I')))::jsonb AS answer;
+GRANT SELECT ON meanwhile TO PUBLIC;
+SELECT is((SELECT answer -> 'statuses' FROM meanwhile), '["new", "new"]'::jsonb, 'Sara and Tea are new in K2');
+INSERT INTO identity.network_engineer_appointment (institution_id, user_id, appointed_by)
+VALUES (pg_temp.id('fak_a'), pg_temp.id('sara'), pg_temp.id('iva'));
+INSERT INTO institution.institution_role (institution_id, user_id, role, confirmed_at)
+VALUES (pg_temp.id('fak_a'), pg_temp.id('tea'), 'admin', now());
+SELECT is(pg_temp.confirm('iva', (SELECT answer ->> 'import_id' FROM meanwhile))::jsonb,
+          '{"enrolled": 0, "already_enrolled": 0, "skipped": 2, "already_confirmed": false}'::jsonb,
+          'an engineer and an administrator since the preview are skipped');
+SELECT is((SELECT count(*) FROM institution.course_member m
+            WHERE m.course_id = pg_temp.id('k2') AND m.user_id IN (pg_temp.id('sara'), pg_temp.id('tea'))),
+          0::bigint, 'neither Sara nor Tea is a member of K2');
 
 SELECT * FROM finish();
 ROLLBACK;
