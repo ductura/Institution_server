@@ -1,0 +1,160 @@
+{
+  "route": "institution.thesis-forms.get",
+  "vectors": [
+    {
+      "name": "listed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "forms": [
+            {
+              "code": "izjava-izvornost",
+              "version": 2,
+              "title": "Izjava o izvornosti rada",
+              "workTypes": ["bachelor_thesis", "master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-20T09:00:00.000Z"
+            },
+            {
+              "code": "prijava-teme",
+              "version": 1,
+              "title": "Prijava teme završnog ili diplomskog rada",
+              "workTypes": ["bachelor_thesis", "master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-01T09:00:00.000Z"
+            },
+            {
+              "code": "izjava-pohrana",
+              "version": 1,
+              "title": "Izjava o pohrani rada u repozitorij",
+              "workTypes": ["master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-01T09:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "retired-for-admin",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "forms": [
+            {
+              "code": "izjava-izvornost",
+              "version": 2,
+              "title": "Izjava o izvornosti rada",
+              "workTypes": ["bachelor_thesis", "master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-20T09:00:00.000Z"
+            },
+            {
+              "code": "prijava-teme",
+              "version": 1,
+              "title": "Prijava teme završnog ili diplomskog rada",
+              "workTypes": ["bachelor_thesis", "master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-01T09:00:00.000Z"
+            },
+            {
+              "code": "izjava-pohrana",
+              "version": 1,
+              "title": "Izjava o pohrani rada u repozitorij",
+              "workTypes": ["master_thesis"],
+              "active": true,
+              "publishedAt": "2026-11-01T09:00:00.000Z"
+            },
+            {
+              "code": "stari-obrazac",
+              "version": 3,
+              "title": "Stari obrazac prijave",
+              "workTypes": ["bachelor_thesis"],
+              "active": false,
+              "publishedAt": "2026-10-01T09:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "forms": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000233100"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000233101"
+        }
+      }
+    }
+  ]
+}

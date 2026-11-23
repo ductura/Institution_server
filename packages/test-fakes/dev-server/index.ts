@@ -49,6 +49,7 @@ import { FACULTY_RULE_HANDLERS } from "./faculty-rule-routes.ts";
 import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
+import { THESIS_HANDLERS } from "./thesis-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import { PORTABLE_RECORD_HANDLERS } from "./portable-record-routes.ts";
@@ -110,6 +111,7 @@ export const DEV_HANDLERS: Handlers = {
   ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
+  ...THESIS_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,

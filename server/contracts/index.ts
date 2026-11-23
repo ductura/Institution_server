@@ -80,6 +80,7 @@ import {
   workMilestonesRoutes,
   milestoneTemplateRoutes,
   returnForRevisionRoutes,
+  thesisRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -110,6 +111,18 @@ export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,
+} from "./routes/index.ts";
+export {
+  MentorConsentInput,
+  THESIS_FORM_STATES,
+  THESIS_STAGES,
+  THESIS_WORK_TYPES,
+  ThesisFormCode,
+  ThesisFormInput,
+  ThesisSettingInput,
+  ThesisStageInput,
+  WorkThesisFormInput,
+  thesisRoutes,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
@@ -249,6 +262,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...workMilestonesRoutes,
   ...milestoneTemplateRoutes,
   ...returnForRevisionRoutes,
+  ...thesisRoutes,
 ];
 
 /**
