@@ -91,11 +91,23 @@ function rls(withActor: WithActor) {
   };
 }
 
+/** A refusal's body without its per-request id: equal bodies cannot tell two refusals apart. */
+type Answer = { status: number; body: Record<string, unknown> };
+
+async function answerOf(response: Response): Promise<Answer> {
+  const text = await response.text();
+  const body = (text === "" ? {} : JSON.parse(text)) as Record<string, unknown>;
+  delete body["requestId"];
+  return { status: response.status, body };
+}
+
 async function withServer(
   withActor: WithActor,
   run: (http: {
     get: (token: string, work: string) => Promise<number>;
     post: (token: string, work: string) => Promise<number>;
+    getAnswer: (token: string, work: string) => Promise<Answer>;
+    postAnswer: (token: string, work: string) => Promise<Answer>;
   }) => Promise<void>,
 ) {
   const server = await startServer({
@@ -107,29 +119,27 @@ async function withServer(
   });
   const url = (work: string) =>
     `http://127.0.0.1:${server.port}/api/v1/works/${encodeURIComponent(work)}/messages`;
+  const getAnswer = async (token: string, work: string) =>
+    answerOf(await fetch(url(work), { headers: { cookie: `__Host-ductus_session=${token}` } }));
+  const postAnswer = async (token: string, work: string) =>
+    answerOf(
+      await fetch(url(work), {
+        method: "POST",
+        headers: {
+          origin: ORIGIN,
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          cookie: `__Host-ductus_session=${token}`,
+        },
+        body: JSON.stringify({ text: "Izmišljena poruka." }),
+      }),
+    );
   try {
     await run({
-      async get(token, work) {
-        const response = await fetch(url(work), {
-          headers: { cookie: `__Host-ductus_session=${token}` },
-        });
-        await response.arrayBuffer();
-        return response.status;
-      },
-      async post(token, work) {
-        const response = await fetch(url(work), {
-          method: "POST",
-          headers: {
-            origin: ORIGIN,
-            "sec-fetch-site": "same-origin",
-            "content-type": "application/json",
-            cookie: `__Host-ductus_session=${token}`,
-          },
-          body: JSON.stringify({ text: "Izmišljena poruka." }),
-        });
-        await response.arrayBuffer();
-        return response.status;
-      },
+      get: async (token, work) => (await getAnswer(token, work)).status,
+      post: async (token, work) => (await postAnswer(token, work)).status,
+      getAnswer,
+      postAnswer,
     });
   } finally {
     await server.close();
@@ -165,9 +175,20 @@ it("A09: tuđi rad i druga ustanova odbijeni su kroz HTTP i kroz ulogu ductus_ap
         expect(await http.get(token, "doc-a")).toBe(404);
         expect(await http.post(token, "doc-a")).toBe(404);
       }
-      expect(await http.get(ANA, "doc-b")).toBe(404);
-      expect(await http.get(VESNA, "doc-b")).toBe(404);
-      expect(await http.get(ANA, "doc-nepostojeci")).toBe(404);
+      // Another institution's work answers exactly as a work that does not
+      // exist, for reading and for writing, in the status and in the body.
+      const unknownGet = await http.getAnswer(ANA, "doc-nepostojeci");
+      const unknownPost = await http.postAnswer(ANA, "doc-nepostojeci");
+      expect(unknownGet.status).toBe(404);
+      expect(unknownGet.body).toMatchObject({ code: "not_found", status: 404 });
+      expect(unknownPost).toStrictEqual(unknownGet);
+      for (const token of [ANA, VESNA]) {
+        expect(await http.getAnswer(token, "doc-b")).toStrictEqual(unknownGet);
+        expect(await http.postAnswer(token, "doc-b")).toStrictEqual(unknownPost);
+      }
+      for (const token of [DORA, PETRA, TOMO]) {
+        expect(await http.getAnswer(token, "doc-a")).toStrictEqual(unknownGet);
+      }
       expect(await messageCount(db)).toBe(written);
     });
 
@@ -216,11 +237,17 @@ it("A09: nakon ukidanja uloge nastavnika isti je nastavnik odbijen kroz HTTP i k
     const app = rls(withActor);
 
     await withServer(withActor, async (http) => {
-      // Before: Vesna teaches Z1 and reaches Ana's work.
+      // Before: Vesna teaches Z1 and reaches Ana's work, for reading and writing.
       expect(await http.get(VESNA, "doc-a")).toBe(200);
+      const empty = await messageCount(db);
+      expect(await http.post(VESNA, "doc-a")).toBe(201);
+      expect(await messageCount(db)).toBe(empty + 1);
       expect(await app.assignment(VESNA)).toBe(1);
       expect(await app.course(VESNA)).toBe(1);
-      expect(await app.messages(VESNA, "doc-a")).toBe(0);
+      expect(await app.messages(VESNA, "doc-a")).toBe(1);
+      // The evidence tables are the owner's: 0 already before the revocation,
+      // so this row is not what the revocation proves.
+      expect(await app.document(VESNA, "doc-a")).toBe(0);
 
       // Only the institution's admin may revoke the role; the teacher herself may not.
       expect(
@@ -245,7 +272,6 @@ it("A09: nakon ukidanja uloge nastavnika isti je nastavnik odbijen kroz HTTP i k
       expect(await messageCount(db)).toBe(before);
       expect(await app.assignment(VESNA)).toBe(0);
       expect(await app.course(VESNA)).toBe(0);
-      expect(await app.document(VESNA, "doc-a")).toBe(0);
       expect(await app.messages(VESNA, "doc-a")).toBe("ZD403");
       expect(await app.write(VESNA, "doc-a")).toBe("ZD403");
 
@@ -267,8 +293,12 @@ it("A09: nakon uklanjanja studenta iz kolegija ista je studentica odbijena kroz 
 
     await withServer(withActor, async (http) => {
       expect(await http.get(ANA, "doc-a")).toBe(200);
+      const empty = await messageCount(db);
+      expect(await http.post(ANA, "doc-a")).toBe(201);
+      expect(await messageCount(db)).toBe(empty + 1);
       expect(await app.assignment(ANA)).toBe(1);
       expect(await app.course(ANA)).toBe(1);
+      expect(await app.messages(ANA, "doc-a")).toBe(1);
 
       // Another student may not remove her; the course's teacher may.
       expect(

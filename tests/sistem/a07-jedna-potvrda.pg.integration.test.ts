@@ -1,8 +1,11 @@
 // INT-18 (A07) over the migrated PostgreSQL and the real HTTP app: a commit
-// whose answer the client never reads, and a deferred receipt whose signing
-// worker dies inside the attach, each end with exactly one revision and one
-// receipt, counted in the database, and the client's retry with the same
-// clientTransactionId and the same bytes gets that receipt back. The
+// whose answer the client never reads, two sends of the same commit at once,
+// and a deferred receipt whose signature is computed but never stored (the
+// worker's attach fails before it reaches the database), each end with exactly
+// one revision and one stored receipt, counted in the database, and the
+// client's retry with the same clientTransactionId and the same bytes gets that
+// receipt back. On the deferred path the signer runs twice (once for the lost
+// attach, once on resume) over the same input; one signature is stored. The
 // production adapters run under SET LOCAL ROLE ductus_app (the commit) and
 // ductus_worker (the worker) inside the rollback-only test transaction; every
 // person, document and key is invented (db/main/tests/fixtures).
@@ -56,6 +59,8 @@ const Z1 = "00000000-0000-4000-8000-0000000000a1";
 const TEXT = "Izmišljeni odlomak o jesenskoj magli.";
 
 type Answer = { status: number; body: Record<string, unknown> };
+/** The status line arrived; the body was never read. */
+type Lost = { lost: number };
 type Stored = { revisions: number; segments: number; receipts: number };
 
 /** Ana's database: the institution fixture, fak-a's evidence domain and the signing key. */
@@ -94,6 +99,24 @@ function appActor(db: TestDatabase): WithActor {
   };
 }
 
+/**
+ * One login at a time over the test's single connection. Two requests may
+ * overlap in the HTTP app, but their statements cannot interleave inside one
+ * rollback-only transaction; a race between two database connections is not
+ * what this file can show.
+ */
+function oneAtATime(withActor: WithActor): WithActor {
+  let last: Promise<unknown> = Promise.resolve();
+  return (token, run) => {
+    const next = last.then(
+      () => withActor(token, run),
+      () => withActor(token, run),
+    );
+    last = next.catch(() => undefined);
+    return next;
+  };
+}
+
 function mainOver(withActor: WithActor) {
   return {
     withActor,
@@ -115,7 +138,7 @@ function post(
   body: unknown,
   protocol: string,
   lose = false,
-): Promise<Answer | "lost"> {
+): Promise<Answer | Lost> {
   const text = JSON.stringify(body);
   return new Promise((resolve, reject) => {
     const req = httpRequest(
@@ -135,8 +158,9 @@ function post(
       },
       (res) => {
         if (lose) {
+          const status = res.statusCode ?? 0;
           res.destroy();
-          resolve("lost");
+          resolve({ lost: status });
           return;
         }
         let data = "";
@@ -151,9 +175,9 @@ function post(
   });
 }
 
-async function answered(promise: Promise<Answer | "lost">): Promise<Answer> {
+async function answered(promise: Promise<Answer | Lost>): Promise<Answer> {
   const answer = await promise;
-  if (answer === "lost") throw new Error("expected an answer");
+  if ("lost" in answer) throw new Error("expected an answer");
   return answer;
 }
 
@@ -247,11 +271,17 @@ async function receiptRow(db: TestDatabase, documentId: string) {
   return rows;
 }
 
-/** The worker's login: every statement as ductus_worker; `failOn` is a death before it runs. */
+/**
+ * The worker's login: every statement as ductus_worker, with no session token
+ * (the commit's student token is cleared first). `failOn` throws before the
+ * matching statement reaches the database: the attach is lost after signing,
+ * not interrupted halfway through a write.
+ */
 function asWorker(db: TestDatabase, failOn?: (text: string) => boolean) {
   return {
     async query(text: string, values?: unknown[]) {
-      if (failOn?.(text)) throw new Error("radnik je pao usred upisa potpisa");
+      if (failOn?.(text)) throw new Error("upis potpisa nije stigao do baze");
+      await db.query("SELECT set_config('app.session_token', '', true)");
       await db.exec("SET LOCAL ROLE ductus_worker");
       try {
         return await db.query(text, values);
@@ -302,7 +332,9 @@ it("A07: izgubljen odgovor na commit i ponovljen isti zahtjev daju jednu revizij
       expect(await stored(db, documentId)).toEqual({ revisions: 0, segments: 0, receipts: 0 });
 
       // The first commit is done on the server; its answer never reaches the client.
-      expect(await post(server.port, "/api/v1/evidence/commit", request, "1", true)).toBe("lost");
+      expect(await post(server.port, "/api/v1/evidence/commit", request, "1", true)).toEqual({
+        lost: 200,
+      });
       expect(await stored(db, documentId)).toEqual({ revisions: 1, segments: 1, receipts: 1 });
       const [row] = await receiptRow(db, documentId);
       expect(row?.status).toBe("signed");
@@ -346,7 +378,54 @@ it("A07: izgubljen odgovor na commit i ponovljen isti zahtjev daju jednu revizij
   }
 });
 
-it("A07: radnik koji padne usred potpisa i nastavak potpisivanja daju jednu reviziju i jednu potpisanu potvrdu", async () => {
+it("A07: isti commit poslan dvaput dok prvi još traje daje jednu reviziju i jednu potvrdu", async () => {
+  const db = await createTestDatabase("main", { authority: true });
+  try {
+    const signer = testSigner(KEY_ID);
+    await prepare(db, signer);
+    const payloads = new InMemoryEvidencePayloadStore();
+    const main = mainOver(oneAtATime(appActor(db)));
+    const server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      databases: createDatabases(),
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      routes: [
+        createEvidenceOpenRoute(main),
+        createEvidenceCommitRouteFor(main, { signer: signer.provider, payloads }),
+      ],
+    });
+    try {
+      const { documentId, request } = await firstRevision(server.port, "1");
+
+      // The second send leaves before the first one's answer has come back.
+      const [first, second] = await Promise.all([
+        answered(post(server.port, "/api/v1/evidence/commit", request, "1")),
+        answered(post(server.port, "/api/v1/evidence/commit", request, "1")),
+      ]);
+      expect([first.status, second.status]).toEqual([200, 200]);
+      expect([first.body["duplicate"], second.body["duplicate"]].filter(Boolean)).toHaveLength(1);
+      for (const answer of [first, second]) {
+        expect(answer.body).toMatchObject({ revision: 1, receipt: { status: "signed" } });
+      }
+      const signature = (answer: Answer) =>
+        (answer.body.receipt as { signedReceipt: { signature: unknown } }).signedReceipt.signature;
+      expect(signature(first)).toStrictEqual(signature(second));
+      const [row] = await receiptRow(db, documentId);
+      expect(signature(first)).toStrictEqual(row?.signature);
+
+      expect(await stored(db, documentId)).toEqual({ revisions: 1, segments: 1, receipts: 1 });
+      expect(payloads.size).toBe(1);
+      expect(signer.provider.sign).toHaveBeenCalledTimes(1);
+    } finally {
+      await server.close();
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+it("A07: potpis koji nije upisan i nastavak potpisivanja daju jednu reviziju i jedan spremljen potpis", async () => {
   const db = await createTestDatabase("main", { authority: true });
   try {
     const workerSigner = testSigner(KEY_ID);
@@ -374,7 +453,9 @@ it("A07: radnik koji padne usred potpisa i nastavak potpisivanja daju jednu revi
       const pending = { revision: 1, receipt: { status: "pending_signature" } };
 
       // The commit is accepted for deferred signing; its answer is lost.
-      expect(await post(server.port, "/api/v1/evidence/commit", request, "2", true)).toBe("lost");
+      expect(await post(server.port, "/api/v1/evidence/commit", request, "2", true)).toEqual({
+        lost: 202,
+      });
       expect(await stored(db, documentId)).toEqual({ revisions: 1, segments: 1, receipts: 1 });
       expect(await receiptRow(db, documentId)).toEqual([
         { status: "pending_signature", signature: null },
@@ -384,7 +465,7 @@ it("A07: radnik koji padne usred potpisa i nastavak potpisivanja daju jednu revi
       expect(early.status).toBe(202);
       expect(early.body).toStrictEqual({ status: "duplicate", duplicate: true, ...pending });
 
-      // The first worker signs, then dies inside the attach: nothing is stored.
+      // The first worker signs; its attach never reaches the database: nothing is stored.
       const dying = workerOver(
         asWorker(db, (text) => text.includes("worker_attach_receipt_signature")),
         workerSigner,
