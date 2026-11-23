@@ -4,6 +4,7 @@
 // invented and carry the attribute names AAI@EduHr releases.
 // Ported from Ductus infra/fake-oidc/server.mjs (DAN-729). New here: the guard
 // (guard.ts) and the modes (modes.ts); `success` is the ported behaviour.
+import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,6 +29,15 @@ import {
   simulatedClaimsFor,
   type SimulatedAccount,
 } from "./simulated-accounts.ts";
+import {
+  assertStagingOptions,
+  DEPLOYMENT_HEADER,
+  DEPLOYMENT_VARIABLE,
+  isStagingMode,
+  STAGING,
+  stagingConfigFromEnv,
+  type StagingSettings,
+} from "./staging.ts";
 
 export type FakeOidcOptions = {
   readonly issuer: string;
@@ -41,6 +51,11 @@ export type FakeOidcOptions = {
    * the login page's form, with or without them.
    */
   readonly accounts?: readonly SimulatedAccount[];
+  /**
+   * The staging mode (staging.ts): only with DUCTURA_DEPLOYMENT=staging in
+   * this process, with a public issuer and every address on APP_ORIGIN.
+   */
+  readonly staging?: StagingSettings;
 };
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -70,6 +85,16 @@ export function fakeOidcConfigFromEnv(env: Env): {
 } {
   assertFakeOidcAllowed(env);
   const port = listenPort(env.PORT);
+  // STG-OIDC: the staging service of render.staging.yaml. Its own rules
+  // (staging.ts); every interface, as Render routes to the container.
+  if (isStagingMode(env)) {
+    const staging = stagingConfigFromEnv(env);
+    return {
+      port,
+      host: "0.0.0.0",
+      options: { ...staging, mode: fakeOidcMode(env.FAKE_OIDC_MODE), accounts: [] },
+    };
+  }
   // F-019: the issuer and every redirect address are on this machine; any
   // other value stops the provider here, before it listens.
   const issuer = loopbackIssuer(env.ISSUER, `http://localhost:${port}`);
@@ -100,13 +125,28 @@ export function fakeOidcConfigFromEnv(env: Env): {
   };
 }
 
-function providerConfiguration(options: FakeOidcOptions): Configuration {
-  const { backchannelLogoutUri } = options;
+/**
+ * Staging: a signing key made at start and held only in this process. Without
+ * `jwks`, oidc-provider signs with its published development key, which any
+ * reader of the library could use; locally that stays as it was.
+ */
+function stagingSigningKeys(): NonNullable<Configuration["jwks"]> {
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   return {
+    keys: [
+      { ...privateKey.export({ format: "jwk" }), alg: "RS256", use: "sig", kid: randomUUID() },
+    ],
+  };
+}
+
+function providerConfiguration(options: FakeOidcOptions): Configuration {
+  const { backchannelLogoutUri, staging } = options;
+  return {
+    ...(staging === undefined ? {} : { jwks: stagingSigningKeys() }),
     clients: [
       {
-        client_id: "ductus-local",
-        client_secret: "ductus-local-only",
+        client_id: staging?.clientId ?? "ductus-local",
+        client_secret: staging?.clientSecret ?? "ductus-local-only",
         redirect_uris: [...options.redirectUris],
         post_logout_redirect_uris: [...options.postLogoutRedirectUris],
         backchannel_logout_uri: backchannelLogoutUri,
@@ -116,7 +156,7 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
       },
     ],
     pkce: { required: () => true },
-    cookies: { keys: ["ductus-fake-oidc-local-only"] },
+    cookies: { keys: [staging?.cookieKey ?? "ductus-fake-oidc-local-only"] },
     // Mode `expired`: the tokens are issued valid for one second. With the
     // default clock tolerance (15 s) the in-memory store still finds the access
     // token for that long and userinfo keeps answering; 0 drops it on expiry.
@@ -130,16 +170,17 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
       rpInitiatedLogout: {
         enabled: true,
         logoutSource(ctx, form) {
-          ctx.body = logoutPage(form);
+          ctx.body = logoutPage(form, staging !== undefined);
         },
       },
     },
     // oidc-provider refuses outgoing requests to loopback and private addresses
     // (SSRF protection); the app runs on one here. Only the one configured
-    // back-channel address goes without that check.
+    // back-channel address goes without that check, and only locally: in
+    // staging the address is public (APP_ORIGIN) and keeps the check.
     fetch(url, init) {
       const href = url instanceof Request ? url.url : new URL(url).href;
-      if (href === backchannelLogoutUri) {
+      if (staging === undefined && href === backchannelLogoutUri) {
         const { dispatcher: droppedDispatcher, ...rest } = (init ?? {}) as RequestInit & {
           dispatcher?: unknown;
         };
@@ -173,7 +214,10 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
       return grant;
     },
     findAccount(ctx, id) {
-      const claims = demoAccountClaims(id) ?? simulatedClaimsFor(id, options.accounts ?? []);
+      // Staging: the invented demo-* accounts only.
+      const claims =
+        demoAccountClaims(id) ??
+        (staging === undefined ? simulatedClaimsFor(id, options.accounts ?? []) : undefined);
       if (!claims) return undefined;
       return {
         accountId: id,
@@ -224,30 +268,22 @@ button:focus-visible { outline: 3px solid #faf9f5; outline-offset: 4px; }
 const button = (id: string, label: string): string =>
   `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(label)}</button>`;
 
-function loginPage(uid: string, accounts: readonly SimulatedAccount[]): string {
-  const buttons = [
-    ...Object.entries(ACCOUNTS).map(([id, account]) => button(id, account.name)),
-    ...accounts.map((account) =>
-      button(
-        simulatedAccountId(account),
-        `${account.givenName} ${account.familyName} (${account.domain}, ${account.role})`,
-      ),
-    ),
-  ].join("\n");
-  const action = `/interaction/${escapeHtml(uid)}/login`;
-  return `<!doctype html>
-<html lang="hr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Demo prijava</title><link rel="icon" href="/favicon.ico" type="image/svg+xml"><style>${PAGE_STYLE}</style></head>
-<body>
-<main>
-<span class="tag">Samo lokalno i CI</span>
-<h1>Demo prijava</h1>
-<p>Ovo nije AAI@EduHr. Lažni pružatelj prijave za lokalni rad i CI; računi su izmišljeni.</p>
-<form method="post" action="${action}">
-${buttons}
-</form>
-<h2>Račun bilo koje ustanove</h2>
+// The tag and the sentence of the pages: "local and CI", or the staging.
+function pageNote(staging: boolean, action: "prijave" | "odjave"): { tag: string; text: string } {
+  return staging
+    ? {
+        tag: "Samo testno okruženje",
+        text: `Ovo nije AAI@EduHr. Lažni pružatelj ${action} za testno okruženje; računi su izmišljeni.`,
+      }
+    : {
+        tag: "Samo lokalno i CI",
+        text: `Ovo nije AAI@EduHr. Lažni pružatelj ${action} za lokalni rad i CI; računi su izmišljeni.`,
+      };
+}
+
+// The form for an account of any institution; never in staging.
+function simulatedForm(action: string): string {
+  return `<h2>Račun bilo koje ustanove</h2>
 <p>Domena je AAI@EduHr domena ustanove (hrEduPersonHomeOrg), npr. fpzg.hr.</p>
 <form method="post" action="${action}">
 <label>Domena ustanove <input name="domena" required autocomplete="off" placeholder="fpzg.hr"></label>
@@ -259,7 +295,34 @@ ${Object.keys(SIMULATED_ROLES)
 <label>Korisničko ime (neobavezno) <input name="korisnik" autocomplete="off" placeholder="student"></label>
 <button type="submit">Prijavi se</button>
 </form>
-</main>
+`;
+}
+
+function loginPage(uid: string, accounts: readonly SimulatedAccount[], staging: boolean): string {
+  const buttons = [
+    ...Object.entries(ACCOUNTS).map(([id, account]) => button(id, account.name)),
+    ...accounts.map((account) =>
+      button(
+        simulatedAccountId(account),
+        `${account.givenName} ${account.familyName} (${account.domain}, ${account.role})`,
+      ),
+    ),
+  ].join("\n");
+  const action = `/interaction/${escapeHtml(uid)}/login`;
+  const note = pageNote(staging, "prijave");
+  return `<!doctype html>
+<html lang="hr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo prijava</title><link rel="icon" href="/favicon.ico" type="image/svg+xml"><style>${PAGE_STYLE}</style></head>
+<body>
+<main>
+<span class="tag">${note.tag}</span>
+<h1>Demo prijava</h1>
+<p>${note.text}</p>
+<form method="post" action="${action}">
+${buttons}
+</form>
+${staging ? "" : simulatedForm(action)}</main>
 </body>
 </html>`;
 }
@@ -268,16 +331,17 @@ ${Object.keys(SIMULATED_ROLES)
 // xsrf value). The one button ends the session here; the script presses it,
 // so a sign-out in Ductus returns to Ductus without a stop, and without JS
 // the button stays.
-function logoutPage(form: string): string {
+function logoutPage(form: string, staging: boolean): string {
+  const note = pageNote(staging, "odjave");
   return `<!doctype html>
 <html lang="hr">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo odjava</title><link rel="icon" href="/favicon.ico" type="image/svg+xml"><style>${PAGE_STYLE}</style></head>
 <body>
 <main>
-<span class="tag">Samo lokalno i CI</span>
+<span class="tag">${note.tag}</span>
 <h1>Demo odjava</h1>
-<p>Ovo nije AAI@EduHr. Odjava kod lažnog pružatelja prijave za lokalni rad i CI.</p>
+<p>${note.text}</p>
 ${form}
 <button autofocus type="submit" form="op.logoutForm" name="logout" value="yes">Odjavi se</button>
 </main>
@@ -293,8 +357,10 @@ ${form}
 function accountOf(
   form: URLSearchParams,
   accounts: readonly SimulatedAccount[],
+  staging: boolean,
 ): string | undefined {
   const chosen = form.get("account");
+  if (staging) return chosen !== null && isDemoAccountId(chosen) ? chosen : undefined;
   if (chosen !== null) {
     if (isDemoAccountId(chosen)) return chosen;
     return simulatedClaimsFor(chosen, accounts) === undefined ? undefined : chosen;
@@ -327,19 +393,31 @@ function assertLoopbackOptions(options: FakeOidcOptions): void {
 export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
   assertFakeOidcAllowed(process.env);
   if (env !== undefined) assertFakeOidcAllowed(env);
-  assertLoopbackOptions(options);
+  // STG-OIDC: staging options only in a staging process; a variable this
+  // process does not have never opens them. Without them, loopback (F-019).
+  const staging = options.staging !== undefined;
+  if (staging) {
+    if (!isStagingMode(process.env) || (env !== undefined && !isStagingMode(env)))
+      throw new Error(`staging options need ${DEPLOYMENT_VARIABLE}=${STAGING} in this process`);
+    assertStagingOptions({ ...options, staging: options.staging });
+  } else {
+    assertLoopbackOptions(options);
+  }
   // A caller without the types (plain JS) gets no silent `success` for a typo.
   fakeOidcMode(options.mode);
   const provider = new Provider(options.issuer, providerConfiguration(options));
+  // Staging runs behind Render's TLS proxy: the request is https as the
+  // proxy's X-Forwarded-Proto says, so the provider sets Secure cookies.
+  if (staging) provider.proxy = true;
 
   async function handleInteraction(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const details = await provider.interactionDetails(req, res);
     if (req.method === "GET") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      res.end(loginPage(details.uid, options.accounts ?? []));
+      res.end(loginPage(details.uid, options.accounts ?? [], staging));
       return;
     }
-    const accountId = accountOf(await readForm(req), options.accounts ?? []);
+    const accountId = accountOf(await readForm(req), options.accounts ?? [], staging);
     if (req.method !== "POST" || accountId === undefined) {
       res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
       res.end("Nepoznat demo račun ili neispravna domena, uloga ili korisničko ime.");
@@ -366,6 +444,8 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
   const providerCallback = provider.callback();
 
   return createServer((req, res) => {
+    // STG-OIDC: every answer of the staging provider names its deployment.
+    if (staging) res.setHeader(DEPLOYMENT_HEADER, STAGING);
     // Mode `unavailable`: as a provider that is down behind its proxy.
     if (options.mode === "unavailable") {
       res.writeHead(503, { "content-type": "text/plain; charset=utf-8", "retry-after": "60" });

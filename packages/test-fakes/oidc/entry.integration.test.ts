@@ -29,3 +29,21 @@ test("the entry point listens on 127.0.0.1, not on every interface", async () =>
   const line = await firstLine({ NODE_ENV: "test", PORT: "0" });
   expect(line).toMatch(/listening 127\.0\.0\.1:\d+$/);
 }, 20_000);
+
+// STG-OIDC: only with DUCTURA_DEPLOYMENT=staging does the entry point listen on
+// every interface, for Render; the values are invented test values.
+test("the entry point in staging listens on 0.0.0.0 with the public issuer", async () => {
+  const line = await firstLine(
+    Object.fromEntries([
+      ["PORT", "0"],
+      ["DUCTURA_DEPLOYMENT", "staging"],
+      ["APP_ORIGIN", "https://ductura-staging.vercel.app"],
+      ["ISSUER", "https://ductura-fake-oidc-staging.onrender.com"],
+      ["FAKE_OIDC_CLIENT_SECRET", "test-client-secret-0123456789abcdef"],
+      ["FAKE_OIDC_COOKIE_KEY", "test-cookie-key-0123456789abcdefghij"],
+    ]),
+  );
+  expect(line).toMatch(
+    /on https:\/\/ductura-fake-oidc-staging\.onrender\.com, listening 0\.0\.0\.0:\d+$/,
+  );
+}, 20_000);

@@ -58,6 +58,36 @@ services:
       - key: EVIDENCE_STORAGE_DOMAINS
         sync: false
 
+  # The fake OIDC provider of the staging (STG-OIDC; owner decision of
+  # 23. 11. 2026., "Idemo B"): its own service, never a route of the server
+  # (U9). The image fixes DUCTURA_DEPLOYMENT=staging, so it starts only with a
+  # public issuer outside ductura.org, every redirect on APP_ORIGIN and the two
+  # secrets below (packages/test-fakes/oidc/staging.ts). Its address is
+  # OIDC_ISSUER of the server. Replaced by AAI@EduHr (a) by changing only
+  # DUCTUS_AUTH_PROVIDER and OIDC_* of the server (docs/STAGING.md).
+  - type: web
+    name: ductura-fake-oidc-staging
+    runtime: docker
+    region: frankfurt
+    branch: migracija/kopija-ductus-backend
+    autoDeployTrigger: "off"
+    dockerfilePath: ./infra/fake-oidc/Dockerfile
+    dockerContext: .
+    healthCheckPath: /.well-known/openid-configuration
+    envVars:
+      # The staging front on Vercel, the same value as APP_ORIGIN of the server.
+      - key: APP_ORIGIN
+        sync: false
+      # This service's own address, e.g. https://ductura-fake-oidc-staging.onrender.com.
+      - key: ISSUER
+        sync: false
+      # The same value as OIDC_CLIENT_SECRET of the server; at least 32 characters.
+      - key: FAKE_OIDC_CLIENT_SECRET
+        sync: false
+      # Signs the provider's cookies; its own value, at least 32 characters.
+      - key: FAKE_OIDC_COOKIE_KEY
+        sync: false
+
 databases:
   # Main database (ductus). ductus_legal would live in this instance too
   # (db/legal/local/create-database.sql).

@@ -1,0 +1,11 @@
+# Build context of infra/fake-oidc/Dockerfile (BuildKit reads <Dockerfile>.dockerignore).
+# Local state, history, tests and every .env stay out of the image.
+.git
+**/node_modules
+dist
+.stack
+.local
+coverage
+**/*.test.ts
+# Every name that starts with .env (.env.local, .envrc, .env-secrets), at any depth.
+**/.env*
