@@ -85,7 +85,9 @@ export function createRevisionRestoreRoute(record: RevisionRestore): Route {
             ? { outcome: result.outcome, revision: result.revision }
             : { outcome: result.outcome };
       const later =
-        body === undefined || !("revision" in body) || body.revision > parsed.value.fromRevision;
+        result.status !== "ok" ||
+        !("revision" in result) ||
+        result.revision > parsed.value.fromRevision;
       if (body === undefined || !later || !Value.Check(SCHEMA, body)) {
         const reason = body === undefined ? result.status : "answer outside the contract";
         reportServerError("route", new Error(reason), requestIdOf(response), ROUTE.id);
