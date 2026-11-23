@@ -332,29 +332,116 @@ REVOKE CREATE ON SCHEMA evidence FROM ductus_evidence;
 REVOKE USAGE ON SCHEMA institution, identity FROM ductus_evidence;
 
 -- migrate:down
--- Local only; staging and production only go forward (docs/BACKEND.md §6).
--- The three answers keep the column source; the course's switch is gone, so it
--- reads 'assignment' or 'default' only.
+-- Local only; staging and production only go forward (Ductus docs/BACKEND.md §6).
+-- Restores the functions of 20261213110100 (without the column source) and the
+-- bodies of app.input_rhythm_record and _read of 20261213100300. The column
+-- audit.input_rhythm_switch_event.enabled keeps no NOT NULL: a clearing row
+-- with enabled null may already be in the append-only trail, which no down
+-- deletes.
 SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA app, audit TO ductus_identity;
 GRANT CREATE ON SCHEMA app TO ductus_evidence;
 SET LOCAL ROLE ductus_identity;
+CREATE OR REPLACE FUNCTION app.input_rhythm_record(p_document_id text, p_gaps_ms integer[])
+RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_access record;
+BEGIN
+  PERFORM institution.require_actor();
+  IF p_gaps_ms IS NULL OR array_ndims(p_gaps_ms) IS DISTINCT FROM 1 OR cardinality(p_gaps_ms) < 1
+     OR cardinality(p_gaps_ms) > 5000 OR EXISTS (
+       SELECT 1 FROM unnest(p_gaps_ms) g WHERE g IS NULL OR g < 0 OR g > 3600000) THEN
+    RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  SELECT * INTO v_access FROM app.origin_work_access(p_document_id, true);
+  RETURN app.input_rhythm_add(v_access.assignment_id, v_access.student_id, p_gaps_ms);
+END
+$$;
+CREATE OR REPLACE FUNCTION app.input_rhythm_read(p_document_id text)
+RETURNS TABLE (id uuid, gaps_ms integer[], recorded_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_access record;
+BEGIN
+  PERFORM institution.require_actor();
+  SELECT * INTO v_access FROM app.origin_work_access(p_document_id, false);
+  RETURN QUERY SELECT * FROM app.input_rhythm_of(v_access.assignment_id, v_access.student_id);
+END
+$$;
 DROP FUNCTION app.input_rhythm_course_switch_read(uuid);
 DROP FUNCTION app.input_rhythm_course_switch(uuid, boolean);
 DROP FUNCTION app.input_rhythm_switch_clear(uuid);
+DROP FUNCTION app.input_rhythm_state(text);
+DROP FUNCTION app.input_rhythm_switch_read(uuid);
+DROP FUNCTION app.input_rhythm_switch(uuid, boolean);
+DROP FUNCTION app.input_rhythm_on(uuid);
 DROP FUNCTION app.input_rhythm_course_view(uuid);
+DROP FUNCTION app.input_rhythm_setting_view(uuid);
 DROP TABLE audit.input_rhythm_course_switch_event;
-CREATE OR REPLACE FUNCTION app.input_rhythm_setting_view(p_assignment_id uuid)
-RETURNS TABLE (enabled boolean, source text, changed_by_role text, changed_by_name text, changed_at timestamptz)
+
+CREATE FUNCTION app.input_rhythm_setting_view(p_assignment_id uuid)
+RETURNS TABLE (enabled boolean, changed_by_role text, changed_by_name text, changed_at timestamptz)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
-  SELECT coalesce(r.enabled, true), CASE WHEN r.enabled IS NULL THEN 'default' ELSE 'assignment' END,
-         r.changed_by_role, CASE WHEN n.user_id IS NOT NULL THEN n.given_name || ' ' || n.family_name END,
+  SELECT coalesce(r.enabled, true), r.changed_by_role,
+         CASE WHEN n.user_id IS NOT NULL THEN n.given_name || ' ' || n.family_name END,
          r.changed_at
     FROM app.current_actor() a
     LEFT JOIN app.input_rhythm_assignment_row(p_assignment_id) r ON true
     LEFT JOIN identity.person_name n ON n.user_id = r.changed_by AND n.institution_id = a.institution_id
 $$;
+CREATE FUNCTION app.input_rhythm_switch(p_assignment_id uuid, p_enabled boolean)
+RETURNS TABLE (enabled boolean, changed_by_role text, changed_by_name text, changed_at timestamptz)
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_role text;
+  v_actor record;
+BEGIN
+  SELECT r.user_id, r.institution_id INTO v_actor FROM institution.require_actor() r;
+  IF p_enabled IS NULL THEN
+    RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  v_role := app.input_rhythm_require_teacher(p_assignment_id);
+  IF app.input_rhythm_assignment_put(p_assignment_id, p_enabled, v_role) IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  INSERT INTO audit.input_rhythm_switch_event (institution_id, assignment_id, enabled, actor_id, actor_role)
+  VALUES (v_actor.institution_id, p_assignment_id, p_enabled, v_actor.user_id, v_role);
+  RETURN QUERY SELECT * FROM app.input_rhythm_setting_view(p_assignment_id);
+END
+$$;
+CREATE FUNCTION app.input_rhythm_switch_read(p_assignment_id uuid)
+RETURNS TABLE (enabled boolean, changed_by_role text, changed_by_name text, changed_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM app.input_rhythm_require_teacher(p_assignment_id);
+  RETURN QUERY SELECT * FROM app.input_rhythm_setting_view(p_assignment_id);
+END
+$$;
+CREATE FUNCTION app.input_rhythm_state(p_document_id text)
+RETURNS TABLE (enabled boolean, changed_by_role text, changed_by_name text, changed_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_access record;
+BEGIN
+  PERFORM institution.require_actor();
+  SELECT * INTO v_access FROM app.origin_work_access(p_document_id, false);
+  RETURN QUERY SELECT * FROM app.input_rhythm_setting_view(v_access.assignment_id);
+END
+$$;
+REVOKE ALL ON FUNCTION app.input_rhythm_setting_view(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.input_rhythm_switch(uuid, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.input_rhythm_switch_read(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.input_rhythm_state(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.input_rhythm_switch(uuid, boolean) TO ductus_app;
+GRANT EXECUTE ON FUNCTION app.input_rhythm_switch_read(uuid) TO ductus_app;
+GRANT EXECUTE ON FUNCTION app.input_rhythm_state(text) TO ductus_app;
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_evidence;
