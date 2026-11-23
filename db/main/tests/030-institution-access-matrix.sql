@@ -122,7 +122,7 @@ SELECT bag_eq(
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
         'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
         'declaration.is_fresh(declaration.statement,text,bigint,integer)',
-        'declaration.bound_declaration_of(uuid,uuid,uuid)'],
+        'declaration.bound_declaration_of(uuid,uuid,uuid)', 'declaration.submission_gate(text,bigint)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -134,8 +134,9 @@ SELECT bag_eq(
        AND has_function_privilege(r.rolname, p.oid, 'EXECUTE') $$,
   ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
         'ductus_app declaration.upload_attachment(uuid,text,bytea)',
+        'ductus_app declaration.submission_gate(text,bigint)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
-  'the web role executes only the three student RPCs, and identity only the teacher''s bound-declaration helper'
+  'the web role executes only the three student RPCs and the submission gate, and identity only the teacher''s bound-declaration helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname
@@ -530,6 +531,7 @@ SELECT bag_eq(
     'withdrawal_setting_of(p_assignment_id uuid)',
     'submission_withdrawal_setting(p_assignment_id uuid) definer app',
     'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app',
+    'set_declaration_required(p_assignment_id uuid, p_required boolean) definer app',
     'reject_work_milestone_event_change()',
     'reject_milestone_template_change()',
     'is_milestone_title(p_title text)',
