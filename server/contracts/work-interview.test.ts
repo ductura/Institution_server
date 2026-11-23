@@ -20,7 +20,7 @@ function propertyNames(schema: unknown, found: string[] = []): string[] {
 }
 
 describe("work interview contracts", () => {
-  it("name the seven routes of the preparation", () => {
+  it("name the eight routes of the preparation", () => {
     expect(workInterviewRoutes.map((route) => route.id)).toEqual([
       "work.interview.get",
       "work.interview-questions.post",
@@ -29,6 +29,7 @@ describe("work interview contracts", () => {
       "work.interview-appointment.put",
       "work.interview-held.post",
       "work.interview-explanations.post",
+      "work.interview-notes.post",
     ]);
   });
 
