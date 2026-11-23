@@ -41,6 +41,7 @@ SELECT bag_eq(
   ARRAY['work_interview: work_interview_owner ALL to ductus_identity',
         'work_interview_question: work_interview_question_owner ALL to ductus_identity',
         'work_interview_explanation: work_interview_explanation_owner ALL to ductus_identity',
+        'work_interview_note: work_interview_note_owner ALL to ductus_identity',
         'work_interview_event: work_interview_event_owner ALL to ductus_identity'],
   'only the owner''s policies: no role reads or writes the tables but through the RPCs');
 SELECT is_empty(

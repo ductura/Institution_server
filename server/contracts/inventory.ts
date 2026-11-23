@@ -196,6 +196,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  "app/api/works/[documentId]/interview/notes/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7088640732",
+  },
   "app/api/works/[documentId]/interview/pdf/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
