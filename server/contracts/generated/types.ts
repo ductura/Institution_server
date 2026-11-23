@@ -1310,6 +1310,13 @@ export type Operations = {
     success: { status: 201; body: { "threadId": string } | { "commentId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
   };
+  "work.comments.publish-selected.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "draftIds": (string)[] };
+    success: { status: 200; body: { "published": number }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
   "work.comments.publish.post": {
     params: { "documentId": string };
     query: undefined;
