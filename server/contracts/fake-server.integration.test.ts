@@ -153,9 +153,10 @@ describe("fake server over HTTP", () => {
     // SRV-1606: five framing vectors for work.return-for-revision.post.
     // SRV-1230: work.assistant-match.post five.
     // PIL-P1-RITAM-SRV: work.input-rhythm.post, .delete and teacher.input-rhythm.put five each.
+    // PIL-K-RAZGOVOR-SRV: work.interview-notes.post two.
     // INT-21 C: work.restore.post five.
     // work.comments.publish-selected.post five.
-    expect(VECTORS.length - overHttp.length).toBe(552);
+    expect(VECTORS.length - overHttp.length).toBe(554);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

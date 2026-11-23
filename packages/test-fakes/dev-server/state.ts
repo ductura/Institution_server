@@ -329,6 +329,8 @@ export type State = {
         question: Operations["work.interview-questions.post"]["success"]["body"];
       }[];
       explanations: Operations["work.interview-explanations.post"]["success"]["body"][];
+      /** The student's notes (PIL-K-RAZGOVOR-SRV), with their SHA-256. */
+      notes: Operations["work.interview-notes.post"]["success"]["body"][];
       appointment: Operations["work.interview.get"]["success"]["body"]["appointment"];
       heldOn: string | null;
     }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadAuthConfig } from "../external/srce-auth/index.ts";
 import {
+  attemptExpired,
   authTimeRefusal,
   finishLogin,
   LOGIN_COOKIE_NAME,
@@ -461,9 +462,9 @@ describe("the first login after a sign-out", () => {
     const authorize = new URL(response.headers.get("location")!);
     expect(authorize.searchParams.has("prompt")).toBe(false);
     expect(authorize.searchParams.has("max_age")).toBe(false);
-    // The attempt record is the one from before INT-20d.
+    // No freshSince: the attempt record is the one from before INT-20d, plus its start (INT-20g).
     expect(Object.keys(attemptOf(response)).sort()).toEqual(
-      ["codeVerifier", "nonce", "returnTo", "state", "v"].sort(),
+      ["codeVerifier", "nonce", "returnTo", "startedAt", "state", "v"].sort(),
     );
   });
 
@@ -699,5 +700,81 @@ describe("the first login after a sign-out", () => {
     expect((await login()).status).toBe(303);
     expect(deps.openSession).toHaveBeenCalledTimes(2);
     expect(errors).not.toHaveBeenCalled();
+  });
+});
+
+// INT-20g: the server bounds the age of an attempt itself, so a cookie kept
+// past its Max-Age (or replayed later) does not finish an old attempt.
+describe("the age of a login attempt", () => {
+  const CALLBACK = `${APP}/api/v1/auth/callback`;
+  const START = Date.UTC(2030, 0, 1, 12, 0, 0);
+  const LIMIT = 300 + config.clockToleranceSeconds;
+  const recordOf = (cookie: string) =>
+    JSON.parse(
+      Buffer.from(cookie.slice(cookie.indexOf("=") + 1), "base64url").toString("utf8"),
+    ) as Record<string, unknown>;
+  const forge = (record: Record<string, unknown>) =>
+    `${LOGIN_COOKIE_NAME}=${Buffer.from(JSON.stringify(record)).toString("base64url")}`;
+
+  beforeEach(() => vi.useFakeTimers({ toFake: ["Date"], now: START }));
+  afterEach(() => vi.useRealTimers());
+
+  it("keeps the second the attempt started on its record", async () => {
+    const { cookie } = await begin();
+    expect(recordOf(cookie).startedAt).toBe(START / 1000);
+  });
+
+  it("finishes an attempt at the edge of its life", async () => {
+    const { authorize, cookie } = await begin();
+    vi.setSystemTime(START + LIMIT * 1000);
+    const done = await callback(idp.approve(authorize, CALLBACK), cookie);
+    expect(done.status).toBe(303);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an attempt one second older, before the provider is asked", async () => {
+    const { authorize, cookie } = await begin();
+    vi.setSystemTime(START + (LIMIT + 1) * 1000);
+    const refused = await callback(idp.approve(authorize, CALLBACK), cookie);
+    await expectRefused(refused);
+    expect(setCookies(refused).get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0$/);
+    expect(idp.tokenRequests).toHaveLength(0);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "attempt_expired");
+  });
+
+  it("refuses an attempt that says it started in the future", async () => {
+    const { authorize, cookie } = await begin();
+    const ahead = START / 1000 + config.clockToleranceSeconds + 1;
+    const refused = await callback(
+      idp.approve(authorize, CALLBACK),
+      forge({ ...recordOf(cookie), startedAt: ahead }),
+    );
+    await expectRefused(refused);
+    expect(idp.tokenRequests).toHaveLength(0);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "attempt_expired");
+  });
+
+  it("refuses a record without a start, or with one that is not a whole number of seconds", async () => {
+    const { authorize, cookie } = await begin();
+    const older = recordOf(cookie);
+    delete older.startedAt;
+    for (const forged of [
+      forge(older),
+      ...["1", 1.5, -1, 0, null].map((startedAt) => forge({ ...older, startedAt })),
+    ]) {
+      await expectRefused(await callback(idp.approve(authorize, CALLBACK), forged));
+    }
+    expect(idp.tokenRequests).toHaveLength(0);
+    expect(errors).toHaveBeenCalledWith("login failed", "callback", "no_attempt");
+  });
+
+  it("bounds the age on both sides within the clock tolerance", () => {
+    const now = 1_900_000_000;
+    const tolerance = config.clockToleranceSeconds;
+    expect(attemptExpired(now, tolerance, now)).toBe(false);
+    expect(attemptExpired(now - LIMIT, tolerance, now)).toBe(false);
+    expect(attemptExpired(now - LIMIT - 1, tolerance, now)).toBe(true);
+    expect(attemptExpired(now + tolerance, tolerance, now)).toBe(false);
+    expect(attemptExpired(now + tolerance + 1, tolerance, now)).toBe(true);
   });
 });
