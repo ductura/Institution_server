@@ -125,7 +125,9 @@ describe("publish-selected", () => {
     createdWindow: AT,
   });
 
+  // The first query takes the lock of the drafts (one void row), then the list, then the publish.
   it("publishes when the ids are exactly the caller's drafts", async () => {
+    query.mockResolvedValueOnce(rows({}));
     query.mockResolvedValueOnce(rows(draft(ID), draft(ID2)));
     query.mockResolvedValueOnce(rows({ published: 2 }));
     const response = await send("POST", PATH, { draftIds: [ID2, ID] });
@@ -137,9 +139,10 @@ describe("publish-selected", () => {
     ["a draft was not seen", [ID]],
     ["an id comes twice", [ID, ID, ID2]],
   ])("answers 409 and publishes nothing when %s", async (_, draftIds) => {
+    query.mockResolvedValueOnce(rows({}));
     query.mockResolvedValueOnce(rows(draft(ID), draft(ID2)));
     expect((await send("POST", PATH, { draftIds })).status).toBe(409);
-    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(2);
   });
 
   it.each([

@@ -144,10 +144,7 @@ describe("createCommentDelay", () => {
           query: async (text: string, sent: readonly unknown[] = []) => {
             calls.push(text);
             values.push(sent);
-            const rows =
-              calls.length === 1
-                ? [{ pg_advisory_xact_lock: "" }]
-                : (answers[calls.length - 2] ?? []);
+            const rows = calls.length === 1 ? [{}] : (answers[calls.length - 2] ?? []);
             return { rows, rowCount: rows.length };
           },
         } as never)) as WithActor;
