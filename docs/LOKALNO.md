@@ -81,8 +81,20 @@ Sve je u `.local/` u korijenu repoa, koji je u `.gitignore`. Ništa odavde ne id
 | `provisioning-token` | Isti `DUCTURA_PROVISIONING_TOKEN`, jedan redak, za lokalni Aplication_server (Ductus#2028 §2).            |
 | `database-url`       | Neobavezno: `DATABASE_URL` kad nije u okolini.                                                            |
 | `oidc-racuni.json`   | Neobavezno: imenovani računi simulatora (niže).                                                           |
+| `nadzor.json`        | Dok `pnpm lokalno` radi: PID nadzornika, PID servera, naredba i mapa servera; bez okoline i tajni.        |
 
 Nove tajne: obriši `lokalno-tajne.json` i pokreni ponovno. Oštećena datoteka zaustavlja pokretanje, nikad se ne zamjenjuje tiho.
+
+### Ponovno pokretanje servera iz testa (VS-1.13, A06)
+
+Kad bilo koji proces stoga izađe, `pnpm lokalno` gasi cijeli stog. Iznimka je najavljeno ponovno pokretanje servera, koje sistemski test web fronta koristi na Windowsu (`scripts/lokalno/nadzor.ts`):
+
+1. Test upiše `.local/nadzor-server.stani` i ugasi proces servera. Na Windowsu je to uvijek tvrdo gašenje (TerminateProcess).
+2. Nadzornik ne gasi stog, nego čeka zahtjev za pokretanje najviše 120 s.
+3. Test provjeri da proces više ne postoji, da port 4000 ne sluša i da provjera zdravlja ne prolazi. Tada upiše `.local/nadzor-server.pokreni`.
+4. Nadzornik pokreće istu naredbu s okolinom koju drži u memoriji i ažurira `nadzor.json`.
+
+Svaki zahtjev vrijedi za jedno gašenje. Izlaz servera bez najave i dalje gasi cijeli stog. Na Linuxu (CI) se ovo ne koristi: tamo stog preuzima `stog-bez-nadzora.mjs` web fronta.
 
 ## Računi simulatora
 

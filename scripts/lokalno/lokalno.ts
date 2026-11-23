@@ -30,6 +30,13 @@ import {
 } from "./config.ts";
 import { provision } from "./database.ts";
 import { listening, prepareEvidence, startS3 } from "./dokazi.ts";
+import {
+  clearSupervisorFiles,
+  supervisorState,
+  takeStopRequest,
+  waitForStartRequest,
+  writeSupervisorState,
+} from "./nadzor.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 /** Local files of this checkout, never committed (.gitignore). */
@@ -114,6 +121,23 @@ function runOnce(args: string[], env: Record<string, string>): Promise<number> {
   });
 }
 
+/** The server's command line, the same at every start. */
+export const serverArgs = (): string[] => [
+  "--disallow-code-generation-from-strings",
+  join(ROOT, "dist", "server.js"),
+];
+
+/** Starts the server and waits until /api/v1/health answers 200; null if it does not. */
+export async function startServer(
+  options: StackOptions,
+  env: Record<string, string>,
+): Promise<ChildProcess | null> {
+  const app = startChild("server", serverArgs(), env);
+  if (await ready(`http://127.0.0.1:${options.serverPort}/api/v1/health`, app, 30_000)) return app;
+  app.kill();
+  return null;
+}
+
 /**
  * Starts the provider, the local S3 (with `evidence`, INT-08) and the server;
  * the children run until stopped. `server` already carries the EVIDENCE_*
@@ -148,13 +172,8 @@ export async function startStack(
       throw new Error("the local S3 did not start");
     }
   }
-  const app = startChild(
-    "server",
-    ["--disallow-code-generation-from-strings", join(ROOT, "dist", "server.js")],
-    { ...base, ...server },
-  );
-  if (!(await ready(`http://127.0.0.1:${options.serverPort}/api/v1/health`, app, 30_000))) {
-    app.kill();
+  const app = await startServer(options, { ...base, ...server });
+  if (app === null) {
     for (const child of children) child.kill();
     throw new Error("the server did not answer /api/v1/health with 200");
   }
@@ -189,7 +208,8 @@ async function main(): Promise<void> {
     target,
     s3Port: PORTS.s3,
   });
-  const children = await startStack(options, serverEnv(options, target, secrets, evidence), base, {
+  const serverVariables = serverEnv(options, target, secrets, evidence);
+  const children = await startStack(options, serverVariables, base, {
     setup: evidence,
     localDir: LOCAL_DIR,
   });
@@ -217,11 +237,50 @@ async function main(): Promise<void> {
     if (stopping) return;
     stopping = true;
     for (const child of children) if (child.exitCode === null) child.kill();
+    clearSupervisorFiles(LOCAL_DIR);
     process.exitCode = code;
   };
   process.once("SIGINT", () => stop(0));
   process.once("SIGTERM", () => stop(0));
-  for (const child of children) child.once("exit", () => stop(stopping ? 0 : 1));
+
+  // VS-1.13 (A06), nadzor.ts: an announced exit of the server is a planned
+  // restart; the supervisor starts the same command with the same environment
+  // when the test asks for it. Any other exit stops the stack as before.
+  const server = children.at(-1)!;
+  const record = (app: ChildProcess): void =>
+    writeSupervisorState(
+      LOCAL_DIR,
+      supervisorState(process.pid, {
+        pid: app.pid ?? 0,
+        argv: [process.execPath, ...serverArgs()],
+        cwd: ROOT,
+      }),
+    );
+  const watchServer = (app: ChildProcess): void => {
+    app.once("exit", () => {
+      if (stopping) return;
+      if (!takeStopRequest(LOCAL_DIR)) return stop(1);
+      console.log("[nadzor] server stopped on request; waiting for the start request (VS-1.13).");
+      void (async () => {
+        const next = (await waitForStartRequest(LOCAL_DIR))
+          ? await startServer(options, { ...base, ...serverVariables })
+          : null;
+        if (stopping) {
+          next?.kill();
+          return;
+        }
+        if (next === null) return stop(1);
+        children[children.indexOf(app)] = next;
+        record(next);
+        watchServer(next);
+        console.log(`[nadzor] server started again, PID ${next.pid}.`);
+      })();
+    });
+  };
+  for (const child of children)
+    if (child !== server) child.once("exit", () => stop(stopping ? 0 : 1));
+  record(server);
+  watchServer(server);
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
