@@ -54,6 +54,11 @@ it("stores shared comments under ductus_app without changing the work or its rev
           WHERE d.id = $1 ORDER BY r.revision`,
         [WORK.documentId],
       );
+    // Revision 1 of Ana's work, as 231-comment-revision.sql commits it.
+    await db.exec(
+      "SELECT pg_temp.call('ana', 'pkg-a', 'request-1', pg_temp.descriptor(), 0, repeat('a', 64)," +
+        " repeat('d', 64), repeat('b', 64))",
+    );
     const before = (await evidence()).rows;
     const anchor = {
       nodeId: NODE,
@@ -63,13 +68,17 @@ it("stores shared comments under ductus_app without changing the work or its rev
       prefix: " ",
       suffix: "",
     };
-    const create = (value: typeof anchor | null) =>
+    const create = (value: typeof anchor | null, revision: number | undefined = 1) =>
       withActor(TEACHER, (tx) =>
-        execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: value }),
+        execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: value, revision }),
       );
     expect(await create({ ...anchor, quote: "nacrt" })).toEqual({ status: 409 });
     expect((await create(anchor)).status).toBe(200);
     expect((await create(null)).status).toBe(200);
+    // A teacher must name a revision that exists (INT-15-SRV).
+    for (const revision of [undefined, 2]) {
+      await expect(create(null, revision)).rejects.toMatchObject({ code: "ZD422" });
+    }
 
     const list = (token: string) => withActor(token, (tx) => execute(tx, "list", WORK));
     for (const token of [TEACHER, STUDENT]) {
@@ -79,8 +88,8 @@ it("stores shared comments under ductus_app without changing the work or its rev
         status: 200,
         body: {
           comments: expect.arrayContaining([
-            expect.objectContaining({ ...comment, anchor }),
-            expect.objectContaining({ ...comment, anchor: null }),
+            expect.objectContaining({ ...comment, anchor, revision: 1 }),
+            expect.objectContaining({ ...comment, anchor: null, revision: 1 }),
           ]),
         },
       });

@@ -246,6 +246,8 @@ export type Comment = {
   readonly body: string;
   /** The anchor of the thread's first comment, else null. */
   readonly anchor: Record<string, unknown> | null;
+  /** The revision of the work the thread was written on (INT-15-SRV); a reply has its thread's. */
+  readonly revision: number | null;
   readonly at: string;
   deletedAt: string | null;
 };

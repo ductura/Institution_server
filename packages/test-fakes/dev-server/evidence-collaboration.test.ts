@@ -207,8 +207,17 @@ describe("dev fake server: live view and collaboration", () => {
       startHint: 0,
       endHint: 10,
     };
+    // INT-15-SRV: a teacher's thread names a revision that exists (here 1 to 2).
+    state.works.find((w) => w.documentId === IDS.document)!.revision = 2;
+    for (const revision of [undefined, 0, 3]) {
+      const refused = await send(state, "/api/v1/comments/create", {
+        body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document, revision },
+        headers: teacher,
+      });
+      expect([revision, refused.status]).toEqual([revision, 422]);
+    }
     const created = await send(state, "/api/v1/comments/create", {
-      body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document },
+      body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document, revision: 1 },
       headers: teacher,
     });
     expect(created.status).toBe(200);
@@ -230,10 +239,16 @@ describe("dev fake server: live view and collaboration", () => {
     expect(contractProblems("collaboration.comments.post", list)).toEqual([]);
     expect(list.json).toMatchObject({
       comments: [
-        { authorRole: "teacher", isOwn: true, state: "answered" },
-        { authorRole: "student", body: null, position: 1 },
+        { authorRole: "teacher", isOwn: true, state: "answered", revision: 1 },
+        { authorRole: "student", body: null, position: 1, revision: 1 },
       ],
     });
+    // The owning student may open a thread without a revision.
+    const own = await send(state, "/api/v1/comments/create", {
+      body: { anchor: null, body: "Izmišljeno pitanje.", documentId: IDS.document },
+      headers: student,
+    });
+    expect(own.status).toBe(200);
     const stranger = await send(state, "/api/v1/comments/list", {
       body: { documentId: IDS.document },
       headers: await signIn(state, "student-2"),

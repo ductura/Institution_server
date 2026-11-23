@@ -24,7 +24,8 @@
             "endHint": 28
           },
           "body": "Izmišljeni komentar nastavnika.",
-          "documentId": "izmisljeni-rad-0001"
+          "documentId": "izmisljeni-rad-0001",
+          "revision": 3
         }
       },
       "response": {
@@ -51,7 +52,8 @@
         "body": {
           "anchor": null,
           "body": "Izmišljeni opći komentar.",
-          "documentId": "izmisljeni-rad-0001"
+          "documentId": "izmisljeni-rad-0001",
+          "revision": 3
         }
       },
       "response": {
@@ -59,6 +61,33 @@
         "contentType": "application/json",
         "body": {
           "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c04"
+        }
+      }
+    },
+    {
+      "name": "created-general-without-revision",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "action": "create"
+        },
+        "body": {
+          "anchor": null,
+          "body": "Izmišljeni opći komentar.",
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c05"
         }
       }
     },
@@ -127,7 +156,8 @@
               },
               "state": "answered",
               "createdWindow": "2026-11-03T10:05:00.000Z",
-              "deletedWindow": null
+              "deletedWindow": null,
+              "revision": 3
             },
             {
               "threadId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01",
@@ -139,7 +169,8 @@
               "anchor": null,
               "state": "answered",
               "createdWindow": "2026-11-03T11:00:00.000Z",
-              "deletedWindow": "2026-11-03T11:10:00.000Z"
+              "deletedWindow": "2026-11-03T11:10:00.000Z",
+              "revision": 3
             }
           ]
         }
@@ -538,6 +569,46 @@
           "messageKey": "errors.invalidInput",
           "status": 422,
           "requestId": "00000000-0000-4000-8000-000000000060"
+        }
+      }
+    },
+    {
+      "name": "invalid-revision",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "action": "create"
+        },
+        "body": {
+          "anchor": {
+            "nodeId": "0f1e2d3c-4b5a-4968-8776-655443322110",
+            "quote": "izmišljeni odlomak",
+            "prefix": "",
+            "suffix": " teksta",
+            "startHint": 10,
+            "endHint": 28
+          },
+          "body": "Izmišljeni komentar nastavnika.",
+          "documentId": "izmisljeni-rad-0001",
+          "revision": 0
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000065"
         }
       }
     },

@@ -569,10 +569,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "collaboration.comments.post": {
     before: [
+      commit("izmisljena-transakcija-1", 0),
       {
         path: "/api/v1/comments/create",
         as: "nastavnik",
-        body: { anchor: ANCHOR, body: "Izmišljeni komentar.", documentId: IDS.document },
+        body: {
+          anchor: ANCHOR,
+          body: "Izmišljeni komentar.",
+          documentId: IDS.document,
+          revision: 1,
+        },
       },
     ],
     request: { path: "/api/v1/comments/list", as: "student", body: { documentId: IDS.document } },

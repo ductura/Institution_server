@@ -31,6 +31,22 @@ const CommentBody = Type.String({
 const anchorText = (max: number) =>
   Type.String({ pattern: `^(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){0,${max}}${END}` });
 const Hint = Type.Integer({ minimum: 0, maximum: 1_000_000 });
+/**
+ * INT-15-SRV: the revision of the work a new thread is written on, optional
+ * in the schema so older bodies stay valid. A teacher must name one, the
+ * owning student may; it must exist for the document and be one the caller
+ * may read (422 otherwise, one answer for both cases). A reply has its
+ * thread's revision.
+ */
+const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
+const NewThreadRevision = Type.Optional(
+  Type.Integer({
+    minimum: 1,
+    maximum: Number.MAX_SAFE_INTEGER,
+    description:
+      "The revision of the work the thread is written on: required of a teacher, optional for the owning student. It must exist for the document and be one the caller may read (a teacher's: up to the newest standing submission, or the current revision before there is one; not only the newest); otherwise 422.",
+  }),
+);
 
 /** isTextAnchorInput: exactly six fields; startHint < endHint is the server's (422). */
 const TextAnchor = closed({
@@ -47,12 +63,22 @@ const TextAnchor = closed({
 
 /** One body per action; the action in the path picks which one the server reads. */
 const COMMENT_BODIES = [
-  closed({ anchor: TextAnchor, body: CommentBody, documentId: WorkId }),
+  closed({
+    anchor: TextAnchor,
+    body: CommentBody,
+    documentId: WorkId,
+    revision: NewThreadRevision,
+  }),
   closed({ body: CommentBody, threadId: Id }),
   closed({ threadId: Id }),
   closed({ commentId: Id }),
   closed({ documentId: WorkId }),
-  closed({ anchor: Type.Null(), body: CommentBody, documentId: WorkId }),
+  closed({
+    anchor: Type.Null(),
+    body: CommentBody,
+    documentId: WorkId,
+    revision: NewThreadRevision,
+  }),
 ] as const;
 
 const Window = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
@@ -69,6 +95,13 @@ const commentView = (standing: boolean) =>
     state: literals(["open", "answered", "resolved"]),
     createdWindow: Window,
     deletedWindow: standing ? Type.Null() : Window,
+    /** Optional in the schema only so older clients stay valid; the server always sends it. */
+    revision: Type.Optional(
+      Type.Union([Revision, Type.Null()], {
+        description:
+          "The revision of the work the thread was written on; a reply has its thread's. Null for a thread written before revisions were recorded.",
+      }),
+    ),
   });
 
 export const commentsPost = defineRoute({
