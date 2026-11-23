@@ -11403,6 +11403,234 @@
         ]
       }
     },
+    "/api/v1/institution/assistant-setting": {
+      "get": {
+        "operationId": "institution.assistant-setting.get",
+        "summary": "The assistant setting of the caller's faculty for a confirmed administrator of its institution, read only: assistant (the assistant answers on this server; no provider or model is ever named), the two flags of the faculty switch (transcription, tools) from the versioned faculty setting, its settingVersion (null when the faculty has no setting: both flags off) and changeable, always false: the switch changes only through the owner's PR, never from a screen (OC-1). No query: any query parameter is 422. A teacher, a student and an account without a confirmed administrator role are 403.",
+        "x-access": "institution_admin",
+        "x-inventory": "app/api/institution/assistant-setting/route.ts",
+        "responses": {
+          "200": {
+            "description": "the assistant setting of the faculty",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "assistant",
+                    "transcription",
+                    "tools",
+                    "settingVersion",
+                    "changeable"
+                  ],
+                  "properties": {
+                    "assistant": {
+                      "type": "boolean"
+                    },
+                    "transcription": {
+                      "type": "boolean"
+                    },
+                    "tools": {
+                      "type": "boolean"
+                    },
+                    "settingVersion": {
+                      "anyOf": [
+                        {
+                          "minimum": 1,
+                          "maximum": 2147483647,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changeable": {
+                      "const": false,
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/institution/config/versions": {
       "post": {
         "operationId": "institution.config-versions.post",
@@ -22955,6 +23183,39 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "periodStatus": {
+                            "description": "decided: retentionDays is a number; awaiting_decision: retentionDays is null because nobody has decided the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
+                            "anyOf": [
+                              {
+                                "const": "decided",
+                                "type": "string"
+                              },
+                              {
+                                "const": "awaiting_decision",
+                                "type": "string"
+                              },
+                              {
+                                "const": "never_deleted",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "periodStatusKey": {
+                            "anyOf": [
+                              {
+                                "const": "adminSettings.retentionPeriod.decided",
+                                "type": "string"
+                              },
+                              {
+                                "const": "adminSettings.retentionPeriod.awaitingDecision",
+                                "type": "string"
+                              },
+                              {
+                                "const": "adminSettings.retentionPeriod.neverDeleted",
+                                "type": "string"
+                              }
+                            ]
                           }
                         }
                       }
@@ -25747,6 +26008,16 @@
                     },
                     "requestId": {
                       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "description": "An open request (requested, approved or ready) for the same person already exists; sent on every 409 of the request.",
+                      "const": "export_already_open",
+                      "type": "string"
+                    },
+                    "reasonKey": {
+                      "description": "The key of the reason's text in the server's catalogue (locales).",
+                      "const": "adminSettings.exportAlreadyOpen",
                       "type": "string"
                     }
                   }

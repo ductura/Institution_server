@@ -88,6 +88,7 @@ import {
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
   createFacultyRuleRoutesFor,
+  createAssistantSettingRouteFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -1670,6 +1671,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  // SRV-ADMIN-3: the faculty's assistant setting; not an administrator, so 403.
+  "institution.assistant-setting.get": {
+    method: "GET",
+    path: "/api/v1/institution/assistant-setting",
+    body: () => undefined,
+    live: 403,
+  },
   "institution.faculty-rules.post": {
     path: "/api/v1/institution/faculty-rules",
     body: () => ({
@@ -1812,6 +1820,7 @@ const FACTORIES = [
   "createPilotMetricsRouteFor",
   "createRetentionRouteFor",
   "createFacultyRuleRoutesFor",
+  "createAssistantSettingRouteFor",
   "createInstitutionConfigRoutesFor",
   "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
@@ -1930,6 +1939,7 @@ const MOUNTED = [
   createPilotMetricsRouteFor(databases.main),
   createRetentionRouteFor(databases.main),
   ...createFacultyRuleRoutesFor(databases.main),
+  createAssistantSettingRouteFor(databases.main),
   ...createInstitutionConfigRoutesFor(databases.main),
   createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),

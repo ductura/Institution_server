@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema/index.ts";
+import { closed, defineRoute, error, problemFields } from "../schema/index.ts";
 
 import { MUTATION_GUARD } from "./shared.ts";
 
@@ -51,6 +51,35 @@ const REFUSALS = [
   error(503, "unavailable"),
 ] as const;
 
+// SRV-ADMIN-3 (NF-7 OA-6): the reason of the request's 409, sent on every such
+// answer. The database refuses a second open request (requested, approved or
+// ready) for the same person; the text behind reasonKey is in the server's
+// catalogue (locales, adminSettings). Optional in v1: a new response field.
+export const EXPORT_ALREADY_OPEN = "export_already_open";
+export const EXPORT_ALREADY_OPEN_KEY = "adminSettings.exportAlreadyOpen";
+const OpenRequestConflict = closed({
+  error: Type.Literal("conflict"),
+  ...problemFields("conflict", 409),
+  reason: Type.Optional(
+    Type.Literal(EXPORT_ALREADY_OPEN, {
+      description:
+        "An open request (requested, approved or ready) for the same person already exists; sent on every 409 of the request.",
+    }),
+  ),
+  reasonKey: Type.Optional(
+    Type.Literal(EXPORT_ALREADY_OPEN_KEY, {
+      description: "The key of the reason's text in the server's catalogue (locales).",
+    }),
+  ),
+});
+const REQUEST_REFUSALS = [
+  error(422, "invalid_input"),
+  error(403, "forbidden"),
+  error(404, "not_found"),
+  error(409, "conflict", OpenRequestConflict),
+  error(503, "unavailable"),
+] as const;
+
 export const studentDataExportsPost = defineRoute({
   id: "institution.student-data-exports.post",
   method: "POST",
@@ -77,7 +106,7 @@ export const studentDataExportsPost = defineRoute({
     error(401, "unauthorized"),
     error(415, "unsupported_media_type"),
     error(400, "invalid_json"),
-    ...REFUSALS,
+    ...REQUEST_REFUSALS,
   ],
 });
 

@@ -1497,6 +1497,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "institution.faculty-rules.get": {
     request: { path: "/api/v1/institution/faculty-rules", as: "administrator" },
   },
+  "institution.assistant-setting.get": {
+    request: { path: "/api/v1/institution/assistant-setting", as: "administrator" },
+  },
   "institution.faculty-rules.post": {
     request: {
       path: "/api/v1/institution/faculty-rules",

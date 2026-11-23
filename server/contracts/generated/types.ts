@@ -155,6 +155,13 @@ export type Operations = {
     success: { status: 200; body: { "assignmentId": string; "courseId": string; "versionNo": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "groupIds"?: (string)[]; "externalToolsAllowed"?: boolean; "aiSummaryOnly"?: boolean; "isPractice"?: boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "invalid_input" | "not_found" | "unavailable";
   };
+  "institution.assistant-setting.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "assistant": boolean; "transcription": boolean; "tools": boolean; "settingVersion": number | null; "changeable": false }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.config-versions.post": {
     params: undefined;
     query: undefined;
@@ -306,7 +313,7 @@ export type Operations = {
     params: undefined;
     query: { [key: string]: unknown };
     body: undefined;
-    success: { status: 200; body: { "classes": ({ "key": "sessions" | "live-state" | "versions" | "change-times" | "access-log" | "receipts"; "label": string; "retentionDays": number | null; "mode": "execute" | "dry-run"; "candidates": number | null; "lastRunAt": string | null })[] }; headers: {  } };
+    success: { status: 200; body: { "classes": ({ "key": "sessions" | "live-state" | "versions" | "change-times" | "access-log" | "receipts"; "label": string; "retentionDays": number | null; "mode": "execute" | "dry-run"; "candidates": number | null; "lastRunAt": string | null; "periodStatus"?: "decided" | "awaiting_decision" | "never_deleted"; "periodStatusKey"?: "adminSettings.retentionPeriod.decided" | "adminSettings.retentionPeriod.awaitingDecision" | "adminSettings.retentionPeriod.neverDeleted" })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
   };
   "institution.role-confirmation.post": {

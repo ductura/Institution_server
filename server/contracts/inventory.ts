@@ -703,6 +703,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7074314666",
   },
+  // SRV-ADMIN-3 (Ductus#2055 c.7116134498; NF-7 OA-9, OC-1): the faculty's assistant setting, read only by its administrator; Ductus has no such route.
+  "app/api/institution/assistant-setting/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116134498",
+  },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {
     methods: ["GET"],

@@ -114,6 +114,17 @@ describe("readFacultyAiSettings", () => {
     expect(settings.permittedTools("izmisljeni-b")).toEqual([]);
   });
 
+  it("settingOf gives the whole setting of its faculty and null without one (SRV-ADMIN-3)", () => {
+    const settings = readFacultyAiSettings(dirWith({ "izmisljeni-a.json": on("izmisljeni-a") }));
+    expect(settings.settingOf("izmisljeni-a")).toMatchObject({
+      version: 2,
+      faculty: "izmisljeni-a",
+      aiSwitch: { transcription: true, tools: true },
+    });
+    for (const slug of ["izmisljeni-b", "IZMISLJENI-A", "../izmisljeni-a", null])
+      expect(settings.settingOf(slug)).toBeNull();
+  });
+
   it("a file that names another faculty, breaks the shape, is too large or not JSON is off", () => {
     const settings = readFacultyAiSettings(
       dirWith({

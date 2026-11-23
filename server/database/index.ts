@@ -795,8 +795,13 @@ export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
 export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";
 export {
+  classesAwaitingDecision,
   createRetentionDryRunReader,
+  retentionPeriodStatus,
+  withPeriodStatus,
+  type RetentionClassEntry,
   type RetentionDryRunResult,
+  type RetentionPeriodStatus,
 } from "./retention-dry-run/index.ts";
 export {
   createWorkAccessReader,
