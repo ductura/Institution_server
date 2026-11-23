@@ -10,6 +10,7 @@ import {
 } from "../../../server/domain/index.ts";
 import { FAKE_DOMAIN, minute, type SignedReceipt } from "./receipt-signer.ts";
 import type { Handlers } from "./server.ts";
+import { recordVersionSaved } from "./versions-routes.ts";
 import {
   emptyDocumentOf,
   readerOf,
@@ -182,6 +183,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
     work.revision = revision;
     work.document = body.document;
     work.versionSnapshots.set(revision, body.document);
+    recordVersionSaved(state, work.documentId, revision, now.toISOString());
     work.lastSequenceTo = segment.sequenceTo;
     work.lastChangeAt = now.toISOString();
     work.transactions.set(body.clientTransactionId, { receipt: signedReceipt, documentHash });

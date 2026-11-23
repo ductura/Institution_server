@@ -35,6 +35,42 @@ function restoresOf(state: State, documentId: string): Map<number, number> {
   return restores;
 }
 
+/** INT-27: when each revision of a work was saved, so the list names every saved point. */
+const SAVED_AT = new WeakMap<object, Map<string, Map<number, string>>>();
+function savedAtOf(state: State, documentId: string): Map<number, string> {
+  const works = SAVED_AT.get(state) ?? new Map<string, Map<number, string>>();
+  SAVED_AT.set(state, works);
+  const saved = works.get(documentId) ?? new Map<number, string>();
+  works.set(documentId, saved);
+  return saved;
+}
+
+/** Records the instant a revision was saved; the save route calls it next to versionSnapshots. */
+export function recordVersionSaved(
+  state: State,
+  documentId: string,
+  revision: number,
+  at: string,
+): void {
+  savedAtOf(state, documentId).set(revision, at);
+}
+
+type Checkpoint = {
+  kind: "checkpoint";
+  revision: number;
+  savedMinute: string;
+  restoredFromRevision?: number;
+};
+type Submission = {
+  kind: "submission";
+  revision: number;
+  savedMinute: string;
+  afterDeadline: boolean;
+};
+
+/** The most versions in one page (WORK_VERSIONS_PAGE_SIZE of the database port). */
+const PAGE_SIZE = 200;
+
 function isSent(state: State, work: Work, revision: number): boolean {
   return (
     (work.submittedAt !== null && revision === work.revision) ||
@@ -57,26 +93,58 @@ export const VERSIONS_HANDLERS: Handlers = {
     if (before !== null && before < 2) return { error: "invalid_input" };
     const below = (revision: number) => before === null || revision < before;
     const assignment = state.assignments.find((a) => a.id === work.assignmentId);
-    const versions = [];
-    if (work.submittedAt !== null && assignment !== undefined && below(work.revision)) {
-      versions.push({
+    const saved = savedAtOf(state, work.documentId);
+    const restores = restoresOf(state, work.documentId);
+    // INT-27: every saved revision up to the current one is a checkpoint, newest first.
+    // The current revision keeps lastChangeAt (seeded works have no snapshots).
+    const revisions = new Set<number>();
+    if (work.revision > 0 && work.lastChangeAt !== null) revisions.add(work.revision);
+    for (const revision of work.versionSnapshots.keys()) {
+      if (revision > 0 && revision < work.revision && saved.has(revision)) revisions.add(revision);
+    }
+    const ordered = [...revisions].filter(below).sort((a, b) => b - a);
+    const versions: (Submission | Checkpoint)[] = [];
+    let nextBeforeRevision: number | null = null;
+    for (const revision of ordered) {
+      const submitted =
+        work.submittedAt !== null && assignment !== undefined && revision === work.revision;
+      if (versions.length + (submitted ? 2 : 1) > PAGE_SIZE) {
+        nextBeforeRevision = revision + 1;
+        break;
+      }
+      if (submitted) {
+        versions.push({
+          kind: "submission" as const,
+          revision,
+          savedMinute: minuteOf(work.submittedAt!),
+          afterDeadline: work.submittedAt! > assignment!.content.dueAt,
+        });
+      }
+      const at = revision === work.revision ? work.lastChangeAt! : saved.get(revision)!;
+      const checkpoint: Checkpoint = {
+        kind: "checkpoint" as const,
+        revision,
+        savedMinute: minuteOf(at),
+      };
+      const restored = restores.get(revision);
+      if (restored !== undefined) checkpoint.restoredFromRevision = restored;
+      versions.push(checkpoint);
+    }
+    // A submission at revision 0 or without lastChangeAt still lists itself, as before.
+    if (
+      work.submittedAt !== null &&
+      assignment !== undefined &&
+      !revisions.has(work.revision) &&
+      below(work.revision)
+    ) {
+      versions.unshift({
         kind: "submission" as const,
         revision: work.revision,
         savedMinute: minuteOf(work.submittedAt),
         afterDeadline: work.submittedAt > assignment.content.dueAt,
       });
     }
-    if (work.revision > 0 && work.lastChangeAt !== null && below(work.revision)) {
-      versions.push({
-        kind: "checkpoint" as const,
-        revision: work.revision,
-        savedMinute: minuteOf(work.lastChangeAt),
-      });
-      const restored = restoresOf(state, work.documentId).get(work.revision);
-      if (restored !== undefined)
-        Object.assign(versions.at(-1)!, { restoredFromRevision: restored });
-    }
-    return { status: 200, body: { versions, nextBeforeRevision: null } };
+    return { status: 200, body: { versions, nextBeforeRevision } };
   },
   "work.version.get": ({ state, account, params, query }) => {
     if (account === null) return { error: "unauthorized" };
