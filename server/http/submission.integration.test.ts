@@ -14,21 +14,29 @@ import type { ActorReader } from "../database/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
-import { createSubmissionRoute, type SubmissionOutcome, submissionAnswer } from "./submission.ts";
+import {
+  createSubmissionRoute,
+  gatedSubmit,
+  type SubmissionMajor,
+  type SubmissionOutcome,
+  submissionAnswer,
+} from "./submission.ts";
 
 type Vector = {
   name: string;
   request: { headers: Record<string, string>; body?: unknown; rawBody?: string };
   response: { status: number; body: Record<string, unknown>; headers?: Record<string, string> };
 };
-const VECTORS = (
-  JSON.parse(
-    readFileSync(
-      new URL("../contracts/vectors/submission.submit.post.json", import.meta.url),
-      "utf8",
-    ),
-  ) as { vectors: Vector[] }
-).vectors;
+const vectorsOf = (route: string) =>
+  (
+    JSON.parse(
+      readFileSync(new URL(`../contracts/vectors/${route}.json`, import.meta.url), "utf8"),
+    ) as { vectors: Vector[] }
+  ).vectors;
+const VECTORS = vectorsOf("submission.submit.post");
+// PIL-K-IZJAVA-SRV: the second major of the route, the same vectors and 409 declaration_required.
+const SECOND = vectorsOf("submission.submit-second.post");
+const SECOND_PATH = "/api/v1/submission/v2";
 const ORIGIN = "https://ductura.example.invalid";
 const PATH = "/api/v1/submission";
 
@@ -36,8 +44,17 @@ let server: Running | undefined;
 const calls: unknown[][] = [];
 const activity: string[] = [];
 let outcome: SubmissionOutcome | (() => never) = { status: "invalid" };
+// PIL-K-IZJAVA-SRV: the declaration gate in front of the port; null is no gate.
+let gate: (() => Promise<"proceed" | "declaration_required">) | null = null;
+const gated: unknown[][] = [];
+let major: SubmissionMajor = 1;
 
 async function start() {
+  const port = async (token: string, input: { documentId: string; revision: number }) => {
+    calls.push([token, input]);
+    return typeof outcome === "function" ? outcome() : outcome;
+  };
+  const current = gate;
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
@@ -45,19 +62,26 @@ async function start() {
     databases: createDatabases(),
     routes: [
       createSubmissionRoute({
-        submit: async (token, input) => {
-          calls.push([token, input]);
-          return typeof outcome === "function" ? outcome() : outcome;
-        },
+        submit:
+          current === null
+            ? port
+            : gatedSubmit(async (token, input) => {
+                gated.push([token, input]);
+                return current();
+              }, port),
         actors: {} as ActorReader,
         recordActivity: async (token) => activity.push(token),
         timeoutMs: 300,
+        major,
       }),
     ],
   });
 }
 afterEach(async () => {
   calls.length = 0;
+  gated.length = 0;
+  gate = null;
+  major = 1;
   activity.length = 0;
   await server?.close();
   server = undefined;
@@ -126,18 +150,24 @@ function outcomeOf(v: Vector): SubmissionOutcome | undefined {
     case "unavailable-signing":
     case "unavailable-verification":
       return { status: "unavailable", stage: body.stage as "signing", code: "izmisljeno" };
+    case "declaration-required":
+      return { status: "declaration_required" };
     default:
       return undefined;
   }
 }
 
 describe("every vector a socket can reach", () => {
-  it.each(VECTORS.map((v) => [v.name, v] as const))("%s", async (_name, v) => {
+  it.each([
+    ...VECTORS.map((v) => [`${v.name}`, v, 1, PATH] as const),
+    ...SECOND.map((v) => [`second major: ${v.name}`, v, 2, SECOND_PATH] as const),
+  ])("%s", async (_name, v, routeMajor, path) => {
     const arranged = outcomeOf(v);
     outcome = arranged ?? { status: "invalid" };
+    major = routeMajor;
     await start();
     const body = v.request.rawBody ?? JSON.stringify(v.request.body);
-    const got = await send(raw(PATH, Object.entries(v.request.headers), body));
+    const got = await send(raw(path, Object.entries(v.request.headers), body));
     expect(got.status).toBe(v.response.status);
     if (v.name === "bad-request") return; // Node's parser answers a negative length itself.
     expect(got.head["cache-control"]).toBe("no-store");
@@ -220,5 +250,98 @@ describe("the body before the port", () => {
     await start();
     expect((await send(raw(PATH, headers, '{"documentId":"rad","revision":0}'))).status).toBe(409);
     expect(calls).toHaveLength(1);
+  });
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026): while the assignment
+// requires a declaration, the port runs only after the gate's pass; nothing is
+// requested otherwise. The second major answers 409 declaration_required; the
+// first has no such answer (a new 409 branch breaks its clients), so it keeps
+// its 503 request.
+describe("the declaration gate", () => {
+  const v = VECTORS.find((x) => x.name === "submitted")!;
+  const headers = Object.entries(v.request.headers);
+  const token = v.request.headers.cookie?.slice("__Host-ductus_session=".length);
+  const unavailableRequest = [503, { status: "unavailable", stage: "request" }];
+
+  it("a missing declaration never reaches the port", async () => {
+    gate = async () => "declaration_required";
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
+    expect(got.head["retry-after"]).toBe("5");
+    expect(gated).toEqual([[token, v.request.body]]);
+    expect(calls).toEqual([]);
+    expect(activity).toEqual([]);
+  });
+
+  it("a gate that fails is never a pass", async () => {
+    gate = async () => {
+      throw new Error("izmišljeno");
+    };
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
+    expect(calls).toEqual([]);
+    expect(activity).toEqual([]);
+  });
+
+  it("a pass reaches the port with the same input, and its answer goes out", async () => {
+    gate = async () => "proceed";
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual([200, v.response.body]);
+    expect(gated).toEqual([[token, v.request.body]]);
+    expect(calls).toEqual([[token, v.request.body]]);
+  });
+
+  it("the refusal is declaration_required inside the process", async () => {
+    const refused = await gatedSubmit(
+      async () => "declaration_required",
+      () => {
+        throw new Error("the port must not run");
+      },
+    )("t", { documentId: "izmisljeni-rad", revision: 1 });
+    expect(refused).toEqual({ status: "declaration_required" });
+  });
+
+  it("on the second major a missing declaration is 409 declaration_required, without retry-after", async () => {
+    gate = async () => "declaration_required";
+    major = 2;
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(SECOND_PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual([409, { status: "declaration_required" }]);
+    expect(got.head["retry-after"]).toBeUndefined();
+    expect(calls).toEqual([]);
+    expect(activity).toEqual([]);
+  });
+
+  it("on the second major a gate that fails stays 503 request, never a pass", async () => {
+    gate = async () => {
+      throw new Error("izmišljeno");
+    };
+    major = 2;
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(SECOND_PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
+    expect(calls).toEqual([]);
+  });
+
+  it("the closed mapping: 409 on the second major, 503 request on the first", () => {
+    const refused = { status: "declaration_required" } as const;
+    expect(submissionAnswer(refused, 2)).toEqual({
+      status: 409,
+      body: { status: "declaration_required" },
+    });
+    expect(submissionAnswer(refused, 1)).toEqual({
+      status: 503,
+      body: { status: "unavailable", stage: "request" },
+      headers: { "retry-after": "5" },
+    });
   });
 });

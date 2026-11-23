@@ -289,21 +289,10 @@ export const SignedSubmissionReceipt = closed({
   }),
 });
 
-export const submit = defineRoute({
-  id: "submission.submit.post",
-  method: "POST",
-  path: "/api/v1/submission",
-  inventory: "app/api/submission/route.ts",
-  access: "student_owner",
-  summary:
-    "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; " +
-    "no time, text of the work or hash comes from the client. Same Origin, `ductus-protocol: 1`. The " +
-    "database clock at the click is the time; the revision is reconstructed and, only when it " +
-    "matches, the submission is recorded and its signed receipt returned. The first click binds: " +
-    "another revision later is 409 already_requested. Another student's or a missing work is " +
-    "404. 503 carries the stage and `retry-after: 5`.",
+/** The request and the answers of a submission, the same in both majors of the route. */
+const SUBMIT_SHAPE = {
   request: {
-    contentType: "application/json",
+    contentType: "application/json" as const,
     maxBodyBytes: 1024,
     body: closed({
       documentId: Type.String({ minLength: 1 }),
@@ -319,38 +308,80 @@ export const submit = defineRoute({
       body: closed({ status: Type.Literal("submitted"), receipt: SignedSubmissionReceipt }),
     },
   ],
-  errors: [
-    refusal(403, "forbidden"),
-    refusal(426, "upgrade_required"),
-    refusal(415, "unsupported_media_type"),
-    refusal(401, "unauthenticated"),
-    refusal(413, "too_large"),
-    refusal(408, "timeout"),
-    refusal(400, "bad_request"),
-    refusal(422, "invalid"),
-    refusal(404, "not_found"),
-    refusal(409, "blocked", {
-      reason: Type.Union(
-        ["segment_unsigned", "record_mismatch", "record_discontinuous", "no_evidence"].map((r) =>
-          Type.Literal(r),
-        ),
+};
+const SUBMIT_ERRORS = [
+  refusal(403, "forbidden"),
+  refusal(426, "upgrade_required"),
+  refusal(415, "unsupported_media_type"),
+  refusal(401, "unauthenticated"),
+  refusal(413, "too_large"),
+  refusal(408, "timeout"),
+  refusal(400, "bad_request"),
+  refusal(422, "invalid"),
+  refusal(404, "not_found"),
+  refusal(409, "blocked", {
+    reason: Type.Union(
+      ["segment_unsigned", "record_mismatch", "record_discontinuous", "no_evidence"].map((r) =>
+        Type.Literal(r),
       ),
-    }),
-    refusal(409, "stale_revision", { currentRevision: Count }),
-    refusal(409, "already_requested", { revision: Positive }),
-    refusal(409, "not_acknowledged"),
-    refusal(409, "not_open"),
-    unavailable([
-      "context",
-      "request",
-      "record",
-      "chain",
-      "storage",
-      "verification",
-      "submission",
-      "signing",
-    ]),
-  ],
+    ),
+  }),
+  refusal(409, "stale_revision", { currentRevision: Count }),
+  refusal(409, "already_requested", { revision: Positive }),
+  refusal(409, "not_acknowledged"),
+  refusal(409, "not_open"),
+  unavailable([
+    "context",
+    "request",
+    "record",
+    "chain",
+    "storage",
+    "verification",
+    "submission",
+    "signing",
+  ]),
+];
+
+export const submit = defineRoute({
+  id: "submission.submit.post",
+  method: "POST",
+  path: "/api/v1/submission",
+  inventory: "app/api/submission/route.ts",
+  access: "student_owner",
+  summary:
+    "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; " +
+    "no time, text of the work or hash comes from the client. Same Origin, `ductus-protocol: 1`. The " +
+    "database clock at the click is the time; the revision is reconstructed and, only when it " +
+    "matches, the submission is recorded and its signed receipt returned. The first click binds: " +
+    "another revision later is 409 already_requested. Another student's or a missing work is " +
+    "404. 503 carries the stage and `retry-after: 5`.",
+  ...SUBMIT_SHAPE,
+  errors: SUBMIT_ERRORS,
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; orchestrator review
+// c.7090474307 on ductura/Institution_server#646): the refusal of a submission whose assignment
+// requires a declaration the student has not confirmed for the submitted
+// revision is 409 declaration_required, never 503. A new answer of
+// submission.submit.post breaks its clients (scripts/check-breaking.ts), so it
+// is the next major of the route under its own path; the first major stays as
+// it was and refuses the same case with its 503 request. Nothing is written for
+// a refused submission, and the receipt (submission-receipt-v2) is the same.
+export const submitV2 = defineRoute({
+  id: "submission.submit-second.post",
+  method: "POST",
+  path: "/api/v1/submission/v2",
+  inventory: "app/api/submission/v2/route.ts",
+  access: "student_owner",
+  summary:
+    "The second major of submission.submit.post: the same body, guards, answers and receipt, and " +
+    "one more answer. While the assignment requires a declaration (declarationRequired in " +
+    "student.declaration.get) and none is confirmed for the submitted revision, the submission is " +
+    "refused with 409 declaration_required and nothing is written; the student confirms the " +
+    "declaration and submits again. A retry alone never changes it, so it has no `retry-after`. " +
+    "submission.submit.post answers the same case with 503 request.",
+  ...SUBMIT_SHAPE,
+  errors: [...SUBMIT_ERRORS, refusal(409, "declaration_required")],
 });
 
 // Port of Ductus src/server/evidence/replay-route.ts and
@@ -426,4 +457,4 @@ export const replay = defineRoute({
   ],
 });
 
-export const evidenceRoutes = [open, commit, submit, replay] as const;
+export const evidenceRoutes = [open, commit, submit, submitV2, replay] as const;

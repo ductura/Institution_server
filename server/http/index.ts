@@ -177,9 +177,14 @@ export {
   SUBMISSION_TIMEOUT_MS,
   submissionAnswer,
   type SubmissionOutcome,
+  type SubmissionMajor,
   type SubmissionRouteOptions,
   type SubmitWork,
 } from "./submission.ts";
+export {
+  createDeclarationRequiredRoutes,
+  createDeclarationRequiredRoutesFor,
+} from "./declaration-required.ts";
 export {
   createProcessSummaryDetailsRouteFor,
   createProcessSummaryRoute,

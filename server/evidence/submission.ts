@@ -15,6 +15,12 @@ import { reconstructSubmissionRecord } from "./submission-record.ts";
  * reconstructed and only a `submit` decision lets `record_submission` run,
  * with the hash of the reconstructed document, never a value of the request.
  * The receipt v2 is signed and bound once and then returned unchanged (DAN-291).
+ *
+ * PIL-K-IZJAVA-SRV: while the assignment requires a declaration, the database
+ * refuses a request without one confirmed for the submitted revision, and the
+ * record of a request that carries none, with ZD428 (20261214110000); nothing
+ * is written. That refusal is `declaration_required`, never `unavailable`: the
+ * student fixes it by confirming the declaration, a retry alone never does.
  */
 
 export type SubmissionStage =
@@ -26,6 +32,7 @@ export type SubmissionOutcome =
   | { status: "stale_revision"; currentRevision: number }
   | { status: "already_requested"; revision: number }
   | { status: "not_acknowledged" | "not_open" | "not_found" | "unauthenticated" | "invalid" }
+  | { status: "declaration_required" }
   | { status: "unavailable"; stage: SubmissionStage; code: string };
 
 export type SubmissionDependencies = {
@@ -50,6 +57,10 @@ const unavailable = (stage: SubmissionStage, code: string): SubmissionOutcome =>
   stage,
   code,
 });
+
+/** ZD428: the assignment requires a declaration the request does not carry. */
+const declarationRequired = (error: unknown): boolean =>
+  (error as { code?: unknown } | null)?.code === "ZD428";
 
 type RequestRow = { outcome: unknown; submission_request_id: unknown; revision: unknown };
 
@@ -125,7 +136,8 @@ export async function submitWork(
   let requested: Awaited<ReturnType<typeof request>>;
   try {
     requested = await request(deps, token, input.documentId, input.revision);
-  } catch {
+  } catch (error) {
+    if (declarationRequired(error)) return { status: "declaration_required" };
     return unavailable("request", "request_failed");
   }
   if (requested.status !== "requested") return requested;
@@ -158,7 +170,8 @@ export async function submitWork(
       const { rows } = await tx.query<StoredRow>(STORED_SQL, [recorded.rows[0]!.submission_id]);
       return rows.length === 1 ? rows[0]! : unavailable("submission", "submission_malformed");
     });
-  } catch {
+  } catch (error) {
+    if (declarationRequired(error)) return { status: "declaration_required" };
     return unavailable("submission", "submission_failed");
   }
   if ("status" in stored) return stored;
