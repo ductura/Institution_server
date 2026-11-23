@@ -17,6 +17,15 @@ type RawInterview = {
 };
 type RawQuestion = RawInterview["questions"][number];
 type RawExplanation = RawInterview["explanations"][number];
+/** A note attached to the interview, as the database answers it. */
+type RawNote = {
+  id: string;
+  fileName: string;
+  mediaType: "text/plain" | "application/pdf";
+  byteSize: number;
+  sha256: string;
+  createdAt: string;
+};
 export type Appointment =
   { consultationSlotId: string; startsAt: string } | { place: string; at: string };
 type Interview = Omit<RawInterview, "appointment"> & { appointment: Appointment | null };
@@ -57,6 +66,7 @@ const APPOINTMENT_SQL =
   "SELECT institution.set_work_interview_appointment($1, $2::uuid, $3, $4::timestamptz) AS result";
 const HELD_SQL = "SELECT institution.mark_work_interview_held($1, $2::date) AS result";
 const EXPLAIN_SQL = "SELECT institution.add_work_interview_explanation($1, $2::uuid, $3) AS result";
+const NOTE_SQL = "SELECT institution.add_work_interview_note($1, $2, $3, $4::bytea) AS result";
 
 export function createWorkInterviewStore(withActor: WithActor) {
   async function one<T>(token: string, sql: string, values: readonly unknown[]): Promise<T> {
@@ -106,5 +116,18 @@ export function createWorkInterviewStore(withActor: WithActor) {
       questionId: string | null,
       text: string,
     ) => explanation(await one<RawExplanation>(token, EXPLAIN_SQL, [documentId, questionId, text])),
+    addNote: async (
+      token: string,
+      documentId: string,
+      note: { fileName: string; mediaType: RawNote["mediaType"]; content: Uint8Array },
+    ) => {
+      const raw = await one<RawNote>(token, NOTE_SQL, [
+        documentId,
+        note.fileName,
+        note.mediaType,
+        Buffer.from(note.content),
+      ]);
+      return { ...raw, createdAt: utc(raw.createdAt) };
+    },
   };
 }
