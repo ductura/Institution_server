@@ -114,6 +114,15 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     // SRV-1213 (#580): the teacher's declaration read route reaches it through this adapter.
     callers: ["server/database/teacher-declaration/index.ts"],
   },
+  {
+    fn: "app.teacher_declaration_answer",
+    returns: "content",
+    surfaces: ["declaration"],
+    proof: "db/main/tests/232-declaration-question.sql",
+    // SRV-IZJAVA-PITANJE: the student's answer bound with the declaration, read in the same
+    // transaction as app.teacher_declaration; the read writes the 'declaration' access-log row.
+    callers: ["server/database/teacher-declaration/index.ts"],
+  },
 ];
 
 export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
@@ -174,7 +183,13 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
   {
     fn: "declaration.save_statement",
     why: "write",
-    note: "the student saves their own declaration",
+    note: "the student saves their own declaration; since SRV-IZJAVA-PITANJE only through save_statement_answer",
+    callers: [],
+  },
+  {
+    fn: "declaration.save_statement_answer",
+    why: "write",
+    note: "the student saves their own declaration and their own answer to the teacher's question",
     callers: ["server/database/statement/index.ts"],
   },
   {

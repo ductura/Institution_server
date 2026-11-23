@@ -77,9 +77,9 @@ describe("port from Ductus", () => {
 
 describe("sections added after the port", () => {
   it.each(TABLES)(
-    "%s adds only the errors and clientErrors sections at the top, and signIn.redirecting",
+    "%s adds only the errors, clientErrors and adminSettings sections at the top, and signIn.redirecting",
     (_language, table) => {
-      expect(SOURCE_ADDITIONS).toEqual(["errors", "clientErrors"]);
+      expect(SOURCE_ADDITIONS).toEqual(["errors", "clientErrors", "adminSettings"]);
       expect(SOURCE_KEY_ADDITIONS).toEqual(["signIn.redirecting"]);
       const all = textPairs(table).map(([path]) => path.join("."));
       const kept = new Set(textPairs(withoutAdditions(table)).map(([path]) => path.join(".")));

@@ -52,9 +52,10 @@ const NOUN_FINDING =
  * the source digest is taken without them. `errors`: the texts of the server's
  * error codes (S-1L.3, DAN-789, server/http/problem.ts). `clientErrors`: the
  * error catalogue's texts the contract does not answer (S-1M-c, DAN-802,
- * server/http/error-catalog.ts).
+ * server/http/error-catalog.ts). `adminSettings`: the reasons the server
+ * sends beside a code for the administrator's screens (SRV-ADMIN-3, NF-7).
  */
-export const SOURCE_ADDITIONS: readonly string[] = ["errors", "clientErrors"];
+export const SOURCE_ADDITIONS: readonly string[] = ["errors", "clientErrors", "adminSettings"];
 
 /**
  * Single texts added after the port inside a ported section; the source digest

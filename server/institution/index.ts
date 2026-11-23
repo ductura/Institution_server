@@ -5,6 +5,11 @@ export {
   readFacultyRules,
   type FacultyRuleInput,
 } from "./faculty-rules.ts";
+export {
+  readAssistantSetting,
+  type AssistantSettingSource,
+  type FacultyAssistantSwitch,
+} from "./assistant-setting.ts";
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
 export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
 export {
