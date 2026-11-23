@@ -196,7 +196,6 @@ describe("ci.yml", () => {
       "node scripts/db/migrations-ledger.ts --base": "matrix.shard == 1",
       "pnpm lint": "matrix.shard == 1",
       "pnpm format:check": "matrix.shard == 1",
-      "pnpm test:equality": "matrix.shard == 2",
       "pnpm test:property": "matrix.shard != 1",
     };
     for (const [command, leg] of Object.entries(legs)) {

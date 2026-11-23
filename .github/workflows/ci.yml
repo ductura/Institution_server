@@ -54,9 +54,9 @@ jobs:
     strategy:
       # Three legs split the vitest unit and integration projects by file
       # (vitest --shard). The static checks run on leg 1 (types, ledger, lint,
-      # format), equality on leg 2, the property tests on legs 2 and 3 (twice
-      # per run, as before), and the release dry run, contract check and
-      # images on every leg. Each leg used to run all of them: 7 of ci-ok's
+      # format), the property tests on legs 2 and 3 (twice per run, as
+      # before), and equality, the release dry run, contract check and images
+      # on every leg. Each leg used to run all of them: 7 of ci-ok's
       # 7.5 minutes.
       fail-fast: false
       matrix:
@@ -108,7 +108,6 @@ jobs:
       # export snapshot and the DOCX must be the same; a difference fails the build.
       # Its own step, so the check is visible and stays required through ci-ok.
       - name: Test jednakosti prikaza (R-07)
-        if: matrix.shard == 2
         run: pnpm test:equality
       - name: Svojstveni testovi
         if: matrix.shard != 1
