@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3342);
+SELECT plan(3359);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -122,7 +122,8 @@ SELECT bag_eq(
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
         'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
         'declaration.is_fresh(declaration.statement,text,bigint,integer)',
-        'declaration.bound_declaration_of(uuid,uuid,uuid)', 'declaration.submission_gate(text,bigint)'],
+        'declaration.bound_declaration_of(uuid,uuid,uuid)', 'declaration.submission_gate(text,bigint)',
+        'declaration.require_pinned_submission()'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -532,6 +533,8 @@ SELECT bag_eq(
     'submission_withdrawal_setting(p_assignment_id uuid) definer app',
     'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app',
     'set_declaration_required(p_assignment_id uuid, p_required boolean) definer app',
+    'declaration_required_of(p_assignment_id uuid)',
+    'declaration_required_setting(p_assignment_id uuid) definer app',
     'reject_work_milestone_event_change()',
     'reject_milestone_template_change()',
     'is_milestone_title(p_title text)',
@@ -770,6 +773,14 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'PIL-P1-RITAM-SRV: audit.input_rhythm_switch_event has forced RLS, the identity owner and no privilege for another role')
   FROM pg_class c WHERE c.oid = 'audit.input_rhythm_switch_event'::regclass;
+-- The trail of the declaration switch (audit.declaration_required_event), PIL-K-IZJAVA-SRV.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'PIL-K-IZJAVA-SRV: audit.declaration_required_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.declaration_required_event'::regclass;
 
 -- 1c4. SRV-1230: the match with the assistant (evidence.assistant_match_finding,
 -- assistant_match_attachment, assistant_match_setting) only through the RPCs; the
@@ -1433,6 +1444,25 @@ SELECT is(
   c.result, format('SRV-1903: %s sets the withdrawal switch of Z1: %s', c.actor, c.result))
 FROM (VALUES
   ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+
+-- 1i2. PIL-K-IZJAVA-SRV: the declaration switch of an assignment
+-- (institution.assignment.declaration_required, its trail in
+-- audit.declaration_required_event) only through its RPCs, only for the
+-- teacher of the assignment. The rest is in 228-declaration-required.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT required::text FROM institution.declaration_required_setting({z1})'), 1, 5),
+  c.result, format('PIL-K-IZJAVA-SRV: %s reads the declaration switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'false'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT required::text FROM institution.set_declaration_required({z1}, false)'), 1, 5),
+  c.result, format('PIL-K-IZJAVA-SRV: %s sets the declaration switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'false'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
   ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
 ) AS c (actor, result);
 

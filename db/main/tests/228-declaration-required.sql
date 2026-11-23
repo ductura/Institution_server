@@ -43,7 +43,24 @@ BEGIN
 END $$;
 
 CREATE FUNCTION pg_temp.require(p_actor text, p_value text) RETURNS text LANGUAGE sql AS $$
-  SELECT pg_temp.ask(p_actor, format('SELECT institution.set_declaration_required({z1}, %s)::text', p_value))
+  SELECT pg_temp.ask(p_actor, format('SELECT required::text FROM institution.set_declaration_required({z1}, %s)', p_value))
+$$;
+CREATE FUNCTION pg_temp.setting(p_actor text) RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, 'SELECT required::text || '' '' || (changed_at IS NOT NULL)::text
+    FROM institution.declaration_required_setting({z1})')
+$$;
+CREATE FUNCTION pg_temp.events() RETURNS text LANGUAGE sql AS $$
+  SELECT coalesce(string_agg(e.required::text || ' ' || (e.actor_id = pg_temp.id('vesna'))::text, ', '
+                    ORDER BY e.occurred_at, e.id), '')
+    FROM audit.declaration_required_event e WHERE e.assignment_id = pg_temp.id('z1')
+$$;
+CREATE FUNCTION pg_temp.record() RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask('ana', format('SELECT outcome FROM app.record_submission(%L, %L)', q.id, q.content_hash))
+    FROM evidence.submission_request q WHERE q.document_id = 'doc-a'
+$$;
+CREATE FUNCTION pg_temp.submissions() RETURNS bigint LANGUAGE sql AS $$
+  SELECT count(*) FROM evidence.submission s
+    JOIN evidence.submission_request q ON q.id = s.submission_request_id WHERE q.document_id = 'doc-a'
 $$;
 CREATE FUNCTION pg_temp.submit(p_revision bigint DEFAULT 1) RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask('ana', format('SELECT outcome FROM app.request_submission(%L, %s)', 'doc-a', p_revision))
@@ -79,13 +96,31 @@ SELECT is(pg_temp.require('iva', 'true'), 'ZD403: forbidden', 'the administrator
 SELECT is(pg_temp.require('nina', 'true'), 'ZD403: forbidden', 'an unconfirmed teacher cannot set it');
 SELECT is(pg_temp.require('petra', 'true'), 'ZD403: forbidden', 'a teacher of another faculty cannot set it');
 SELECT is(pg_temp.require('vesna', 'NULL'), 'ZD422: invalid input', 'a null value is invalid');
-SELECT alike(pg_temp.ask('vesna', 'SELECT institution.set_declaration_required({z3}, true)::text'), 'ZD403:%',
+SELECT alike(pg_temp.ask('vesna', 'SELECT required::text FROM institution.set_declaration_required({z3}, true)'), 'ZD403:%',
   'the teacher cannot set it on an assignment of another faculty');
 SELECT is((SELECT count(*) FROM institution.assignment WHERE declaration_required), 0::bigint,
   'no refused call changed a switch');
+SELECT is(pg_temp.events(), '', 'no refused call wrote an audit row');
+
+-- The teacher reads it (C-23); nobody else does, the same refusal as the setter.
+SELECT is(pg_temp.setting('vesna'), 'false false', 'the teacher reads it off, never changed');
+SELECT is(pg_temp.setting('ana'), 'ZD403: forbidden', 'a student cannot read the teacher''s setting');
+SELECT is(pg_temp.setting('marko'), 'ZD403: forbidden', 'a teacher of another course cannot read it');
+SELECT is(pg_temp.setting('iva'), 'ZD403: forbidden', 'the administrator cannot read it');
+SELECT is(pg_temp.setting('anon'), 'ZD401: not authenticated', 'without a session nothing is read');
+
+SELECT is(pg_temp.require('vesna', 'false'), 'false', 'setting the value in force answers it');
+SELECT is(pg_temp.events(), '', 'and writes no audit row');
 SELECT is(pg_temp.require('vesna', 'true'), 'true', 'the teacher of the assignment turns it on');
 SELECT is(pg_temp.read('declarationRequired'), 'true', 'the student reads the switch on');
+SELECT is(pg_temp.setting('vesna'), 'true true', 'the teacher reads it on, with the time of the change');
+SELECT is(pg_temp.require('vesna', 'true'), 'true', 'turning it on again changes nothing');
 SELECT is(pg_temp.require('vesna', 'false'), 'false', 'the teacher turns it off again');
+SELECT is(pg_temp.events(), 'true true, false true', 'each change is one audit row with its author');
+SELECT throws_ok($$ UPDATE audit.declaration_required_event SET required = NOT required $$,
+  'ZD403', 'append-only row', 'an audit row cannot be changed');
+SELECT throws_ok($$ DELETE FROM audit.declaration_required_event $$,
+  'ZD403', 'append-only row', 'an audit row cannot be deleted');
 
 -- The bridge is the evidence role's only: the app and the public do not call it.
 SELECT ok(NOT has_function_privilege('ductus_app', 'app.assignment_declaration_required(uuid)', 'EXECUTE')
@@ -175,7 +210,29 @@ SELECT is(pg_temp.submit(), 'requested', 'the request is written without a decla
 SELECT is(pg_temp.pinned(), 'none', 'no version is pinned');
 ROLLBACK TO SAVEPOINT off;
 
--- 9. The gate answers nothing about another student's document.
+-- 9. A request written while the switch was off carries no declaration: once
+-- the switch is on, it is not recorded (review point 6 on #646), and nothing
+-- is written; a request recorded before still answers its submission.
+SAVEPOINT started_off;
+SELECT is(pg_temp.submit(), 'requested', 'the request is written while the switch is off');
+SELECT pg_temp.require('vesna', 'true');
+SELECT is(pg_temp.record(), 'ZD428: declaration_required', 'the switch on refuses to record it');
+SELECT is(pg_temp.submissions(), 0::bigint, 'no submission is written');
+SELECT pg_temp.require('vesna', 'false');
+SELECT is(pg_temp.record(), 'recorded', 'with the switch off again it is recorded');
+SELECT pg_temp.require('vesna', 'true');
+SELECT is(pg_temp.record(), 'existing', 'a recorded submission is still answered once the switch is on');
+SELECT is(pg_temp.submissions(), 1::bigint, 'one submission');
+ROLLBACK TO SAVEPOINT started_off;
+
+SAVEPOINT started_on;
+SELECT pg_temp.require('vesna', 'true');
+SELECT is(pg_temp.save(0, true) #>> '{statement,state}', 'confirmed', 'the student confirms revision 1');
+SELECT is(pg_temp.submit(), 'requested', 'the request is written with its declaration');
+SELECT is(pg_temp.record(), 'recorded', 'a request with its declaration is recorded');
+ROLLBACK TO SAVEPOINT started_on;
+
+-- 10. The gate answers nothing about another student's document.
 SELECT pg_temp.require('vesna', 'true');
 SELECT is(pg_temp.ask('dora', 'SELECT declaration.submission_gate(''doc-a'', 1)'), 'proceed',
   'another student learns nothing from the gate; request_submission refuses her');
