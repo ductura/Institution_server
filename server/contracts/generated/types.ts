@@ -1597,6 +1597,13 @@ export type Operations = {
     success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "work.restore.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "fromRevision": number };
+    success: { status: 200; body: { "outcome": "recorded" | "already_recorded"; "revision": number } | { "outcome": "no_matching_revision" }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
+  };
   "work.return-for-revision.post": {
     params: { "documentId": string };
     query: undefined;
@@ -1650,7 +1657,7 @@ export type Operations = {
     params: { "documentId": string };
     query: { "beforeRevision"?: string };
     body: undefined;
-    success: { status: 200; body: { "versions": ({ "kind": "submission"; "revision": number; "savedMinute": string; "afterDeadline": boolean } | { "kind": "checkpoint"; "revision": number; "savedMinute": string })[]; "nextBeforeRevision": number | null }; headers: {  } };
+    success: { status: 200; body: { "versions": ({ "kind": "submission"; "revision": number; "savedMinute": string; "afterDeadline": boolean } | { "kind": "checkpoint"; "revision": number; "savedMinute": string; "restoredFromRevision"?: number })[]; "nextBeforeRevision": number | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
 };

@@ -16,7 +16,7 @@ RETURNS text LANGUAGE sql AS $$
                                THEN left(kind, 1) || revision || CASE WHEN after_deadline THEN '!' ELSE '' END
                                ELSE outcome END, ',' ORDER BY n)
           FROM app.read_work_versions(%L, %L::bigint)
-               WITH ORDINALITY AS v (outcome, kind, revision, saved_minute, after_deadline, n) $q$,
+               WITH ORDINALITY AS v (outcome, kind, revision, saved_minute, after_deadline, restored_from_revision, n) $q$,
     p_document, p_before))
 $$;
 -- The row count and the first and last version of one page.
@@ -25,7 +25,7 @@ CREATE FUNCTION pg_temp.page(p_actor text, p_before bigint DEFAULT NULL) RETURNS
     $q$ SELECT count(*) || ' ' || (array_agg(left(kind, 1) || revision ORDER BY n))[1] || ' '
                || (array_agg(left(kind, 1) || revision ORDER BY n DESC))[1]
           FROM app.read_work_versions('doc-a', %L::bigint)
-               WITH ORDINALITY AS v (outcome, kind, revision, saved_minute, after_deadline, n) $q$, p_before))
+               WITH ORDINALITY AS v (outcome, kind, revision, saved_minute, after_deadline, restored_from_revision, n) $q$, p_before))
 $$;
 CREATE FUNCTION pg_temp.req() RETURNS text LANGUAGE sql STABLE AS $$
   SELECT id::text FROM evidence.submission_request WHERE document_id = 'doc-a'
@@ -64,8 +64,8 @@ SELECT is(pg_get_function_arguments('app.read_work_versions(text,bigint)'::regpr
   'p_document_id text, p_before_revision bigint DEFAULT NULL::bigint',
   'the read takes only the document and the cursor: no role, institution or time');
 SELECT is(pg_get_function_result('app.read_work_versions(text,bigint)'::regprocedure),
-  'TABLE(outcome text, kind text, revision bigint, saved_minute timestamp with time zone, after_deadline boolean)',
-  'a version is a kind, a revision, a minute and the deadline flag: no text, hash or id');
+  'TABLE(outcome text, kind text, revision bigint, saved_minute timestamp with time zone, after_deadline boolean, restored_from_revision bigint)',
+  'a version is a kind, a revision, a minute, the deadline flag and the revision it restored (INT-21): no text, hash or id');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'evidence', 'USAGE')
   AND NOT has_schema_privilege('ductus_identity', 'app', 'CREATE')
   AND NOT has_schema_privilege('ductus_evidence', 'app', 'CREATE'),
