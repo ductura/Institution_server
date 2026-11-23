@@ -27,3 +27,6 @@ docs/privacy/08-inventar-tokova-podataka.md
 # Snapshot of ductura/.github docs/plan/PLAN-MIGRACIJE.md, refreshed by
 # _raspored/sinkro-plan.mjs; edited only in ductura/.github, so it stays byte for byte.
 docs/plan/PLAN-MIGRACIJE.md
+# Declaration forms: the server reads JCS bytes plus one newline and hashes them,
+# so a reformat makes the form unreadable (server/http/statement/form.ts).
+config/faculties/*/declaration/*.json
