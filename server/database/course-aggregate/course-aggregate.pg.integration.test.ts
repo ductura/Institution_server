@@ -66,6 +66,43 @@ it("uses the active course roster and work scopes in Postgres", async () => {
       inProgress: 0,
       submitted: 0,
     });
+    // A work started only on a practice assignment does not change the snapshot.
+    await db.exec(`
+      SET CONSTRAINTS ALL DEFERRED;
+      INSERT INTO institution.assignment
+        (id, course_id, institution_id, current_version, created_by, is_practice)
+      SELECT '00000000-0000-4000-8000-00000000a9a1', c.id, c.institution_id, 1, pg_temp.id('vesna'), true
+        FROM institution.course c WHERE c.id = pg_temp.id('k1');
+      INSERT INTO institution.assignment_version (
+        assignment_id, version_no, title, instructions, work_type, opens_at, due_at, ai_policy,
+        ai_purposes, evidence_profile, import_allowed, created_by
+      )
+      SELECT '00000000-0000-4000-8000-00000000a9a1', 1, 'PROBNI', instructions, work_type, opens_at,
+             due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by
+        FROM institution.assignment_version
+       WHERE assignment_id = pg_temp.id('z1') AND version_no = 1;
+      SET LOCAL ROLE ductus_evidence;
+      INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id) VALUES
+        ('project-practice', pg_temp.id('fak_a'), '00000000-0000-4000-8000-00000000a9a1', pg_temp.id('ana'));
+      INSERT INTO evidence.document (id, institution_id, project_id, principal_id, current_content_hash)
+      VALUES ('doc-practice', pg_temp.id('fak_a'), 'project-practice', pg_temp.id('ana'),
+              encode(sha256(convert_to(repeat('p', 64), 'UTF8')), 'hex'));
+      INSERT INTO evidence.document_revision
+        (document_id, institution_id, revision, principal_id, content_hash)
+      VALUES ('doc-practice', pg_temp.id('fak_a'), 0, pg_temp.id('ana'),
+              encode(sha256(convert_to(repeat('p', 64), 'UTF8')), 'hex'));
+      RESET ROLE;
+    `);
+    const practiceWorks = await db.query<{ works: string }>(`
+      SELECT pg_temp.ask('vesna', $$ SELECT count(*) FROM app.assignment_works('00000000-0000-4000-8000-00000000a9a1') $$) AS works
+    `);
+    expect(practiceWorks.rows).toEqual([{ works: "1" }]);
+    await expect(as("A")).resolves.toEqual({
+      status: "available",
+      notStarted: 5,
+      inProgress: 0,
+      submitted: 0,
+    });
     await db.exec(`
       SELECT pg_temp.ask('vesna', $$ SELECT institution.set_course_holder({k1}, {vesna}) $$);
       INSERT INTO ref VALUES

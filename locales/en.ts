@@ -2081,6 +2081,8 @@ const en = {
     attachmentStale: "An attached conversation has changed in the meantime. Attach it again.",
     attachmentsTooLarge: "The declaration attachments are too large in total.",
     declarationConflict: "The declaration has changed in the meantime. Load it again.",
+    declarationRequired:
+      "This assignment requires a confirmed declaration for this version of the work. Confirm the declaration, then submit again.",
     formOutdated: "The declaration form has changed in the meantime. Load the new form.",
     incomplete: "The declaration is not complete. Fill in all required fields.",
     invalidAttachment: "The attachment was not found or does not belong to this work.",

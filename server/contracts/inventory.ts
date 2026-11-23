@@ -403,6 +403,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
   },
+  // PIL-K-IZJAVA-SRV (Ductus#2052 c.7090494988, owner decision of 23. 11. 2026): the teacher's
+  // required declaration and the second major of the submission (409 declaration_required).
+  "app/api/teacher/assignments/[assignmentId]/declaration-required/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
+  },
+  "app/api/submission/v2/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
+  },
   // SRV-0910 (Ductus#2052 c.7079306579, P-1): the composition of a work by the kind of origin; Ductus has no such route.
   "app/api/works/[documentId]/origin-composition/route.ts": {
     methods: ["GET"],

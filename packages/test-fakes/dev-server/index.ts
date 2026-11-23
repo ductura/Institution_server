@@ -40,6 +40,7 @@ import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
+import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
 import { LEGAL_HOLD_HANDLERS } from "./legal-hold-routes.ts";
@@ -130,6 +131,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_TEMPLATE_HANDLERS,
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
+  ...DECLARATION_REQUIRED_HANDLERS,
   ...OPS_HANDLERS,
   ...RETENTION_HANDLERS,
   ...LEGAL_HOLD_HANDLERS,

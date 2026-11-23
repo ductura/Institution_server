@@ -14,9 +14,19 @@ const withActor: WithActor = (_token, run) => run({ query });
 const main = { withActor };
 const cookie = `${SESSION_COOKIE_NAME}=${"A".repeat(43)}`;
 const exports = [
-  ["teacher.merlin-roster.get", `/api/v1/teacher/assignments/${ID}/merlin/roster`],
-  ["teacher.merlin-roster-csv.get", `/api/v1/teacher/assignments/${ID}/merlin/csv`],
-  ["work.export-pdf.get", `/api/v1/assignments/${ID}/works/demo-rad/export/pdf`],
+  ["teacher.merlin-roster.get", "GET", `/api/v1/teacher/assignments/${ID}/merlin/roster`],
+  ["teacher.merlin-roster-csv.get", "GET", `/api/v1/teacher/assignments/${ID}/merlin/csv`],
+  ["work.export-pdf.get", "GET", `/api/v1/assignments/${ID}/works/demo-rad/export/pdf`],
+  [
+    "teacher.submissions-bulk-link.post",
+    "POST",
+    `/api/v1/teacher/assignments/${ID}/submissions-bulk-link`,
+  ],
+  [
+    "teacher.submissions-bulk.get",
+    "GET",
+    `/api/v1/teacher/assignments/${ID}/submissions-bulk/pdf?token=1.${"a".repeat(43)}`,
+  ],
 ] as const;
 
 let server: Awaited<ReturnType<typeof startServer>>;
@@ -46,6 +56,19 @@ function get(path: string) {
   return fetch(`http://127.0.0.1:${server.port}${path}`, { headers: { cookie } });
 }
 
+function send(method: "GET" | "POST", path: string) {
+  if (method === "GET") return get(path);
+  return fetch(`http://127.0.0.1:${server.port}${path}`, {
+    method,
+    headers: {
+      cookie,
+      origin: "https://ductura.example.invalid",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ format: "pdf" }),
+  });
+}
+
 it.each([
   ["eligible", 200, { eligible: true }],
   ["practice", 409, { code: "practice_assignment", messageKey: "errors.practiceAssignment" }],
@@ -61,19 +84,19 @@ it.each([
 
 it.each(exports)(
   "filters practice through %s and delegates regular assignments",
-  async (_id, path) => {
+  async (_id, method, path) => {
     query.mockResolvedValueOnce({ rows: [{ practice: true }], rowCount: 1 });
-    const practice = await get(path);
+    const practice = await send(method, path);
     expect(practice.status).toBe(404);
     expect(await practice.json()).toMatchObject({ code: "not_found" });
     expect(query).toHaveBeenLastCalledWith(expect.stringContaining("a.is_practice"), [ID]);
 
     query.mockResolvedValueOnce({ rows: [{ practice: null }], rowCount: 1 });
-    const hidden = await get(path);
+    const hidden = await send(method, path);
     expect(hidden.status).toBe(404);
 
     query.mockResolvedValueOnce({ rows: [{ practice: false }], rowCount: 1 });
-    const regular = await get(path);
+    const regular = await send(method, path);
     expect(regular.status).toBe(200);
     expect(await regular.json()).toEqual({ delegated: true });
   },

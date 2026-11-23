@@ -112,6 +112,7 @@ import {
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createInputRhythmRoutesFor,
+  createDeclarationRequiredRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -356,6 +357,12 @@ const SESSION_ROUTES = {
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
     path: "/api/v1/submission",
+    body: () => ({ documentId: randomUUID(), revision: 1 }),
+    live: 404,
+  },
+  // PIL-K-IZJAVA-SRV: the second major, the same 404 for a work the session does not own.
+  "submission.submit-second.post": {
+    path: "/api/v1/submission/v2",
     body: () => ({ documentId: randomUUID(), revision: 1 }),
     live: 404,
   },
@@ -983,6 +990,19 @@ const SESSION_ROUTES = {
     method: "PUT",
     path: `/api/v1/teacher/assignments/${randomUUID()}/input-rhythm`,
     body: () => ({ enabled: false }),
+    live: 404,
+  },
+  // PIL-K-IZJAVA-SRV: a live session that teaches no such assignment gets 404 and changes nothing.
+  "teacher.declaration-required.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/declaration-required`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.declaration-required.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/declaration-required`,
+    body: () => ({ required: true }),
     live: 404,
   },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
@@ -1723,6 +1743,8 @@ const FACTORIES = [
   "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
+  "createSubmissionRouteFor",
+  "createDeclarationRequiredRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -1838,6 +1860,8 @@ const MOUNTED = [
   ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
+  createSubmissionRouteFor(databases.main, evidenceDeps, 2),
+  ...createDeclarationRequiredRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

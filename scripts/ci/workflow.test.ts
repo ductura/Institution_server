@@ -191,17 +191,30 @@ describe("ci.yml", () => {
     }
     // Each static check runs on one leg that exists, the property tests on two
     // legs (two seeds per run, as before); the sharded tests run on every leg.
+    // ZEL-CI-SRV: equality, the release dry run, the contract check and both
+    // images run once per run, on leg 1, instead of once per leg.
     const legs: Record<string, string> = {
       "pnpm typecheck": "matrix.shard == 1",
       "node scripts/db/migrations-ledger.ts --base": "matrix.shard == 1",
       "pnpm lint": "matrix.shard == 1",
       "pnpm format:check": "matrix.shard == 1",
       "pnpm test:property": "matrix.shard != 1",
+      "pnpm test:equality": "matrix.shard == 1",
+      "pnpm release:check": "matrix.shard == 1",
+      "pnpm contracts:breaking FETCH_HEAD":
+        "github.event_name == 'pull_request' && matrix.shard == 1",
+      "docker build -f infra/web/Dockerfile -t ductura-web:ci .": "matrix.shard == 1",
+      "docker build -f infra/web/Dockerfile --target test-server": "matrix.shard == 1",
     };
     for (const [command, leg] of Object.entries(legs)) {
       const at = checks.indexOf(command);
       const step = checks.slice(checks.lastIndexOf("\n      - ", at), at);
+      expect(at, command).toBeGreaterThan(0);
       expect(step, command).toContain(`\n        if: ${leg}\n`);
+    }
+    // Every condition names a leg of the matrix: a step on leg 4 of 3 would never run.
+    for (const leg of checks.matchAll(/matrix\.shard [!=]= (\d+)/g)) {
+      expect(LEGS["checks"]!.split(", "), leg[0]).toContain(leg[1]);
     }
     for (const script of ["test:unit", "test:integration"]) {
       const at = checks.indexOf(`run: pnpm ${script} `);
@@ -211,9 +224,10 @@ describe("ci.yml", () => {
 
   // Both test jobs run as legs (checks three, database two). Each leg runs its
   // share of the files of the unit, integration, database and integration-pg
-  // projects; database runs every other step (migrations, pgTAP, VS-1) on both
-  // legs, checks each other step on one or two legs. ci-ok sees one result per
-  // job, failed when any leg failed.
+  // projects, and in database its share of the main pgTAP files (ZEL-CI-SRV,
+  // scripts/db/native-db.ts); database runs every other step (migrations, the
+  // other pgTAP, VS-1) on both legs, checks each other step on one or two
+  // legs. ci-ok sees one result per job, failed when any leg failed.
   it("splits the vitest projects across the legs of checks and database, nothing else", () => {
     for (const name of ["checks", "database"]) {
       const body = job(name);
@@ -229,6 +243,12 @@ describe("ci.yml", () => {
     expect(database.slice(database.indexOf("- name: Testovi migracija"), tests)).toContain(
       SHARD_ENV,
     );
+    // The main pgTAP gets the leg too; native-db.ts splits its files by SHARD.
+    const pgtap = database.indexOf('run: PATH="$PGBIN:$PATH" pnpm test:db:native\n');
+    expect(database.slice(database.indexOf("- name: pgTAP glavne baze"), pgtap)).toContain(
+      `\n        env:${SHARD_ENV}        `,
+    );
+    expect([...database.matchAll(/SHARD: /g)]).toHaveLength(2);
     // The two runs are exactly what `pnpm test:database` runs locally.
     const scripts = (
       JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as {

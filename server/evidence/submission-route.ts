@@ -35,6 +35,8 @@ export function submissionResponse(outcome: SubmissionOutcome): Response {
       return reply(409, { status: "already_requested", revision: outcome.revision });
     case "not_acknowledged":
     case "not_open":
+    // PIL-K-IZJAVA-SRV: the database refused the request or its record (ZD428).
+    case "declaration_required":
       return reply(409, { status: outcome.status });
     case "not_found":
       return reply(404, { status: "not_found" });

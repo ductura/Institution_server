@@ -44,6 +44,7 @@ import {
   type Running,
   startServer,
 } from "../../server/http/index.ts";
+import { submitWork } from "../../server/evidence/index.ts";
 
 // SRV-18 (Ductus#2028): POST /api/v1/submission through a real server over
 // real PostgreSQL with RLS, a ductus_app login, the development signer
@@ -61,7 +62,7 @@ const ROOT = join(import.meta.dirname, "../..");
 const PATH = "/api/v1/submission";
 const password = randomBytes(24).toString("hex");
 const suffix = randomBytes(4).toString("hex");
-const STUDENTS = ["ana", "bruno", "cvita", "dora", "ema"] as const;
+const STUDENTS = ["ana", "bruno", "cvita", "dora", "ema", "fran"] as const;
 type Student = (typeof STUDENTS)[number];
 const id = {
   a: randomUUID(),
@@ -246,6 +247,8 @@ beforeAll(async () => {
       createEvidenceOpenRoute(main),
       createEvidenceCommitRouteFor(main, { signer, payloads }),
       createSubmissionRouteFor(main, { signer, payloads }),
+      // PIL-K-IZJAVA-SRV: the second major, with 409 declaration_required.
+      createSubmissionRouteFor(main, { signer, payloads }, 2),
       ...createStudentSubmissionRoutesFor(main),
     ],
   });
@@ -626,5 +629,93 @@ describe("GET the student's submission state and word range (SRV-22)", () => {
     expect(none.text).toBe('{"wordRange":null}');
     const range = await get(`${id.z2}/requirements`, "ana");
     expect(range.text).toBe('{"wordRange":{"min":800,"max":1200}}');
+  });
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; review c.7090474307 on
+// #646, point 1): while the assignment requires a declaration, a submission
+// without one confirmed for the submitted revision is refused through the real
+// submitWork over real PostgreSQL: the trigger's ZD428 is declaration_required,
+// 409 on the second major of the route, and nothing of the request is
+// written. With the declaration confirmed for that revision the same click
+// submits, and the request pins it. Every value is invented.
+describe("a submission while Z1 requires a declaration (PIL-K-IZJAVA-SRV)", () => {
+  const SECOND = "/api/v1/submission/v2";
+  const FORM =
+    '{"formId":"test-izjava","formSchema":"ductura-declaration-form-v1","formVersion":1,"text":"Izmišljeni obrazac."}';
+  const requests = async () =>
+    (
+      await admin.query<{ n: string }>(
+        "SELECT count(*)::text AS n FROM evidence.submission_request WHERE principal_id = $1",
+        [user.fran],
+      )
+    ).rows[0]!.n;
+  const requireDeclaration = (value: boolean) =>
+    admin.query("UPDATE institution.assignment SET declaration_required = $2 WHERE id = $1", [
+      id.z1,
+      value,
+    ]);
+  let fran: Work;
+
+  beforeAll(async () => {
+    fran = await write("fran", [[{ source: "editor", text: "Izmišljeni sažetak o vodi. " }]]);
+    await requireDeclaration(true);
+  });
+  afterAll(async () => {
+    await requireDeclaration(false);
+  });
+
+  it("(1) nothing confirmed: the second major is 409 declaration_required without retry-after, nothing written", async () => {
+    const answer = await post(SECOND, fran, "fran");
+    expect(answer.status, answer.text).toBe(409);
+    expect(answer.body).toEqual({ status: "declaration_required" });
+    expect(answer.headers["retry-after"]).toBeUndefined();
+    expect(await requests()).toBe("0");
+  });
+
+  it("(1) the real submitWork answers the trigger's ZD428 as declaration_required, without the gate", async () => {
+    const outcome = await submitWork(
+      { withActor: createWithActor(app), payloads, signer },
+      token.fran,
+      fran,
+    );
+    expect(outcome).toEqual({ status: "declaration_required" });
+    expect(await requests()).toBe("0");
+  });
+
+  it("the first major refuses the same click with its 503 request", async () => {
+    const answer = await post(PATH, fran, "fran");
+    expect(answer.status).toBe(503);
+    expect(answer.body).toEqual({ status: "unavailable", stage: "request" });
+    expect(await requests()).toBe("0");
+  });
+
+  it("(3) confirmed for the submitted revision: 200 with a verifiable receipt, the declaration pinned", async () => {
+    const body = {
+      baseVersion: 0,
+      revision: fran.revision,
+      confirm: true,
+      form: { formId: "test-izjava", formVersion: 1, formSha256: sha256(FORM) },
+      ownWork: { confirmed: true },
+      humanHelp: { received: false, entries: [] },
+      ai: { use: "not_used", attachments: [], declaredTools: [], externalAttachmentIds: [] },
+    };
+    const saved = await createWithActor(app)(token.fran, async (tx) => {
+      const { rows } = await tx.query<{ answer: { statement?: { state?: string } } }>(
+        "SELECT declaration.save_statement($1::uuid, $2::jsonb, $3) AS answer",
+        [id.z1, JSON.stringify(body), FORM],
+      );
+      return rows[0]?.answer.statement?.state;
+    });
+    expect(saved).toBe("confirmed");
+    const answer = await post(SECOND, fran, "fran");
+    expect(answer.status, answer.text).toBe(200);
+    expect(answer.body.status).toBe("submitted");
+    await expectVerifiable(answer.body.receipt);
+    const pinned = await admin.query<{ pinned: boolean }>(
+      "SELECT declaration_version_id IS NOT NULL AS pinned FROM evidence.submission_request WHERE principal_id = $1",
+      [user.fran],
+    );
+    expect(pinned.rows).toEqual([{ pinned: true }]);
   });
 });

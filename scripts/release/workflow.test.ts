@@ -656,7 +656,9 @@ describe("ci.yml", () => {
         "",
       ].join("\n"),
     );
-    expect(keys(step)).toBe("name,run");
+    // ZEL-CI-SRV: once per run, on leg 1 of checks.
+    expect(keys(step)).toBe("name,if,run");
+    expect(step?.if).toBe("matrix.shard == 1");
     const tokens = strings(doc).filter(([, value]) =>
       /secrets\.|github\.token|NODE_AUTH/u.test(value),
     );

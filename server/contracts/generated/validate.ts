@@ -1534,6 +1534,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "submission.submit-second.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      value['documentId'].length >= 1 &&
+      (typeof value['revision'] === 'number' && Number.isInteger(value['revision'])) &&
+      value['revision'] <= 9007199254740991 &&
+      value['revision'] >= 0 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "submission.submit.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1733,6 +1744,35 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&
       value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.declaration-required.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.declaration-required.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.declaration-required.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['required'] === 'boolean') &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

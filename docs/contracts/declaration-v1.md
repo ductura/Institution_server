@@ -311,6 +311,19 @@ Izjava nije u `artifactSha256`, `content_hash` ni u bajtovima dokumenta (D-228).
 - **Potvrda v3 (OD-2, A).** Format `ductus-submission-receipt-v3` i njegov verifikator su u `server/domain/forensics/submission-receipt-v3.ts` i `submission-receipt-verifier-v3.ts`, s neovisno izračunatim vektorom: 16 polja v2 uz `receiptSchema` v3 i obvezni `declarationSha256` (64 heks ili `null`), prefiks domene `ductus-submission-receipt-v3`, ulaz potpisa 61 bajt. Vektor v2 ostaje bajt-jednak.
 - **Otvoreno.** Izdavatelj, rute predaje i `/provjera` i dalje izdaju i čitaju v2. Prijelaz na v3 mijenja tip potvrde u odgovorima postojećih ruta, što `contracts:breaking` odbija unutar `/api/v1`; traži glavno izdanje ugovora (6.4) i odluku vlasnika.
 
+### 6.7 Postavka zadatka `declarationRequired` (PIL-K-IZJAVA-SRV)
+
+Odluka vlasnika 23. 11. 2026. (niže) uključuje prvi slučaj iz 6.3. Migracija `20261214110000_assignment_declaration_required.sql`:
+
+- **Postavka.** `institution.assignment.declaration_required`, zadano `false` (expand; postojeći zadaci i svaki put izrade koji je ne navodi ponašaju se kao do sada, OD-6). Čita je i postavlja samo nastavnik zadatka (iz odnosa, C-23): `institution.declaration_required_setting(zadatak)` i `institution.set_declaration_required(zadatak, vrijednost)`, preko HTTP-a `teacher.declaration-required.get` i `.put` (`/api/v1/teacher/assignments/{assignmentId}/declaration-required`, tijelo `{required}`). Administrator, student i nastavnik drugog kolegija dobivaju 404. Postavljač zaključava redak zadatka (`FOR UPDATE`), pa zahtjev za predaju koji je u tijeku (`FOR SHARE`) završava pod starom vrijednošću.
+- **Zapis promjena.** Svaka promjena upisuje redak u `audit.declaration_required_event` (tko, kada, nova vrijednost) u istoj transakciji; redak se ne može mijenjati ni brisati. Postavljanje vrijednosti koja već vrijedi ništa ne upisuje. Odgovor rute nosi `changedAt` zadnje promjene (`null` dok nije mijenjana).
+- **Pilot.** Za pilot je postavka uključena: nastavnik je uključuje na svakom pilotnom zadatku rutom `teacher.declaration-required.put` s `{required: true}`.
+- **Provjera pri predaji.** Kad je postavka uključena, okidač `declaration.pin_request` odbija redak zahtjeva bez verzije svježe za predanu reviziju (6.2, OD-15) s ZD428 `declaration_required`, pa se od zahtjeva ništa ne zapisuje. Nacrt, zastarjela verzija i verzija druge revizije nisu potvrda. Tehnička greška pri čitanju izjave tada također odbija (pravilo 11 kako je vlasnik odlučio 23. 11.: tehnički neuspjela potvrda ne smije dopustiti predaju). Kad je postavka isključena, okidač radi kao u 6.6.
+- **Već započet zahtjev.** Zahtjev zapisan dok je postavka bila isključena nema izjavu. Dok je postavka uključena, `app.record_submission` takav zahtjev ne zapisuje kao predaju (okidač `declaration.require_pinned_submission`, ZD428), osim ako je predaja već zapisana (ponovni pokušaj nakon 503 `signing` vraća postojeću). Takav zahtjev ostaje vezan (P5, P8), pa ga student ne može ponovno poslati s izjavom; predaja ide tek kad nastavnik postavku isključi. Prozor je samo zahtjev kojemu zapis nije uspio prije uključivanja postavke.
+- **Odgovor rute.** `submitWork` preslikava ZD428 iz zahtjeva i iz zapisa u ishod `declaration_required`. Na žici je to 409 `{status: "declaration_required"}` bez `retry-after` na drugom glavnom izdanju rute predaje, `submission.submit-second.post` (`POST /api/v1/submission/v2`; isto tijelo, zaštite, odgovori i potvrda kao `submission.submit.post`, uz taj jedan odgovor). Nova grana 409 na `submission.submit.post` lomi njegove klijente (`contracts:breaking`), pa prvo izdanje ostaje kakvo jest i isti slučaj odbija svojim 503 `{status: "unavailable", stage: "request"}`; nikad ga ne propušta. Web prelazi na drugo izdanje. Web proces prije zahtjeva pita i `declaration.submission_gate(documentId, revision)` (isto pravilo, samo za vlastiti rad pozivatelja); okidači ostaju jamstvo, a greška pri čitanju te provjere je 503 `request`.
+- **Čitanje.** `student.declaration.get` (i odgovor `put`) nosi `declarationRequired` (boolean, uvijek poslan, u shemi neobavezan radi starijih klijenata), pa web ne pogađa: dok je `true`, predaju nudi samo u stanju `confirmed` za trenutačnu reviziju.
+- `submission-receipt-v2` se ne mijenja i ostaje bajt-jednak.
+
 ## 7. Rute
 
 Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `{status: <kod>}`, `MUTATION_GUARD`, isti 404 za tuđe, nepoznato i neispravno). Rute su prijedlog; dodaju se tek nakon odobrenja.
@@ -463,6 +476,8 @@ Zapis: Ductus#2012 (c.7054485848, c.7054511795 i zapis za OD-4, OD-11, OD-12). O
 - **OD-5 do OD-10, OD-13 do OD-16:** prihvaćeni prijedlozi kako su zapisani u ugovoru.
 - **OD-11:** tekst obrasca izjave je verzionirana datoteka uz pravila fakulteta u `config/faculties/`, mijenja se samo PR-om koji odobri vlasnik (kao prekidač OC-1). `formSha256` je SHA-256 bajtova te datoteke. Dok službeni tekst FPZG-a nije u repou, postoji samo izmišljeni obrazac `test-izjava` u testovima, a sučelje koristi neutralan naziv „Izjava”.
 - **OD-12:** vlasnik je odluku prepustio orkestratoru. Unos ljudske pomoći je `{ kind, text }` sa zatvorenim skupom vrsta (odjeljak 1.4) i obveznim kratkim opisom; uputa uz polje, bez provjere osobnih podataka.
+
+Odluka vlasnika 23. 11. 2026. (PIL-K-IZJAVA-SRV, pregled WEB #492): (a) tehnički neuspjela potvrda izjave ne smije dopustiti predaju (PRODUCT §5, pravilo 11); (b) izjava se provjerava na poslužitelju; (c) uz OD-6 izjava je obavezna samo kad je zadatak traži postavkom, a za pilot je ta postavka uključena. Izvedba: odjeljak 6.7.
 
 ## Otvorena pitanja
 
