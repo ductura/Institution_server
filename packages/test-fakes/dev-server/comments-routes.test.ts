@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { refusesThreadRevision } from "./comments-routes.ts";
 import { createState, IDS, type State } from "./index.ts";
 import { send, signIn } from "./testing.ts";
 
@@ -53,5 +54,66 @@ describe("dev fake server: publishing the drafts the teacher saw", () => {
     const seen = await draft(state, headers);
     await draft(state, headers);
     expect((await publish(state, headers, [seen])).status).toBe(409);
+  });
+});
+
+// INT-15-SRV: collaboration.comments.post create carries the revision of its thread, as
+// collaboration.check_thread_revision decides it; the list gives it on every row.
+describe("dev fake server: the revision of a comment thread", () => {
+  const ANCHOR = {
+    nodeId: "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c02",
+    quote: "izmišljeni odlomak",
+    prefix: "",
+    suffix: "",
+    startHint: 0,
+    endHint: 18,
+  };
+  const comment = (
+    state: State,
+    headers: Record<string, string>,
+    action: string,
+    body: Record<string, unknown>,
+  ) => send(state, `/api/v1/comments/${action}`, { headers: { ...headers, ...ORIGIN }, body });
+
+  it("refuses a missing or wrong teacher revision and keeps a right one, also an older one", async () => {
+    const state = createState();
+    state.works.find((w) => w.documentId === IDS.document)!.revision = 3;
+    const teacher = await signIn(state, "nastavnik");
+    const base = { anchor: ANCHOR, body: "Izmišljeni komentar.", documentId: IDS.document };
+    expect((await comment(state, teacher, "create", base)).status).toBe(422);
+    expect((await comment(state, teacher, "create", { ...base, revision: 4 })).status).toBe(422);
+    expect((await comment(state, teacher, "create", { ...base, revision: 0 })).status).toBe(422);
+    const older = await comment(state, teacher, "create", { ...base, revision: 2 });
+    expect(older.status).toBe(200);
+    const general = { anchor: null, body: "Izmišljeni opći komentar.", documentId: IDS.document };
+    expect((await comment(state, teacher, "create", general)).status).toBe(422);
+    expect((await comment(state, teacher, "create", { ...general, revision: 3 })).status).toBe(200);
+
+    const student = await signIn(state, "student");
+    const own = await comment(state, student, "create", { ...base, body: "Izmišljeno pitanje." });
+    expect(own.status).toBe(200);
+    const threadId = (older.json as { id: string }).id;
+    expect((await comment(state, student, "reply", { body: "Odgovor.", threadId })).status).toBe(
+      200,
+    );
+    expect(
+      (await comment(state, student, "reply", { body: "Odgovor.", threadId, revision: 2 })).status,
+    ).toBe(422);
+
+    const listed = await comment(state, student, "list", { documentId: IDS.document });
+    const rows = (listed.json as { comments: { threadId: string; revision: number | null }[] })
+      .comments;
+    expect(rows.filter((r) => r.threadId === threadId).map((r) => r.revision)).toEqual([2, 2]);
+    // The fake lists in the order written; the real list orders by thread.
+    expect(rows.map((r) => r.revision)).toEqual([2, 3, null, 2]);
+  });
+
+  it("decides like the RPC", () => {
+    expect(refusesThreadRevision({ revision: 2 }, "teacher", undefined)).toBe(true);
+    expect(refusesThreadRevision({ revision: 2 }, "owner", undefined)).toBe(false);
+    expect(refusesThreadRevision({ revision: 2 }, "owner", 3)).toBe(true);
+    expect(refusesThreadRevision({ revision: 2 }, "teacher", 1)).toBe(false);
+    expect(refusesThreadRevision({ revision: 2 }, "teacher", 1.5)).toBe(true);
+    expect(refusesThreadRevision({ revision: 0 }, "teacher", 1)).toBe(true);
   });
 });

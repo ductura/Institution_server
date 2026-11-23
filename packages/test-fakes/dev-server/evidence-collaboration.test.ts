@@ -198,6 +198,8 @@ describe("dev fake server: live view and collaboration", () => {
 
   it("keeps comment threads and hides a deleted comment's text", async () => {
     const state = createState();
+    // INT-15-SRV: a teacher's thread names a revision of the work.
+    state.works.find((w) => w.documentId === IDS.document)!.revision = 1;
     const teacher = await signIn(state, "nastavnik");
     const anchor = {
       nodeId: "0a000000-0000-4000-8000-000000000001",
@@ -208,7 +210,7 @@ describe("dev fake server: live view and collaboration", () => {
       endHint: 10,
     };
     const created = await send(state, "/api/v1/comments/create", {
-      body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document },
+      body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document, revision: 1 },
       headers: teacher,
     });
     expect(created.status).toBe(200);

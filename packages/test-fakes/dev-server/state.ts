@@ -248,6 +248,8 @@ export type Comment = {
   readonly anchor: Record<string, unknown> | null;
   readonly at: string;
   deletedAt: string | null;
+  /** INT-15-SRV: the revision of the thread on its first comment; absent or null otherwise. */
+  readonly revision?: number | null;
 };
 
 export type RevisionRequest = {

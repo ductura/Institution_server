@@ -8,7 +8,28 @@
 // publishing only clears the drafts and the changes answer carries no blocks,
 // because the fake holds no record to reconstruct two versions from.
 import type { Handlers } from "./server.ts";
-import { readerOf, type State } from "./state.ts";
+import { readerOf, type State, type Work } from "./state.ts";
+
+/**
+ * INT-15-SRV, as collaboration.check_thread_revision: the revision a new thread
+ * of collaboration.comments.post may carry. A teacher must name one, a student
+ * may; it must be a revision of the work, 1 up to the current one (the fake
+ * stops moving the revision once a work is submitted, so the teacher's ceiling
+ * at the submitted revision comes with it). The caller has checked the
+ * relation first, so a stranger never reaches this. True when it is refused.
+ */
+export function refusesThreadRevision(
+  work: Pick<Work, "revision">,
+  reader: "owner" | "teacher",
+  revision: unknown,
+): boolean {
+  if (revision === undefined) return reader === "teacher";
+  return !(
+    Number.isSafeInteger(revision) &&
+    (revision as number) >= 1 &&
+    (revision as number) <= work.revision
+  );
+}
 
 type Draft = {
   readonly threadId: string;

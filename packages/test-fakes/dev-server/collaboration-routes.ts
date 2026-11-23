@@ -13,6 +13,7 @@ import {
   type RevisionRequest,
   type State,
 } from "./state.ts";
+import { refusesThreadRevision } from "./comments-routes.ts";
 import { processSummary } from "./work.ts";
 
 type RevisionRow = Extract<
@@ -191,7 +192,10 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "collaboration.comments.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
-    if (!hasKeys(body, COMMENT_KEYS[params.action])) return { error: "invalid_input" };
+    // INT-15-SRV: create may also carry the revision of its thread.
+    const keys = Object.keys(body).filter((k) => !(params.action === "create" && k === "revision"));
+    if (!hasKeys(Object.fromEntries(keys.map((k) => [k, true])), COMMENT_KEYS[params.action]))
+      return { error: "invalid_input" };
     const input = body as Partial<Record<string, unknown>> & CommentBody;
     const threadOf = (id: unknown) => state.comments.find((c) => c.threadId === id);
     const documentId =
@@ -206,6 +210,8 @@ export const COLLABORATION_HANDLERS: Handlers = {
     const at = now.toISOString();
     switch (params.action) {
       case "create": {
+        // After the relation (forbidden first), as the RPC.
+        if (refusesThreadRevision(work, reader, input.revision)) return { error: "invalid_input" };
         const threadId = randomUUID();
         const anchor = (input.anchor ?? null) as Record<string, unknown> | null;
         state.comments.push({
@@ -217,6 +223,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
           anchor,
           at,
           deletedAt: null,
+          revision: typeof input.revision === "number" ? input.revision : null,
         });
         state.threads.set(threadId, "open");
         return { status: 200, body: { id: threadId } };
@@ -264,6 +271,8 @@ export const COLLABORATION_HANDLERS: Handlers = {
             anchor: c.anchor,
             state: state.threads.get(c.threadId) ?? "open",
             createdWindow: windowOf(c.at),
+            // A reply inherits the revision of its thread's first comment.
+            revision: own.find((o) => o.threadId === c.threadId)?.revision ?? null,
           };
           return c.deletedAt === null
             ? { ...base, body: c.body, deletedWindow: null }
