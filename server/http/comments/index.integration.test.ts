@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createCommentDelay, createTeacherNotes } from "../../database/index.ts";
 import type { ActorTransaction, WithActor } from "../../database/index.ts";
@@ -110,6 +110,52 @@ it("publishes the drafts and answers how many, and 409 when there is none", asyn
   expect(await response.json()).toEqual({ published: 3 });
   query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD409" }));
   expect((await send("POST", "/works/izmisljeni-rad/comments/publish")).status).toBe(409);
+});
+
+describe("publish-selected", () => {
+  const PATH = "/works/izmisljeni-rad/comments/publish-selected";
+  const ID2 = "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e02";
+  const draft = (commentId: string) => ({
+    threadId: ID,
+    commentId,
+    position: 1,
+    text: "Izmišljena napomena.",
+    anchor: ANCHOR,
+    state: "open",
+    createdWindow: AT,
+  });
+
+  it("publishes when the ids are exactly the caller's drafts", async () => {
+    query.mockResolvedValueOnce(rows(draft(ID), draft(ID2)));
+    query.mockResolvedValueOnce(rows({ published: 2 }));
+    const response = await send("POST", PATH, { draftIds: [ID2, ID] });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ published: 2 });
+  });
+
+  it.each([
+    ["a draft was not seen", [ID]],
+    ["an id comes twice", [ID, ID, ID2]],
+  ])("answers 409 and publishes nothing when %s", async (_, draftIds) => {
+    query.mockResolvedValueOnce(rows(draft(ID), draft(ID2)));
+    expect((await send("POST", PATH, { draftIds })).status).toBe(409);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["no ids", { draftIds: [] }],
+    ["an id that is no id", { draftIds: ["nije-id"] }],
+    ["no body key", {}],
+    ["an unknown key", { draftIds: [ID], extra: 1 }],
+  ])("refuses %s with 422 and never reaches the database", async (_, body) => {
+    expect((await send("POST", PATH, body)).status).toBe(422);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("refuses a missing body with 415", async () => {
+    expect((await send("POST", PATH)).status).toBe(415);
+    expect(query).not.toHaveBeenCalled();
+  });
 });
 
 it("discards a draft with 204 and answers 404 for one that is not the caller's", async () => {

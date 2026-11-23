@@ -145,6 +145,23 @@ export const COMMENTS_HANDLERS: Handlers = {
     );
     return { status: 200, body: { published: own.length } };
   },
+  "work.comments.publish-selected.post": ({ state, account, params, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (readerOf(state, work, account) !== "teacher") return { error: "not_found" };
+    const drafts = draftsOf(state);
+    const mine = (d: Draft) => d.authorId === account.id && d.documentId === params.documentId;
+    const own = new Set(drafts.filter(mine).map((d) => d.commentId.toLowerCase()));
+    const seen = new Set((body as { draftIds: string[] }).draftIds.map((id) => id.toLowerCase()));
+    if (own.size === 0 || own.size !== seen.size || [...own].some((id) => !seen.has(id))) {
+      return { error: "conflict" };
+    }
+    DRAFTS.set(
+      state,
+      drafts.filter((d) => !mine(d)),
+    );
+    return { status: 200, body: { published: own.size } };
+  },
   "teacher.comment-bank.get": ({ state, account }) => {
     if (account === null) return { error: "unauthorized" };
     return { status: 200, body: { entries: [...bankOf(state, account.id)] } };

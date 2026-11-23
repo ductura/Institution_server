@@ -131,4 +131,55 @@ describe("createCommentDelay", () => {
       status: "unavailable",
     });
   });
+
+  describe("publishListed", () => {
+    const ID2 = "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e02";
+    /** One answer per query, in order. */
+    function sequenced(answers: Record<string, unknown>[][]) {
+      const calls: string[] = [];
+      const withActor = (async (_token, fn) =>
+        fn({
+          query: async (text: string) => {
+            calls.push(text);
+            const rows = answers[calls.length - 1] ?? [];
+            return { rows, rowCount: rows.length };
+          },
+        } as never)) as WithActor;
+      return { port: createCommentDelay(withActor), calls };
+    }
+    const drafts = [DRAFT, { ...DRAFT, commentId: ID2, position: 2 }];
+
+    it("publishes when the ids are exactly the caller's drafts, in any case and order", async () => {
+      const run = sequenced([drafts, [{ published: 2 }]]);
+      expect(await run.port.publishListed("t", "doc-a", [ID2.toUpperCase(), ID])).toEqual({
+        status: "ok",
+        published: 2,
+      });
+      expect(run.calls[0]).toContain("collaboration.list_comment_drafts($1)");
+      expect(run.calls[1]).toContain("collaboration.publish_comments($1)");
+    });
+
+    it.each([
+      ["an id that is not a draft", [ID, "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e09"]],
+      ["a draft the teacher did not see", [ID]],
+      ["the same id twice", [ID, ID.toUpperCase()]],
+    ])("is a conflict and publishes nothing for %s", async (_, ids) => {
+      const run = sequenced([drafts, [{ published: 2 }]]);
+      expect(await run.port.publishListed("t", "doc-a", ids)).toEqual({ status: "conflict" });
+      expect(run.calls).toHaveLength(1);
+    });
+
+    it("is a conflict when no draft is left", async () => {
+      const run = sequenced([[], [{ published: 1 }]]);
+      expect(await run.port.publishListed("t", "doc-a", [ID])).toEqual({ status: "conflict" });
+      expect(run.calls).toHaveLength(1);
+    });
+
+    it("is a conflict when the publish counts a draft written after the list", async () => {
+      const run = sequenced([drafts, [{ published: 3 }]]);
+      expect(await run.port.publishListed("t", "doc-a", [ID, ID2])).toEqual({
+        status: "conflict",
+      });
+    });
+  });
 });

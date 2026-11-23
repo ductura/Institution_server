@@ -1380,6 +1380,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  "work.comments.publish-selected.post": {
+    before: [DRAFT_STEP],
+    request: {
+      path: `/api/v1/works/${IDS.document}/comments/publish-selected`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { draftIds: [DRAFT_COMMENT_ID] },
+    },
+  },
   "teacher.comment-bank.get": {
     before: [BANK_STEP],
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
