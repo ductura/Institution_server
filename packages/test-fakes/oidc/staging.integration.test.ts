@@ -3,6 +3,8 @@
 // invented values of staging.test.ts.
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
 
 import { afterEach, expect, test, vi } from "vitest";
@@ -164,7 +166,22 @@ test("only the demo-* accounts sign in, and the browser goes back to APP_ORIGIN"
   const tokens = await tokenWith(SECRET);
   expect(tokens.status).toBe(200);
   const { id_token: idToken } = (await tokens.json()) as { id_token: string };
-  const [, body = ""] = idToken.split(".");
+  const [head = "", body = ""] = idToken.split(".");
+  // Signed with the key this process made, never the library's published one.
+  const { kid } = JSON.parse(Buffer.from(head, "base64url").toString("utf8")) as { kid: string };
+  const { keys } = (await (await get("/jwks")).json()) as { keys: { kid: string; n: string }[] };
+  expect(keys.map((key) => key.kid)).toEqual([kid]);
+  expect(kid).toMatch(/^[0-9a-f-]{36}$/u);
+  const published = readFileSync(
+    createRequire(import.meta.url)
+      .resolve("oidc-provider")
+      .replace(/lib[\\/]index\.js$/u, "lib/consts/dev_keystore.js"),
+    "utf8",
+  );
+  for (const key of keys) {
+    expect(key).not.toHaveProperty("d");
+    expect(published).not.toContain(key.n.slice(0, 40));
+  }
   expect(JSON.parse(Buffer.from(body, "base64url").toString("utf8"))).toMatchObject({
     iss: ISSUER,
     aud: "ductura-staging",

@@ -4,6 +4,7 @@
 // invented and carry the attribute names AAI@EduHr releases.
 // Ported from Ductus infra/fake-oidc/server.mjs (DAN-729). New here: the guard
 // (guard.ts) and the modes (modes.ts); `success` is the ported behaviour.
+import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -124,9 +125,24 @@ export function fakeOidcConfigFromEnv(env: Env): {
   };
 }
 
+/**
+ * Staging: a signing key made at start and held only in this process. Without
+ * `jwks`, oidc-provider signs with its published development key, which any
+ * reader of the library could use; locally that stays as it was.
+ */
+function stagingSigningKeys(): NonNullable<Configuration["jwks"]> {
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  return {
+    keys: [
+      { ...privateKey.export({ format: "jwk" }), alg: "RS256", use: "sig", kid: randomUUID() },
+    ],
+  };
+}
+
 function providerConfiguration(options: FakeOidcOptions): Configuration {
   const { backchannelLogoutUri, staging } = options;
   return {
+    ...(staging === undefined ? {} : { jwks: stagingSigningKeys() }),
     clients: [
       {
         client_id: staging?.clientId ?? "ductus-local",

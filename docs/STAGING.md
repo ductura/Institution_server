@@ -9,13 +9,14 @@ Staging Ducture diže se s migracijskih grana, ne s `main` (odluka vlasnika 23. 
 
 U repou su samo imena i koraci. Tajne (lozinke, `OIDC_CLIENT_SECRET`, `DUCTURA_PROVISIONING_TOKEN`) upisuješ samo u Render i Vercel, nikad u repo ni u komentar. **Ništa se ne objavljuje dok Daniel ne kaže**: stvaranje Blueprinta u koraku 1 već je prvi deploy.
 
-Na stagingu su samo izmišljeni podaci (`demo-*`, `db/main/local/seed.sql`). Prava prijava studenata ide samo kroz AAI@EduHr (D-09). Lažna OIDC prijava na stagingu radi samo u izričitom staging načinu koji uvodi STG-PRIJAVA (`DUCTURA_DEPLOYMENT=staging` i `APP_ORIGIN` koji nije produkcijska domena); produkcija je i dalje odbija. Testni AAI@EduHr klijent kod Srca (STG-AAI) je usporedan put: kad stigne, mijenjaju se samo varijable `DUCTUS_AUTH_PROVIDER` i `OIDC_*` (korak 5).
+Na stagingu su samo izmišljeni podaci (`demo-*`, `db/main/local/seed.sql`). Prava prijava studenata ide samo kroz AAI@EduHr (D-09). Lažna OIDC prijava na stagingu radi samo u izričitom staging načinu koji uvodi STG-PRIJAVA (`DUCTURA_DEPLOYMENT=staging` i `APP_ORIGIN` koji nije produkcijska domena); produkcija je i dalje odbija. Nijedna ustanova još nije pristala biti matična za testni AAI@EduHr resurs, pa staging dobiva lažnog pružatelja kao **zasebnu Render uslugu** `ductura-fake-oidc-staging` (odluka vlasnika 23. 11. 2026., „Idemo B”; STG-OIDC), nikad kao rutu servera (U9). Testni AAI@EduHr klijent (a) je usporedan put: kad stigne, mijenjaju se samo varijable `DUCTUS_AUTH_PROVIDER` i `OIDC_*` servera (odjeljak „Prelazak na AAI@EduHr (a)”).
 
 Produkcija ostaje u `render.yaml` i [DEPLOY.md](DEPLOY.md); ovaj dokument je ne mijenja.
 
 ## Datoteke
 
 - `render.staging.yaml`: web usluga `ductura-institution-server-staging` (frankfurt, grana `migracija/kopija-ductus-backend`, ista produkcijska faza `infra/web/Dockerfile`, bez `dockerTarget`, health check `GET /api/v1/health`, `autoDeployTrigger: "off"`) i dvije baze PostgreSQL 17: `ductura-institution-db-staging` (baza `ductus`) i `ductura-institution-logs-db-staging` (baza `ductus_logs`). Plan nije zadan, biraš ga u Renderu.
+- `render.staging.yaml`, druga web usluga: `ductura-fake-oidc-staging` (lažni OIDC pružatelj, frankfurt, ista grana, slika `infra/fake-oidc/Dockerfile`, health check `GET /.well-known/openid-configuration`, `autoDeployTrigger: "off"`). Slika nosi samo izvorni kod pružatelja (`packages/test-fakes/oidc/`) i njegove ovisnosti iz lockfilea, bez `.env*` i bez ijedne tajne; `DUCTURA_DEPLOYMENT=staging` je u njoj fiksan, pa lokalni način u njoj ne radi.
 - `infra/web/render-staging-blueprint.test.ts` (u `pnpm test`) drži `render.staging.yaml` usklađenim s kodom, s `render.yaml` i s ovim dokumentom (odjeljak „Provjera bez Rendera”).
 
 `autoDeployTrigger: "off"` znači da push na granu ne objavljuje sam. Migracije pokrećeš ručno (korak 3), pa svaka objava ide redom: migracije, zatim **Manual Deploy** u Renderu.
@@ -30,6 +31,26 @@ Potrebno na računalu: repo `Institution_server` na grani `migracija/kopija-duct
 2. Render stvori uslugu i obje baze i traži vrijednosti varijabli sa `sync: false`. Upiši ih po tablici u koraku 5; one koje još nemaš (prijave baza, adresa fronta) upiši kad ih dobiješ u koracima 2 do 4. Prazne ostaju `LEGAL_DATABASE_URL` i `EVIDENCE_STORAGE_DOMAINS`.
 3. Prvi deploy pada (server bez ispravnog `APP_DATABASE_URL` izlazi s kodom 78) dok ne napraviš korake 3 i 4. To je očekivano.
 4. Zapiši adresu usluge, npr. `https://ductura-institution-server-staging.onrender.com`, i za obje baze **External Database URL** (URL vlasnika baze). URL vlasnika služi samo za korake 3 i 4 s tvog računala; nikad ne ide u varijable usluge.
+
+### 1b. Lažni OIDC pružatelj: usluga `ductura-fake-oidc-staging`
+
+Blueprint iz koraka 1 stvara i ovu uslugu. Ona je pružatelj prijave dok vrijedi (b): stranica „Demo prijava” s oznakom „Samo testno okruženje”, samo izmišljeni računi `demo-*` (bez obrasca za račun bilo koje ustanove), i svaki odgovor nosi zaglavlje `X-Ductura-Deployment: staging`. Pokreće se samo uz ispravne vrijednosti; inače izlazi, a log imenuje varijablu (nikad vrijednost). Opis pravila: `packages/test-fakes/oidc/README.md`, odjeljak „Staging način”.
+
+1. Zapiši adresu usluge, npr. `https://ductura-fake-oidc-staging.onrender.com`. To je `ISSUER` ove usluge i `OIDC_ISSUER` servera (korak 5), bez kose crte na kraju.
+2. U **ductura-fake-oidc-staging → Environment** upiši:
+
+| Ime                       | Vrijednost na stagingu                                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ORIGIN`              | isto kao `APP_ORIGIN` servera (korak 2.5); samo https podrijetlo, nikad `ductura.org` ni njegove poddomene                   |
+| `ISSUER`                  | adresa ove usluge iz 1b.1; https, javni host izvan `ductura.org` i poddomena, bez porta                                      |
+| `FAKE_OIDC_CLIENT_SECRET` | nova vrijednost, najmanje 32 znaka (npr. `openssl rand -base64 32`); ista vrijednost ide u `OIDC_CLIENT_SECRET` servera      |
+| `FAKE_OIDC_COOKIE_KEY`    | druga nova vrijednost, najmanje 32 znaka, različita od tajne klijenta; potpisuje kolačiće pružatelja i nikamo drugamo ne ide |
+
+`DUCTURA_DEPLOYMENT`, `NODE_ENV`, `PORT` i `FAKE_OIDC_ACCOUNTS_FILE` se ne upisuju: staging način je u slici, `PORT` postavlja Render, a datoteka računa je u stagingu zabranjena.
+
+Povratne adrese su zadane i sve su na `APP_ORIGIN`: prijava `/api/v1/auth/callback`, nakon odjave `/app/web/` i odjava s pružatelja `/api/v1/auth/backchannel-logout` (Vercel ih prosljeđuje serveru). Odgovaraju `OIDC_REDIRECT_URI` i `OIDC_POST_LOGOUT_REDIRECT_URI` servera iz koraka 5. Adresu izvan `APP_ORIGIN` (i `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI` ili `BACKCHANNEL_LOGOUT_URI` ako ih netko upiše) pružatelj odbija pri pokretanju. ID klijenta je stalan: `ductura-staging`.
+
+3. Kad je `APP_ORIGIN` poznat (korak 2), **Manual Deploy** ove usluge. Provjera: `GET <ISSUER>/.well-known/openid-configuration` vraća 200, polje `issuer` jednako je `ISSUER`, a odgovor nosi `X-Ductura-Deployment: staging`.
 
 ### 2. Vercel: front
 
@@ -107,23 +128,23 @@ Iz toga slažeš URL-ove za Render: korisnik i lozinka prijave, host je **Intern
 
 Upisuješ ih u **ductura-institution-server-staging → Environment**, ovim redom: prvo prijave baza (korak 4), zatim adresa fronta (korak 2), zatim prijava.
 
-| Ime                             | Vrijednost na stagingu                                                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DUCTURA_DEPLOYMENT`            | `staging`; bez nje produkcijska gradnja odbija lažni pružatelj (STG-PRIJAVA)                                                                      |
-| `APP_ORIGIN`                    | stalna adresa Vercel projekta iz koraka 2.5, samo podrijetlo, npr. `https://ductura-staging.vercel.app`; nikad `ductura.org` ni `www.ductura.org` |
-| `APP_DATABASE_URL`              | prijava `ductura_stg_app` u `ductus` (interni host)                                                                                               |
-| `AUTH_DATABASE_URL`             | prijava `ductura_stg_auth` u `ductus` (interni host)                                                                                              |
-| `LOGS_DATABASE_URL`             | prijava `ductura_stg_logs` u `ductus_logs` (interni host)                                                                                         |
-| `LEGAL_DATABASE_URL`            | prazno (pravna baza se na stagingu ne stvara)                                                                                                     |
-| `TRUSTED_PROXIES`               | `10.0.0.0/8`, privatna mreža Renderova proxyja ispred usluge                                                                                      |
-| `DUCTUS_AUTH_PROVIDER`          | `fake-oidc` dok vrijedi (b); `aai-eduhr` kad Srce izda testni klijent (STG-AAI)                                                                   |
-| `OIDC_ISSUER`                   | (b): issuer lažnog pružatelja na stagingu (određuje STG-PRIJAVA); (a): issuer testnog AAI@EduHr klijenta                                          |
-| `OIDC_CLIENT_ID`                | ID klijenta kod tog pružatelja                                                                                                                    |
-| `OIDC_CLIENT_SECRET`            | tajna klijenta kod tog pružatelja                                                                                                                 |
-| `OIDC_REDIRECT_URI`             | `APP_ORIGIN` + `/api/v1/auth/callback`, npr. `https://ductura-staging.vercel.app/api/v1/auth/callback`                                            |
-| `OIDC_POST_LOGOUT_REDIRECT_URI` | `APP_ORIGIN` + `/app/web/`; isto podrijetlo kao `OIDC_REDIRECT_URI`, a `/` na Vercelu nema stranicu                                               |
-| `DUCTURA_PROVISIONING_TOKEN`    | nova vrijednost samo za staging, najmanje 32 znaka; nikad produkcijska                                                                            |
-| `EVIDENCE_STORAGE_DOMAINS`      | prazno: dobavljač pohrane nije izabran (D-08), pa commit rada odgovara 503 `storage`                                                              |
+| Ime                             | Vrijednost na stagingu                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DUCTURA_DEPLOYMENT`            | `staging`; bez nje produkcijska gradnja odbija lažni pružatelj (STG-PRIJAVA)                                                                                              |
+| `APP_ORIGIN`                    | stalna adresa Vercel projekta iz koraka 2.5, samo podrijetlo, npr. `https://ductura-staging.vercel.app`; nikad `ductura.org` ni `www.ductura.org`                         |
+| `APP_DATABASE_URL`              | prijava `ductura_stg_app` u `ductus` (interni host)                                                                                                                       |
+| `AUTH_DATABASE_URL`             | prijava `ductura_stg_auth` u `ductus` (interni host)                                                                                                                      |
+| `LOGS_DATABASE_URL`             | prijava `ductura_stg_logs` u `ductus_logs` (interni host)                                                                                                                 |
+| `LEGAL_DATABASE_URL`            | prazno (pravna baza se na stagingu ne stvara)                                                                                                                             |
+| `TRUSTED_PROXIES`               | `10.0.0.0/8`, privatna mreža Renderova proxyja ispred usluge                                                                                                              |
+| `DUCTUS_AUTH_PROVIDER`          | `fake-oidc` dok vrijedi (b); `aai-eduhr` kad Srce izda testni klijent (STG-AAI)                                                                                           |
+| `OIDC_ISSUER`                   | (b): adresa usluge `ductura-fake-oidc-staging` (njezin `ISSUER`, korak 1b), npr. `https://ductura-fake-oidc-staging.onrender.com`; (a): issuer testnog AAI@EduHr klijenta |
+| `OIDC_CLIENT_ID`                | (b): `ductura-staging`; (a): ID klijenta kod Srca                                                                                                                         |
+| `OIDC_CLIENT_SECRET`            | (b): ista vrijednost kao `FAKE_OIDC_CLIENT_SECRET` (korak 1b); (a): tajna klijenta kod Srca                                                                               |
+| `OIDC_REDIRECT_URI`             | `APP_ORIGIN` + `/api/v1/auth/callback`, npr. `https://ductura-staging.vercel.app/api/v1/auth/callback`                                                                    |
+| `OIDC_POST_LOGOUT_REDIRECT_URI` | `APP_ORIGIN` + `/app/web/`; isto podrijetlo kao `OIDC_REDIRECT_URI`, a `/` na Vercelu nema stranicu                                                                       |
+| `DUCTURA_PROVISIONING_TOKEN`    | nova vrijednost samo za staging, najmanje 32 znaka; nikad produkcijska                                                                                                    |
+| `EVIDENCE_STORAGE_DOMAINS`      | prazno: dobavljač pohrane nije izabran (D-08), pa commit rada odgovara 503 `storage`                                                                                      |
 
 `NODE_ENV`, `DUCTURA_MODE`, `DUCTUS_DEV_SIGNING_KEY_FILE`, `HOST` i `PORT` se ne upisuju: neodređen `NODE_ENV` je produkcija, a `PORT` postavlja Render.
 
@@ -132,6 +153,10 @@ O vrijednostima:
 - **`APP_ORIGIN`**: provjera podrijetla uspoređuje zaglavlje `Origin` preglednika s njim. Preglednik vidi samo Vercel adresu (API ide kroz prosljeđivanje), pa je to adresa fronta, ne adresa Render usluge. Adresa pregleda (`*-git-*.vercel.app`) nije `APP_ORIGIN`: prijava radi samo na stalnoj adresi.
 - **`TRUSTED_PROXIES`**: ispred procesa je Renderov proxy na privatnoj adresi, a ispred njega Vercel, čije adrese nisu stalne i ne smiju se navesti. Server zato kao adresu klijenta vidi izlaznu adresu Vercela; ograničenja po adresi na stagingu su grublja nego u produkciji. Raspon se ne smije proširiti preko `/8` (server ga odbija).
 - **`EVIDENCE_STORAGE_DOMAINS`**: kad se izabere pohrana, vrijednost je JSON `{"requestTimeoutMs": ..., "domains": [{"label", "institutionId", "endpoint" (https), "region", "bucket", "accessKeyIdVar", "secretAccessKeyVar", "capability"}]}`, a ključeve dodaješ kao `EVIDENCE_S3_*` ([DEPLOY.md](DEPLOY.md)). Do tada je prazna.
+
+### Prelazak na AAI@EduHr (a)
+
+Kad Srce izda testni klijent (STG-AAI), na **ductura-institution-server-staging → Environment** mijenjaju se samo `DUCTUS_AUTH_PROVIDER` = `aai-eduhr` i varijable `OIDC_*` (`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, te `OIDC_REDIRECT_URI` i `OIDC_POST_LOGOUT_REDIRECT_URI` ako Srce registrira druge adrese na istom `APP_ORIGIN`), zatim **Manual Deploy**. Kod, slika i ostale varijable se ne mijenjaju. Uslugu `ductura-fake-oidc-staging` tada u Renderu zaustaviš (**Suspend**); `DUCTURA_DEPLOYMENT` servera ostaje `staging`.
 
 ### 6. Izmišljeni podaci (seed)
 
@@ -175,18 +200,19 @@ Prijava tada radi za sve račune lažnog pružatelja (korisnik nastaje pri prvoj
 
 1. U Renderu **Manual Deploy** zadnjeg commita grane. Log ne smije sadržavati `.env*` u kontekstu gradnje ([DEPLOY.md](DEPLOY.md)).
 2. `GET <adresa usluge>/api/v1/health` i `GET <APP_ORIGIN>/api/v1/health` vraćaju 200.
-3. `<APP_ORIGIN>/app/web/` otvara prijavu; u staging načinu svaki odgovor nosi oznaku stagea (STG-PRIJAVA).
+3. `<APP_ORIGIN>/app/web/` otvara prijavu; u staging načinu svaki odgovor nosi oznaku stagea (STG-PRIJAVA), a stranica „Demo prijava” na adresi `ductura-fake-oidc-staging` zaglavlje `X-Ductura-Deployment: staging`.
 4. Prijava kao `demo-student` vodi natrag na `/app/web/`, odjava na `/app/web/`.
 
 ## Otvoreno
 
 - **Pravna baza na upravljanoj bazi** (B0.1): `ductus_legal` se bez superusera ne može postaviti s današnjim `db/legal/local/migrator.sql` i prvom pravnom migracijom. Treba odluka kako se pravna baza provizionira na Renderu (zaseban zadatak trake S-B; migracija koja je već na bazi se ne mijenja, D-91).
 - **Prvi administrator ustanove bez superusera** (B0.1): `appoint_institution_admin` radi samo za ulogu s `BYPASSRLS`. Treba provjeriti `rolbypassrls` vlasnika na Renderu; ako je `f`, demo na stagingu treba vlasnikovu odluku o načinu postavljanja prvog administratora.
-- **Lažni pružatelj na stagingu**: gdje živi issuer i kako se zove staging varijabla određuje STG-PRIJAVA. Ovdje je pretpostavljeno ime `DUCTURA_DEPLOYMENT` iz njegova naloga; ako se razlikuje, mijenja se `render.staging.yaml`, ovaj dokument i test. Ako lažni pružatelj ide kao zasebna Render usluga, dodaje se u `render.staging.yaml`.
+- **Lažni pružatelj na stagingu** (STG-OIDC): stanje (sesije, kodovi) drži u memoriji, a ključ potpisa stvara pri pokretanju. Svako ponovno pokretanje ili uspavljivanje usluge prekida otvorene prijave kod pružatelja; sesija u Ducturi ostaje, a nova prijava radi odmah. Na besplatnom planu Render uspavljuje uslugu nakon neaktivnosti, pa prva prijava nakon toga čeka buđenje.
 - **Potpis i pohrana dokaza rada**: bez KMS potpisnika (D-71) i pohrane (D-08) `POST /api/v1/evidence/commit` na stagingu odgovara 503, pa studentsko pisanje ne sprema dokaze ([DEPLOY.md](DEPLOY.md)).
 - **`TRUSTED_PROXIES`**: raspon `10.0.0.0/8` za Renderov proxy treba potvrditi na prvom deployu.
 
 ## Provjera bez Rendera
 
-- `infra/web/render-staging-blueprint.test.ts` provjerava: jednu Docker uslugu produkcijske faze s granom `migracija/kopija-ductus-backend`, bez `dockerTarget` i bez automatske objave; da svaka varijabla nosi samo ime (`sync: false`); da su navedene sve varijable `render.yaml` i staging varijabla; da nijedna nije prekidač lokalnog rada ili testova; da su baze u regiji usluge, na glavnoj verziji PostgreSQL-a iz CI-ja, a imena različita od produkcijskih; da produkcijski `render.yaml` ne navodi staging varijablu; i da je svaka varijabla opisana u ovom dokumentu.
+- `infra/web/render-staging-blueprint.test.ts` provjerava: jednu Docker uslugu produkcijske faze s granom `migracija/kopija-ductus-backend`, bez `dockerTarget` i bez automatske objave; da svaka varijabla nosi samo ime (`sync: false`); da su navedene sve varijable `render.yaml` i staging varijabla; da nijedna nije prekidač lokalnog rada ili testova; da su baze u regiji usluge, na glavnoj verziji PostgreSQL-a iz CI-ja, a imena različita od produkcijskih; da produkcijski `render.yaml` ne navodi staging varijablu; da je svaka varijabla opisana u ovom dokumentu; i da je lažni OIDC pružatelj zasebna usluga `ductura-fake-oidc-staging` iz `infra/fake-oidc/Dockerfile` na istoj grani i u istoj regiji, s četiri varijable bez vrijednosti, kojoj produkcijski `render.yaml` ne zna ime.
+- `infra/fake-oidc/dockerfile.test.ts` provjerava sliku pružatelja: osnovna slika kao `infra/web/Dockerfile` (digest), fiksan `DUCTURA_DEPLOYMENT=staging`, bez tajni, bez `NODE_ENV` i `.env*`, ovisnosti samo iz lockfilea, korisnik `node`. Pravila staging načina provjeravaju `packages/test-fakes/oidc/staging.test.ts` i `staging.integration.test.ts`.
 - Proba koraka 3, 4 i 6 (23. 11. 2026., PostgreSQL 16, dva klastera, vlasnik `LOGIN CREATEROLE CREATEDB` bez superusera, kao na Renderu): uloge i sve migracije glavne baze i baze zapisa prolaze, i drugo pokretanje migracija; prijave se spajaju; `db/legal/local/migrator.sql` pada na članstvu u `ductus_legal_migrator`; seed prolazi dva puta samo uz `BYPASSRLS`, a bez njega prvi dio prolazi i demo blok pada na `teacher_role_event`; `pnpm build` i `node dist/server.js` s tim prijavama i praznim `LEGAL_DATABASE_URL` i `EVIDENCE_STORAGE_DOMAINS` odgovaraju 200 na `/api/v1/health` i `/api/v1/ready`.
