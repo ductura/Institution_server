@@ -1,11 +1,17 @@
 import { createActorReader, type WithActor } from "../index.ts";
-import type { DeclarationForm, DeclarationPutBody } from "../../domain/index.ts";
+import type {
+  DeclarationForm,
+  DeclarationPutBody,
+  DeclarationQuestionAnswer,
+} from "../../domain/index.ts";
 export {
   checkExternalAttachmentBytes,
   incompleteFields,
+  isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
   parseDeclarationPutBody,
+  parseDeclarationQuestionAnswer,
 } from "../../domain/index.ts";
 
 export type ConfiguredForm = { file: string; form: DeclarationForm & { text: string } };
@@ -33,7 +39,7 @@ function refusalOf(status: StatementRefusal["status"], data: Record<string, unkn
 }
 export type StatementOperation =
   | { type: "read" }
-  | { type: "save"; body: DeclarationPutBody }
+  | { type: "save"; body: DeclarationPutBody; answer: DeclarationQuestionAnswer | null }
   | { type: "upload"; format: string; bytes: Uint8Array };
 
 export type StatementPort = {
@@ -43,7 +49,8 @@ export type StatementPort = {
 
 const SQL = {
   read: "SELECT declaration.read_statement($1) AS result",
-  save: "SELECT declaration.save_statement($1, $2, $3) AS result",
+  // SRV-IZJAVA-PITANJE: save_statement and the optional answer in one call.
+  save: "SELECT declaration.save_statement_answer($1, $2, $3, $4) AS result",
   upload: "SELECT declaration.upload_attachment($1, $2, $3) AS result",
 } as const;
 
@@ -57,7 +64,7 @@ export function createStatementPort(withActor: WithActor, readForm: FormReader):
       const form = op.type === "upload" ? null : await readForm(slug);
       const args =
         op.type === "save"
-          ? [assignmentId, op.body, form?.file ?? null]
+          ? [assignmentId, op.body, form?.file ?? null, op.answer]
           : op.type === "upload"
             ? [assignmentId, op.format, Buffer.from(op.bytes)]
             : [assignmentId];

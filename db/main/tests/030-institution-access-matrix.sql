@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3748);
+SELECT plan(3775);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -43,7 +43,9 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_ev
   t.relation || ': forced RLS and only the evidence owner has access')
   FROM (VALUES ('declaration.statement', 'statement_owner'),
                ('declaration.external_attachment', 'attachment_owner'),
-               ('declaration.conversation_attachment', 'conversation_attachment_owner')) t(relation, policy)
+               ('declaration.conversation_attachment', 'conversation_attachment_owner'),
+               -- SRV-IZJAVA-PITANJE: the student's answer to the teacher's question.
+               ('declaration.question_answer', 'question_answer_owner')) t(relation, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.relation);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -51,7 +53,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
   f.signature || ': definer RPC with an empty path, only for the application')
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
-               ('declaration.upload_attachment(uuid,text,bytea)')) f(signature)
+               ('declaration.upload_attachment(uuid,text,bytea)'),
+               ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -106,7 +109,7 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
 SELECT bag_eq(
   $$ SELECT c.relname::text FROM pg_class c
      WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
-  ARRAY['statement', 'external_attachment', 'conversation_attachment'],
+  ARRAY['statement', 'external_attachment', 'conversation_attachment', 'question_answer'],
   'the declaration schema holds exactly its three tables'
 );
 SELECT bag_eq(
@@ -123,7 +126,10 @@ SELECT bag_eq(
         'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
         'declaration.is_fresh(declaration.statement,text,bigint,integer)',
         'declaration.bound_declaration_of(uuid,uuid,uuid)', 'declaration.submission_gate(text,bigint)',
-        'declaration.require_pinned_submission()'],
+        'declaration.require_pinned_submission()',
+        'declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
+        'declaration.answer_ref(declaration.question_answer)', 'declaration.bound_answer_of(uuid,uuid,uuid)',
+        'declaration.reject_answer_change()', 'declaration.delete_draft_answer()'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -136,8 +142,10 @@ SELECT bag_eq(
   ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
         'ductus_app declaration.upload_attachment(uuid,text,bytea)',
         'ductus_app declaration.submission_gate(text,bigint)',
-        'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
-  'the web role executes only the three student RPCs and the submission gate, and identity only the teacher''s bound-declaration helper'
+        'ductus_app declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
+        'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)',
+        'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)'],
+  'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration and bound-answer helpers'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname
@@ -160,7 +168,10 @@ SELECT bag_eq(
         'declaration.external_attachment attachment_immutable', 'declaration.external_attachment attachment_no_truncate',
         'declaration.conversation_attachment conversation_attachment_immutable',
         'declaration.conversation_attachment conversation_attachment_no_truncate',
-        'declaration.conversation_attachment conversation_attachment_in_payload'],
+        'declaration.conversation_attachment conversation_attachment_in_payload',
+        'declaration.statement statement_draft_answer',
+        'declaration.question_answer question_answer_immutable',
+        'declaration.question_answer question_answer_no_truncate'],
   'the declaration tables carry exactly their immutability and payload triggers'
 );
 SELECT ok(NOT has_schema_privilege('ductus_worker', 'declaration', 'USAGE')
@@ -547,6 +558,10 @@ SELECT bag_eq(
     'set_declaration_required(p_assignment_id uuid, p_required boolean) definer app',
     'declaration_required_of(p_assignment_id uuid)',
     'declaration_required_setting(p_assignment_id uuid) definer app',
+    'is_declaration_question(p_text text)',
+    'declaration_question_of(p_assignment_id uuid)',
+    'declaration_question_setting(p_assignment_id uuid) definer app',
+    'set_declaration_question(p_assignment_id uuid, p_question text) definer app',
     'reject_work_milestone_event_change()',
     'is_thesis_text(p_text text, p_max integer)',
     'reject_thesis_record_change()',
@@ -811,6 +826,14 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'PIL-K-IZJAVA-SRV: audit.declaration_required_event has forced RLS, the identity owner and no privilege for another role')
   FROM pg_class c WHERE c.oid = 'audit.declaration_required_event'::regclass;
+-- The trail of the teacher's question with the declaration (audit.declaration_question_event), SRV-IZJAVA-PITANJE.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-IZJAVA-PITANJE: audit.declaration_question_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.declaration_question_event'::regclass;
 
 -- 1c4. SRV-1230: the match with the assistant (evidence.assistant_match_finding,
 -- assistant_match_attachment, assistant_match_setting) only through the RPCs; the
@@ -1504,6 +1527,33 @@ SELECT is(
   c.result, format('PIL-K-IZJAVA-SRV: %s sets the declaration switch of Z1: %s', c.actor, c.result))
 FROM (VALUES
   ('vesna', 'false'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+
+-- 1i3. SRV-IZJAVA-PITANJE: the teacher's question with the declaration
+-- (audit.declaration_question_event) only through its RPCs, only for the
+-- teacher of the assignment; the answer (declaration.question_answer) only
+-- for the teacher or mentor of the student's work, the owner reads hers in
+-- read_statement. The rest is in 232-declaration-question.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT coalesce(question_text, ''none'') FROM institution.declaration_question_setting({z1})'), 1, 5),
+  c.result, format('SRV-IZJAVA-PITANJE: %s reads the declaration question of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'none'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT coalesce(question_text, ''none'') FROM institution.set_declaration_question({z1}, NULL)'), 1, 5),
+  c.result, format('SRV-IZJAVA-PITANJE: %s sets the declaration question of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'none'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT coalesce(answer::text, ''none'') FROM app.teacher_declaration_answer({z1}, {ana})'), 1, 5),
+  c.result, format('SRV-IZJAVA-PITANJE: %s reads the declaration answer of Ana in Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'none'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
   ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
 ) AS c (actor, result);
 

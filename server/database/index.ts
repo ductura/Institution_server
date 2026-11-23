@@ -490,8 +490,11 @@ export {
   type OriginRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
+  createDeclarationQuestionPort,
   createDeclarationRequiredSwitch,
   createSubmissionDeclarationGate,
+  type DeclarationQuestionPort,
+  type DeclarationQuestionSetting,
   type DeclarationRequiredSetting,
   type DeclarationRequiredSwitch,
   type SubmissionDeclarationGate,
@@ -759,9 +762,11 @@ export {
   checkExternalAttachmentBytes,
   createStatementPort,
   incompleteFields,
+  isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
   parseDeclarationPutBody,
+  parseDeclarationQuestionAnswer,
   type FormReader,
   type StatementOperation,
   type StatementPort,
@@ -791,8 +796,13 @@ export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
 export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";
 export {
+  classesAwaitingDecision,
   createRetentionDryRunReader,
+  retentionPeriodStatus,
+  withPeriodStatus,
+  type RetentionClassEntry,
   type RetentionDryRunResult,
+  type RetentionPeriodStatus,
 } from "./retention-dry-run/index.ts";
 export {
   createWorkAccessReader,

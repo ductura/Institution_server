@@ -7,7 +7,9 @@ import {
   incompleteFields,
   isExternalFormat,
   parseDeclarationPutBody,
+  parseDeclarationQuestionAnswer,
 } from "../../../server/domain/declaration/index.ts";
+import { questionOf, questionTextOf } from "./declaration-question-routes.ts";
 import type { Context, Handlers } from "./server.ts";
 import { teachesCourse, visibleStudents, type State } from "./state.ts";
 
@@ -59,6 +61,9 @@ function answerOf(state: State, work: NonNullable<ReturnType<typeof workOf>>): S
     payload: null,
     declarationSha256: null,
     uploads,
+    // SRV-IZJAVA-PITANJE: the question in force and the answer of the saved row.
+    teacherQuestion: questionOf(state, work.assignmentId),
+    questionAnswer: null,
   };
   if (saved === undefined || (submitted && !fresh)) return empty;
   return {
@@ -66,6 +71,8 @@ function answerOf(state: State, work: NonNullable<ReturnType<typeof workOf>>): S
     submitted,
     currentRevision: work.revision,
     uploads,
+    teacherQuestion: questionOf(state, work.assignmentId),
+    questionAnswer: saved.questionAnswer ?? null,
     state: submitted ? "bound" : saved.state === "confirmed" && !fresh ? "stale" : saved.state,
   };
 }
@@ -97,11 +104,27 @@ export const STATEMENT_HANDLERS: Handlers = {
       (item) => item.assignmentId === assignment.id && item.studentId === studentId,
     );
     const bound = work === undefined ? undefined : answerOf(state, work);
+    const question = questionOf(state, assignment.id);
     if (bound?.state !== "bound" || bound.payload === null || bound.declarationSha256 === null)
-      return { status: 200, body: { state: "none", payload: null, declarationSha256: null } };
+      return {
+        status: 200,
+        body: {
+          state: "none",
+          payload: null,
+          declarationSha256: null,
+          question,
+          questionAnswer: null,
+        },
+      };
     return {
       status: 200,
-      body: { state: "bound", payload: bound.payload, declarationSha256: bound.declarationSha256 },
+      body: {
+        state: "bound",
+        payload: bound.payload,
+        declarationSha256: bound.declarationSha256,
+        question,
+        questionAnswer: bound.questionAnswer ?? null,
+      },
     };
   },
   "student.declaration.get": (ctx) => {
@@ -114,8 +137,11 @@ export const STATEMENT_HANDLERS: Handlers = {
     const work = workOf(ctx);
     if (work === undefined) return { error: "not_found" };
     const previous = answerOf(ctx.state, work);
-    const parsed = parseDeclarationPutBody(ctx.body);
-    if (!parsed.ok || parsed.body.ai.attachments.length !== 0) return { error: "invalid_input" };
+    const { questionAnswer, ...declaration } = ctx.body;
+    const parsed = parseDeclarationPutBody(declaration);
+    const answer = parseDeclarationQuestionAnswer(questionAnswer);
+    if (!parsed.ok || !answer.ok || parsed.body.ai.attachments.length !== 0)
+      return { error: "invalid_input" };
     const body = parsed.body;
     if (previous.submitted) return { error: "already_submitted" };
     if (body.confirm && incompleteFields(body).length > 0) return { error: "incomplete" };
@@ -133,6 +159,11 @@ export const STATEMENT_HANDLERS: Handlers = {
       body.ai.externalAttachmentIds.includes(upload.externalAttachmentId),
     );
     if (uploads.length !== body.ai.externalAttachmentIds.length) return { error: "not_found" };
+    const questionText =
+      answer.answer === null
+        ? null
+        : questionTextOf(ctx.state, work.assignmentId, answer.answer.questionId);
+    if (answer.answer !== null && questionText === null) return { error: "invalid_input" };
     const version = previous.version + 1;
     const store = stateFor(SAVED, ctx.state);
     const confirmed = store.get(work.documentId)?.confirmed ?? null;
@@ -172,6 +203,10 @@ export const STATEMENT_HANDLERS: Handlers = {
       draft: payload === null ? body : null,
       payload,
       declarationSha256: payload === null ? null : declarationSha256(payload),
+      questionAnswer:
+        answer.answer === null || questionText === null
+          ? null
+          : { questionId: answer.answer.questionId, questionText, text: answer.answer.text },
     };
     store.set(work.documentId, { latest: next, confirmed: payload === null ? confirmed : next });
     return { status: 200, body: next };

@@ -8,7 +8,7 @@ Izvori:
 - Zadatak MK-12 i MK-14: (a) popis obrazaca fakulteta za završni i diplomski rad s verzijom i stanje svakog obrasca po radu; (b) suglasnost mentora za predaju (tko, kada, neobavezan komentar), student vidi stanje, predaja se ne blokira dok fakultet to ne uključi (postavka fakulteta, zadano isključeno); (c) stanja nakon predaje i obrane.
 - Nalaz `ductura/Institution_front_web_chrome` `docs/nalazi/nove-funkcije-6-mentorstvo-konzultacije.md` (MK-n, serverske ovisnosti).
 - Migracija `db/main/migrations/20261216120000_thesis_forms_consent.sql`, pgTAP `db/main/tests/234-thesis-forms-consent.sql` i retci u `030-institution-access-matrix.sql`.
-- Rute: `server/contracts/routes/thesis.ts` (ugovor 1.98.0), vektori `server/contracts/vectors/{institution.thesis-*,work.thesis-*,work.mentor-consent.*}.json`.
+- Rute: `server/contracts/routes/thesis.ts` (ugovor 1.99.0), vektori `server/contracts/vectors/{institution.thesis-*,work.thesis-*,work.mentor-consent.*}.json`.
 
 ## 1. Što ugovor ne odlučuje
 

@@ -125,6 +125,8 @@ SELECT bag_eq(
             ('declaration.upload_attachment(uuid,text,bytea)'),
             -- PIL-K-IZJAVA-SRV: the declaration a submission requires, read before the request.
             ('declaration.submission_gate(text,bigint)'),
+            -- SRV-IZJAVA-PITANJE: the declaration save with the answer to the teacher's question.
+            ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
             ('app.read_own_reconstruction_checkpoint(text,bigint)'),
             -- SRV-1903: the student's two steps of a withdrawal.
