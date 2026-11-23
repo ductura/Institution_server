@@ -953,6 +953,20 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "teacher.course-input-rhythm.get": {
+    params: { "courseId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.course-input-rhythm.put": {
+    params: { "courseId": string };
+    query: undefined;
+    body: { "enabled": boolean };
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "teacher.course-literature.delete": {
     params: { "courseId": string; "sourceId": string };
     query: undefined;
@@ -1030,18 +1044,25 @@ export type Operations = {
     success: { status: 200; body: { "kind": "ok"; "students": ({ "id": string; "givenName": string; "surname": string; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": string; "surname": string; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } } | { "id": string; "givenName": null; "surname": null; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": null; "surname": null; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
   };
+  "teacher.input-rhythm.delete": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
   "teacher.input-rhythm.get": {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "teacher.input-rhythm.put": {
     params: { "assignmentId": string };
     query: undefined;
     body: { "enabled": boolean };
-    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
   "teacher.literature-seen.put": {
@@ -1426,7 +1447,7 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabled": boolean; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
+    success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.input-rhythm.delete": {

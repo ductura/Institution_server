@@ -992,6 +992,25 @@ const SESSION_ROUTES = {
     body: () => ({ enabled: false }),
     live: 404,
   },
+  // PIL-P1-RITAM-PREDMET-SRV: no such assignment or course for the live session: 404.
+  "teacher.input-rhythm.delete": {
+    method: "DELETE",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/input-rhythm`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.course-input-rhythm.get": {
+    method: "GET",
+    path: `/api/v1/teacher/courses/${randomUUID()}/input-rhythm`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.course-input-rhythm.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/courses/${randomUUID()}/input-rhythm`,
+    body: () => ({ enabled: false }),
+    live: 404,
+  },
   // PIL-K-IZJAVA-SRV: a live session that teaches no such assignment gets 404 and changes nothing.
   "teacher.declaration-required.get": {
     method: "GET",

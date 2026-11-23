@@ -400,8 +400,13 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
   },
   "app/api/teacher/assignments/[assignmentId]/input-rhythm/route.ts": {
-    methods: ["GET", "PUT"],
+    methods: ["GET", "PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
+  },
+  // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
+  "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7091841764",
   },
   // PIL-K-IZJAVA-SRV (Ductus#2052 c.7090494988, owner decision of 23. 11. 2026): the teacher's
   // required declaration and the second major of the submission (409 declaration_required).

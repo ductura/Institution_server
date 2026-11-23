@@ -17,6 +17,12 @@ import { MUTATION_GUARD } from "./shared.ts";
 // read. It is a record of input, not of authorship. Database:
 // app.input_rhythm_record, _read, _delete (20261213100300) and
 // app.input_rhythm_switch, _switch_read, _state (20261213110100).
+//
+// PIL-P1-RITAM-PREDMET-SRV (Daniel 23. 11. 2026.): the switch also exists per
+// course, and the assignment's overrides it. The assignment's switch, if set,
+// holds before the course's; else the course's; else on. The state names the
+// level it comes from (source). Database: app.input_rhythm_course_switch,
+// _course_switch_read, _switch_clear (20261214120000).
 
 /** The most gaps of one burst; the client splits or thins a longer one. */
 export const RHYTHM_MAX_GAPS = 130;
@@ -39,13 +45,22 @@ const Gaps = Type.Array(Gap, {
 });
 const Burst = closed({ id: Uuid, gapsMs: Gaps, recordedAt: Instant });
 const Switch = closed({ enabled: Type.Boolean() });
+/** The level the state comes from: the assignment's switch, the course's, or the default. */
+const Source = Type.Union([
+  Type.Literal("assignment"),
+  Type.Literal("course"),
+  Type.Literal("default"),
+]);
 /**
  * The state of the teacher's switch, as the student and the teacher read it:
- * who changed it last (the role in the assignment and the name, null when no
- * name is known) and when; both null while the default holds.
+ * the level it comes from, who set that level (the role and the name, null when
+ * no name is known) and when; both null while the default holds. The source is
+ * optional only so that the answer stays readable for older clients; the server
+ * always sends it.
  */
 const SwitchState = closed({
   enabled: Type.Boolean(),
+  source: Type.Optional(Source),
   changedBy: Type.Union([
     closed({
       role: Type.Union([Type.Literal("teacher"), Type.Literal("mentor")]),
@@ -58,8 +73,10 @@ const SwitchState = closed({
 
 const WorkParams = closed({ documentId: WorkId });
 const AssignmentParams = closed({ assignmentId: Uuid });
+const CourseParams = closed({ courseId: Uuid });
 const WORK_INVENTORY = "app/api/works/[documentId]/input-rhythm/route.ts";
 const TEACHER_INVENTORY = "app/api/teacher/assignments/[assignmentId]/input-rhythm/route.ts";
+const COURSE_INVENTORY = "app/api/teacher/courses/[courseId]/input-rhythm/route.ts";
 const READ_ERRORS = [
   error(401, "unauthorized"),
   error(404, "not_found"),
@@ -183,6 +200,52 @@ export const teacherInputRhythmPut = defineRoute({
   errors: [...WRITE_ERRORS, ...BODY_ERRORS],
 });
 
+export const teacherInputRhythmDelete = defineRoute({
+  id: "teacher.input-rhythm.delete",
+  method: "DELETE",
+  path: "/api/v1/teacher/assignments/{assignmentId}/input-rhythm",
+  inventory: TEACHER_INVENTORY,
+  access: "course_teacher",
+  summary:
+    "The teacher of the assignment (of its course, or its mentor) clears the assignment's own switch of the rhythm of typing, so that the switch of its course holds again (on by default). No body. Answers 200 with the state that now holds and its source. A clearing is recorded in the audit trail in the same transaction; clearing a switch nobody set changes nothing. A student, another teacher, an unknown or a malformed assignment returns 404.",
+  request: { params: AssignmentParams },
+  responses: [{ status: 200, description: "the state that now holds", body: SwitchState }],
+  errors: WRITE_ERRORS,
+});
+
+export const teacherCourseInputRhythmGet = defineRoute({
+  id: "teacher.course-input-rhythm.get",
+  method: "GET",
+  path: "/api/v1/teacher/courses/{courseId}/input-rhythm",
+  inventory: COURSE_INVENTORY,
+  access: "course_teacher",
+  summary:
+    "A teacher of the course reads its switch of the rhythm of typing, on by default, with who changed it last and when. It holds for every assignment of the course whose own switch is not set. A student, a teacher of another course, an unknown or a malformed course returns 404.",
+  request: { params: CourseParams },
+  responses: [{ status: 200, description: "the state of the course's switch", body: SwitchState }],
+  errors: READ_ERRORS,
+});
+
+export const teacherCourseInputRhythmPut = defineRoute({
+  id: "teacher.course-input-rhythm.put",
+  method: "PUT",
+  path: "/api/v1/teacher/courses/{courseId}/input-rhythm",
+  inventory: COURSE_INVENTORY,
+  access: "course_teacher",
+  summary:
+    "Only a teacher of the course switches the recording of the rhythm of typing off or on for the course, exactly {enabled}. It holds for every assignment of the course whose own switch is not set; an assignment's switch overrides it. Answers 200 with the new state and who changed it. Every switch is recorded in the audit trail in the same transaction. A body that is not exactly this is 422. A student, a teacher of another course, an unknown or a malformed course returns 404.",
+  request: {
+    params: CourseParams,
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: Switch,
+  },
+  responses: [
+    { status: 200, description: "the new state of the course's switch", body: SwitchState },
+  ],
+  errors: [...WRITE_ERRORS, ...BODY_ERRORS],
+});
+
 export const inputRhythmRoutes = [
   inputRhythmPost,
   inputRhythmGet,
@@ -190,4 +253,7 @@ export const inputRhythmRoutes = [
   inputRhythmSettingGet,
   teacherInputRhythmGet,
   teacherInputRhythmPut,
+  teacherInputRhythmDelete,
+  teacherCourseInputRhythmGet,
+  teacherCourseInputRhythmPut,
 ] as const;
