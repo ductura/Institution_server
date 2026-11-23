@@ -78,7 +78,7 @@ it.each(["state", "submitted"])(
       [expect.stringContaining("collaboration.read_live_state("), [INPUT.documentId]],
       [
         expect.stringContaining("collaboration.create_comment("),
-        [INPUT.documentId, INPUT.body, JSON.stringify(INPUT.anchor)],
+        [INPUT.documentId, INPUT.body, JSON.stringify(INPUT.anchor), null],
       ],
     ]);
   },
@@ -103,7 +103,7 @@ it("creates a general comment without reading the work", async () => {
   expect(query.mock.calls).toEqual([
     [
       expect.stringContaining("collaboration.create_general_comment("),
-      [INPUT.documentId, INPUT.body],
+      [INPUT.documentId, INPUT.body, null],
     ],
   ]);
 });
@@ -135,11 +135,13 @@ it("lists shared comments under each session with no cache", async () => {
     state: "open",
     createdWindow: window,
     deletedWindow: null,
+    revision: 2,
   };
   for (const token of [TEACHER, STUDENT]) {
     const expected = { ...comment, isOwn: token === TEACHER };
     query.mockResolvedValueOnce({
-      rows: [{ ...expected, createdWindow: new Date(window) }],
+      // node-postgres hands a bigint over as a string.
+      rows: [{ ...expected, createdWindow: new Date(window), revision: "2" }],
       rowCount: 1,
     });
     const result = await post("list", { documentId: INPUT.documentId }, token);
@@ -182,4 +184,68 @@ it.each(["create", "list"])("uses the database's access decision for %s", async 
   expect(result.status).toBe(403);
   expect(await result.json()).toMatchObject({ code: "forbidden" });
   expect(query).toHaveBeenCalledTimes(1);
+});
+
+// INT-15-SRV: the revision of a new thread goes to the RPC, which requires it
+// from a teacher and checks it after the relation; the wire refuses a malformed one.
+it("passes the revision of a new anchored thread to create_comment", async () => {
+  query
+    .mockResolvedValueOnce({
+      rows: [{ outcome: "state", hash: HASH, body: SNAPSHOT }],
+      rowCount: 1,
+    })
+    .mockResolvedValueOnce({ rows: [{ id: ID }], rowCount: 1 });
+  expect((await post("create", { ...INPUT, revision: 3 })).status).toBe(200);
+  expect(query.mock.calls[1]).toEqual([
+    expect.stringContaining("collaboration.create_comment("),
+    [INPUT.documentId, INPUT.body, JSON.stringify(INPUT.anchor), 3],
+  ]);
+});
+
+it("passes the revision of a new general thread to create_general_comment", async () => {
+  query.mockResolvedValueOnce({ rows: [{ id: ID }], rowCount: 1 });
+  expect((await post("create", { ...INPUT, anchor: null, revision: 3 })).status).toBe(200);
+  expect(query.mock.calls).toEqual([
+    [
+      expect.stringContaining("collaboration.create_general_comment("),
+      [INPUT.documentId, INPUT.body, 3],
+    ],
+  ]);
+});
+
+it("refuses a malformed revision and a revision outside create before the database", async () => {
+  for (const revision of [0, -1, 1.5, "2", null, Number.MAX_SAFE_INTEGER + 1]) {
+    expect((await post("create", { ...INPUT, revision })).status).toBe(422);
+  }
+  expect((await post("reply", { threadId: ID, body: INPUT.body, revision: 2 })).status).toBe(422);
+  expect((await post("list", { documentId: INPUT.documentId, revision: 2 })).status).toBe(422);
+  expect(actor).not.toHaveBeenCalled();
+});
+
+it("answers a missing or wrong revision as the database decides it: 422", async () => {
+  query.mockRejectedValueOnce(Object.assign(new Error("private detail"), { code: "ZD422" }));
+  const result = await post("create", { ...INPUT, anchor: null, revision: 99 });
+  expect(result.status).toBe(422);
+  expect(await result.json()).toMatchObject({ code: "invalid_input" });
+});
+
+it("lists a thread written before revisions with a null revision", async () => {
+  const row = {
+    threadId: ID,
+    commentId: ID,
+    position: 1,
+    authorRole: "student",
+    isOwn: true,
+    body: INPUT.body,
+    anchor: null,
+    state: "answered",
+    createdWindow: new Date("2026-11-03T10:05:00.000Z"),
+    deletedWindow: null,
+    revision: null,
+  };
+  query.mockResolvedValueOnce({ rows: [row], rowCount: 1 });
+  const result = await post("list", { documentId: INPUT.documentId }, STUDENT);
+  expect(await result.json()).toEqual({
+    comments: [{ ...row, createdWindow: "2026-11-03T10:05:00.000Z" }],
+  });
 });

@@ -45,14 +45,38 @@ const TextAnchor = closed({
   endHint: Hint,
 });
 
+/**
+ * INT-15-SRV: the revision of the work a new thread is written on, 1 or more.
+ * A teacher must send it, a student may; it must be a revision of that work the
+ * caller may see (not only the latest). A missing teacher revision or a wrong
+ * one is the same 422 as any invalid input, and only after the relation is
+ * checked (403 first), so it tells nothing about another work.
+ */
+const Revision = Type.Integer({
+  minimum: 1,
+  maximum: Number.MAX_SAFE_INTEGER,
+  description:
+    "The work's revision the thread is written on (create): required from a teacher, optional for the student; any revision of that work the caller may see, not only the latest. A missing teacher revision or a wrong one is 422, checked after the relation (403). In list: the thread's revision, which a reply inherits; null for a thread written before it existed.",
+});
+
 /** One body per action; the action in the path picks which one the server reads. */
 const COMMENT_BODIES = [
-  closed({ anchor: TextAnchor, body: CommentBody, documentId: WorkId }),
+  closed({
+    anchor: TextAnchor,
+    body: CommentBody,
+    documentId: WorkId,
+    revision: Type.Optional(Revision),
+  }),
   closed({ body: CommentBody, threadId: Id }),
   closed({ threadId: Id }),
   closed({ commentId: Id }),
   closed({ documentId: WorkId }),
-  closed({ anchor: Type.Null(), body: CommentBody, documentId: WorkId }),
+  closed({
+    anchor: Type.Null(),
+    body: CommentBody,
+    documentId: WorkId,
+    revision: Type.Optional(Revision),
+  }),
 ] as const;
 
 const Window = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
@@ -69,6 +93,12 @@ const commentView = (standing: boolean) =>
     state: literals(["open", "answered", "resolved"]),
     createdWindow: Window,
     deletedWindow: standing ? Type.Null() : Window,
+    /**
+     * INT-15-SRV: the revision of the thread (a reply inherits it); null for a
+     * thread written before INT-15. The server always sends it; optional in the
+     * schema only so the change stays additive (contracts:breaking).
+     */
+    revision: Type.Optional(Type.Union([Revision, Type.Null()])),
   });
 
 export const commentsPost = defineRoute({
@@ -90,7 +120,8 @@ export const commentsPost = defineRoute({
   responses: [
     {
       status: 200,
-      description: "the new comment's id (create, reply) or the comments (list)",
+      description:
+        "the new comment's id (create, reply) or the comments (list), each with its thread's revision",
       body: Type.Union([
         closed({ id: Id }),
         closed({ comments: Type.Array(Type.Union([commentView(true), commentView(false)])) }),

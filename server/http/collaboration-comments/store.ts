@@ -3,10 +3,11 @@ import { verifyDocumentSnapshot } from "../../evidence/index.ts";
 
 const LIST = `SELECT thread_id AS "threadId", comment_id AS "commentId",
   comment_position AS position, author_role AS "authorRole", is_own AS "isOwn",
-  body, anchor, state, created_window AS "createdWindow", deleted_window AS "deletedWindow"
-  FROM collaboration.list_comments($1)`;
+  body, anchor, state, created_window AS "createdWindow", deleted_window AS "deletedWindow",
+  revision FROM collaboration.list_comments($1)`;
 export const ACTS = {
-  create: { keys: ["documentId", "body", "anchor"] },
+  // revision is optional on the wire; the RPC requires it from a teacher.
+  create: { keys: ["documentId", "body", "anchor"], optional: ["revision"] },
   reply: { keys: ["threadId", "body"], sql: "SELECT collaboration.reply_comment($1, $2) AS id" },
   resolve: { keys: ["threadId"], sql: "SELECT collaboration.resolve_thread($1)" },
   reopen: { keys: ["threadId"], sql: "SELECT collaboration.reopen_thread($1)" },
@@ -67,18 +68,20 @@ export async function execute(
 ): Promise<Answer> {
   if (action === "create") {
     const { documentId, body, anchor } = input;
+    // INT-15-SRV: the RPC checks the revision after the relation (403 first).
+    const revision = input.revision ?? null;
     if (anchor === null) {
-      const { rows } = await tx.query("SELECT collaboration.create_general_comment($1, $2) AS id", [
-        documentId,
-        body,
-      ]);
+      const { rows } = await tx.query(
+        "SELECT collaboration.create_general_comment($1, $2, $3::bigint) AS id",
+        [documentId, body, revision],
+      );
       return { status: 200, body: rows[0] };
     }
     const status = await checkAnchor(tx, documentId, anchor as Anchor);
     if (status !== 200) return { status };
     const { rows } = await tx.query(
-      "SELECT collaboration.create_comment($1, $2, $3::jsonb) AS id",
-      [documentId, body, JSON.stringify(anchor)],
+      "SELECT collaboration.create_comment($1, $2, $3::jsonb, $4::bigint) AS id",
+      [documentId, body, JSON.stringify(anchor), revision],
     );
     return { status: 200, body: rows[0] };
   }
@@ -92,6 +95,8 @@ export async function execute(
       ...row,
       createdWindow: iso(row.createdWindow),
       deletedWindow: iso(row.deletedWindow),
+      // bigint arrives as a string; revisions stay below 2^53 (table CHECK).
+      revision: row.revision == null ? null : Number(row.revision),
     }));
     return { status: 200, body: { comments } };
   }

@@ -54,6 +54,12 @@ it("stores shared comments under ductus_app without changing the work or its rev
           WHERE d.id = $1 ORDER BY r.revision`,
         [WORK.documentId],
       );
+    // INT-15-SRV: a teacher's thread names a revision of the work, so the work
+    // gets revision 1 (as the evidence role writes it) before the snapshot.
+    await db.exec(`
+      INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+      SELECT id, institution_id, 1, 0, principal_id, repeat('1', 64) FROM evidence.document WHERE id = 'doc-a';
+      UPDATE evidence.document SET current_revision = 1, current_content_hash = repeat('1', 64) WHERE id = 'doc-a';`);
     const before = (await evidence()).rows;
     const anchor = {
       nodeId: NODE,
@@ -65,15 +71,28 @@ it("stores shared comments under ductus_app without changing the work or its rev
     };
     const create = (value: typeof anchor | null) =>
       withActor(TEACHER, (tx) =>
-        execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: value }),
+        execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: value, revision: 1 }),
       );
     expect(await create({ ...anchor, quote: "nacrt" })).toEqual({ status: 409 });
     expect((await create(anchor)).status).toBe(200);
     expect((await create(null)).status).toBe(200);
+    // A teacher without a revision, or with one the work does not have, writes nothing.
+    for (const revision of [undefined, 2]) {
+      await expect(
+        withActor(TEACHER, (tx) =>
+          execute(tx, "create", { ...WORK, body: "Dopuni izvor.", anchor: null, revision }),
+        ),
+      ).rejects.toMatchObject({ code: "ZD422" });
+    }
 
     const list = (token: string) => withActor(token, (tx) => execute(tx, "list", WORK));
     for (const token of [TEACHER, STUDENT]) {
-      const comment = { body: "Dopuni izvor.", authorRole: "teacher", isOwn: token === TEACHER };
+      const comment = {
+        body: "Dopuni izvor.",
+        authorRole: "teacher",
+        isOwn: token === TEACHER,
+        revision: 1,
+      };
       const result = await list(token);
       expect(result).toMatchObject({
         status: 200,
