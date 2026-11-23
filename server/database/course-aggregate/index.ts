@@ -17,6 +17,9 @@ WITH actor AS MATERIALIZED (
   SELECT a.assignment_id
     FROM course c
     CROSS JOIN LATERAL app.teacher_course_assignment_ids(c.id) a
+    -- Practice assignments are not part of the course snapshot. A course
+    -- teacher reads every assignment row of the course (assignment_read).
+    JOIN institution.assignment p ON p.id = a.assignment_id AND NOT p.is_practice
    WHERE (SELECT count(*) FROM roster) >= 5
 ), visible_works AS (
   SELECT a.assignment_id, s.student_id, s.submitted, w.student_id IS NOT NULL AS started
