@@ -340,11 +340,14 @@ ALTER TABLE institution.work_milestone_event DISABLE TRIGGER work_milestone_even
 ALTER TABLE audit.work_interview_event DISABLE TRIGGER work_interview_event_no_truncate;
 -- The trail of the teacher's switch of the rhythm (PIL-P1-RITAM-SRV) references the assignment; it is append only.
 ALTER TABLE audit.input_rhythm_switch_event DISABLE TRIGGER input_rhythm_switch_event_no_truncate;
+-- The record of a restore (INT-21) references the revisions of a work; it is append only.
+ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
   'with the TRUNCATE trigger disabled the same statement empties the versions'
 );
+ALTER TABLE evidence.revision_restore ENABLE TRIGGER revision_restore_no_truncate;
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;
