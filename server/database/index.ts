@@ -489,6 +489,11 @@ export {
   type OriginRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
+  createSubmissionDeclarationGate,
+  type SubmissionDeclarationGate,
+  type SubmissionDeclarationGateAnswer,
+} from "./declaration/index.ts";
+export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,
   type InputRhythm,

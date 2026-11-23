@@ -32758,7 +32758,8 @@
         "draft": null,
         "payload": null,
         "declarationSha256": null,
-        "uploads": []
+        "uploads": [],
+        "declarationRequired": true
       }
     }
   },
@@ -32937,7 +32938,8 @@
         },
         "payload": null,
         "declarationSha256": null,
-        "uploads": []
+        "uploads": [],
+        "declarationRequired": true
       }
     }
   },

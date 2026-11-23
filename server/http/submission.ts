@@ -15,8 +15,23 @@
 // submitWork in server/evidence/submission.ts, over main's withActor and the
 // process's one signer and storage (evidence-deps.ts), the same the commit
 // route writes with. The time of a submission is the database's clock.
+//
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026; declaration-v1 OD-6,
+// OD-15): while the assignment requires a declaration, the submission goes to
+// submitWork only after declaration.submission_gate found one confirmed for
+// the submitted revision; otherwise nothing is written and nothing is
+// requested. The contract of this route has no 409 for it (a new 409 branch
+// breaks its clients, scripts/check-breaking.ts), so the refusal is 503
+// request, as a failed read of the gate is: never a pass (PRODUCT §5 rule 11).
+// The web reads declarationRequired and the state from student.declaration.get
+// before it offers the submission. The trigger that pins the declaration to
+// the request stays the guarantee.
 import { ROUTES } from "../contracts/index.ts";
-import type { ActorReader } from "../database/index.ts";
+import {
+  type ActorReader,
+  createSubmissionDeclarationGate,
+  type SubmissionDeclarationGate,
+} from "../database/index.ts";
 import { DUCTUS_PROTOCOL_VERSION, submitWork } from "../evidence/index.ts";
 import type { SigningKeyProvider } from "../external/keys/index.ts";
 import { recordActivity } from "../session/index.ts";
@@ -159,6 +174,29 @@ export function createSubmissionRoute(options: SubmissionRouteOptions): Route {
   };
 }
 
+/** The code of a submission the declaration gate refused (503 request on the wire). */
+export const DECLARATION_REQUIRED_CODE = "declaration_required";
+
+/**
+ * The submission behind the declaration gate: `submit` runs only on proceed.
+ * A missing declaration and a gate that fails are both 503 request, so
+ * nothing is requested without the gate's pass.
+ */
+export function gatedSubmit(gate: SubmissionDeclarationGate, submit: SubmitWork): SubmitWork {
+  return async (token, input) => {
+    let answer: Awaited<ReturnType<SubmissionDeclarationGate>>;
+    try {
+      answer = await gate(token, input);
+    } catch {
+      return { status: "unavailable", stage: "request", code: "declaration_gate_failed" };
+    }
+    if (answer === "declaration_required") {
+      return { status: "unavailable", stage: "request", code: DECLARATION_REQUIRED_CODE };
+    }
+    return submit(token, input);
+  };
+}
+
 /**
  * The route over main's application withActor and actor reader, with Ductus
  * submitWork over this process's signer and payload storage (evidence-deps.ts).
@@ -167,11 +205,12 @@ export function createSubmissionRouteFor(
   main: Pick<Databases["main"], "withActor" | "actorReader">,
   deps: Pick<EvidenceIngestDependencies, "payloads"> & { readonly signer: SigningKeyProvider },
 ): Route {
-  const submit: SubmitWork = (token, input) =>
+  const submit = gatedSubmit(createSubmissionDeclarationGate(main.withActor), (token, input) =>
     submitWork({ withActor: main.withActor, payloads: deps.payloads, signer: deps.signer }, token, {
       documentId: input.documentId,
       revision: input.revision,
-    });
+    }),
+  );
   return createSubmissionRoute({
     submit,
     actors: main.actorReader,

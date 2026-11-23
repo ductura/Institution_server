@@ -137,6 +137,10 @@ const Statement = closed({
   payload: Type.Union([Payload, Type.Null()]),
   declarationSha256: Type.Union([SHA256, Type.Null()]),
   uploads: Type.Array(Attachment, { maxItems: 10 }),
+  // PIL-K-IZJAVA-SRV: whether a submission of this assignment requires a
+  // declaration confirmed for the submitted revision. Always sent; optional
+  // only so older clients keep validating.
+  declarationRequired: Type.Optional(Type.Boolean()),
 });
 const Params = closed({ assignmentId: Type.String({ minLength: 1 }) });
 const READ_ERRORS = [

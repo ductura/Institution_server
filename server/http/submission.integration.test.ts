@@ -14,7 +14,13 @@ import type { ActorReader } from "../database/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
-import { createSubmissionRoute, type SubmissionOutcome, submissionAnswer } from "./submission.ts";
+import {
+  createSubmissionRoute,
+  DECLARATION_REQUIRED_CODE,
+  gatedSubmit,
+  type SubmissionOutcome,
+  submissionAnswer,
+} from "./submission.ts";
 
 type Vector = {
   name: string;
@@ -36,8 +42,16 @@ let server: Running | undefined;
 const calls: unknown[][] = [];
 const activity: string[] = [];
 let outcome: SubmissionOutcome | (() => never) = { status: "invalid" };
+// PIL-K-IZJAVA-SRV: the declaration gate in front of the port; null is no gate.
+let gate: (() => Promise<"proceed" | "declaration_required">) | null = null;
+const gated: unknown[][] = [];
 
 async function start() {
+  const port = async (token: string, input: { documentId: string; revision: number }) => {
+    calls.push([token, input]);
+    return typeof outcome === "function" ? outcome() : outcome;
+  };
+  const current = gate;
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
@@ -45,10 +59,13 @@ async function start() {
     databases: createDatabases(),
     routes: [
       createSubmissionRoute({
-        submit: async (token, input) => {
-          calls.push([token, input]);
-          return typeof outcome === "function" ? outcome() : outcome;
-        },
+        submit:
+          current === null
+            ? port
+            : gatedSubmit(async (token, input) => {
+                gated.push([token, input]);
+                return current();
+              }, port),
         actors: {} as ActorReader,
         recordActivity: async (token) => activity.push(token),
         timeoutMs: 300,
@@ -58,6 +75,8 @@ async function start() {
 }
 afterEach(async () => {
   calls.length = 0;
+  gated.length = 0;
+  gate = null;
   activity.length = 0;
   await server?.close();
   server = undefined;
@@ -220,5 +239,64 @@ describe("the body before the port", () => {
     await start();
     expect((await send(raw(PATH, headers, '{"documentId":"rad","revision":0}'))).status).toBe(409);
     expect(calls).toHaveLength(1);
+  });
+});
+
+// PIL-K-IZJAVA-SRV (owner decision of 23. 11. 2026): while the assignment
+// requires a declaration, the port runs only after the gate's pass; nothing is
+// requested otherwise. The contract has no 409 for it (a new 409 branch breaks
+// its clients), so the refusal is the contract's 503 request.
+describe("the declaration gate", () => {
+  const v = VECTORS.find((x) => x.name === "submitted")!;
+  const headers = Object.entries(v.request.headers);
+  const token = v.request.headers.cookie?.slice("__Host-ductus_session=".length);
+  const unavailableRequest = [503, { status: "unavailable", stage: "request" }];
+
+  it("a missing declaration never reaches the port", async () => {
+    gate = async () => "declaration_required";
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
+    expect(got.head["retry-after"]).toBe("5");
+    expect(gated).toEqual([[token, v.request.body]]);
+    expect(calls).toEqual([]);
+    expect(activity).toEqual([]);
+  });
+
+  it("a gate that fails is never a pass", async () => {
+    gate = async () => {
+      throw new Error("izmišljeno");
+    };
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual(unavailableRequest);
+    expect(calls).toEqual([]);
+    expect(activity).toEqual([]);
+  });
+
+  it("a pass reaches the port with the same input, and its answer goes out", async () => {
+    gate = async () => "proceed";
+    outcome = { status: "submitted", receipt: v.response.body.receipt };
+    await start();
+    const got = await send(raw(PATH, headers, JSON.stringify(v.request.body)));
+    expect([got.status, JSON.parse(got.body)]).toEqual([200, v.response.body]);
+    expect(gated).toEqual([[token, v.request.body]]);
+    expect(calls).toEqual([[token, v.request.body]]);
+  });
+
+  it("the refusal carries its own code inside the process", async () => {
+    const refused = await gatedSubmit(
+      async () => "declaration_required",
+      () => {
+        throw new Error("the port must not run");
+      },
+    )("t", { documentId: "izmisljeni-rad", revision: 1 });
+    expect(refused).toEqual({
+      status: "unavailable",
+      stage: "request",
+      code: DECLARATION_REQUIRED_CODE,
+    });
   });
 });
