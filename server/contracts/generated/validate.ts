@@ -329,6 +329,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.assistant-setting.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "institution.config-versions.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1269,11 +1275,13 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   "student.declaration.put:body": (() => {
   const local0 = /^[a-z0-9][a-z0-9-]{0,63}$/;
   const local1 = /^[0-9a-f]{64}$/;
+  const local2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
       const nestedForm = (typeof value === 'object' && value !== null ? value['form'] : undefined) as Record<string, unknown>;
       const nestedOwnWork = (typeof value === 'object' && value !== null ? value['ownWork'] : undefined) as Record<string, unknown>;
       const nestedHumanHelp = (typeof value === 'object' && value !== null ? value['humanHelp'] : undefined) as Record<string, unknown>;
       const nestedAi = (typeof value === 'object' && value !== null ? value['ai'] : undefined) as Record<string, unknown>;
+      const nestedQuestionAnswer = (typeof value === 'object' && value !== null ? value['questionAnswer'] : undefined) as Record<string, unknown>;
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['baseVersion'] === 'number' && Number.isInteger(value['baseVersion'])) &&
@@ -1299,7 +1307,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['ai'] === 'object' && value['ai'] !== null && !Array.isArray(value['ai'])) &&
       (((((nestedAi['use'] === 'used')) || ((nestedAi['use'] === 'not_used')))) || ((nestedAi['use'] === null))) &&
       (typeof value['confirm'] === 'boolean') &&
-      Object.getOwnPropertyNames(value).length === 7
+      (value['questionAnswer'] !== undefined ? ((((typeof value['questionAnswer'] === 'object' && value['questionAnswer'] !== null && !Array.isArray(value['questionAnswer'])) && (typeof nestedQuestionAnswer['questionId'] === 'string') && local2.test(nestedQuestionAnswer['questionId']) && (typeof nestedQuestionAnswer['text'] === 'string') && nestedQuestionAnswer['text'].length <= 4000 && nestedQuestionAnswer['text'].length >= 1 && Object.getOwnPropertyNames(value['questionAnswer']).length === 2) || ((value['questionAnswer'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['baseVersion', 'revision', 'form', 'ownWork', 'humanHelp', 'ai', 'confirm', 'questionAnswer'].includes(key))
     )
   }
   })(),
@@ -1797,6 +1806,35 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&
       value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.declaration-question.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.declaration-question.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.declaration-question.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((typeof value['question'] === 'string') && value['question'].length <= 1000 && value['question'].length >= 1) || ((value['question'] === null))) &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

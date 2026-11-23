@@ -109,3 +109,9 @@ export function createDeclarationRequiredSwitch(withActor: WithActor): Declarati
     },
   };
 }
+
+export {
+  createDeclarationQuestionPort,
+  type DeclarationQuestionPort,
+  type DeclarationQuestionSetting,
+} from "./question.ts";

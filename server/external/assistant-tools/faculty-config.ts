@@ -40,6 +40,8 @@ export type FacultyAiSettings = {
   permittedTools(institutionSlug: string | null): readonly ToolName[];
   /** The search destinations of an institution; empty in the pilot (OC-2). */
   searchDestinations(institutionSlug: string | null): readonly SearchDestination[];
+  /** The whole setting of an institution, or null without one (SRV-ADMIN-3: read only). */
+  settingOf(institutionSlug: string | null): FacultyAiConfig | null;
 };
 
 /** Settings over parsed configurations; for tests and for `readFacultyAiSettings`. */
@@ -53,6 +55,7 @@ export function facultyAiSettingsOf(configs: readonly FacultyAiConfig[]): Facult
     readInstitutionAiSwitch: (slug: string | null) => aiSwitchOf(find(slug)),
     permittedTools: (slug: string | null) => serverPermittedTools(find(slug)),
     searchDestinations: (slug: string | null) => find(slug)?.searchDestinations ?? [],
+    settingOf: (slug: string | null) => find(slug),
   });
 }
 

@@ -294,3 +294,36 @@ describe("student.data-export.get", () => {
     expect(calls).toEqual([]);
   });
 });
+
+// SRV-ADMIN-3 (NF-7 OA-6): a second open request for the same person is the
+// request's 409 with its reason and the key of its text; the approval's 409
+// (a request no longer waiting) stays the plain conflict.
+describe("the reason of a 409", () => {
+  it("the request names the open request for the person and the catalogue key", async () => {
+    request = async () => ({ status: "conflict" });
+    const base = await start();
+    const v = REQUEST.find((x) => x.name === "requested")!;
+    const got = await post(`${base}${BASE}`, v);
+    expect(got.status).toBe(409);
+    const body = (await got.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      error: "conflict",
+      code: "conflict",
+      messageKey: "errors.conflict",
+      reason: "export_already_open",
+      reasonKey: "adminSettings.exportAlreadyOpen",
+    });
+  });
+
+  it("the approval's 409 carries no reason", async () => {
+    approve = async () => ({ status: "conflict" });
+    const base = await start();
+    const v = APPROVE.find((x) => x.name === "conflict")!;
+    const got = await post(`${base}${BASE}/${EXPORT}/approve`, v);
+    expect(got.status).toBe(409);
+    const body = (await got.json()) as Record<string, unknown>;
+    expect(body.error).toBe("conflict");
+    expect(body).not.toHaveProperty("reason");
+    expect(body).not.toHaveProperty("reasonKey");
+  });
+});

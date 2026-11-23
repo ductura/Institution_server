@@ -324,6 +324,19 @@ Odluka vlasnika 23. 11. 2026. (niže) uključuje prvi slučaj iz 6.3. Migracija 
 - **Čitanje.** `student.declaration.get` (i odgovor `put`) nosi `declarationRequired` (boolean, uvijek poslan, u shemi neobavezan radi starijih klijenata), pa web ne pogađa: dok je `true`, predaju nudi samo u stanju `confirmed` za trenutačnu reviziju.
 - `submission-receipt-v2` se ne mijenja i ostaje bajt-jednak.
 
+### 6.8 Pitanje nastavnika uz izjavu (SRV-IZJAVA-PITANJE)
+
+Odluka vlasnika 23. 11. 2026. (NF-5, pitanje 3: „Da”; NF-3 PR-20, NF-4 NZ-15, NF-5 PG-6) uvodi u pilot jedno neobavezno pitanje nastavnika uz izjavu i neobavezan odgovor studenta. Migracija `20261214150000_declaration_teacher_question.sql`, samo expand; payload `ductura-declaration-v1`, njegov hash i `submission-receipt-v2` ostaju bajt-jednaki.
+
+- **Pitanje.** Nastavnik zadatka (nastavnik kolegija ili mentor rada, iz odnosa `institution.work_relation`, C-23) postavlja najviše jedno pitanje po zadatku: tekst od 1 do 500 znakova (Unicode code point), NFC, bez razmaka na početku i kraju, bez kontrolnih i smjernih znakova osim prijeloma retka. `institution.declaration_question_setting(zadatak)` i `institution.set_declaration_question(zadatak, tekst)`; `null` uklanja pitanje. Preko HTTP-a `teacher.declaration-question.get` i `.put` (`/api/v1/teacher/assignments/{assignmentId}/declaration-question`, tijelo točno `{question}`, odgovor `{question, changedAt}`). Student, nastavnik drugog kolegija i administrator dobivaju 404, neispravan tekst 422.
+- **Izmjena nakon objave i zapis.** Pitanje se smije mijenjati i nakon objave zadatka. Svaka promjena upisuje redak u `audit.declaration_question_event` (tko, kada, novi tekst ili `null`) u istoj transakciji; redak se ne može mijenjati ni brisati. Pitanje na snazi je zadnji redak. Postavljanje teksta koji već vrijedi ništa ne upisuje. Postavljači se slažu redom preko retka zadatka (`FOR UPDATE`).
+- **Student čita.** `student.declaration.get` (i odgovor `put`) nosi `teacherQuestion`: `{questionId, text}` pitanja na snazi ili `null`. `questionId` je ID verzije pitanja (retka zapisa).
+- **Odgovor.** `student.declaration.put` prima neobavezno polje `questionAnswer`: `{questionId, text}` (tekst od 1 do 2000 znakova, ista pravila teksta kao izjavni tekst 1.6) ili `null`/izostavljeno (bez odgovora). `questionId` mora biti verzija pitanja tog zadatka koju je student pročitao, i kad ju je nastavnik u međuvremenu promijenio; inače 422 `invalid_input`. Ostatak tijela je zatvoreno tijelo iz 7.1, nepromijenjeno. Web proces poziva `declaration.save_statement_answer(zadatak, tijelo, obrazac, odgovor)`, koji u jednoj transakciji poziva `save_statement` i zapisuje odgovor; svako odbijanje `save_statement` vraća se nepromijenjeno, a uz neispravan odgovor ne ostaje ništa od spremanja.
+- **Veza s verzijom i svježina.** Odgovor je redak `declaration.question_answer` vezan uz točno jedan redak `declaration.statement` (nacrt ili potvrđenu verziju) i uz tekst pitanja na koje odgovara. Nije dio hashiranog payloada. Zato je nacrt, potvrđen, zastario ili vezan točno kao izjava kojoj pripada (5, 6.2: `declaration.is_fresh`); nema vlastitog pravila svježine. Odgovor nacrta nestaje s nacrtom koji `save_statement` zamijeni (okidač `statement_draft_answer`); odgovor potvrđene verzije nikad se ne mijenja ni briše. `student.declaration.get` nosi `questionAnswer`: `{questionId, questionText, text}` retka o kojem je stanje, ili `null`.
+- **Nastavnik čita.** `teacher.declaration.get` uz izjavu nosi `question` (pitanje na snazi ili `null`) i `questionAnswer` (odgovor vezane verzije, `null` bez vezane izjave ili bez odgovora). Baza: `app.teacher_declaration_answer(zadatak, student)` za nastavnika kolegija ili mentora rada studenta; čitanje vezanog odgovora upisuje redak dnevnika pristupa s površinom `declaration` (isti petominutni redak kao čitanje izjave). Ruta `teacher.declaration.get` i dalje ima pristup `course_teacher`; mentor odgovor čita samo na razini baze dok ne postoji mentorska ruta izjave.
+- **Pristup (RLS).** `declaration.question_answer` ima prisilni RLS i samo vlasnika `ductus_evidence`; aplikacija nema izravan pristup tablici. Odgovor piše samo student vlasnik kroz vlastitu sesiju (`save_statement_answer`), a čitaju ga samo student vlasnik (`read_statement`), nastavnik zadatka i mentor (`app.teacher_declaration_answer`). Retci u `db/main/tests/030-institution-access-matrix.sql` i `232-declaration-question.sql`.
+- **Bez učinka na predaju i ocjenu.** Odgovor nije obavezan, ne blokira predaju (ni dok je `declarationRequired` uključen, 6.7) i ne ulazi u ocjenu.
+
 ## 7. Rute
 
 Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `{status: <kod>}`, `MUTATION_GUARD`, isti 404 za tuđe, nepoznato i neispravno). Rute su prijedlog; dodaju se tek nakon odobrenja.
@@ -336,6 +349,8 @@ Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `
 | `student.declaration.put`              | `PUT /api/v1/student/assignments/{assignmentId}/declaration`                                                         | `student_enrolled` | sprema nacrt ili potvrđuje (`confirm: true`); vraća isto što i `get`                                                                                                                                                                           |
 | `student.declaration-attachments.post` | `POST /api/v1/student/assignments/{assignmentId}/declaration-attachments`                                            | `student_enrolled` | sprema vanjski prilog (bajtovi u tijelu, `content-type` iz `EXTERNAL_FORMATS`); vraća `{externalAttachmentId, format, byteLength, contentSha256}`; prijenos ne prilaže, prilaže tek `put` (dodatak ugovora, nije u nalogu)                     |
 | `teacher.declaration.get`              | `GET /api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration`                                    | `course_teacher`   | samo izjava vezana uz zapisanu predaju: payload (JCS-bajtovi), `declarationSha256` i `teacherView`; priloženi razgovori samo za čitanje, poruke do `throughSeq`; inače `{state: "none"}`                                                       |
+| `teacher.declaration-question.get`     | `GET /api/v1/teacher/assignments/{assignmentId}/declaration-question`                                                | `course_teacher`   | pitanje nastavnika uz izjavu i vrijeme zadnje promjene (6.8)                                                                                                                                                                                   |
+| `teacher.declaration-question.put`     | `PUT /api/v1/teacher/assignments/{assignmentId}/declaration-question`                                                | `course_teacher`   | postavlja ili uklanja (`null`) pitanje, tijelo `{question}`; svaka promjena zapisana (6.8)                                                                                                                                                     |
 | `teacher.declaration-attachment.get`   | `GET /api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration/attachments/{externalAttachmentId}` | `course_teacher`   | bajtovi vanjskog priloga iz vezane izjave, kao preuzimanje (dodatak ugovora, nije u nalogu)                                                                                                                                                    |
 
 Tijelo `student.declaration.put`, zatvoreno:
@@ -353,7 +368,8 @@ Tijelo `student.declaration.put`, zatvoreno:
     attachments: [{ conversationId, throughSeq, messagesSha256 }],
     externalAttachmentIds: [uuid]
   },
-  confirm                  // boolean
+  confirm,                 // boolean
+  questionAnswer           // neobavezno: { questionId, text } ili null (6.8)
 }
 ```
 
@@ -478,6 +494,8 @@ Zapis: Ductus#2012 (c.7054485848, c.7054511795 i zapis za OD-4, OD-11, OD-12). O
 - **OD-12:** vlasnik je odluku prepustio orkestratoru. Unos ljudske pomoći je `{ kind, text }` sa zatvorenim skupom vrsta (odjeljak 1.4) i obveznim kratkim opisom; uputa uz polje, bez provjere osobnih podataka.
 
 Odluka vlasnika 23. 11. 2026. (PIL-K-IZJAVA-SRV, pregled WEB #492): (a) tehnički neuspjela potvrda izjave ne smije dopustiti predaju (PRODUCT §5, pravilo 11); (b) izjava se provjerava na poslužitelju; (c) uz OD-6 izjava je obavezna samo kad je zadatak traži postavkom, a za pilot je ta postavka uključena. Izvedba: odjeljak 6.7.
+
+Odluka vlasnika 23. 11. 2026. (NF-5, pitanje 3: „Da”; zapis Ductus#2055 c.7114546002): pitanje nastavnika uz izjavu je u pilotu; jedno neobavezno pitanje po zadatku i neobavezan odgovor studenta koji ne blokira predaju i ne ulazi u ocjenu. Izvedba: odjeljak 6.8.
 
 ## Otvorena pitanja
 

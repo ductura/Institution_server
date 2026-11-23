@@ -343,6 +343,9 @@ ALTER TABLE audit.work_interview_event DISABLE TRIGGER work_interview_event_no_t
 ALTER TABLE audit.input_rhythm_switch_event DISABLE TRIGGER input_rhythm_switch_event_no_truncate;
 -- The trail of the teacher's declaration switch (PIL-K-IZJAVA-SRV) references the assignment; it is append only.
 ALTER TABLE audit.declaration_required_event DISABLE TRIGGER declaration_required_event_no_truncate;
+-- The trail of the teacher's declaration question (SRV-IZJAVA-PITANJE) references the assignment; it is append only.
+ALTER TABLE audit.declaration_question_event DISABLE TRIGGER declaration_question_event_no_truncate;
+ALTER TABLE declaration.question_answer DISABLE TRIGGER question_answer_no_truncate;
 -- The record of a restore (INT-21) references the revisions of a work; it is append only.
 ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
 -- The agreed tasks of a consultation record (SRV-MENTOR-1) reference the assignment through the record; they are append only.
@@ -375,6 +378,8 @@ ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation
 ALTER TABLE audit.work_interview_event ENABLE TRIGGER work_interview_event_no_truncate;
 ALTER TABLE audit.input_rhythm_switch_event ENABLE TRIGGER input_rhythm_switch_event_no_truncate;
 ALTER TABLE audit.declaration_required_event ENABLE TRIGGER declaration_required_event_no_truncate;
+ALTER TABLE audit.declaration_question_event ENABLE TRIGGER declaration_question_event_no_truncate;
+ALTER TABLE declaration.question_answer ENABLE TRIGGER question_answer_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;
