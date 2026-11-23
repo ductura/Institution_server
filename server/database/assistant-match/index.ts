@@ -8,25 +8,38 @@
 // length of the run only. Every refusal is one not_found (C-23); ZD401 is
 // unauthenticated, ZD422 invalid, anything else unavailable; a row of an
 // unexpected shape is unavailable too.
+//
+// PIL-P1-PODUDARANJE-OBJASNJENJE-SRV (20261214130000): the student owner explains
+// a finding once (app.assistant_match_explain; a second explanation is a
+// conflict, ZD409), and the findings are read with their explanations
+// (app.assistant_match_explanations), null where there is none. While the switch
+// is off no explanation is written (not_found) or read.
 import { matchSegment, type AssistantAnswer } from "../../domain/index.ts";
 import type { WithActor } from "../index.ts";
 
-type Failure = { readonly status: "unauthenticated" | "not_found" | "invalid" | "unavailable" };
+type Failure = {
+  readonly status: "unauthenticated" | "not_found" | "invalid" | "conflict" | "unavailable";
+};
 
 export type AssistantMatchFound = {
   readonly messageId: string;
   readonly conversationId: string;
   readonly runWords: number;
 };
+/** The student's explanation of a finding, written once. */
+export type AssistantMatchExplanation = { readonly text: string; readonly writtenAt: string };
 export type AssistantMatchFinding = AssistantMatchFound & {
   readonly segmentRef: string;
   readonly recordedAt: string;
   readonly attachedAt: string;
+  readonly explanation: AssistantMatchExplanation | null;
 };
 export type AssistantMatchCheckOutcome =
   { readonly status: "ok"; readonly matches: readonly AssistantMatchFound[] } | Failure;
 export type AssistantMatchListOutcome =
   { readonly status: "ok"; readonly findings: readonly AssistantMatchFinding[] } | Failure;
+export type AssistantMatchExplainOutcome =
+  { readonly status: "ok"; readonly explanation: AssistantMatchExplanation } | Failure;
 
 export type AssistantMatch = {
   /** The student owner compares a segment with the answers of the assistant and records each match. */
@@ -38,6 +51,14 @@ export type AssistantMatch = {
   ): Promise<AssistantMatchCheckOutcome>;
   /** The findings of a work: the same for the owner and the readers; none while the switch is off. */
   list(token: string, documentId: string): Promise<AssistantMatchListOutcome>;
+  /** The student owner explains one finding (segment and answer), once. */
+  explain(
+    token: string,
+    documentId: string,
+    segmentRef: string,
+    messageId: string,
+    text: string,
+  ): Promise<AssistantMatchExplainOutcome>;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -58,6 +79,7 @@ function failureOf(thrown: unknown): Failure {
   if (code === "ZD401") return { status: "unauthenticated" };
   if (code === "ZD403") return { status: "not_found" };
   if (code === "ZD422") return { status: "invalid" };
+  if (code === "ZD409") return { status: "conflict" };
   return { status: "unavailable" };
 }
 
@@ -77,7 +99,23 @@ function answerOf(row: Record<string, unknown>): AssistantAnswer {
   return { id: uuid(row.messageId), conversationId: uuid(row.conversationId), text: row.content };
 }
 
-function findingOf(row: Record<string, unknown>): AssistantMatchFinding {
+const keyOf = (segmentRef: string, messageId: string): string =>
+  JSON.stringify([segmentRef, messageId]);
+
+function explanationOf(row: Record<string, unknown>): [string, AssistantMatchExplanation] {
+  if (typeof row.segmentRef !== "string" || typeof row.text !== "string" || row.text === "") {
+    throw new Malformed();
+  }
+  return [
+    keyOf(row.segmentRef, uuid(row.messageId)),
+    { text: row.text, writtenAt: instant(row.writtenAt) },
+  ];
+}
+
+function findingOf(
+  row: Record<string, unknown>,
+  explanations: ReadonlyMap<string, AssistantMatchExplanation>,
+): AssistantMatchFinding {
   const runWords = row.runWords;
   if (
     typeof row.segmentRef !== "string" ||
@@ -87,13 +125,15 @@ function findingOf(row: Record<string, unknown>): AssistantMatchFinding {
   ) {
     throw new Malformed();
   }
+  const messageId = uuid(row.messageId);
   return {
     segmentRef: row.segmentRef,
     conversationId: uuid(row.conversationId),
-    messageId: uuid(row.messageId),
+    messageId,
     runWords,
     recordedAt: instant(row.recordedAt),
     attachedAt: instant(row.attachedAt),
+    explanation: explanations.get(keyOf(row.segmentRef, messageId)) ?? null,
   };
 }
 
@@ -132,7 +172,31 @@ export function createAssistantMatch(withActor: WithActor): AssistantMatch {
               [documentId],
             )
           ).rows;
-          return { status: "ok", findings: rows.map(findingOf) };
+          const explanations = new Map(
+            (
+              await tx.query<Record<string, unknown>>(
+                'SELECT segment_ref AS "segmentRef", message_id AS "messageId", explanation_text AS "text", written_at AS "writtenAt" FROM app.assistant_match_explanations($1)',
+                [documentId],
+              )
+            ).rows.map(explanationOf),
+          );
+          return { status: "ok", findings: rows.map((row) => findingOf(row, explanations)) };
+        });
+      } catch (thrown) {
+        return failureOf(thrown);
+      }
+    },
+    async explain(token, documentId, segmentRef, messageId, text) {
+      try {
+        return await withActor(token, async (tx): Promise<AssistantMatchExplainOutcome> => {
+          const rows = (
+            await tx.query<Record<string, unknown>>(
+              'SELECT app.assistant_match_explain($1, $2, $3::uuid, $4) AS "writtenAt"',
+              [documentId, segmentRef, messageId, text],
+            )
+          ).rows;
+          if (rows.length !== 1) throw new Malformed();
+          return { status: "ok", explanation: { text, writtenAt: instant(rows[0]!.writtenAt) } };
         });
       } catch (thrown) {
         return failureOf(thrown);

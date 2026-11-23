@@ -99,8 +99,11 @@ describe("list", () => {
     attachedAt: "2026-11-22T10:00:00.000Z",
   };
 
+  const findingsOnly = (rows: unknown) => (sql: string) =>
+    sql.includes("_explanations") ? [] : rows;
+
   it("returns the findings with instants as ISO text", async () => {
-    const { port: match, seen } = port(() => [row]);
+    const { port: match, seen } = port(findingsOnly([row]));
     expect(await match.list(TOKEN, "izmisljeni-rad-0001")).toEqual({
       status: "ok",
       findings: [
@@ -111,18 +114,101 @@ describe("list", () => {
           runWords: 9,
           recordedAt: "2026-11-22T10:00:00.000Z",
           attachedAt: "2026-11-22T10:00:00.000Z",
+          explanation: null,
         },
       ],
     });
     expect(seen[0]!.values).toEqual(["izmisljeni-rad-0001"]);
+    expect(seen[1]!.values).toEqual(["izmisljeni-rad-0001"]);
   });
 
   it("refuses a run under 8 words and maps ZD403 to not_found", async () => {
-    expect(await port(() => [{ ...row, runWords: 7 }]).port.list(TOKEN, "x")).toEqual({
+    expect(await port(findingsOnly([{ ...row, runWords: 7 }])).port.list(TOKEN, "x")).toEqual({
       status: "unavailable",
     });
     expect(await port(() => sqlError("ZD403")).port.list(TOKEN, "x")).toEqual({
       status: "not_found",
+    });
+  });
+
+  it("joins each explanation to its finding by segment and answer", async () => {
+    const other = "00000000-0000-4000-8000-0000000000c3";
+    const { port: match } = port((sql) =>
+      sql.includes("_explanations")
+        ? [
+            {
+              segmentRef: "blok-1",
+              messageId: MESSAGE,
+              text: "Izmišljeno objašnjenje.",
+              writtenAt: new Date("2026-11-23T08:00:00.000Z"),
+            },
+          ]
+        : [row, { ...row, messageId: other }, { ...row, segmentRef: "blok-2" }],
+    );
+    const result = await match.list(TOKEN, "izmisljeni-rad-0001");
+    expect(result.status).toBe("ok");
+    const explanations = result.status === "ok" ? result.findings.map((f) => f.explanation) : [];
+    expect(explanations).toEqual([
+      { text: "Izmišljeno objašnjenje.", writtenAt: "2026-11-23T08:00:00.000Z" },
+      null,
+      null,
+    ]);
+  });
+
+  it("an explanation row of an unexpected shape is unavailable", async () => {
+    const { port: match } = port((sql) =>
+      sql.includes("_explanations")
+        ? [{ segmentRef: "blok-1", messageId: "nije-uuid", text: "x", writtenAt: new Date() }]
+        : [row],
+    );
+    expect(await match.list(TOKEN, "x")).toEqual({ status: "unavailable" });
+  });
+});
+
+describe("explain", () => {
+  it("passes the explanation to the RPC and returns it with its time", async () => {
+    const { port: match, seen } = port(() => [{ writtenAt: new Date("2026-11-23T08:00:00.000Z") }]);
+    expect(
+      await match.explain(
+        TOKEN,
+        "izmisljeni-rad-0001",
+        "blok-1",
+        MESSAGE,
+        "Izmišljeno objašnjenje.",
+      ),
+    ).toEqual({
+      status: "ok",
+      explanation: { text: "Izmišljeno objašnjenje.", writtenAt: "2026-11-23T08:00:00.000Z" },
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.text).toContain("app.assistant_match_explain(");
+    expect(seen[0]!.values).toEqual([
+      "izmisljeni-rad-0001",
+      "blok-1",
+      MESSAGE,
+      "Izmišljeno objašnjenje.",
+    ]);
+  });
+
+  it.each([
+    ["ZD401", "unauthenticated"],
+    ["ZD403", "not_found"],
+    ["ZD409", "conflict"],
+    ["ZD422", "invalid"],
+    ["XX000", "unavailable"],
+  ])("maps %s to %s", async (code, status) => {
+    const { port: match } = port(() => sqlError(code));
+    expect(await match.explain(TOKEN, "x", "blok-1", MESSAGE, "Tekst.")).toEqual({ status });
+  });
+
+  it("no time back is unavailable", async () => {
+    expect(
+      await port(() => [{ writtenAt: null }]).port.explain(TOKEN, "x", "b", MESSAGE, "T"),
+    ).toEqual({
+      status: "unavailable",
+    });
+    expect(await port(() => []).port.explain(TOKEN, "x", "b", MESSAGE, "T")).toEqual({
+      status: "unavailable",
     });
   });
 });

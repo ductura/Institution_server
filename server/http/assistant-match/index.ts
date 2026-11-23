@@ -22,6 +22,12 @@ import {
 // or may read the work. Another's, an unknown and a malformed work, and a
 // caller who is not the owner on POST, read the same 404 (C-23). The student and
 // the teacher get the same findings.
+//
+// POST /api/v1/works/{documentId}/assistant-match/explanation
+// (PIL-P1-PODUDARANJE-OBJASNJENJE-SRV): the owner explains one finding, once,
+// in at most 2000 characters (NFC, no control character but newline and tab,
+// not blank). A finding that does not exist, the switch off and anyone but the
+// owner read the same 404; a second explanation is 409.
 const contract = (id: string) => {
   const found = ROUTES.find((route) => route.id === id);
   if (found === undefined) throw new Error(`no contract ${id}`);
@@ -29,8 +35,10 @@ const contract = (id: string) => {
 };
 const LIST = contract("work.assistant-match.get");
 const CHECK = contract("work.assistant-match.post");
+const EXPLAIN = contract("work.assistant-match-explanation.post");
 const LIST_BODY = LIST.responses.find((response) => response.status === 200)!.body!;
 const CHECK_BODY = CHECK.responses.find((response) => response.status === 200)!.body!;
+const EXPLAIN_BODY = EXPLAIN.responses.find((response) => response.status === 201)!.body!;
 
 const BODY_TIMEOUT_MS = 5_000;
 const BIDI = /[‪-‮⁦-⁩]/u;
@@ -41,6 +49,24 @@ function isCleanText(value: string): boolean {
     value === value.normalize("NFC") &&
     !/\p{Cc}/u.test(value.replace(/[\n\t\r]/gu, "")) &&
     !BIDI.test(value)
+  );
+}
+
+/** The explanation: as the text rule, but only newline and tab, not blank, at most 2000 code points. */
+export function isCleanExplanation(value: string): boolean {
+  return (
+    value === value.normalize("NFC") &&
+    !/\p{Cc}/u.test(value.replace(/[\n\t]/gu, "")) &&
+    !BIDI.test(value) &&
+    /\S/u.test(value) &&
+    [...value].length <= 2000
+  );
+}
+
+function jsonType(request: { headersDistinct: Record<string, string[] | undefined> }): boolean {
+  const types = request.headersDistinct["content-type"];
+  return (
+    types?.length === 1 && types[0]?.split(";")[0]?.trim().toLowerCase() === "application/json"
   );
 }
 
@@ -113,6 +139,51 @@ export function createAssistantMatchRoutesFor({ withActor }: { withActor: WithAc
           return unavailable(response, CHECK.id, new Error("invalid assistant match answer"));
         }
         sendJson(response, 200, body);
+      },
+    },
+    {
+      contract: EXPLAIN,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        if (!jsonType(request)) return refuse(response, 415, "unsupported_media_type");
+        const raw = await readBodyWithLimit(
+          request,
+          EXPLAIN.request.maxBodyBytes!,
+          BODY_TIMEOUT_MS,
+        );
+        if (!raw.ok) return refuse(response, raw.status, raw.reason);
+        const json = parseJson(raw.bytes);
+        if (!json.ok) return sendProblem(response, 400, "invalid_json");
+        if (!Value.Check(EXPLAIN.request.body!, json.value)) {
+          return sendProblem(response, 422, "invalid_input");
+        }
+        const { segmentRef, messageId, text } = json.value as {
+          segmentRef: string;
+          messageId: string;
+          text: string;
+        };
+        if (!isCleanText(segmentRef) || !isCleanExplanation(text)) {
+          return sendProblem(response, 422, "invalid_input");
+        }
+        const documentId = workOf(params?.documentId);
+        if (documentId === null) return sendProblem(response, 404, "not_found");
+        const result = await match.explain(token, documentId, segmentRef, messageId, text);
+        if (result.status === "unauthenticated") return sendProblem(response, 401, "unauthorized");
+        if (result.status === "not_found") return sendProblem(response, 404, "not_found");
+        if (result.status === "invalid") return sendProblem(response, 422, "invalid_input");
+        if (result.status === "conflict") return sendProblem(response, 409, "conflict");
+        if (result.status !== "ok") {
+          return unavailable(response, EXPLAIN.id, new Error(result.status));
+        }
+        if (!Value.Check(EXPLAIN_BODY, result.explanation)) {
+          return unavailable(
+            response,
+            EXPLAIN.id,
+            new Error("invalid assistant match explanation"),
+          );
+        }
+        sendJson(response, 201, result.explanation);
       },
     },
   ];
