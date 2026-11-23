@@ -52,11 +52,15 @@ jobs:
     name: Provjere i testovi (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
     strategy:
-      # Two legs split the vitest unit, integration and database projects
-      # by file (vitest --shard); everything else runs on both legs.
+      # Three legs split the vitest unit and integration projects by file
+      # (vitest --shard). The static checks run on leg 1 (types, ledger, lint,
+      # format), equality on leg 2, the property tests on legs 2 and 3 (twice
+      # per run, as before), and the release dry run, contract check and
+      # images on every leg. Each leg used to run all of them: 7 of ci-ok's
+      # 7.5 minutes.
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,12 +72,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Provjera tipova
+        if: matrix.shard == 1
         run: pnpm typecheck
       # D-91 (1), S-0.13: db/main/migrations.sum matches the files, and no
       # migration of the base (PR base, or main before this push) changed or
       # disappeared. On a PR the checkout is the merge commit, so main's newer
       # migrations count. Ported from the Ductus step "Migration ledger (D-91)".
       - name: Knjiga migracija (D-91)
+        if: matrix.shard == 1
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
@@ -89,8 +95,10 @@ jobs:
             node scripts/db/migrations-ledger.ts
           fi
       - name: Lint
+        if: matrix.shard == 1
         run: pnpm lint
       - name: Formatiranje
+        if: matrix.shard == 1
         run: pnpm format:check
       - name: Unit testovi
         env:
@@ -100,8 +108,10 @@ jobs:
       # export snapshot and the DOCX must be the same; a difference fails the build.
       # Its own step, so the check is visible and stays required through ci-ok.
       - name: Test jednakosti prikaza (R-07)
+        if: matrix.shard == 2
         run: pnpm test:equality
       - name: Svojstveni testovi
+        if: matrix.shard != 1
         run: pnpm test:property
       - name: Integracijski testovi
         env:
