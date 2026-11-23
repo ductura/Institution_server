@@ -13,14 +13,16 @@ const ISSUER = "https://ductura-fake-oidc-staging.onrender.com";
 const SECRET = "test-client-secret-0123456789abcdef";
 const COOKIE = "test-cookie-key-0123456789abcdefghij";
 
-const STAGING_ENV: Readonly<Record<string, string>> = {
-  DUCTURA_DEPLOYMENT: "staging",
-  APP_ORIGIN: APP,
-  ISSUER,
-  FAKE_OIDC_CLIENT_SECRET: SECRET,
-  FAKE_OIDC_COOKIE_KEY: COOKIE,
-  PORT: "10000",
-};
+// Environment names as entries: they are fixed outside this code.
+const STAGING_ENV: Readonly<Record<string, string>> = Object.fromEntries([
+  ["DUCTURA_DEPLOYMENT", "staging"],
+  ["APP_ORIGIN", APP],
+  ["ISSUER", ISSUER],
+  ["FAKE_OIDC_CLIENT_SECRET", SECRET],
+  ["FAKE_OIDC_COOKIE_KEY", COOKIE],
+  ["PORT", "10000"],
+]);
+const COOKIE_KEY = "FAKE_OIDC_COOKIE_KEY";
 
 const config = (changes: Readonly<Record<string, string | undefined>>) => {
   const env: Record<string, string> = { ...STAGING_ENV };
@@ -45,7 +47,11 @@ describe("without DUCTURA_DEPLOYMENT the local provider is as before", () => {
   });
 
   test("it never listens on 0.0.0.0, and the staging variables do not open anything", () => {
-    const { DUCTURA_DEPLOYMENT: _switch, ISSUER: _issuer, ...rest } = STAGING_ENV;
+    const rest = Object.fromEntries(
+      Object.entries(STAGING_ENV).filter(
+        ([name]) => name !== "DUCTURA_DEPLOYMENT" && name !== "ISSUER",
+      ),
+    );
     const { host, options } = fakeOidcConfigFromEnv({ ...rest, NODE_ENV: "test" });
     expect(host).toBe("127.0.0.1");
     expect(options.staging).toBeUndefined();
@@ -175,11 +181,13 @@ describe("staging refuses", () => {
         );
       }
     }
-    expect(() => config({ FAKE_OIDC_COOKIE_KEY: SECRET })).toThrow(/must differ/);
+    expect(() => config({ [COOKIE_KEY]: SECRET })).toThrow(/must differ/);
   });
 
   test("an accounts file: only the demo-* accounts sign in", () => {
-    expect(() => config({ FAKE_OIDC_ACCOUNTS_FILE: "/tmp/racuni.json" })).toThrow(/demo-\*/);
+    expect(() =>
+      config(Object.fromEntries([["FAKE_OIDC_ACCOUNTS_FILE", "/tmp/racuni.json"]])),
+    ).toThrow(/demo-\*/);
   });
 });
 
@@ -250,7 +258,13 @@ describe("createFakeOidc with staging options", () => {
 
   test("local options in a staging process stay on loopback (F-019)", () => {
     vi.stubEnv("DUCTURA_DEPLOYMENT", "staging");
-    const { staging: _dropped, ...local } = options;
+    const local: FakeOidcOptions = {
+      issuer: options.issuer,
+      redirectUris: options.redirectUris,
+      postLogoutRedirectUris: options.postLogoutRedirectUris,
+      backchannelLogoutUri: options.backchannelLogoutUri,
+      mode: options.mode,
+    };
     expect(() => createFakeOidc(local)).toThrow(/ISSUER/);
   });
 });

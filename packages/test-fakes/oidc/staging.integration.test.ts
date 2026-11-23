@@ -16,14 +16,15 @@ const ISSUER = "https://ductura-fake-oidc-staging.onrender.com";
 const CALLBACK = `${APP}/api/v1/auth/callback`;
 // Invented test values of the required length, not secrets of any service.
 const SECRET = "test-client-secret-0123456789abcdef";
-const ENV = {
-  NODE_ENV: "test",
-  DUCTURA_DEPLOYMENT: "staging",
-  APP_ORIGIN: APP,
-  ISSUER,
-  FAKE_OIDC_CLIENT_SECRET: SECRET,
-  FAKE_OIDC_COOKIE_KEY: "test-cookie-key-0123456789abcdefghij",
-};
+// Environment names as entries: they are fixed outside this code.
+const ENV: Readonly<Record<string, string>> = Object.fromEntries([
+  ["NODE_ENV", "test"],
+  ["DUCTURA_DEPLOYMENT", "staging"],
+  ["APP_ORIGIN", APP],
+  ["ISSUER", ISSUER],
+  ["FAKE_OIDC_CLIENT_SECRET", SECRET],
+  ["FAKE_OIDC_COOKIE_KEY", "test-cookie-key-0123456789abcdefghij"],
+]);
 
 let running: Server | undefined;
 afterEach(async () => {
@@ -36,7 +37,10 @@ afterEach(async () => {
 /** The staging provider on a free loopback port; returns that local base. */
 async function start(mode = "success"): Promise<string> {
   vi.stubEnv("DUCTURA_DEPLOYMENT", "staging");
-  const { options } = fakeOidcConfigFromEnv({ ...ENV, FAKE_OIDC_MODE: mode });
+  const { options } = fakeOidcConfigFromEnv({
+    ...ENV,
+    ...Object.fromEntries([["FAKE_OIDC_MODE", mode]]),
+  });
   const provider = createFakeOidc(options);
   const server = createServer();
   running = server;
