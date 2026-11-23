@@ -2089,6 +2089,10 @@ const en = {
     mandatoryAttachmentMissing:
       "A required conversation attachment is missing. Attach it and try again.",
     tooManyAttachments: "The declaration already has the maximum number of attachments.",
+    rosterColumnsMissing:
+      "The first line of the file lacks the columns identifikator, ime and prezime. Check the export and upload it again.",
+    rosterTooManyRows: "The list has too many rows. Split it into smaller files.",
+    rosterMalformed: "The file is not valid CSV: a quote was left open.",
   },
   // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
   clientErrors: {

@@ -121,6 +121,13 @@ export {
   mentorNotesPost,
 } from "./mentor-notes.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
+export {
+  ROSTER_IMPORT_MAX_CSV_LENGTH,
+  ROSTER_IMPORT_MAX_ROWS,
+  ROSTER_IMPORT_REASONS,
+  ROSTER_IMPORT_SOURCES,
+  rosterImportRoutes,
+} from "./roster-import.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";

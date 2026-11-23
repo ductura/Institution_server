@@ -1,0 +1,660 @@
+{
+  "route": "institution.roster-imports.post",
+  "vectors": [
+    {
+      "name": "preview",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "importId": "5d1c2b3a-4f5e-4a6b-9c7d-8e9f0a1b2c31",
+          "source": "merlin",
+          "expiresAt": "2026-11-23T10:30:00.000Z",
+          "counts": {
+            "new": 1,
+            "alreadyEnrolled": 1,
+            "unsuitable": 3
+          },
+          "rows": [
+            {
+              "line": 2,
+              "identifier": "ana.izmisljena@fakultet.invalid",
+              "givenName": "Ana",
+              "familyName": "Izmišljena",
+              "status": "new",
+              "reason": null
+            },
+            {
+              "line": 3,
+              "identifier": "marko.izmisljeni@fakultet.invalid",
+              "givenName": "Marko",
+              "familyName": "Izmišljeni",
+              "status": "already_enrolled",
+              "reason": null
+            },
+            {
+              "line": 4,
+              "identifier": "nepoznata.osoba@fakultet.invalid",
+              "givenName": "Nepoznata",
+              "familyName": "Osoba",
+              "status": "unsuitable",
+              "reason": "unknown_account"
+            },
+            {
+              "line": 5,
+              "identifier": "bez-domene",
+              "givenName": "Netko",
+              "familyName": "Bezdomeni",
+              "status": "unsuitable",
+              "reason": "invalid_identifier"
+            },
+            {
+              "line": 6,
+              "identifier": "ana.izmisljena@fakultet.invalid",
+              "givenName": "Ana",
+              "familyName": "Izmišljena",
+              "status": "unsuitable",
+              "reason": "duplicate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "preview-header-only",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "isvu",
+          "csv": "Prezime,Ime,Identifikator\n"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "importId": "5d1c2b3a-4f5e-4a6b-9c7d-8e9f0a1b2c32",
+          "source": "isvu",
+          "expiresAt": "2026-11-23T10:31:00.000Z",
+          "counts": {
+            "new": 0,
+            "alreadyEnrolled": 0,
+            "unsuitable": 0
+          },
+          "rows": []
+        }
+      }
+    },
+    {
+      "name": "origin-missing",
+      "kind": "error",
+      "code": "origin_missing",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_missing",
+          "code": "origin_missing",
+          "messageKey": "errors.originMissing",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000ad20001"
+        }
+      }
+    },
+    {
+      "name": "origin-mismatch",
+      "kind": "error",
+      "code": "origin_mismatch",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://drugo.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_mismatch",
+          "code": "origin_mismatch",
+          "messageKey": "errors.originMismatch",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000ad20002"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "cross_site",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "cross-site",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "cross_site",
+          "code": "cross_site",
+          "messageKey": "errors.crossSite",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000ad20003"
+        }
+      }
+    },
+    {
+      "name": "body-too-large",
+      "kind": "error",
+      "code": "body_too_large",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "262145"
+        },
+        "rawBody": "{\"source\":\"merlin\",\"csv\":\"identifikator;ime;prezime;grupa\\r\\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\\r\\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\\r\\nbez-domene;Netko;Bezdomeni;B\\r\\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\n\"}"
+      },
+      "response": {
+        "status": 413,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_too_large",
+          "code": "body_too_large",
+          "messageKey": "errors.bodyTooLarge",
+          "status": 413,
+          "requestId": "00000000-0000-4000-8000-00000ad20004"
+        }
+      }
+    },
+    {
+      "name": "body-timeout",
+      "kind": "error",
+      "code": "body_timeout",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "322"
+        },
+        "rawBody": "{\"source\":\"merlin\",\"csv\":\"identifikator;ime;prezime;grupa\\r\\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\\r\\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\\r\\nbez-domene;Netko;Bezdomeni;B\\r\\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\n\"}"
+      },
+      "response": {
+        "status": 408,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_timeout",
+          "code": "body_timeout",
+          "messageKey": "errors.bodyTimeout",
+          "status": 408,
+          "requestId": "00000000-0000-4000-8000-00000ad20005"
+        }
+      }
+    },
+    {
+      "name": "content-length-invalid",
+      "kind": "error",
+      "code": "content_length_invalid",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "-1"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_invalid",
+          "code": "content_length_invalid",
+          "messageKey": "errors.contentLengthInvalid",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000ad20006"
+        }
+      }
+    },
+    {
+      "name": "content-length-mismatch",
+      "kind": "error",
+      "code": "content_length_mismatch",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "352"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_mismatch",
+          "code": "content_length_mismatch",
+          "messageKey": "errors.contentLengthMismatch",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000ad20007"
+        }
+      }
+    },
+    {
+      "name": "body-stream-error",
+      "kind": "error",
+      "code": "body_stream_error",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "322"
+        },
+        "rawBody": "{\""
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_stream_error",
+          "code": "body_stream_error",
+          "messageKey": "errors.bodyStreamError",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000ad20008"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000ad20009"
+        }
+      }
+    },
+    {
+      "name": "invalid-input",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "courseId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000ad2000a"
+        }
+      }
+    },
+    {
+      "name": "unsupported-media-type",
+      "kind": "error",
+      "code": "unsupported_media_type",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "text/plain"
+        },
+        "rawBody": "{\"source\":\"merlin\",\"csv\":\"identifikator;ime;prezime;grupa\\r\\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\\r\\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\\r\\nbez-domene;Netko;Bezdomeni;B\\r\\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\n\"}"
+      },
+      "response": {
+        "status": 415,
+        "contentType": "application/json",
+        "body": {
+          "error": "unsupported_media_type",
+          "code": "unsupported_media_type",
+          "messageKey": "errors.unsupportedMediaType",
+          "status": 415,
+          "requestId": "00000000-0000-4000-8000-00000ad2000b"
+        }
+      }
+    },
+    {
+      "name": "invalid-json",
+      "kind": "error",
+      "code": "invalid_json",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "rawBody": "{\"source\":\"merlin\",\"csv\":\"identifikator;ime;prezime;grupa\\r\\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\\r\\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\\r\\nbez-domene;Netko;Bezdomeni;B\\r\\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\\r\\n\""
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_json",
+          "code": "invalid_json",
+          "messageKey": "errors.invalidJson",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000ad2000c"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000ad2000d"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-00000ad2000e"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000ad2000f"
+        }
+      }
+    },
+    {
+      "name": "roster-columns-missing",
+      "kind": "error",
+      "code": "roster_columns_missing",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "ime;prezime\r\nAna;Izmišljena\r\n"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "roster_columns_missing",
+          "code": "roster_columns_missing",
+          "messageKey": "errors.rosterColumnsMissing",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000ad20010"
+        }
+      }
+    },
+    {
+      "name": "roster-too-many-rows",
+      "kind": "error",
+      "code": "roster_too_many_rows",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime;grupa\r\nana.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\nmarko.izmisljeni@fakultet.invalid;Marko;Izmišljeni;A\r\nnepoznata.osoba@fakultet.invalid;Nepoznata;Osoba;B\r\nbez-domene;Netko;Bezdomeni;B\r\nANA.izmisljena@fakultet.invalid;Ana;Izmišljena;A\r\n"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "roster_too_many_rows",
+          "code": "roster_too_many_rows",
+          "messageKey": "errors.rosterTooManyRows",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000ad20011"
+        }
+      }
+    },
+    {
+      "name": "roster-malformed",
+      "kind": "error",
+      "code": "roster_malformed",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "source": "merlin",
+          "csv": "identifikator;ime;prezime\r\n\"ana.izmisljena@fakultet.invalid;Ana;Izmišljena\r\n"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "roster_malformed",
+          "code": "roster_malformed",
+          "messageKey": "errors.rosterMalformed",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000ad20012"
+        }
+      }
+    }
+  ]
+}
