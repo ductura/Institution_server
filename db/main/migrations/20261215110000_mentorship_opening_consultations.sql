@@ -720,6 +720,6 @@ REVOKE CREATE ON SCHEMA collaboration FROM ductus_identity;
 -- db:up instead.
 DO $$
 BEGIN
-  RAISE EXCEPTION 'SRV-MENTOR-1 (20261215100000) does not go down; recreate the local database';
+  RAISE EXCEPTION 'SRV-MENTOR-1 (20261215110000) does not go down; recreate the local database';
 END
 $$;

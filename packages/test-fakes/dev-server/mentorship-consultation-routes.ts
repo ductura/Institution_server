@@ -1,6 +1,6 @@
 // SRV-MENTOR-1 (NF-6: MK-7, MK-3, MK-10, MK-5) on the dev fake server, with
 // invented data only. The real rules are the functions of migration
-// 20261215100000 (app.open_mentorship, institution.close_consultation_slot,
+// 20261215110000 (app.open_mentorship, institution.close_consultation_slot,
 // collaboration.add_consultation_task and their reads); the fake keeps their
 // answers and refusals:
 //

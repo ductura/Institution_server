@@ -1,6 +1,6 @@
 # Otvaranje mentorstva, termini s pojedinostima i dogovoreni zadaci
 
-SRV-MENTOR-1 (NF-6: MK-7, MK-3, MK-10, MK-5). RPC-i glavne baze iz migracije `20261215100000_mentorship_opening_consultations.sql`; identitet dolazi iz sesije vezane uz transakciju, a funkcije odlučuju tko smije (pristup iz odnosa, C-23).
+SRV-MENTOR-1 (NF-6: MK-7, MK-3, MK-10, MK-5). RPC-i glavne baze iz migracije `20261215110000_mentorship_opening_consultations.sql`; identitet dolazi iz sesije vezane uz transakciju, a funkcije odlučuju tko smije (pristup iz odnosa, C-23).
 
 - `app.open_mentorship`: nastavnik otvara mentorstvo studentu svoje ustanove (vrsta rada, neobavezna tema); student dobiva obavijest vrste `mentorship_opened`.
 - `app.student_mentorships` i `institution.list_mentorship_notifications`: studentova otvorena mentorstva i njegove obavijesti o otvaranju.

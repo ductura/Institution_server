@@ -4,10 +4,10 @@
 
 Izvori:
 
-- Odluke vlasnika od 23. 11. 2026. za NF-6 (nalog na Ductus#2055, c.7116183714): (1) zapisnik konzultacija piše i dopunjuje samo mentor, student čita; (4) mentorstvo otvara nastavnik, student ne traži mentora nego vidi odluku i mentora; (6) student smije uz zahtjev za termin priložiti pripremu uz napomenu „zapis o unosu, ne o autorstvu”.
+- Odluke vlasnika od 23. 11. 2026. za NF-6 (nalog na Ductus#2055, c.7116183714) i potvrda od 24. 11. 2026. („1 da”, ductura/Institution_server#667 c.7117304685) da zapisnik i dopune piše samo mentor za sve radove: (1) zapisnik konzultacija piše i dopunjuje samo mentor, student čita; (4) mentorstvo otvara nastavnik, student ne traži mentora nego vidi odluku i mentora; (6) student smije uz zahtjev za termin priložiti pripremu uz napomenu „zapis o unosu, ne o autorstvu”.
 - Nalaz `docs/nalazi/nove-funkcije-6-mentorstvo-konzultacije.md` u `ductura/Institution_front_web_chrome` (MK-7, MK-3, MK-10, MK-5 i otvorena pitanja O1, O2, O4).
 - Ustav C-23: pristup nastaje samo iz odnosa (student vlasnik rada, nastavnik rada, mentor), nikad iz uloge same.
-- Baza: migracija `db/main/migrations/20261215100000_mentorship_opening_consultations.sql`, pgTAP `db/main/tests/233-mentorship-opening-consultations.sql` i retci u `030-institution-access-matrix.sql`.
+- Baza: migracija `db/main/migrations/20261215110000_mentorship_opening_consultations.sql`, pgTAP `db/main/tests/233-mentorship-opening-consultations.sql` i retci u `030-institution-access-matrix.sql`.
 - Ugovor ruta: `server/contracts/routes/mentorship-consultations.ts`; vektori u `server/contracts/vectors/`.
 
 ## Načelo: samo dodavanje
@@ -17,7 +17,7 @@ Postojeće rute ostaju kakve jesu, pa nijedan njihov klijent ne dobiva novo polj
 - `work.consultation-slots.get|post|patch` i dalje znaju samo `requested`, `countered` i `confirmed`. Zatvoren termin (`withdrawn`, `declined`, `cancelled`) stara ruta izostavlja, a ne broji se ni u 20 otvorenih zahtjeva. `patch` na zatvorenom terminu daje 409.
 - `notifications.list.get` izostavlja novu vrstu `mentorship_opened`, kao i `returned_for_revision`. Stranica i kursor računaju se preko svih vrsta, pa stranica može biti kraća. Obavijest se označava pročitanom postojećom rutom `notifications.read.post`.
 - `mentorship.requests.post` i ostali koraci studentskog zahtjeva ostaju u kodu (odluka 4 ih ne briše).
-- `work.consultation-records.post` i `work.consultation-additions.post` zadržavaju ugovor (`owner_or_course_teacher`), ali od ove migracije baza dopušta pisanje samo nastavniku rada (odluka 1). Student dobiva 404, isto kao za tuđi rad. Vidi „Otvoreno za vlasnika”.
+- Iznimka je namjerna i potvrđena (odluka 1, 24. 11. 2026.): `work.consultation-records.post` i `work.consultation-additions.post` sada deklariraju pristup `mentor_teacher` umjesto `owner_or_course_teacher`. Zapis i dopune za **sve radove**, ne samo u mentorstvu, piše samo nastavnik rada (mentor); student ih čita (`work.consultation-records.get` ostaje `owner_or_course_teacher`). Student koji pokuša pisati dobiva 404, isto kao za tuđi rad. Oblik zahtjeva i odgovora se ne mijenja. **WEB:** studentski obrazac zapisa i dopune treba ukloniti; student zapisnik samo čita.
 
 ## Rute
 
@@ -71,10 +71,9 @@ Zadatke upisuje i označava samo nastavnik rada (mentor), a student ih čita. Za
 
 ## Lažni poslužitelj
 
-`packages/test-fakes/dev-server/mentorship-consultation-routes.ts` odgovara na svih devet ruta s izmišljenim podacima i istim odbijanjima. Stari lažni rukovatelji termina izostavljaju zatvorene termine. Zapisnik i dopune piše samo nastavnik.
+`packages/test-fakes/dev-server/mentorship-consultation-routes.ts` odgovara na svih devet ruta s izmišljenim podacima i istim odbijanjima. Stari lažni rukovatelji termina izostavljaju zatvorene termine. Zapisnik i dopune piše samo nastavnik rada; studentu lažni poslužitelj vraća 404.
 
 ## Otvoreno za vlasnika
 
-- **Suženje pisanja zapisnika (odluka 1).** Ugovor `work.consultation-records.post` i `work.consultation-additions.post` i dalje deklarira `owner_or_course_teacher`. Ugovor se ne mijenja jer bi provjera `contracts:breaking` to odbila, a baza od 20261215100000 studentu vraća 404. Treba li deklaraciju pristupa promijeniti u novoj glavnoj verziji API-ja?
 - **Izbor studenta pri otvaranju.** Nastavnik upisuje `studentId`. Ruta za pretraživanje studenata ustanove nije dio ovog zadatka; klijent ID uzima iz postojećih popisa kolegija.
 - **Podsjetnik na termin** (`deadline_reminder`, MK-3) nije dio ovog zadatka.
