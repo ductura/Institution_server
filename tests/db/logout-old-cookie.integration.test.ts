@@ -960,6 +960,17 @@ const SESSION_ROUTES = {
     body: () => ({ segmentRef: "blok-1", text: "izmišljeni tekst odlomka" }),
     live: 404,
   },
+  // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV: the same on the student's explanation of a finding.
+  "work.assistant-match-explanation.post": {
+    method: "POST",
+    path: "/api/v1/works/izmisljeni-rad-0001/assistant-match/explanation",
+    body: () => ({
+      segmentRef: "blok-1",
+      messageId: "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c41",
+      text: "Izmišljeno objašnjenje.",
+    }),
+    live: 404,
+  },
   // PIL-P1-RITAM-SRV: a live session that has no such work or assignment gets 404 on each rhythm route.
   "work.input-rhythm.post": {
     method: "POST",

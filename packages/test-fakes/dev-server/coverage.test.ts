@@ -1194,6 +1194,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `/api/v1/works/${IDS.document}/assistant-match`, as: "nastavnik" },
   },
   "work.assistant-match.post": { request: ASSISTANT_MATCH_POST },
+  "work.assistant-match-explanation.post": {
+    before: [ASSISTANT_MATCH_POST],
+    request: {
+      path: `/api/v1/works/${IDS.document}/assistant-match/explanation`,
+      as: "student",
+      headers: ORIGIN,
+      body: {
+        segmentRef: "blok-1",
+        messageId: "000000a1-0000-4000-8000-000000000002",
+        text: "Rečenicu sam napisala prema svojim bilješkama.",
+      },
+    },
+  },
   "work.input-rhythm.post": { request: RHYTHM_POST },
   "work.input-rhythm.get": {
     before: [RHYTHM_POST],

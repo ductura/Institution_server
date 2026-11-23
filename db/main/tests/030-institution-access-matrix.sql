@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3425);
+SELECT plan(3427);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -799,15 +799,26 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
 
 -- 1c4. SRV-1230: the match with the assistant (evidence.assistant_match_finding,
 -- assistant_match_attachment, assistant_match_setting) only through the RPCs; the
--- cells per actor are in 225-assistant-match.sql.
+-- cells per actor are in 225-assistant-match.sql. PIL-P1-PODUDARANJE-OBJASNJENJE-SRV:
+-- the student's explanation of a finding (assistant_match_explanation) the same;
+-- its cells per actor are in 230-assistant-match-explanation.sql.
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT EXISTS (
       SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_evidence'
         AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'SRV-1230: ' || t.name || ' has forced RLS, the evidence owner and no privilege for another role')
-  FROM (VALUES ('assistant_match_finding'), ('assistant_match_attachment'), ('assistant_match_setting')) AS t (name)
+  FROM (VALUES ('assistant_match_finding'), ('assistant_match_attachment'), ('assistant_match_setting'),
+               ('assistant_match_explanation')) AS t (name)
   JOIN pg_class c ON c.oid = ('evidence.' || t.name)::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.assistant_match_explain(text,text,uuid,text)', 'app.assistant_match_explanations(text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'PIL-P1-PODUDARANJE-OBJASNJENJE-SRV: only the web role (and the owner) execute the explanation RPCs');
 -- 1c5. SRV-1111: the thresholds of a faculty per kind of origin
 -- (institution.origin_threshold, audit.origin_threshold_event) only through the
 -- RPCs; the web role executes only them, and the cells per actor are in

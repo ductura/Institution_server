@@ -23,7 +23,20 @@
               "messageId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c41",
               "runWords": 9,
               "recordedAt": "2026-11-22T10:00:00.000Z",
-              "attachedAt": "2026-11-22T10:00:00.000Z"
+              "attachedAt": "2026-11-22T10:00:00.000Z",
+              "explanation": {
+                "text": "Rečenicu sam napisala prema svojim bilješkama s predavanja.",
+                "writtenAt": "2026-11-23T08:00:00.000Z"
+              }
+            },
+            {
+              "segmentRef": "blok-2",
+              "conversationId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c42",
+              "messageId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c41",
+              "runWords": 12,
+              "recordedAt": "2026-11-22T10:05:00.000Z",
+              "attachedAt": "2026-11-22T10:00:00.000Z",
+              "explanation": null
             }
           ]
         }
