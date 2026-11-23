@@ -24,3 +24,6 @@ tests/fixtures/docx-corpus/MANIFEST.json
 # Copied byte for byte from Ductus main docs/privacy (Ductus#2028 c.7019455316 (c));
 # tests/db/ductus/data-flow-inventory-catalog.integration.test.ts reads it.
 docs/privacy/08-inventar-tokova-podataka.md
+# Snapshot of ductura/.github docs/plan/PLAN-MIGRACIJE.md, refreshed by
+# _raspored/sinkro-plan.mjs; edited only in ductura/.github, so it stays byte for byte.
+docs/plan/PLAN-MIGRACIJE.md
