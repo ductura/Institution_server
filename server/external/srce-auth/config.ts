@@ -6,9 +6,20 @@
  * such a configuration throws at startup. The routes pass the NODE_ENV the
  * build fixed, not the one the server starts with (deps.ts).
  *
+ * The one exception is the staging deployment (STG-PRIJAVA, owner decision of
+ * 23. 11. 2026., Ductus#2055): a production build accepts the fake provider
+ * only with DUCTURA_DEPLOYMENT=staging and an APP_ORIGIN outside the
+ * production domain (server/settings/deployment.ts), with the login's own
+ * addresses on that origin and the issuer outside the production domain too.
+ * Everything else a production build checks (https, public hosts) still holds.
+ *
  * Errors name the variable, never its value, so a secret cannot reach a log.
  */
-import { isNonProductionBuild } from "../../settings/index.ts";
+import {
+  isNonProductionBuild,
+  isProductionHost,
+  stagingDeploymentOrigin,
+} from "../../settings/index.ts";
 
 export type AuthProvider = "aai-eduhr" | "fake-oidc";
 
@@ -177,6 +188,30 @@ export function expectedOrigin(
   }
 }
 
+/**
+ * The fake provider on staging: the browser comes back to the staging origin
+ * and nowhere else (the post-logout address shares the redirect's origin), and
+ * the issuer is not a host of the production domain. The origin is compared
+ * whole, so a different port or scheme is refused as well.
+ */
+function assertStagingAddresses(
+  origin: string,
+  issuer: URL,
+  redirectUri: URL,
+  postLogoutRedirectUri: URL,
+): void {
+  if (redirectUri.origin !== origin || postLogoutRedirectUri.origin !== origin) {
+    throw new AuthConfigError(
+      "OIDC_REDIRECT_URI of the fake provider on staging must be on APP_ORIGIN",
+    );
+  }
+  if (isProductionHost(issuer.hostname)) {
+    throw new AuthConfigError(
+      "OIDC_ISSUER of the fake provider on staging must be outside the production domain",
+    );
+  }
+}
+
 export function loadAuthConfig(env: Env = process.env): AuthConfig {
   // An allowlist, not a match on "production": an unset, empty or misspelt
   // NODE_ENV fails closed (QA of #191).
@@ -185,7 +220,10 @@ export function loadAuthConfig(env: Env = process.env): AuthConfig {
   if (provider !== "aai-eduhr" && provider !== "fake-oidc") {
     throw new AuthConfigError("DUCTUS_AUTH_PROVIDER must be aai-eduhr or fake-oidc");
   }
-  if (provider === "fake-oidc" && production) {
+  // The fake provider in a production build: staging only, else refused (D-09).
+  const stagingOrigin =
+    provider === "fake-oidc" && production ? stagingDeploymentOrigin(env) : null;
+  if (provider === "fake-oidc" && production && stagingOrigin === null) {
     throw new AuthConfigError("the fake OIDC provider is prohibited in production (D-09)");
   }
 
@@ -213,6 +251,10 @@ export function loadAuthConfig(env: Env = process.env): AuthConfig {
     throw new AuthConfigError("OIDC_ISSUER must be an http(s) URL");
   }
   const redirectUri = redirectUriOf(env, production);
+  const postLogoutRedirectUri = postLogoutRedirectUriOf(env, production, redirectUri);
+  if (stagingOrigin !== null) {
+    assertStagingAddresses(stagingOrigin, issuer, redirectUri, postLogoutRedirectUri);
+  }
 
   const alg = env.OIDC_ID_TOKEN_ALG ?? "RS256";
   if (!(ID_TOKEN_ALGS as readonly string[]).includes(alg)) {
@@ -230,7 +272,7 @@ export function loadAuthConfig(env: Env = process.env): AuthConfig {
     clientId: required(env, "OIDC_CLIENT_ID").trim(),
     clientSecret: required(env, "OIDC_CLIENT_SECRET"),
     redirectUri,
-    postLogoutRedirectUri: postLogoutRedirectUriOf(env, production, redirectUri),
+    postLogoutRedirectUri,
     allowInsecureRequests: !production && insecure,
     idTokenAlg: alg as IdTokenAlg,
     clockToleranceSeconds: tolerance,

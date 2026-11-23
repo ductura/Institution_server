@@ -25,14 +25,27 @@ export const CSP_HEADER = "Content-Security-Policy";
 export const PERMISSIONS_POLICY_HEADER = "Permissions-Policy";
 export const HSTS_HEADER = "Strict-Transport-Security";
 
-/** Where the server runs: local (development and CI) sends no HSTS (M1.6). */
-export type SecurityMode = { readonly local: boolean };
+/**
+ * The mark of a staging deployment (STG-PRIJAVA, Ductus#2055): on every
+ * answer of a server started with DUCTURA_DEPLOYMENT=staging, so nobody takes
+ * it, or its fake login, for production. The server's alone, like the policies.
+ */
+export const DEPLOYMENT_HEADER = "X-Ductura-Deployment";
+export const STAGING_DEPLOYMENT = "staging";
+
+/**
+ * Where the server runs: local (development and CI) sends no HSTS (M1.6);
+ * staging marks every answer with DEPLOYMENT_HEADER.
+ */
+export type SecurityMode = { readonly local: boolean; readonly staging?: boolean };
 /** The default everywhere a mode is not given: HSTS on. */
 export const PRODUCTION_SECURITY: SecurityMode = Object.freeze({ local: false });
 
 /** The header names only the server may set, lower case. */
 export const ENFORCED_HEADER_NAMES: readonly string[] = Object.freeze(
-  [CSP_HEADER, PERMISSIONS_POLICY_HEADER, HSTS_HEADER].map((name) => name.toLowerCase()),
+  [CSP_HEADER, PERMISSIONS_POLICY_HEADER, HSTS_HEADER, DEPLOYMENT_HEADER].map((name) =>
+    name.toLowerCase(),
+  ),
 );
 
 /** The enforced headers of a mode, in this order. */
@@ -43,6 +56,7 @@ export function enforcedHeaders(
     { key: CSP_HEADER, value: CONTENT_SECURITY_POLICY },
     { key: PERMISSIONS_POLICY_HEADER, value: PERMISSIONS_POLICY },
     ...(mode.local ? [] : [{ key: HSTS_HEADER, value: STRICT_TRANSPORT_SECURITY }]),
+    ...(mode.staging === true ? [{ key: DEPLOYMENT_HEADER, value: STAGING_DEPLOYMENT }] : []),
   ]);
 }
 
@@ -93,6 +107,7 @@ export function enforceSecurityHeaders(response: ServerResponse, mode: SecurityM
       if (last >= 1 && typeof args[last] !== "string") args[last] = withoutEnforced(args[last]);
       for (const { key, value } of headers) this.setHeader(key, value);
       if (mode.local) this.removeHeader(HSTS_HEADER);
+      if (mode.staging !== true) this.removeHeader(DEPLOYMENT_HEADER);
     }
     return (writeHead as (...a: unknown[]) => ServerResponse).apply(this, args);
   };

@@ -140,8 +140,10 @@ import {
   startServer,
 } from "./http/index.ts";
 import {
+  deploymentProblems,
   institutionsProblems,
   isNonProductionBuild,
+  isStagingDeployment,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -164,6 +166,7 @@ const problems = [
   ...institutionsProblems(),
   ...facultyRulesProblems(),
   ...testModeProblems(process.env),
+  ...deploymentProblems(process.env),
   ...rateLimitConfig.problems,
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
@@ -191,7 +194,12 @@ const LAYERS = createLayers({
 // SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
 // only outside local work (NODE_ENV development or test, the one definition
 // of production); idle sessions get 401 session_idle_expired after 30 minutes.
-const SECURITY = { local: isNonProductionBuild(process.env.NODE_ENV) };
+// STG-PRIJAVA (Ductus#2055): DUCTURA_DEPLOYMENT=staging on an APP_ORIGIN
+// outside the production domain marks every answer X-Ductura-Deployment:
+// staging and is announced at start; staging on a production origin or any
+// other value is a startup problem above.
+const STAGING = isStagingDeployment(process.env);
+const SECURITY = { local: isNonProductionBuild(process.env.NODE_ENV), staging: STAGING };
 
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
 //    here (server/server.test.ts); test-server mounts its own.
@@ -213,6 +221,16 @@ async function main(): Promise<void> {
     logStartupRefused(problems);
     process.exitCode = EXIT_CONFIGURATION;
     return;
+  }
+  if (STAGING) {
+    // A warning on every start, before anything listens: this process may
+    // accept the fake OIDC provider and must never serve real students (D-09).
+    console.warn(
+      JSON.stringify({
+        event: "server.staging",
+        warning: "staging deployment: fake OIDC login may be enabled, never for real students",
+      }),
+    );
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();

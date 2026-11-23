@@ -19,5 +19,13 @@ export type {
   InstitutionsErrorCode,
   InstitutionsResult,
 } from "./institutions.ts";
+export {
+  deploymentProblems,
+  DEPLOYMENT_VARIABLE,
+  isProductionHost,
+  isStagingDeployment,
+  PRODUCTION_DOMAIN,
+  stagingDeploymentOrigin,
+} from "./deployment.ts";
 export { isNonProductionBuild } from "./non-production.ts";
 export { testModeProblems } from "./test-mode.ts";
