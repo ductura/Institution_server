@@ -489,8 +489,11 @@ export {
   type OriginRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
+  createDeclarationQuestionPort,
   createDeclarationRequiredSwitch,
   createSubmissionDeclarationGate,
+  type DeclarationQuestionPort,
+  type DeclarationQuestionSetting,
   type DeclarationRequiredSetting,
   type DeclarationRequiredSwitch,
   type SubmissionDeclarationGate,
@@ -758,9 +761,11 @@ export {
   checkExternalAttachmentBytes,
   createStatementPort,
   incompleteFields,
+  isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
   parseDeclarationPutBody,
+  parseDeclarationQuestionAnswer,
   type FormReader,
   type StatementOperation,
   type StatementPort,

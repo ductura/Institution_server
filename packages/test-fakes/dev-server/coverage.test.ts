@@ -1743,6 +1743,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { required: true },
     },
   },
+  "teacher.declaration-question.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-question`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.declaration-question.put": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-question`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { question: "Koji ti je izmišljeni izvor najviše pomogao?" },
+    },
+  },
   "teacher.submission-withdrawal.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/submission-withdrawal`,

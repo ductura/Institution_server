@@ -113,6 +113,7 @@ import {
   createAssistantMatchRoutesFor,
   createInputRhythmRoutesFor,
   createDeclarationRequiredRoutesFor,
+  createDeclarationQuestionRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1040,6 +1041,19 @@ const SESSION_ROUTES = {
     body: () => ({ required: true }),
     live: 404,
   },
+  // SRV-IZJAVA-PITANJE: a live session that teaches no such assignment gets 404 and changes nothing.
+  "teacher.declaration-question.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/declaration-question`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.declaration-question.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/declaration-question`,
+    body: () => ({ question: "Izmišljeno pitanje?" }),
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -1780,6 +1794,7 @@ const FACTORIES = [
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
   "createDeclarationRequiredRoutesFor",
+  "createDeclarationQuestionRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -1897,6 +1912,7 @@ const MOUNTED = [
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
   ...createDeclarationRequiredRoutesFor(databases.main),
+  ...createDeclarationQuestionRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

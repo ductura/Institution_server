@@ -2,7 +2,20 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { DeclarationPayload, DeclarationSha256 } from "./statement.ts";
+import {
+  DeclarationPayload,
+  DeclarationQuestionAnswer,
+  DeclarationSha256,
+  DeclarationTeacherQuestion,
+} from "./statement.ts";
+
+// SRV-IZJAVA-PITANJE: the question in force and the answer bound with the
+// declaration (null without either). Always sent; optional only so older
+// clients keep validating.
+const Question = {
+  question: Type.Optional(DeclarationTeacherQuestion),
+  questionAnswer: Type.Optional(DeclarationQuestionAnswer),
+};
 
 export const teacherDeclarationGet = defineRoute({
   id: "teacher.declaration.get",
@@ -27,11 +40,13 @@ export const teacherDeclarationGet = defineRoute({
           state: Type.Literal("none"),
           payload: Type.Null(),
           declarationSha256: Type.Null(),
+          ...Question,
         }),
         closed({
           state: Type.Literal("bound"),
           payload: DeclarationPayload,
           declarationSha256: DeclarationSha256,
+          ...Question,
         }),
       ]),
       headers: ["cache-control"],

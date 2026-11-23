@@ -199,3 +199,52 @@ it.each(["too_many_attachments", "attachments_too_large", "already_submitted"])(
     expect(await response.json()).toMatchObject({ code: reason });
   },
 );
+
+// SRV-IZJAVA-PITANJE: the optional answer travels beside the closed
+// declaration-v1 body; the port gets both apart, and a bad answer is refused
+// before the database.
+const QID = "00000000-0000-4000-8000-0000000000e1";
+async function saveWith(body: unknown) {
+  const { url, run } = await serve({ status: "conflict", reason: "form_outdated" });
+  const response = await fetch(`${url}/declaration`, {
+    method: "PUT",
+    headers: { ...HEADERS, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return { response, run };
+}
+
+it("passes the answer to the port beside the declaration body", async () => {
+  const answer = { questionId: QID, text: "Izmišljeni odgovor." };
+  const { response, run } = await saveWith({ ...BODY, questionAnswer: answer });
+  expect(response.status).toBe(409);
+  expect(run).toHaveBeenCalledWith(expect.any(String), ID, "demo-fakultet", {
+    type: "save",
+    body: BODY,
+    answer,
+  });
+});
+
+it.each([
+  ["omitted", BODY],
+  ["null", { ...BODY, questionAnswer: null }],
+])("an answer %s is no answer", async (_name, body) => {
+  const { run } = await saveWith(body);
+  expect(run).toHaveBeenCalledWith(expect.any(String), ID, "demo-fakultet", {
+    type: "save",
+    body: BODY,
+    answer: null,
+  });
+});
+
+it.each([
+  ["a string", "odgovor"],
+  ["an unknown key", { questionId: QID, text: "odgovor", extra: 1 }],
+  ["an empty text", { questionId: QID, text: "" }],
+  ["2001 code points", { questionId: QID, text: "ž".repeat(2001) }],
+  ["an id that is no uuid", { questionId: "pitanje", text: "odgovor" }],
+])("refuses an answer with %s before the database", async (_name, questionAnswer) => {
+  const { response, run } = await saveWith({ ...BODY, questionAnswer });
+  expect(response.status).toBe(422);
+  expect(run).not.toHaveBeenCalled();
+});
