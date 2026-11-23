@@ -4,7 +4,8 @@
 // of routes is closed against server/ by N2 and ended-mark-coverage.test.ts.
 // All values are invented.
 import { readdirSync, readFileSync } from "node:fs";
-import { createServer, request as httpRequest, type Server } from "node:http";
+import { createServer, type Server } from "node:http";
+import { connect } from "node:net";
 import type { AddressInfo } from "node:net";
 import { join } from "node:path";
 
@@ -303,8 +304,9 @@ describe("P: every route that sets or clears the cookie sends exactly one valid 
 
 /**
  * A request whose Cookie is sent as separate header lines, as HTTP/1.1 allows
- * a client to (RFC 6265 5.4 asks for one, so a proxy may still split it);
- * fetch would fold them into one.
+ * a client to (RFC 6265 5.4 asks for one, so a proxy may still split it).
+ * Written to the socket by hand: fetch and http.request both fold a Cookie
+ * array into one line, so neither would send what this test is about.
  */
 function rawRequest(
   url: string,
@@ -312,19 +314,34 @@ function rawRequest(
   cookies: string[],
   headers: Record<string, string> = {},
 ): Promise<{ status: number; location: string | undefined; setCookie: string[] }> {
+  const { hostname, port, pathname, search } = new URL(url);
+  const lines = [
+    `${method} ${pathname}${search} HTTP/1.1`,
+    `Host: ${hostname}:${port}`,
+    "Connection: close",
+    "Content-Length: 0",
+    ...Object.entries(headers).map(([name, value]) => `${name}: ${value}`),
+    ...cookies.map((cookie) => `Cookie: ${cookie}`),
+  ];
   return new Promise((done, fail) => {
-    const req = httpRequest(url, { method, headers: { ...headers, cookie: cookies } }, (res) => {
-      res.resume();
-      res.on("end", () =>
-        done({
-          status: res.statusCode ?? 0,
-          location: res.headers.location,
-          setCookie: res.headers["set-cookie"] ?? [],
-        }),
-      );
+    const socket = connect(Number(port), hostname);
+    const chunks: Buffer[] = [];
+    socket.on("data", (chunk: Buffer) => chunks.push(chunk));
+    socket.on("error", fail);
+    socket.on("end", () => {
+      const head = Buffer.concat(chunks).toString("latin1").split("\r\n\r\n")[0] ?? "";
+      const [statusLine = "", ...fields] = head.split("\r\n");
+      const values = (name: string) =>
+        fields
+          .filter((field) => field.slice(0, field.indexOf(":")).toLowerCase() === name)
+          .map((field) => field.slice(field.indexOf(":") + 1).trim());
+      done({
+        status: Number(statusLine.split(" ")[1]),
+        location: values("location")[0],
+        setCookie: values("set-cookie"),
+      });
     });
-    req.on("error", fail);
-    req.end();
+    socket.write(`${lines.join("\r\n")}\r\n\r\n`);
   });
 }
 
@@ -332,6 +349,24 @@ function rawRequest(
 // one: the sign-out mark and the session cookie count on any line.
 describe("C: several Cookie header lines", () => {
   const MARK = "__Secure-ductus_signed_out=1";
+
+  it("reaches the server as separate Cookie lines", async () => {
+    const seen: string[] = [];
+    const probe = createServer((req, res) => {
+      for (let i = 0; i < req.rawHeaders.length; i += 2) {
+        if (req.rawHeaders[i]?.toLowerCase() === "cookie") seen.push(req.rawHeaders[i + 1] ?? "");
+      }
+      res.end();
+    });
+    await new Promise<void>((done) => probe.listen(0, "127.0.0.1", done));
+    try {
+      const { port } = probe.address() as AddressInfo;
+      await rawRequest(`http://127.0.0.1:${port}/`, "GET", ["izmisljeni=1", MARK]);
+    } finally {
+      await new Promise<void>((done) => probe.close(() => done()));
+    }
+    expect(seen).toEqual(["izmisljeni=1", MARK]);
+  });
 
   it("the sign-out mark on a later line asks the provider to sign in again", async () => {
     const { origin } = await stack("success");

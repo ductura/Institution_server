@@ -289,8 +289,10 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     return failurePage(400, cleared);
   }
   // The server bounds the attempt's age itself (INT-20g), before the
-  // provider is asked: a browser that keeps the cookie past Max-Age, or one
-  // replayed later, does not finish an old attempt.
+  // provider is asked: a browser that keeps the cookie past Max-Age, or a
+  // stale copy of it sent again later, does not finish an old attempt. The
+  // cookie is not signed, so this bounds a stale cookie, not one the browser
+  // rewrites itself.
   if (attemptExpired(attempt.startedAt, deps.config.clockToleranceSeconds)) {
     logFailure("callback", "attempt_expired");
     return failurePage(400, cleared);
