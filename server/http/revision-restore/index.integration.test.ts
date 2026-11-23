@@ -8,7 +8,8 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { RevisionRestore } from "../../database/index.ts";
+import { RESTORE_MAX_FROM_REVISION } from "../../contracts/index.ts";
+import { RESTORE_MAX_FROM, type RevisionRestore } from "../../database/index.ts";
 import { createDatabases, createLayers, type Running, startServer } from "../index.ts";
 
 import { createRevisionRestoreRoute } from "./index.ts";
@@ -161,5 +162,11 @@ describe("work.restore.post", () => {
     });
     expect(got.status).toBe(404);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("the bound of a restore", () => {
+  it("the port and the contract refuse the same revisions", () => {
+    expect(RESTORE_MAX_FROM).toBe(RESTORE_MAX_FROM_REVISION);
   });
 });

@@ -77,7 +77,9 @@ export function createRevisionRestoreRoute(record: RevisionRestore): Route {
       if (result.status === "not_found") return sendProblem(response, 404, "not_found");
       if (result.status === "invalid") return sendProblem(response, 422, "invalid_input");
       // Only the outcome and the revision it names leave, and that revision is
-      // always later than the one restored from.
+      // always later than the one restored from. An answer outside the
+      // contract is 503 although the record may already be written; a retry
+      // then reads already_recorded, so the client never confirms twice.
       const body =
         result.status !== "ok"
           ? undefined

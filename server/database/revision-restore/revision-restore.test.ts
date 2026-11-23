@@ -3,7 +3,6 @@
 // value is invented.
 import { describe, expect, it } from "vitest";
 
-import { RESTORE_MAX_FROM_REVISION } from "../../contracts/index.ts";
 import type { ActorTransaction, WithActor } from "../index.ts";
 
 import { createRevisionRestore, RESTORE_MAX_FROM } from "./index.ts";
@@ -114,8 +113,7 @@ describe("createRevisionRestore", () => {
     },
   );
 
-  it("bounds the revision as the contract does", () => {
-    expect(RESTORE_MAX_FROM).toBe(RESTORE_MAX_FROM_REVISION);
+  it("bounds the revision below the largest safe integer", () => {
     expect(RESTORE_MAX_FROM).toBe(9_007_199_254_740_990);
   });
 });
