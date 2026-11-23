@@ -68,12 +68,9 @@ function noteContent(
   if (mediaType === "application/pdf") {
     return bytes.subarray(0, PDF_HEADER.length).equals(PDF_HEADER) ? bytes : null;
   }
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-    return TEXT_CONTROL.test(text) ? null : bytes;
-  } catch {
-    return null;
-  }
+  // Invalid UTF-8 decodes to replacement characters, which do not encode back to the same bytes.
+  const text = bytes.toString("utf8");
+  return Buffer.from(text, "utf8").equals(bytes) && !TEXT_CONTROL.test(text) ? bytes : null;
 }
 
 export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithActor }): Route[] {

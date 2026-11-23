@@ -510,6 +510,15 @@ const SESSION_ROUTES = {
     body: () => ({ text: "Objašnjenje." }),
     live: 403,
   },
+  "work.interview-notes.post": {
+    path: `/api/v1/works/${randomUUID()}/interview/notes`,
+    body: () => ({
+      fileName: "biljeska.txt",
+      mediaType: "text/plain",
+      contentBase64: Buffer.from("Bilješka.").toString("base64"),
+    }),
+    live: 403,
+  },
   "mentorship.key-dates.get": {
     method: "GET",
     path: `/api/v1/mentorships/${randomUUID()}/key-dates`,

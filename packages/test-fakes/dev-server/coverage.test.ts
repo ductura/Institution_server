@@ -483,6 +483,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { text: "Izmišljeno objašnjenje." },
     },
   },
+  "work.interview-notes.post": {
+    before: [ADD_QUESTION, INVITE],
+    request: {
+      path: `${INTERVIEW}/notes`,
+      as: "student",
+      headers: ORIGIN,
+      body: {
+        fileName: "biljeska.txt",
+        mediaType: "text/plain",
+        contentBase64: Buffer.from("Izmišljena bilješka.").toString("base64"),
+      },
+    },
+  },
   "work.consultation-slots.get": {
     before: [REQUEST_SLOT],
     request: { path: CONSULTATION_SLOTS, as: "nastavnik" },
