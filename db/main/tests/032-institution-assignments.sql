@@ -301,6 +301,7 @@ ALTER TABLE evidence.origin_change DISABLE TRIGGER origin_change_no_truncate;
 -- The findings of the match with the assistant (SRV-1230) reference the assignment and are append-only.
 ALTER TABLE evidence.assistant_match_finding DISABLE TRIGGER assistant_match_finding_no_truncate;
 ALTER TABLE evidence.assistant_match_attachment DISABLE TRIGGER assistant_match_attachment_no_truncate;
+ALTER TABLE evidence.assistant_match_explanation DISABLE TRIGGER assistant_match_explanation_no_truncate;
 -- A work's attachment (SRV-10B) references the assignment and is append-only.
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
@@ -355,6 +356,7 @@ ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;
 ALTER TABLE evidence.assistant_match_finding ENABLE TRIGGER assistant_match_finding_no_truncate;
 ALTER TABLE evidence.assistant_match_attachment ENABLE TRIGGER assistant_match_attachment_no_truncate;
+ALTER TABLE evidence.assistant_match_explanation ENABLE TRIGGER assistant_match_explanation_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
