@@ -8,9 +8,12 @@ const ROOT = resolve(import.meta.dirname, "../..");
 const CI = readFileSync(resolve(ROOT, ".github/workflows/ci.yml"), "utf8");
 const SMOKE = readFileSync(resolve(ROOT, "db/tests/00-environment.sql"), "utf8");
 const ALL_JOBS = ["scope", ...jobsFor("full")];
-// The vitest projects split across the two legs of a job matrix (vitest --shard).
+// The vitest projects split across the legs of a job matrix (vitest --shard).
 const SHARD_ENV = "\n          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}\n";
-const MATRIX = "\n      fail-fast: false\n      matrix:\n        shard: [1, 2]\n";
+const MATRIX = (legs: string) =>
+  `\n      fail-fast: false\n      matrix:\n        shard: [${legs}]\n`;
+// checks runs three legs, database two.
+const LEGS: Readonly<Record<string, string>> = { checks: "1, 2, 3", database: "1, 2" };
 const LEG_NAME = /^ {4}name: .+ \(\$\{\{ matrix\.shard \}\}\/\$\{\{ strategy\.job-total \}\}\)$/;
 // pnpm test:database as its two vitest runs, each with the leg's shard.
 const DATABASE_TESTS =
@@ -186,16 +189,35 @@ describe("ci.yml", () => {
     for (const script of ["test:unit", "test:integration"]) {
       expect(checks).toContain(`${SHARD_ENV}        run: pnpm ${script} --shard="$SHARD"\n`);
     }
+    // Each static check runs on one leg that exists, the property tests on two
+    // legs (two seeds per run, as before); the sharded tests run on every leg.
+    const legs: Record<string, string> = {
+      "pnpm typecheck": "matrix.shard == 1",
+      "node scripts/db/migrations-ledger.ts --base": "matrix.shard == 1",
+      "pnpm lint": "matrix.shard == 1",
+      "pnpm format:check": "matrix.shard == 1",
+      "pnpm test:property": "matrix.shard != 1",
+    };
+    for (const [command, leg] of Object.entries(legs)) {
+      const at = checks.indexOf(command);
+      const step = checks.slice(checks.lastIndexOf("\n      - ", at), at);
+      expect(step, command).toContain(`\n        if: ${leg}\n`);
+    }
+    for (const script of ["test:unit", "test:integration"]) {
+      const at = checks.indexOf(`run: pnpm ${script} `);
+      expect(checks.slice(checks.lastIndexOf("\n      - ", at), at), script).not.toContain("if:");
+    }
   });
 
-  // Both test jobs run as two legs. Each leg runs its half of the files of the
-  // unit, integration, database and integration-pg projects, and every other
-  // step (static checks, images, migrations, pgTAP, VS-1) in full; ci-ok sees
-  // one result per job, failed when any leg failed.
-  it("splits the vitest projects across two legs of checks and database, nothing else", () => {
+  // Both test jobs run as legs (checks three, database two). Each leg runs its
+  // share of the files of the unit, integration, database and integration-pg
+  // projects; database runs every other step (migrations, pgTAP, VS-1) on both
+  // legs, checks each other step on one or two legs. ci-ok sees one result per
+  // job, failed when any leg failed.
+  it("splits the vitest projects across the legs of checks and database, nothing else", () => {
     for (const name of ["checks", "database"]) {
       const body = job(name);
-      const matrix = body.indexOf(MATRIX);
+      const matrix = body.indexOf(MATRIX(LEGS[name]!));
       expect(body.split("\n")[2], name).toMatch(LEG_NAME);
       expect(matrix, name).toBeGreaterThan(body.indexOf("\n    strategy:\n"));
       expect(matrix, name).toBeLessThan(body.indexOf("\n    steps:\n"));
