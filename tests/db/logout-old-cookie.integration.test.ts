@@ -302,6 +302,11 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "work.comments.publish-selected.post": {
+    path: `/api/v1/works/${randomUUID()}/comments/publish-selected`,
+    body: () => ({ draftIds: [randomUUID()] }),
+    live: 404,
+  },
   "teacher.comment-bank.get": {
     method: "GET",
     path: "/api/v1/teacher/comment-bank",

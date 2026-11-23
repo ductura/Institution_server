@@ -156,8 +156,9 @@ describe("fake server over HTTP", () => {
     // PIL-K-RAZGOVOR-SRV: work.interview-notes.post two.
     // INT-21 C: work.restore.post five.
     // PIL-K-IZJAVA-SRV: teacher.declaration-required.put five, submission.submit-second.post two (as submit).
+    // work.comments.publish-selected.post five.
     // PIL-P1-RITAM-PREDMET-SRV: teacher.input-rhythm.delete and teacher.course-input-rhythm.put five each.
-    expect(VECTORS.length - overHttp.length).toBe(566);
+    expect(VECTORS.length - overHttp.length).toBe(571);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

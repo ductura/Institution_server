@@ -51,6 +51,15 @@ export type CommentDelay = {
   ): Promise<CommentDelayResult<{ drafts: readonly CommentDraft[] }>>;
   discardDraft(token: string, commentId: string): Promise<CommentDelayResult<object>>;
   publish(token: string, documentId: string): Promise<CommentDelayResult<{ published: number }>>;
+  /**
+   * publish, but only when draftIds are exactly the comment ids of the caller's
+   * drafts on the work (any case); otherwise conflict and nothing is published.
+   */
+  publishListed(
+    token: string,
+    documentId: string,
+    draftIds: readonly string[],
+  ): Promise<CommentDelayResult<{ published: number }>>;
   markReviewed(
     token: string,
     documentId: string,
@@ -65,6 +74,10 @@ const SQL = {
     'SELECT thread_id AS "threadId", comment_id AS "commentId", comment_position AS position, body AS text, anchor, state, created_window AS "createdWindow" FROM collaboration.list_comment_drafts($1)',
   discardDraft: "SELECT collaboration.discard_comment_draft($1::uuid)",
   publish: "SELECT collaboration.publish_comments($1) AS published",
+  // The key of create, discard and publish_comments, so no draft of this teacher on this work
+  // is written or discarded between the list and the publish of one transaction.
+  lockDrafts:
+    "SELECT pg_advisory_xact_lock(hashtextextended('comment_draft:' || $1::uuid || app.current_user_id(), 0))",
   markReviewed:
     'SELECT reviewed_revision::text AS "reviewedRevision", reviewed_at AS "reviewedAt" FROM collaboration.mark_work_reviewed($1)',
   reviewState:
@@ -73,6 +86,8 @@ const SQL = {
 
 /** Thrown inside the transaction for a row of an unexpected shape. */
 class Malformed extends Error {}
+/** Thrown inside the transaction to roll it back as a conflict. */
+class Conflict extends Error {}
 
 /** The code of a database error; a getter or Proxy that throws has none. */
 function codeOf(thrown: unknown): unknown {
@@ -133,6 +148,7 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
     try {
       return await withActor(token, fn);
     } catch (thrown) {
+      if (thrown instanceof Conflict) return { status: "conflict" };
       return thrown instanceof Malformed ? { status: "unavailable" } : refusal(thrown);
     }
   }
@@ -142,6 +158,12 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
     const rows = await rowsOf(tx, sql, params);
     if (rows.length !== 1) throw new Malformed();
     return rows[0]!;
+  };
+
+  const published = async (tx: ActorTransaction, documentId: string) => {
+    const count = (await one(tx, SQL.publish, [documentId])).published;
+    if (!Number.isSafeInteger(count) || (count as number) < 1) throw new Malformed();
+    return count as number;
   };
 
   return {
@@ -168,10 +190,29 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
         return { status: "ok" as const };
       }),
     publish: (token, documentId) =>
+      run(token, async (tx) => ({
+        status: "ok" as const,
+        published: await published(tx, documentId),
+      })),
+    // The list and the publish run under the advisory lock the draft functions
+    // take, so a discard and a new draft cannot fall between them; a count
+    // other than the list still rolls everything back.
+    publishListed: (token, documentId, draftIds) =>
       run(token, async (tx) => {
-        const published = (await one(tx, SQL.publish, [documentId])).published;
-        if (!Number.isSafeInteger(published) || (published as number) < 1) throw new Malformed();
-        return { status: "ok" as const, published: published as number };
+        await rowsOf(tx, SQL.lockDrafts, [documentId]);
+        const seen = new Set(draftIds.map((id) => id.toLowerCase()));
+        const drafts = (await rowsOf(tx, SQL.listDrafts, [documentId])).map(toDraft);
+        const own = new Set(drafts.map((d) => d.commentId.toLowerCase()));
+        if (
+          seen.size !== draftIds.length ||
+          own.size !== seen.size ||
+          [...own].some((id) => !seen.has(id))
+        ) {
+          throw new Conflict();
+        }
+        const count = await published(tx, documentId);
+        if (count !== own.size) throw new Conflict();
+        return { status: "ok" as const, published: count };
       }),
     markReviewed: (token, documentId) =>
       run(token, async (tx) => {

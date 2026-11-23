@@ -167,6 +167,42 @@ export const workCommentsPublishPost = defineRoute({
   ],
 });
 
+/** At most 500 drafts of one teacher on one work, so at most 500 ids. */
+export const workCommentsPublishSelectedPost = defineRoute({
+  id: "work.comments.publish-selected.post",
+  method: "POST",
+  path: "/api/v1/works/{documentId}/comments/publish-selected",
+  inventory: "app/api/works/[documentId]/comments/publish-selected/route.ts",
+  access: "course_teacher",
+  summary:
+    "Publishes the caller's drafts on the work as work.comments.publish.post does, but only when {draftIds} names exactly the comment ids of those drafts (the ones the teacher saw); any difference, or no draft, is 409 and nothing is published. Sent as application/json, at most 32 KiB. Only a teacher of the work may; every other caller gets 404.",
+  request: {
+    params: closed({ documentId: WorkId }),
+    contentType: "application/json",
+    maxBodyBytes: 32 * 1024,
+    // A repeated id is the port's 409: TypeBox checks uniqueItems with a hash the
+    // generated validator does not carry.
+    body: closed({ draftIds: Type.Array(Id, { minItems: 1, maxItems: 500 }) }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the number of comments published",
+      body: closed({ published: Type.Integer({ minimum: 1, maximum: 100_000 }) }),
+    },
+  ],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
+    error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
 const TEMPLATE_KIND = literals(["must", "sugg", "q", "praise"]);
 const BankEntry = closed({ id: Id, kind: TEMPLATE_KIND, text: Type.String(), createdAt: Instant });
 
@@ -306,6 +342,7 @@ export const commentsRoutes = [
   workCommentDraftsPost,
   workCommentDraftDelete,
   workCommentsPublishPost,
+  workCommentsPublishSelectedPost,
   teacherCommentBankGet,
   teacherCommentBankPost,
   teacherCommentBankDelete,

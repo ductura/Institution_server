@@ -51,6 +51,7 @@ const DRAFTS_GET = find("work.comment-drafts.get");
 const DRAFTS_POST = find("work.comment-drafts.post");
 const DRAFT_DELETE = find("work.comment-draft.delete");
 const PUBLISH = find("work.comments.publish.post");
+const PUBLISH_SELECTED = find("work.comments.publish-selected.post");
 const BANK_GET = find("teacher.comment-bank.get");
 const BANK_POST = find("teacher.comment-bank.post");
 const BANK_DELETE = find("teacher.comment-bank.delete");
@@ -89,8 +90,8 @@ const wellFormed = (text: string) =>
   !/\p{Cc}/u.test(text.replace(/[\n\t]/gu, "")) &&
   !BIDI.test(text);
 
-/** The body of a POST: its media type, its size and its shape (and the text rule), or the answer sent. */
-async function readBody<T extends { text: string }>(
+/** The body of a POST: its media type, its size and its shape, or the answer sent. */
+async function readJson<T>(
   request: IncomingMessage,
   response: ServerResponse,
   contract: { request: { maxBodyBytes?: number; body?: TSchema } },
@@ -114,7 +115,17 @@ async function readBody<T extends { text: string }>(
     sendProblem(response, 422, "invalid_input");
     return null;
   }
-  const body = json.value as T;
+  return json.value as T;
+}
+
+/** readJson, and the text rule. */
+async function readBody<T extends { text: string }>(
+  request: IncomingMessage,
+  response: ServerResponse,
+  contract: { request: { maxBodyBytes?: number; body?: TSchema } },
+): Promise<T | null> {
+  const body = await readJson<T>(request, response, contract);
+  if (body === null) return null;
   if (!wellFormed(body.text)) {
     sendProblem(response, 422, "invalid_input");
     return null;
@@ -225,6 +236,23 @@ export function createCommentDraftRoutes(delay: CommentDelay): Route[] {
           return refusalOf(response, answer.status);
         } catch (error) {
           return unavailable(response, PUBLISH.id, error);
+        }
+      },
+    },
+    {
+      contract: PUBLISH_SELECTED,
+      async handle(request, response, params) {
+        const scope = sessionAndWork(request, response, params, true);
+        if (scope === null) return;
+        const body = await readJson<{ draftIds: string[] }>(request, response, PUBLISH_SELECTED);
+        if (body === null) return;
+        try {
+          const answer = await delay.publishListed(scope.token, scope.documentId, body.draftIds);
+          if (answer.status === "ok")
+            return sendJson(response, 200, { published: answer.published });
+          return refusalOf(response, answer.status);
+        } catch (error) {
+          return unavailable(response, PUBLISH_SELECTED.id, error);
         }
       },
     },
