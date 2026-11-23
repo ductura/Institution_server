@@ -311,6 +311,16 @@ Izjava nije u `artifactSha256`, `content_hash` ni u bajtovima dokumenta (D-228).
 - **Potvrda v3 (OD-2, A).** Format `ductus-submission-receipt-v3` i njegov verifikator su u `server/domain/forensics/submission-receipt-v3.ts` i `submission-receipt-verifier-v3.ts`, s neovisno izračunatim vektorom: 16 polja v2 uz `receiptSchema` v3 i obvezni `declarationSha256` (64 heks ili `null`), prefiks domene `ductus-submission-receipt-v3`, ulaz potpisa 61 bajt. Vektor v2 ostaje bajt-jednak.
 - **Otvoreno.** Izdavatelj, rute predaje i `/provjera` i dalje izdaju i čitaju v2. Prijelaz na v3 mijenja tip potvrde u odgovorima postojećih ruta, što `contracts:breaking` odbija unutar `/api/v1`; traži glavno izdanje ugovora (6.4) i odluku vlasnika.
 
+### 6.7 Postavka zadatka `declarationRequired` (PIL-K-IZJAVA-SRV)
+
+Odluka vlasnika 23. 11. 2026. (niže) uključuje prvi slučaj iz 6.3. Migracija `20261214110000_assignment_declaration_required.sql`:
+
+- **Postavka.** `institution.assignment.declaration_required`, zadano `false` (expand; postojeći zadaci i svaki put izrade koji je ne navodi ponašaju se kao do sada, OD-6). Postavlja je samo nastavnik zadatka kroz `institution.set_declaration_required(zadatak, vrijednost)` (iz odnosa, C-23; administrator, student i nastavnik drugog kolegija dobivaju ZD403). Za pilot je postavka uključena: nastavnik je uključuje na svakom pilotnom zadatku tim RPC-om; HTTP ruta za nastavnika i uključivanje u lokalnom seedu su otvorena stavka (opis PR-a).
+- **Provjera pri predaji.** Kad je postavka uključena, okidač `declaration.pin_request` odbija redak zahtjeva bez verzije svježe za predanu reviziju (6.2, OD-15) s ZD428 `declaration_required`, pa se od zahtjeva ništa ne zapisuje. Nacrt, zastarjela verzija i verzija druge revizije nisu potvrda. Tehnička greška pri čitanju izjave tada također odbija (pravilo 11 kako je vlasnik odlučio 23. 11.: tehnički neuspjela potvrda ne smije dopustiti predaju). Kad je postavka isključena, okidač radi kao u 6.6.
+- **Odgovor rute.** Web proces prije `app.request_submission` pita `declaration.submission_gate(documentId, revision)` (isto pravilo, samo za vlastiti rad pozivatelja; `proceed` ili `declaration_required`). Okidač ostaje jamstvo. Ugovor `submission.submit.post` nema 409 za ovaj slučaj, a nova grana 409 lomi njegove klijente (`contracts:breaking`), pa ruta zasad odbija s postojećim 503 `{status: "unavailable", stage: "request"}`, kao i kad provjera ne uspije. 409 `declaration_required` traži glavno izdanje ugovora rute (otvoreno za vlasnika).
+- **Čitanje.** `student.declaration.get` (i odgovor `put`) nosi `declarationRequired` (boolean, uvijek poslan, u shemi neobavezan radi starijih klijenata), pa web ne pogađa: dok je `true`, predaju nudi samo u stanju `confirmed` za trenutačnu reviziju.
+- `submission-receipt-v2` se ne mijenja i ostaje bajt-jednak.
+
 ## 7. Rute
 
 Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `{status: <kod>}`, `MUTATION_GUARD`, isti 404 za tuđe, nepoznato i neispravno). Rute su prijedlog; dodaju se tek nakon odobrenja.
@@ -463,6 +473,8 @@ Zapis: Ductus#2012 (c.7054485848, c.7054511795 i zapis za OD-4, OD-11, OD-12). O
 - **OD-5 do OD-10, OD-13 do OD-16:** prihvaćeni prijedlozi kako su zapisani u ugovoru.
 - **OD-11:** tekst obrasca izjave je verzionirana datoteka uz pravila fakulteta u `config/faculties/`, mijenja se samo PR-om koji odobri vlasnik (kao prekidač OC-1). `formSha256` je SHA-256 bajtova te datoteke. Dok službeni tekst FPZG-a nije u repou, postoji samo izmišljeni obrazac `test-izjava` u testovima, a sučelje koristi neutralan naziv „Izjava”.
 - **OD-12:** vlasnik je odluku prepustio orkestratoru. Unos ljudske pomoći je `{ kind, text }` sa zatvorenim skupom vrsta (odjeljak 1.4) i obveznim kratkim opisom; uputa uz polje, bez provjere osobnih podataka.
+
+Odluka vlasnika 23. 11. 2026. (PIL-K-IZJAVA-SRV, pregled WEB #492): (a) tehnički neuspjela potvrda izjave ne smije dopustiti predaju (PRODUCT §5, pravilo 11); (b) izjava se provjerava na poslužitelju; (c) uz OD-6 izjava je obavezna samo kad je zadatak traži postavkom, a za pilot je ta postavka uključena. Izvedba: odjeljak 6.7.
 
 ## Otvorena pitanja
 
