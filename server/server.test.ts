@@ -67,6 +67,17 @@ function entryProblems(root: string, entry: string, registry: readonly string[])
 const ENTRY_TEXT = readFileSync(join(ROOT, "server/server.ts"), "utf8");
 
 describe("server/server.ts", () => {
+  it("passes the assignment export routes through the practice filter", () => {
+    for (const routes of ["createMerlinRosterRoutesFor", "createTeacherSubmissionsBulkRoutesFor"]) {
+      expect(ENTRY_TEXT).toMatch(
+        new RegExp(
+          String.raw`\.\.\.${routes}\([^)]*\)\.map\(\(route\) =>\s*excludePracticeAssignment\(route, databases\.main\),\s*\),`,
+          "u",
+        ),
+      );
+    }
+  });
+
   it("names every area with routes, and only those", () => {
     expect(areasWithRoutes(ROOT).length).toBeGreaterThan(0);
     expect(entryProblems(ROOT, ENTRY_TEXT, AREA_NAMES)).toEqual([]);
