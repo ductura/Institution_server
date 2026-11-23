@@ -89,12 +89,18 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
     });
     expect(await store.read("marko", "doc-m1", [1])).toEqual({ status: "not_found" });
     expect(await store.read("ana", "doc-m1", [1, 2])).toEqual({ status: "not_found" });
+    // Someone else's work, for the one version (work.version.get) and for the
+    // list (work.versions.get): the same not_found as a work that does not
+    // exist, so neither read tells whether the work is there.
+    expect(await list("ana", "doc-m1", null)).toMatchObject({ status: "found" });
+    expect(await list("ana", "doc-nepostojeci", null)).toEqual({ status: "not_found" });
     for (const [actor, work] of [
       ["vesna", "doc-a"],
       ["vesna", "doc-m1"],
       ["tomo", "doc-m1"],
     ] as const) {
       expect(await store.read(actor, work, [1])).toEqual({ status: "not_found" });
+      expect(await list(actor, work, null)).toEqual({ status: "not_found" });
     }
 
     const requested = await db.query<{ outcome: string }>(
