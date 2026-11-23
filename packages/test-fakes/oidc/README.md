@@ -24,14 +24,14 @@ Dok nijedna ustanova nije matična za testni AAI@EduHr resurs, staging se prijav
 
 Otvara ga samo `DUCTURA_DEPLOYMENT=staging`, točno ta vrijednost i čitana kao u `server/settings/deployment.ts`; svaka druga vrijednost zaustavlja pokretanje. Bez te varijable sve je kao prije (gornja tablica, F-019), a provjera `NODE_ENV` vrijedi i u stagingu.
 
-| Varijabla                                                            | U staging načinu                                                                                       |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `APP_ORIGIN`                                                         | Obavezno: samo https podrijetlo javnog hosta izvan `ductura.org` i njegovih poddomena.                 |
-| `ISSUER`                                                             | Obavezno: https adresa javnog hosta izvan `ductura.org` i poddomena, bez porta, upita i vjerodajnica.  |
-| `FAKE_OIDC_CLIENT_SECRET`, `FAKE_OIDC_COOKIE_KEY`                    | Obavezno, iz okoline: najmanje 32 znaka, međusobno različiti, nikad lokalne vrijednosti.               |
-| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI`, `BACKCHANNEL_LOGOUT_URI` | Samo na `APP_ORIGIN`; zadano `/api/v1/auth/callback`, `/app/web/` i `/api/v1/auth/backchannel-logout`. |
-| `PORT`                                                               | Kao lokalno; sluša na `0.0.0.0`.                                                                       |
-| `FAKE_OIDC_ACCOUNTS_FILE`                                            | Zabranjeno: prijavljuju se samo izmišljeni `demo-*` računi, bez obrasca za račun bilo koje ustanove.   |
+| Varijabla                                                            | U staging načinu                                                                                                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ORIGIN`                                                         | Obavezno: samo https podrijetlo javnog hosta izvan `ductura.org` i njegovih poddomena.                                                       |
+| `ISSUER`                                                             | Obavezno: samo https podrijetlo javnog hosta izvan `ductura.org` i poddomena (bez putanje, kose crte na kraju, porta, upita i vjerodajnica). |
+| `FAKE_OIDC_CLIENT_SECRET`, `FAKE_OIDC_COOKIE_KEY`                    | Obavezno, iz okoline: najmanje 32 znaka, međusobno različiti, nikad lokalne vrijednosti.                                                     |
+| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI`, `BACKCHANNEL_LOGOUT_URI` | Samo na `APP_ORIGIN`; zadano `/api/v1/auth/callback`, `/app/web/` i `/api/v1/auth/backchannel-logout`.                                       |
+| `PORT`                                                               | Kao lokalno; sluša na `0.0.0.0`.                                                                                                             |
+| `FAKE_OIDC_ACCOUNTS_FILE`                                            | Zabranjeno: prijavljuju se samo izmišljeni `demo-*` računi, bez obrasca za račun bilo koje ustanove.                                         |
 
 Klijent je `ductura-staging`. Svaki odgovor nosi zaglavlje `X-Ductura-Deployment: staging`, a stranice prijave i odjave oznaku „Samo testno okruženje”.
 

@@ -104,8 +104,9 @@ export function stagingAppOrigin(value: string | null | undefined): string {
 }
 
 /**
- * ISSUER: an https address of a public host outside the production domain,
- * without credentials, port, query or fragment.
+ * ISSUER: the bare https origin of a public host outside the production
+ * domain: no path, trailing slash, credentials, port, query or fragment, so
+ * it is exactly OIDC_ISSUER of the server and the issuer of the seed.
  */
 export function stagingIssuer(value: string | null | undefined): string {
   if (typeof value !== "string" || value === "") throw new Error("ISSUER is required in staging");
@@ -120,9 +121,9 @@ export function stagingIssuer(value: string | null | undefined): string {
     url.username !== "" ||
     url.password !== "" ||
     url.port !== "" ||
-    /[?#]/u.test(value)
+    url.origin !== value
   )
-    throw new Error("ISSUER must be a plain https address in staging");
+    throw new Error("ISSUER must be a bare https origin in staging");
   if (!isPublicName(url.hostname)) throw new Error("ISSUER must be a public host in staging");
   if (isProductionHost(url.hostname))
     throw new Error("ISSUER must be outside the production domain in staging");
@@ -239,6 +240,10 @@ export function assertStagingOptions(options: {
     ["back-channel logout URI", [options.backchannelLogoutUri]],
   ] as const) {
     if (list.length === 0) throw new Error(`${name} list is empty`);
-    for (const entry of list) addressesOnOrigin(name, entry, origin, "/");
+    for (const entry of list) {
+      // addressesOnOrigin gives the default for a blank value; an option is never blank.
+      if (entry.trim() === "") throw new Error(`${name} list has a blank entry`);
+      addressesOnOrigin(name, entry, origin, "/");
+    }
   }
 }

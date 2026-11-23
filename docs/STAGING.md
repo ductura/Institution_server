@@ -39,12 +39,12 @@ Blueprint iz koraka 1 stvara i ovu uslugu. Ona je pružatelj prijave dok vrijedi
 1. Zapiši adresu usluge, npr. `https://ductura-fake-oidc-staging.onrender.com`. To je `ISSUER` ove usluge i `OIDC_ISSUER` servera (korak 5), bez kose crte na kraju.
 2. U **ductura-fake-oidc-staging → Environment** upiši:
 
-| Ime                       | Vrijednost na stagingu                                                                                                       |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `APP_ORIGIN`              | isto kao `APP_ORIGIN` servera (korak 2.5); samo https podrijetlo, nikad `ductura.org` ni njegove poddomene                   |
-| `ISSUER`                  | adresa ove usluge iz 1b.1; https, javni host izvan `ductura.org` i poddomena, bez porta                                      |
-| `FAKE_OIDC_CLIENT_SECRET` | nova vrijednost, najmanje 32 znaka (npr. `openssl rand -base64 32`); ista vrijednost ide u `OIDC_CLIENT_SECRET` servera      |
-| `FAKE_OIDC_COOKIE_KEY`    | druga nova vrijednost, najmanje 32 znaka, različita od tajne klijenta; potpisuje kolačiće pružatelja i nikamo drugamo ne ide |
+| Ime                       | Vrijednost na stagingu                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ORIGIN`              | isto kao `APP_ORIGIN` servera (korak 2.5); samo https podrijetlo, nikad `ductura.org` ni njegove poddomene                             |
+| `ISSUER`                  | adresa ove usluge iz 1b.1; samo https podrijetlo javnog hosta izvan `ductura.org` i poddomena, bez putanje, kose crte na kraju i porta |
+| `FAKE_OIDC_CLIENT_SECRET` | nova vrijednost, najmanje 32 znaka (npr. `openssl rand -base64 32`); ista vrijednost ide u `OIDC_CLIENT_SECRET` servera                |
+| `FAKE_OIDC_COOKIE_KEY`    | druga nova vrijednost, najmanje 32 znaka, različita od tajne klijenta; potpisuje kolačiće pružatelja i nikamo drugamo ne ide           |
 
 `DUCTURA_DEPLOYMENT`, `NODE_ENV`, `PORT` i `FAKE_OIDC_ACCOUNTS_FILE` se ne upisuju: staging način je u slici, `PORT` postavlja Render, a datoteka računa je u stagingu zabranjena.
 
@@ -158,6 +158,8 @@ O vrijednostima:
 
 Kad Srce izda testni klijent (STG-AAI), na **ductura-institution-server-staging → Environment** mijenjaju se samo `DUCTUS_AUTH_PROVIDER` = `aai-eduhr` i varijable `OIDC_*` (`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, te `OIDC_REDIRECT_URI` i `OIDC_POST_LOGOUT_REDIRECT_URI` ako Srce registrira druge adrese na istom `APP_ORIGIN`), zatim **Manual Deploy**. Kod, slika i ostale varijable se ne mijenjaju. Uslugu `ductura-fake-oidc-staging` tada u Renderu zaustaviš (**Suspend**); `DUCTURA_DEPLOYMENT` servera ostaje `staging`.
 
+Seed (korak 6) veže demo ustanove uz issuer lažnog pružatelja (`identity.institution_issuer`), a korisnici koji su se prijavili lažnim pružateljem nose taj issuer. Ti redci ostaju u bazi i nakon prelaska: prije ili uz prelazak ukloni ih ili zamijeni retcima testnog AAI@EduHr issuera (zaseban zadatak trake S-B, ne ručni SQL na produkciji). Dok postoje, usluga `ductura-fake-oidc-staging` ostaje **suspendirana, ne obrisana**, da njezina javna adresa (`*.onrender.com`) ne pripadne nekom drugom dok je baza stagea još vezana uz nju.
+
 ### 6. Izmišljeni podaci (seed)
 
 Seed su samo izmišljene ustanove, osobe, kolegiji i tekstovi iz `db/main/local/seed.sql` (računi `demo-*` lažnog pružatelja). Ide samo u staging, nikad u produkciju, i samo dok je prijava (b) lažna: pruža issuer lažnog pružatelja.
@@ -194,7 +196,9 @@ sed -e '/^\\set ON_ERROR_STOP on$/,/^\\endif$/d' -e '/^DO \$demo\$$/,$d' db/main
 psql "$STG_MAIN_OWNER_URL" -v ON_ERROR_STOP=1 -c "REVOKE ductus_identity, ductus_evidence FROM CURRENT_USER"
 ```
 
-Prijava tada radi za sve račune lažnog pružatelja (korisnik nastaje pri prvoj prijavi), ali nema administratora, potvrđenih nastavnika, kolegija ni zadataka. To je otvoreno pod „Otvoreno”.
+Prijava tada radi za sve `demo-*` račune lažnog pružatelja (korisnik nastaje pri prvoj prijavi), ali nema administratora, potvrđenih nastavnika, kolegija ni zadataka. To je otvoreno pod „Otvoreno”.
+
+**Administrator ustanove na stagingu se ne može prijaviti ni nakon uspješnog seeda.** U seedu je administrator `demo-fakultet` račun simulatora `sim:nastavnik:demo-admin@demo.ductus.test`, a staging pružatelj prima samo `demo-*` račune (STG-OIDC). Vidi „Otvoreno”.
 
 ### 7. Provjera
 
@@ -207,6 +211,8 @@ Prijava tada radi za sve račune lažnog pružatelja (korisnik nastaje pri prvoj
 
 - **Pravna baza na upravljanoj bazi** (B0.1): `ductus_legal` se bez superusera ne može postaviti s današnjim `db/legal/local/migrator.sql` i prvom pravnom migracijom. Treba odluka kako se pravna baza provizionira na Renderu (zaseban zadatak trake S-B; migracija koja je već na bazi se ne mijenja, D-91).
 - **Prvi administrator ustanove bez superusera** (B0.1): `appoint_institution_admin` radi samo za ulogu s `BYPASSRLS`. Treba provjeriti `rolbypassrls` vlasnika na Renderu; ako je `f`, demo na stagingu treba vlasnikovu odluku o načinu postavljanja prvog administratora.
+- **Administrator ustanove na stagingu** (STG-OIDC): subjekt administratora u seedu je `sim:nastavnik:demo-admin@demo.ductus.test`, a staging pružatelj namjerno odbija `sim:*` račune, pa se na stagingu nitko ne prijavljuje kao administrator ustanove. Rješenje je zaseban zadatak: `demo-*` administratorski račun (npr. `demo-admin`) u `packages/test-fakes/oidc/accounts.ts` i usklađen subjekt u seedu. Obrazac `sim:*` se u stagingu ne otvara.
+- **Slika lažnog pružatelja se ne gradi u CI-ju**: `infra/fake-oidc/Dockerfile` provjeren je samo statički (`dockerfile.test.ts`) i ručnim ponavljanjem koraka; prvi stvarni `docker build` je na Renderu. Prije prvog deploya preporučen je ručni `docker build -f infra/fake-oidc/Dockerfile .`, a poslije zaseban CI korak gradnje bez objave slike.
 - **Lažni pružatelj na stagingu** (STG-OIDC): stanje (sesije, kodovi) drži u memoriji, a ključ potpisa stvara pri pokretanju. Svako ponovno pokretanje ili uspavljivanje usluge prekida otvorene prijave kod pružatelja; sesija u Ducturi ostaje, a nova prijava radi odmah. Na besplatnom planu Render uspavljuje uslugu nakon neaktivnosti, pa prva prijava nakon toga čeka buđenje.
 - **Potpis i pohrana dokaza rada**: bez KMS potpisnika (D-71) i pohrane (D-08) `POST /api/v1/evidence/commit` na stagingu odgovara 503, pa studentsko pisanje ne sprema dokaze ([DEPLOY.md](DEPLOY.md)).
 - **`TRUSTED_PROXIES`**: raspon `10.0.0.0/8` za Renderov proxy treba potvrditi na prvom deployu.

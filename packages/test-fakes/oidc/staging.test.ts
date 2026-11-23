@@ -128,6 +128,8 @@ describe("staging refuses", () => {
       "https://user:pw@ductura-fake-oidc-staging.onrender.com",
       "https://ductura-fake-oidc-staging.onrender.com:8443",
       "https://ductura-fake-oidc-staging.onrender.com/?x=1",
+      "https://ductura-fake-oidc-staging.onrender.com/",
+      "https://ductura-fake-oidc-staging.onrender.com/oidc",
       "not an address",
     ]) {
       expect(() => config({ ISSUER: issuer }), String(issuer)).toThrow(/ISSUER/);
@@ -240,6 +242,9 @@ describe("createFakeOidc with staging options", () => {
       { ...options, issuer: "http://localhost:8090" },
       { ...options, redirectUris: ["https://evil.example.test/cb"] },
       { ...options, redirectUris: [] },
+      { ...options, redirectUris: [""] },
+      { ...options, postLogoutRedirectUris: [" "] },
+      { ...options, backchannelLogoutUri: "" },
       { ...options, postLogoutRedirectUris: ["http://localhost:3000/"] },
       { ...options, backchannelLogoutUri: "https://evil.example.test/bc" },
       {
