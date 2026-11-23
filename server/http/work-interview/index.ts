@@ -1,6 +1,6 @@
 import { Value } from "@sinclair/typebox/value";
 
-import { ROUTES, workIdFromPath } from "../../contracts/index.ts";
+import { ROUTES, WORK_INTERVIEW_NOTE_MAX_BYTES, workIdFromPath } from "../../contracts/index.ts";
 import { createWorkInterviewStore, type WithActor } from "../../database/index.ts";
 import { liveSessionTokenFromCookie, recordActivity } from "../../session/index.ts";
 
@@ -23,6 +23,7 @@ const INVITE = route("work.interview-invite.post");
 const APPOINTMENT = route("work.interview-appointment.put");
 const HELD = route("work.interview-held.post");
 const EXPLAIN = route("work.interview-explanations.post");
+const NOTE = route("work.interview-notes.post");
 const JSON_MEDIA_TYPE = /^application\/json(?:\s*;\s*charset\s*=\s*utf-8)?$/iu;
 const BODY_TIMEOUT_MS = 5_000;
 const REFUSALS = new Map<string, readonly [number, string]>([
@@ -44,7 +45,36 @@ type Input = {
   date?: string;
   questionId?: string | null;
   text?: string;
+  fileName?: string;
+  mediaType?: "text/plain" | "application/pdf";
+  contentBase64?: string;
 };
+
+const PDF_HEADER = Buffer.from("%PDF-", "latin1");
+// Tab, line feed and carriage return are the only control characters a text note keeps.
+const TEXT_CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
+
+/**
+ * The bytes of a note when they are canonical Base64 of a UTF-8 text or a PDF
+ * within the limit; the database checks the same again.
+ */
+function noteContent(
+  mediaType: "text/plain" | "application/pdf",
+  base64: string,
+): Uint8Array | null {
+  const bytes = Buffer.from(base64, "base64");
+  if (bytes.toString("base64") !== base64) return null;
+  if (bytes.length < 1 || bytes.length > WORK_INTERVIEW_NOTE_MAX_BYTES) return null;
+  if (mediaType === "application/pdf") {
+    return bytes.subarray(0, PDF_HEADER.length).equals(PDF_HEADER) ? bytes : null;
+  }
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    return TEXT_CONTROL.test(text) ? null : bytes;
+  } catch {
+    return null;
+  }
+}
 
 export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithActor }): Route[] {
   const store = createWorkInterviewStore(withActor);
@@ -54,6 +84,7 @@ export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithAct
     documentId: string,
     questionId: string | undefined,
     input: Input,
+    content: Uint8Array | null,
   ): Promise<unknown> => {
     const actions = new Map<string, () => Promise<unknown>>([
       [GET.id, () => store.get(token, documentId)],
@@ -78,11 +109,20 @@ export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithAct
         EXPLAIN.id,
         () => store.addExplanation(token, documentId, input.questionId ?? null, input.text!),
       ],
+      [
+        NOTE.id,
+        () =>
+          store.addNote(token, documentId, {
+            fileName: input.fileName!,
+            mediaType: input.mediaType!,
+            content: content!,
+          }),
+      ],
     ]);
     return actions.get(contract.id)!();
   };
 
-  return [GET, ADD_QUESTION, REMOVE_QUESTION, INVITE, APPOINTMENT, HELD, EXPLAIN].map(
+  return [GET, ADD_QUESTION, REMOVE_QUESTION, INVITE, APPOINTMENT, HELD, EXPLAIN, NOTE].map(
     (contract) => {
       const success = contract.responses[0]!;
       return {
@@ -121,6 +161,11 @@ export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithAct
             }
             input = json.value as Input;
           }
+          let content: Uint8Array | null = null;
+          if (contract === NOTE) {
+            content = noteContent(input.mediaType!, input.contentBase64!);
+            if (content === null) return sendProblem(response, 422, "invalid_input");
+          }
 
           try {
             if (contract === REMOVE_QUESTION) {
@@ -128,7 +173,7 @@ export function createWorkInterviewRoutesFor({ withActor }: { withActor: WithAct
               response.writeHead(204, { "cache-control": "no-store" });
               response.end();
             } else {
-              const body = await run(contract, token, documentId, questionId, input);
+              const body = await run(contract, token, documentId, questionId, input, content);
               if (!Value.Check(success.body!, body))
                 throw new Error("invalid work interview response");
               sendJson(response, success.status, body);

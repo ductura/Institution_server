@@ -60,6 +60,25 @@ const Interview = closed({
   heldOn: Type.Union([DateOnly, Type.Null()]),
 });
 
+/** A note attached to the interview holds at most 1 MiB; the same constant is in SQL. */
+export const WORK_INTERVIEW_NOTE_MAX_BYTES = 1_048_576;
+const NOTE_BASE64_LENGTH = 4 * Math.ceil(WORK_INTERVIEW_NOTE_MAX_BYTES / 3);
+const FILE_NAME_CHAR = `(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF/\\\\])`;
+const FileName = Type.String({
+  minLength: 1,
+  maxLength: 200,
+  pattern: `^(?!\\s)${FILE_NAME_CHAR}+(?<!\\s)${END}`,
+});
+const NoteMediaType = Type.Union([Type.Literal("text/plain"), Type.Literal("application/pdf")]);
+const Note = closed({
+  id: Id,
+  fileName: FileName,
+  mediaType: NoteMediaType,
+  byteSize: Type.Integer({ minimum: 1, maximum: WORK_INTERVIEW_NOTE_MAX_BYTES }),
+  sha256: Type.String({ pattern: `^[0-9a-f]{64}${END}` }),
+  createdAt: Instant,
+});
+
 const errors = [
   error(401, "unauthorized"),
   error(403, "forbidden"),
@@ -187,5 +206,30 @@ export const workInterviewRoutes = [
     },
     responses: [{ status: 201, description: "the explanation", body: Explanation }],
     errors: mutationErrors,
+  }),
+  defineRoute({
+    id: "work.interview-notes.post",
+    method: "POST",
+    path: `${PATH}/notes`,
+    inventory: SOURCE_PATH("notes"),
+    access: "student_owner",
+    summary:
+      "The owning student attaches a note to the preparation after the invitation: a UTF-8 text or a PDF of at most 1 MiB in standard Base64. The server derives the size and the SHA-256 and writes the attachment to the trail; the same bytes again answer the note already kept. Before the invitation, another student and a teacher get 403, a held interview 409, a work at 20 notes 422.",
+    request: {
+      contentType: "application/json",
+      maxBodyBytes: NOTE_BASE64_LENGTH + 512,
+      params,
+      body: closed({
+        fileName: FileName,
+        mediaType: NoteMediaType,
+        contentBase64: Type.String({
+          minLength: 4,
+          maxLength: NOTE_BASE64_LENGTH,
+          pattern: `^[A-Za-z0-9+/]+={0,2}${END}`,
+        }),
+      }),
+    },
+    responses: [{ status: 201, description: "the note", body: Note }],
+    errors: [...mutationErrors, error(409, "conflict")],
   }),
 ] as const;
