@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3325);
+SELECT plan(3342);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1247,6 +1247,56 @@ FROM (VALUES
   ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
   ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
 ) AS c (actor, outcome);
+
+-- 1f-bis. INT-21 C: the record of a restore (evidence.revision_restore) only
+-- through app.record_revision_restore; the table has forced RLS and no right
+-- for a runtime role, and the helper that writes is never the web role's. This
+-- fixture has no work, so every signed-in actor gets the one answer for a
+-- missing document, as for a malformed id; the owner (recorded,
+-- already_recorded, no_matching_revision), the teacher, another student and
+-- an owner of another work are in 227-revision-restore.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND ARRAY(SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth',
+                                         'ductus_identity', 'public']) r
+               WHERE has_table_privilege(r, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) = '{}'
+    AND ARRAY(SELECT p.policyname::text FROM pg_policies p
+      WHERE p.schemaname = 'evidence' AND p.tablename = c.relname
+        AND p.roles = ARRAY['ductus_evidence'::name] AND p.cmd = 'ALL') = ARRAY['evidence_revision_restore_owner']
+    AND (SELECT count(*) FROM pg_policies p WHERE p.schemaname = 'evidence' AND p.tablename = c.relname) = 1,
+  'INT-21 C: evidence.revision_restore has forced RLS and only the evidence owner has access')
+  FROM pg_class c WHERE c.oid = to_regclass('evidence.revision_restore');
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.record_revision_restore(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.revision_restore_record(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'INT-21 C: only ductus_app and the owner execute the record; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.record_revision_restore('doc-nema', 1) $$), 1, 9),
+  c.outcome, format('INT-21 C: %s records a restore of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
+SELECT is(
+  pg_temp.ask('ana', format($$ SELECT string_agg(outcome, ',') FROM app.record_revision_restore(%L, 1) $$, d.id)),
+  'not_found', 'INT-21 C: a malformed id gets the answer for a missing work: ' || d.label)
+FROM (VALUES ('', 'empty'), (' doc-nema', 'a blank at its edge'), ('doc' || chr(1), 'a control character'))
+  AS d (id, label);
+SELECT is(pg_temp.ask('ana', $$ SELECT string_agg(outcome, ',') FROM app.record_revision_restore('doc-nema', 0) $$),
+  'ZD422: invalid input', 'INT-21 C: a revision below 1 is refused before the access');
 
 -- 1g. SRV-10B: the attachments of a work (institution.work_attachment) only
 -- through its three RPCs; the web role has no privilege or policy on the
