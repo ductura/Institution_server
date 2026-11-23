@@ -58,6 +58,9 @@ export const inside = (
  * The seed file: in the stack directory when that lies outside the checkout
  * (the tests' /tmp stacks), otherwise under $HOME, keyed by the stack
  * directory, since the signer refuses a seed inside the repository.
+ * In both places ensureSeed refuses links and makes the directory 0700 and the
+ * seed 0600; on Windows there is no POSIX owner to compare, so the seed's
+ * privacy there rests on the ACL of the user's own directory.
  */
 export function seedFile(stackDir: string, root: string, home: string): string {
   if (!inside(stackDir, root)) return join(stackDir, "signing-seed");
