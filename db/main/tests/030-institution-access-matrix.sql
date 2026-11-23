@@ -1560,7 +1560,7 @@ SELECT is_empty(
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-1103: only ductus_app and the owner execute the milestone RPCs'
 );
--- SRV-MENTOR-2: actor-level cases are in 232-thesis-forms-consent.sql.
+-- SRV-MENTOR-2: actor-level cases are in 234-thesis-forms-consent.sql.
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
      FROM (SELECT rolname::text FROM pg_roles
