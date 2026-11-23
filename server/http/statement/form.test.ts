@@ -35,3 +35,11 @@ it("uses the latest version for the session's institution and hashes the origina
     await rm(root, { recursive: true, force: true });
   }
 });
+
+it("reads the invented demo form the local stack and CI use", async () => {
+  const read = createFormReader(join(process.cwd(), "config", "faculties"));
+  const active = await read("demo-fakultet");
+  expect(active?.form.formId).toBe("demo-izjava");
+  expect(active?.form.formVersion).toBe(1);
+  expect(active?.form.text).toMatch(/^Izmišljeni obrazac/u);
+});
