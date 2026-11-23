@@ -10,6 +10,7 @@ import { createState, devWorkSchema, EMPTY_DOCUMENT, IDS, type State } from "./i
 import { contractProblems, send, signIn } from "./testing.ts";
 
 const EVIDENCE = { "ductus-protocol": "1" };
+const SCHEMA_VAR = "DUCTURA_LAZNI_SHEMA";
 const sha256 = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
 
 async function open(state: State) {
@@ -63,10 +64,10 @@ describe("dev fake server: schema version of a work (LOK-SRV-V3)", () => {
 
   it("reads DUCTURA_LAZNI_SHEMA as 1 or 3 and refuses anything else", () => {
     expect(devWorkSchema({})).toBe(1);
-    expect(devWorkSchema({ DUCTURA_LAZNI_SHEMA: "" })).toBe(1);
-    expect(devWorkSchema({ DUCTURA_LAZNI_SHEMA: "1" })).toBe(1);
-    expect(devWorkSchema({ DUCTURA_LAZNI_SHEMA: "3" })).toBe(3);
+    expect(devWorkSchema({ [SCHEMA_VAR]: "" })).toBe(1);
+    expect(devWorkSchema({ [SCHEMA_VAR]: "1" })).toBe(1);
+    expect(devWorkSchema({ [SCHEMA_VAR]: "3" })).toBe(3);
     for (const bad of ["2", "4", "v3", " 3"])
-      expect(devWorkSchema({ DUCTURA_LAZNI_SHEMA: bad })).toMatch(/only 1 or 3/u);
+      expect(devWorkSchema({ [SCHEMA_VAR]: bad })).toMatch(/only 1 or 3/u);
   });
 });
