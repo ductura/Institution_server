@@ -5,7 +5,7 @@
 Kod:
 
 - migracija `db/main/migrations/20261214160000_mentorship_self_note_overview.sql`;
-- pgTAP `db/main/tests/232-mentorship-self-note-overview.sql` (matrica pristupa tih tablica i RPC-ova, po uzoru na `164-work-message-access.sql`);
+- pgTAP `db/main/tests/233-mentorship-self-note-overview.sql` (matrica pristupa tih tablica i RPC-ova, po uzoru na `164-work-message-access.sql`);
 - rute `server/contracts/routes/mentorship-follow.ts`, vektori `server/contracts/vectors/work.self-note.*`, `work.reading-place.*`, `work.seen*`, `mentorship.overview.get.json`;
 - priključak baze `server/database/mentorship-follow/`, HTTP rub `server/http/mentorship-follow/`;
 - lažni dev server `packages/test-fakes/dev-server/mentorship-follow-routes.ts` (samo izmišljeni podaci).

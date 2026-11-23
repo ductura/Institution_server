@@ -5,7 +5,9 @@
       "name": "success",
       "kind": "success",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -20,8 +22,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -34,7 +41,9 @@
       "response": {
         "status": 200,
         "contentType": "application/json",
-        "headers": { "cache-control": "no-store" },
+        "headers": {
+          "cache-control": "no-store"
+        },
         "body": {
           "state": "draft",
           "submitted": false,
@@ -55,8 +64,13 @@
               "formVersion": 1,
               "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "ownWork": { "confirmed": false },
-            "humanHelp": { "received": false, "entries": [] },
+            "ownWork": {
+              "confirmed": false
+            },
+            "humanHelp": {
+              "received": false,
+              "entries": []
+            },
             "ai": {
               "use": null,
               "declaredTools": [],
@@ -68,7 +82,107 @@
           "payload": null,
           "declarationSha256": null,
           "uploads": [],
-          "declarationRequired": true
+          "declarationRequired": true,
+          "teacherQuestion": null,
+          "questionAnswer": null
+        }
+      }
+    },
+    {
+      "name": "with-answer",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "sec-fetch-site": "same-origin",
+          "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+          "origin": "https://ductura.example.invalid",
+          "content-type": "application/json"
+        },
+        "body": {
+          "baseVersion": 0,
+          "revision": 1,
+          "form": {
+            "formId": "test-izjava",
+            "formVersion": 1,
+            "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
+          "ai": {
+            "use": null,
+            "declaredTools": [],
+            "attachments": [],
+            "externalAttachmentIds": []
+          },
+          "confirm": false,
+          "questionAnswer": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "text": "Izmišljeni udžbenik iz metodologije."
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "draft",
+          "submitted": false,
+          "currentRevision": 1,
+          "version": 1,
+          "formText": "Izmisljeni obrazac.",
+          "currentForm": {
+            "formId": "test-izjava",
+            "formVersion": 1,
+            "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "text": "Izmisljeni obrazac."
+          },
+          "draft": {
+            "baseVersion": 0,
+            "revision": 1,
+            "form": {
+              "formId": "test-izjava",
+              "formVersion": 1,
+              "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "ownWork": {
+              "confirmed": false
+            },
+            "humanHelp": {
+              "received": false,
+              "entries": []
+            },
+            "ai": {
+              "use": null,
+              "declaredTools": [],
+              "attachments": [],
+              "externalAttachmentIds": []
+            },
+            "confirm": false
+          },
+          "payload": null,
+          "declarationSha256": null,
+          "uploads": [],
+          "declarationRequired": true,
+          "teacherQuestion": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "text": "Koji ti je izvor najviše pomogao u radu?"
+          },
+          "questionAnswer": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "questionText": "Koji ti je izvor najviše pomogao u radu?",
+            "text": "Izmišljeni udžbenik iz metodologije."
+          }
         }
       }
     },
@@ -77,7 +191,9 @@
       "kind": "error",
       "code": "origin_missing",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -91,8 +207,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -119,7 +240,9 @@
       "kind": "error",
       "code": "origin_mismatch",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -134,8 +257,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -162,7 +290,9 @@
       "kind": "error",
       "code": "cross_site",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "cross-site",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -177,8 +307,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -205,7 +340,9 @@
       "kind": "error",
       "code": "body_too_large",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -221,8 +358,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -249,7 +391,9 @@
       "kind": "error",
       "code": "body_timeout",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -265,8 +409,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -293,7 +442,9 @@
       "kind": "error",
       "code": "content_length_invalid",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -309,8 +460,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -337,7 +493,9 @@
       "kind": "error",
       "code": "content_length_mismatch",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -353,8 +511,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -381,7 +544,9 @@
       "kind": "error",
       "code": "body_stream_error",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -397,8 +562,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -425,7 +595,9 @@
       "kind": "error",
       "code": "unauthorized",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "origin": "https://ductura.example.invalid",
@@ -439,8 +611,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -467,7 +644,9 @@
       "kind": "error",
       "code": "not_found",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -482,8 +661,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -510,7 +694,9 @@
       "kind": "error",
       "code": "unavailable",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -525,8 +711,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -553,7 +744,9 @@
       "kind": "error",
       "code": "conflict",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -568,8 +761,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -596,7 +794,9 @@
       "kind": "error",
       "code": "invalid_input",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -611,8 +811,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -640,7 +845,9 @@
       "kind": "error",
       "code": "invalid_json",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -666,7 +873,9 @@
       "kind": "error",
       "code": "unsupported_media_type",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -681,8 +890,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -709,7 +923,9 @@
       "kind": "error",
       "code": "invalid_attachment",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -724,8 +940,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -752,7 +973,9 @@
       "kind": "error",
       "code": "already_submitted",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -767,8 +990,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -795,7 +1023,9 @@
       "kind": "error",
       "code": "form_outdated",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -810,8 +1040,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -838,7 +1073,9 @@
       "kind": "error",
       "code": "incomplete",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -853,8 +1090,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -881,7 +1123,9 @@
       "kind": "error",
       "code": "declaration_conflict",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -896,8 +1140,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -925,7 +1174,9 @@
       "kind": "error",
       "code": "stale_revision",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -940,8 +1191,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -969,7 +1225,9 @@
       "kind": "error",
       "code": "mandatory_attachment_missing",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -984,8 +1242,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],
@@ -1013,7 +1276,9 @@
       "kind": "error",
       "code": "attachment_stale",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
@@ -1028,8 +1293,13 @@
             "formVersion": 1,
             "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
-          "ownWork": { "confirmed": false },
-          "humanHelp": { "received": false, "entries": [] },
+          "ownWork": {
+            "confirmed": false
+          },
+          "humanHelp": {
+            "received": false,
+            "entries": []
+          },
           "ai": {
             "use": null,
             "declaredTools": [],

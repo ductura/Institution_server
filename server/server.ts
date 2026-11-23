@@ -73,6 +73,7 @@ import {
   createPilotMetricsRouteFor,
   createRetentionRouteFor,
   createFacultyRuleRoutesFor,
+  createAssistantSettingRouteFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -117,6 +118,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createDeclarationRequiredRoutesFor,
+  createDeclarationQuestionRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -374,6 +376,8 @@ async function main(): Promise<void> {
       // PIL-K-IZJAVA-SRV: the second major, with 409 declaration_required, and the teacher's switch.
       createSubmissionRouteFor(databases.main, evidenceDeps, 2),
       ...createDeclarationRequiredRoutesFor(databases.main),
+      // SRV-IZJAVA-PITANJE: the teacher's optional question with the declaration.
+      ...createDeclarationQuestionRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
@@ -407,6 +411,8 @@ async function main(): Promise<void> {
       // SRV-1406: the versioned rules of the institution, for its administrator.
       // SRV-2001: faculty rules of the institution, read and published by its administrator.
       ...createFacultyRuleRoutesFor(databases.main),
+      // SRV-ADMIN-3 (NF-7 OA-9): the faculty's assistant setting, read only, for its administrator.
+      createAssistantSettingRouteFor(databases.main),
       ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),

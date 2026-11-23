@@ -63,6 +63,7 @@ import {
   assistantMatchRoutes,
   inputRhythmRoutes,
   declarationRequiredRoutes,
+  declarationQuestionRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -84,6 +85,7 @@ import {
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
+  assistantSettingRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -101,6 +103,8 @@ export {
 } from "./routes/index.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
+export { AssistantSetting, assistantSettingGet } from "./routes/index.ts";
+export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./routes/index.ts";
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { RESTORE_MAX_FROM_REVISION, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
 export { WORK_INTERVIEW_NOTE_MAX_BYTES } from "./routes/index.ts";
@@ -201,6 +205,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...assistantMatchRoutes,
   ...inputRhythmRoutes,
   ...declarationRequiredRoutes,
+  ...declarationQuestionRoutes,
   ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
@@ -257,6 +262,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...consultationRecordsRoutes,
   ...eventDisputesRoutes,
   ...facultyRulesRoutes,
+  ...assistantSettingRoutes,
   ...workMilestonesRoutes,
   ...milestoneTemplateRoutes,
   ...returnForRevisionRoutes,

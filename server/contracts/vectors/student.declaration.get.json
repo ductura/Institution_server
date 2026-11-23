@@ -5,7 +5,9 @@
       "name": "success",
       "kind": "success",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
@@ -14,7 +16,9 @@
       "response": {
         "status": 200,
         "contentType": "application/json",
-        "headers": { "cache-control": "no-store" },
+        "headers": {
+          "cache-control": "no-store"
+        },
         "body": {
           "state": "none",
           "submitted": false,
@@ -31,7 +35,52 @@
           "payload": null,
           "declarationSha256": null,
           "uploads": [],
-          "declarationRequired": true
+          "declarationRequired": true,
+          "teacherQuestion": null,
+          "questionAnswer": null
+        }
+      }
+    },
+    {
+      "name": "with-question",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "sec-fetch-site": "same-origin",
+          "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "none",
+          "submitted": false,
+          "currentRevision": 1,
+          "version": 0,
+          "formText": null,
+          "currentForm": {
+            "formId": "test-izjava",
+            "formVersion": 1,
+            "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "text": "Izmisljeni obrazac."
+          },
+          "draft": null,
+          "payload": null,
+          "declarationSha256": null,
+          "uploads": [],
+          "declarationRequired": true,
+          "teacherQuestion": {
+            "questionId": "00000000-0000-4000-8000-0000000000e1",
+            "text": "Koji ti je izvor najviše pomogao u radu?"
+          },
+          "questionAnswer": null
         }
       }
     },
@@ -40,8 +89,12 @@
       "kind": "error",
       "code": "unauthorized",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
-        "headers": { "sec-fetch-site": "same-origin" }
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "sec-fetch-site": "same-origin"
+        }
       },
       "response": {
         "status": 401,
@@ -60,7 +113,9 @@
       "kind": "error",
       "code": "not_found",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
@@ -83,7 +138,9 @@
       "kind": "error",
       "code": "unavailable",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "same-origin",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
@@ -106,7 +163,9 @@
       "kind": "error",
       "code": "forbidden",
       "request": {
-        "params": { "assignmentId": "00000000-0000-4000-8000-0000000000a1" },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
         "headers": {
           "sec-fetch-site": "cross-site",
           "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"

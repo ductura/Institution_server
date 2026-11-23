@@ -8,10 +8,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const SQL = `SELECT state, payload_jcs, declaration_sha256
     FROM app.teacher_declaration($1::uuid, $2::uuid)`;
+// SRV-IZJAVA-PITANJE: the question in force and the answer bound with the
+// declaration, read in the same transaction after the declaration (same
+// relation check, the same access-log row).
+const ANSWER_SQL = `SELECT question, answer FROM app.teacher_declaration_answer($1::uuid, $2::uuid)`;
 
-export type TeacherDeclaration =
+type Question = { questionId: string; text: string } | null;
+type Answer = { questionId: string; questionText: string; text: string } | null;
+
+export type TeacherDeclaration = (
   | { state: "none"; payload: null; declarationSha256: null }
-  | { state: "bound"; payload: unknown; declarationSha256: string };
+  | { state: "bound"; payload: unknown; declarationSha256: string }
+) & { question?: Question; questionAnswer?: Answer };
 
 export type TeacherDeclarationReader = (
   token: string,
@@ -29,12 +37,12 @@ export function createTeacherDeclarationReader(withActor: WithActor): TeacherDec
     if (!UUID.test(assignmentId) || !UUID.test(studentId)) return { status: "not_found" };
 
     let rows: Record<string, unknown>[];
+    let extra: Record<string, unknown>[];
     try {
-      rows = (
-        await withActor(token, (tx) =>
-          tx.query<Record<string, unknown>>(SQL, [assignmentId, studentId]),
-        )
-      ).rows;
+      [rows, extra] = await withActor(token, async (tx) => [
+        (await tx.query<Record<string, unknown>>(SQL, [assignmentId, studentId])).rows,
+        (await tx.query<Record<string, unknown>>(ANSWER_SQL, [assignmentId, studentId])).rows,
+      ]);
     } catch (error) {
       const code = error instanceof Error && "code" in error ? error.code : undefined;
       if (code === "ZD401") return { status: "unauthenticated" };
@@ -42,8 +50,16 @@ export function createTeacherDeclarationReader(withActor: WithActor): TeacherDec
       return { status: "unavailable" };
     }
     const row = rows.length === 1 ? rows[0]! : undefined;
+    const answerRow = extra.length === 1 ? extra[0]! : undefined;
+    if (answerRow === undefined) return { status: "unavailable" };
+    // The shapes are checked against the contract at the HTTP edge.
+    const question = (answerRow.question ?? null) as Question;
+    const questionAnswer = (row?.state === "bound" ? (answerRow.answer ?? null) : null) as Answer;
     if (row?.state === "none") {
-      return { status: "ok", body: { state: "none", payload: null, declarationSha256: null } };
+      return {
+        status: "ok",
+        body: { state: "none", payload: null, declarationSha256: null, question, questionAnswer },
+      };
     }
     if (
       row?.state !== "bound" ||
@@ -61,7 +77,13 @@ export function createTeacherDeclarationReader(withActor: WithActor): TeacherDec
     }
     return {
       status: "ok",
-      body: { state: "bound", payload, declarationSha256: row.declaration_sha256 },
+      body: {
+        state: "bound",
+        payload,
+        declarationSha256: row.declaration_sha256,
+        question,
+        questionAnswer,
+      },
     };
   };
 }

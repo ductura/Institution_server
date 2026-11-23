@@ -87,8 +87,15 @@ export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
 export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
+export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
+export {
+  AssistantSetting,
+  assistantSettingGet,
+  assistantSettingRoutes,
+} from "./assistant-setting.ts";
+export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {
   courseAggregateGet,

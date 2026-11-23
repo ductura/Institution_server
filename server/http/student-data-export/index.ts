@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
 
 import { Value } from "@sinclair/typebox/value";
 
-import { ROUTES } from "../../contracts/index.ts";
+import { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY, ROUTES } from "../../contracts/index.ts";
 import {
   createStudentDataExports,
   type StudentDataExports,
@@ -33,6 +33,7 @@ import {
   requestIdOf,
   sendJson,
   sendProblem,
+  sendProblemWith,
   type Route,
 } from "../index.ts";
 
@@ -115,6 +116,10 @@ function requestRoute(options: StudentDataExportRouteOptions): Route {
   const { contract, body } = contractOf("institution.student-data-exports.post");
   const input = contract.request.body!;
   const timeoutMs = options.timeoutMs ?? INSTITUTION_BODY_TIMEOUT_MS;
+  // SRV-ADMIN-3 (NF-7 OA-6): the only 409 of the request is a second open
+  // request for the same person; it carries its reason and the catalogue key.
+  const openConflict = contract.errors.find((spec) => spec.status === 409);
+  if (openConflict === undefined) throw new Error(`no 409 of ${contract.id}`);
   return {
     contract,
     async handle(request, response) {
@@ -133,6 +138,12 @@ function requestRoute(options: StudentDataExportRouteOptions): Route {
           studentId: sent.studentId,
           identityCheckRef: identityCheckRef(sent.identityCheckedBy, sent.note),
         });
+        if (result.status === "conflict") {
+          return sendProblemWith(response, openConflict, {
+            reason: EXPORT_ALREADY_OPEN,
+            reasonKey: EXPORT_ALREADY_OPEN_KEY,
+          });
+        }
         if (result.status !== "ok") {
           const [status, code] = refusalOf(result.status);
           return sendProblem(response, status, code);

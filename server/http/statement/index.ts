@@ -10,6 +10,7 @@ import {
   incompleteFields,
   isExternalFormat,
   parseDeclarationPutBody,
+  parseDeclarationQuestionAnswer,
   type StatementOperation,
   type StatementPort,
   type StatementRefusal,
@@ -36,6 +37,16 @@ const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const READ = "student.declaration.get";
 const SAVE = "student.declaration.put";
 const UPLOAD = "student.declaration-attachments.post";
+
+/** A plain JSON object, so its own questionAnswer key can be set apart. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype
+  );
+}
 
 function mediaType(request: IncomingMessage): string | undefined {
   const types = request.headersDistinct["content-type"];
@@ -114,14 +125,20 @@ export function createStatementRoutes(port: StatementPort): Route[] {
             if (id === SAVE) {
               const json = parseJson(raw.bytes);
               if (!json.ok) return sendProblem(response, 400, "invalid_json");
-              const parsed = parseDeclarationPutBody(json.value);
-              if (!parsed.ok || parsed.body.ai.attachments.length !== 0) {
+              // SRV-IZJAVA-PITANJE: the optional answer travels beside the
+              // declaration-v1 body, which stays closed and is saved as before.
+              let declaration: unknown = json.value;
+              let questionAnswer: unknown;
+              if (isRecord(json.value)) ({ questionAnswer, ...declaration } = json.value);
+              const parsed = parseDeclarationPutBody(declaration);
+              const answer = parseDeclarationQuestionAnswer(questionAnswer);
+              if (!parsed.ok || !answer.ok || parsed.body.ai.attachments.length !== 0) {
                 return sendProblem(response, 422, "invalid_input");
               }
               if (parsed.body.confirm && incompleteFields(parsed.body).length > 0) {
                 return sendProblem(response, 409, "incomplete");
               }
-              op = { type: "save", body: parsed.body };
+              op = { type: "save", body: parsed.body, answer: answer.answer };
             } else {
               const checked = checkExternalAttachmentBytes(format ?? "", raw.bytes);
               if (!checked.ok) return sendProblem(response, 422, "invalid_input");

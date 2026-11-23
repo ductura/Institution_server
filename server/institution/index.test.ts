@@ -36,6 +36,8 @@ describe("server/institution public interface", () => {
       "readAcademicYears",
       "readAssignmentCurrentVersion",
       "readAssignmentOverview",
+      // SRV-ADMIN-3: the faculty's assistant setting, read only (assistant-setting.ts).
+      "readAssistantSetting",
       "readFacultyRules",
       "readInstitutionCourses",
       "readStudentAccessLog",
