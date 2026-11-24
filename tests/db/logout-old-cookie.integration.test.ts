@@ -339,6 +339,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-NF6-SIFRA-2: a key the caller does not keep is 409 and deletes nothing.
+  "profile.self-note-key-checked.delete": {
+    method: "DELETE",
+    path: `/api/v1/me/self-note-key/${randomUUID()}?ifVersion=1`,
+    body: () => undefined,
+    live: 409,
+  },
   "work.reading-place.put": {
     method: "PUT",
     path: `/api/v1/works/${randomUUID()}/reading-place`,

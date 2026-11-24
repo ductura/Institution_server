@@ -1,4 +1,4 @@
-// SRV-NF6-SIFRA over a real database (20261217150000): the port of the sealed
+// SRV-NF6-SIFRA over a real database (20261217150000, 20261217160000): the port of the sealed
 // note to self and the wrapped key, as the routes call it. The rules
 // themselves are db/main/tests/242-self-note-sealed.sql; this checks that the
 // bytes are stored and answered unchanged, that another person reads nothing
@@ -90,11 +90,26 @@ it("keeps the sealed note and the wrapped key byte for byte, for their owner alo
     );
     expect(columns.rows).toEqual([{ table: "work_self_note", column: "document_id" }]);
 
-    expect(await sealed.deleteKey(STUDENT)).toEqual({ status: "ok", key: null });
+    // SRV-NF6-SIFRA-2 (S2): a stale version or another key deletes nothing.
+    const OTHER_KEY = "6f1e2d3c-4b5a-4968-8776-6554433221a2";
+    expect(await sealed.deleteKeyChecked(STUDENT, KEY_ID, 1)).toEqual({ status: "conflict" });
+    expect(await sealed.deleteKeyChecked(STUDENT, OTHER_KEY, null)).toEqual({
+      status: "conflict",
+    });
+    expect(await sealed.deleteKeyChecked(OTHER_STUDENT, KEY_ID, 2)).toEqual({
+      status: "conflict",
+    });
+    expect(await sealed.readNote(STUDENT, WORK)).toEqual(written);
+    expect(await sealed.deleteKeyChecked(STUDENT, KEY_ID, 2)).toEqual({ status: "ok", key: null });
     expect(await sealed.readNote(STUDENT, WORK)).toEqual({
       status: "ok",
       state: { note: null, readingPlace: null },
     });
+    expect(await sealed.deleteKeyChecked(STUDENT, KEY_ID, null)).toEqual({ status: "conflict" });
+
+    expect(await sealed.writeKey(STUDENT, key, null)).toMatchObject({ status: "ok" });
+    expect(await sealed.deleteKey(STUDENT)).toEqual({ status: "ok", key: null });
+    expect(await sealed.readKey(STUDENT)).toEqual({ status: "ok", key: null });
   } finally {
     await db.close();
   }

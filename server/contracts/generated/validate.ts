@@ -1178,6 +1178,27 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "profile.self-note-key-checked.delete:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['keyId'] === 'string') &&
+      local0.test(value['keyId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "profile.self-note-key-checked.delete:query": (() => {
+  const local0 = /^[1-9][0-9]{0,8}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['ifVersion'] !== undefined ? ((typeof value['ifVersion'] === 'string') && local0.test(value['ifVersion'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['ifVersion'].includes(key))
+    )
+  }
+  })(),
   "profile.self-note-key.put:body": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
   const local1 = /^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\s\S])/;

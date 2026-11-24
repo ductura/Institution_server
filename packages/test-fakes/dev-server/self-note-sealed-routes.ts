@@ -1,5 +1,6 @@
 // SRV-NF6-SIFRA on the dev fake server: the sealed note to self
-// (work.sealed-self-note.*) and the wrapped note key (profile.self-note-key.*).
+// (work.sealed-self-note.*) and the wrapped note key (profile.self-note-key.*,
+// profile.self-note-key-checked.delete).
 // Invented data only. The real rules are the RPCs of 20261217150000: the
 // note is the owner's alone (anyone else reads 404), a note needs the key the
 // owner keeps now (409 otherwise), a key is set once and rewrapped only under
@@ -82,11 +83,29 @@ export const SELF_NOTE_SEALED_HANDLERS: Handlers = {
   },
   "profile.self-note-key.delete": ({ state, account }) => {
     if (account === null) return { error: "unauthorized" };
-    if (keysOf(state).delete(account.id)) {
-      for (const work of state.works) {
-        if (work.studentId === account.id) keptOf(state, work.documentId).note = null;
-      }
+    startOver(state, account.id);
+    return { status: 200, body: { key: null } };
+  },
+  // SRV-NF6-SIFRA-2 (20261217160000): only under the key and version named.
+  "profile.self-note-key-checked.delete": ({ state, account, params, query }) => {
+    if (account === null) return { error: "unauthorized" };
+    const kept = keysOf(state).get(account.id);
+    if (
+      kept === undefined ||
+      kept.keyId !== params.keyId ||
+      (query.ifVersion !== undefined && kept.version !== Number(query.ifVersion))
+    ) {
+      return { error: "conflict" };
     }
+    startOver(state, account.id);
     return { status: 200, body: { key: null } };
   },
 };
+
+/** The key of the account and every sealed note of its works go; the reading places stay. */
+function startOver(state: State, accountId: string): void {
+  if (!keysOf(state).delete(accountId)) return;
+  for (const work of state.works) {
+    if (work.studentId === accountId) keptOf(state, work.documentId).note = null;
+  }
+}

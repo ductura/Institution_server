@@ -659,6 +659,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7120208960",
   },
+  // SRV-NF6-SIFRA-2 (Ductus#2055 c.7122106659; review of SRV #676, S2): starting over under the key named; Ductus has no such route.
+  "app/api/me/self-note-key/[keyId]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7122106659",
+  },
   "app/api/works/[documentId]/reading-place/route.ts": {
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",

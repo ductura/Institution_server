@@ -1,7 +1,10 @@
 // SRV-NF6-SIFRA (Ductus#2055; owner decision B2 of 24 Nov 2026): the HTTP
 // edge of the sealed note to self (work.sealed-self-note.*) and the wrapped
-// note key (profile.self-note-key.*). The edge only, as mentorship-follow: a live
-// session cookie (401), for a note the work id decoded once by workIdFromPath
+// note key (profile.self-note-key.*; the checked start over
+// profile.self-note-key-checked.delete is SRV-NF6-SIFRA-2, S2). The edge
+// only, as mentorship-follow: a live session cookie (401), for the checked
+// start over the key id and the query as the contract writes them (else
+// 422), for a note the work id decoded once by workIdFromPath
 // (one that is not a work id is the same 404 as another's work, C-23), for a
 // write the media type, the bounded body and its shape, then
 // server/database/self-note-sealed. The database decides who may; a refusal
@@ -16,6 +19,8 @@ import { Value } from "@sinclair/typebox/value";
 import {
   isWorkId,
   SealedSelfNoteInput,
+  SelfNoteKeyCheckedParams,
+  SelfNoteKeyCheckedQuery,
   SelfNoteKeyInput,
   selfNoteSealedRoutes,
   workIdFromPath,
@@ -102,6 +107,20 @@ async function answer(
   }
 }
 
+/**
+ * The query of the checked key delete: at most ifVersion, once, as the
+ * contract writes it; null for anything else (another name, a repeat).
+ */
+function queryOf(target: string | undefined): { ifVersion?: string } | null {
+  const at = (target ?? "").indexOf("?");
+  if (at < 0) return {};
+  const search = new URLSearchParams((target ?? "").slice(at + 1));
+  const entries = [...search];
+  if (entries.length > 1) return null;
+  const query = Object.fromEntries(entries);
+  return Value.Check(SelfNoteKeyCheckedQuery, query) ? query : null;
+}
+
 const stateOf = (ok: Answered) => ok["state"];
 const keyOf = (ok: Answered) => ({ key: ok["key"] });
 
@@ -127,6 +146,21 @@ function routeFor(sealed: SelfNoteSealed, contract: Contract): Route {
         }
         if (contract.id === "profile.self-note-key.delete") {
           return answer(response, contract, () => sealed.deleteKey(token), keyOf);
+        }
+        if (contract.id === "profile.self-note-key-checked.delete") {
+          const named = { keyId: params?.keyId };
+          const query = queryOf(request.url);
+          if (!Value.Check(SelfNoteKeyCheckedParams, named) || query === null) {
+            return sendProblem(response, 422, "invalid_input");
+          }
+          const { keyId } = named as { keyId: string };
+          const ifVersion = query.ifVersion === undefined ? null : Number(query.ifVersion);
+          return answer(
+            response,
+            contract,
+            () => sealed.deleteKeyChecked(token, keyId, ifVersion),
+            keyOf,
+          );
         }
         const body = await jsonBody(request, response, contract);
         if (!body.ok) return;
@@ -165,7 +199,7 @@ export function createSelfNoteSealedRoutes(sealed: SelfNoteSealed): Route[] {
   return selfNoteSealedRoutes.map((contract) => routeFor(sealed, contract));
 }
 
-/** All six routes over main's application withActor. */
+/** All seven routes over main's application withActor. */
 export function createSelfNoteSealedRoutesFor(main: { withActor: WithActor }): Route[] {
   return createSelfNoteSealedRoutes(createSelfNoteSealed(main.withActor));
 }

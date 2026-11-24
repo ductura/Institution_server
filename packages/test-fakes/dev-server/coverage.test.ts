@@ -32,6 +32,12 @@ type Scenario = {
   readonly before?: readonly Step[];
   readonly prepare?: (state: State) => void;
   readonly request: Step;
+  /**
+   * A route whose contract keeps a success no request reaches any more
+   * (work.self-note.put since SRV-NF6-SIFRA-2): the contract error the
+   * owner's request is answered with instead.
+   */
+  readonly refused?: string;
 };
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
@@ -1563,9 +1569,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.self-note.get": { request: { path: SELF_NOTE, as: "student" } },
   "work.self-note.put": {
     request: { method: "PUT", path: SELF_NOTE, as: "student", headers: ORIGIN, body: NOTE_BODY },
+    refused: "invalid_input",
   },
   "work.self-note.delete": {
-    before: [{ method: "PUT", path: SELF_NOTE, as: "student", headers: ORIGIN, body: NOTE_BODY }],
+    before: [SET_NOTE_KEY, SEAL_NOTE],
     request: { method: "DELETE", path: SELF_NOTE, as: "student", headers: ORIGIN },
   },
   // SRV-NF6-SIFRA: the sealed note to self and the wrapped note key.
@@ -1586,6 +1593,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "profile.self-note-key.delete": {
     before: [SET_NOTE_KEY, SEAL_NOTE],
     request: { method: "DELETE", path: "/api/v1/me/self-note-key", as: "student", headers: ORIGIN },
+  },
+  "profile.self-note-key-checked.delete": {
+    before: [SET_NOTE_KEY, SEAL_NOTE],
+    request: {
+      method: "DELETE",
+      path: `/api/v1/me/self-note-key/${NOTE_KEY_ID}?ifVersion=1`,
+      as: "student",
+      headers: ORIGIN,
+    },
   },
   "work.reading-place.put": {
     request: {
@@ -2190,8 +2206,13 @@ describe("dev fake server covers the whole contract", () => {
     scenario.prepare?.(state);
     const answer = await run(state, scenario.request);
     expect(answer.status, answer.body).not.toBe(501);
-    expect(answer.status, answer.body).toBeLessThan(400);
-    expect(contractProblems(route, answer)).toEqual([]);
+    if (scenario.refused === undefined) {
+      expect(answer.status, answer.body).toBeLessThan(400);
+      expect(contractProblems(route, answer)).toEqual([]);
+    } else {
+      expect(answer.json, answer.body).toMatchObject({ code: scenario.refused });
+      expect(contractProblems(route, answer, scenario.refused)).toEqual([]);
+    }
   });
 
   it.each(ROUTES)("%s answers every contract error it may be asked for", async (route) => {

@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createState, IDS } from "./index.ts";
+import { keptOf } from "./mentorship-follow-routes.ts";
 import { contractProblems, send, signIn } from "./testing.ts";
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
@@ -12,7 +13,7 @@ const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
 const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 7 };
 
 describe("note to self", () => {
-  it("keeps no text, keeps the reading place for the owner and is 404 for the teacher", async () => {
+  it("refuses a note in the clear, keeps the reading place for the owner and is 404 for the teacher", async () => {
     const state = createState();
     const student = { ...(await signIn(state, "student")), ...ORIGIN };
     const teacher = { ...(await signIn(state, "nastavnik")), ...ORIGIN };
@@ -21,10 +22,23 @@ describe("note to self", () => {
       headers: student,
       body: { text: "Izmišljena bilješka.", place: PLACE },
     });
-    expect(contractProblems("work.self-note.put", put)).toEqual([]);
-    // SRV-NF6-SIFRA: the text is dropped; the note is sealed through work.sealed-self-note.put.
-    expect(put.json).toEqual({ note: null, readingPlace: null });
-    expect(JSON.stringify(state)).not.toContain("Izmišljena bilješka.");
+    // SRV-NF6-SIFRA-2 (S1): refused; the note is sealed through work.sealed-self-note.put.
+    expect(put.status).toBe(422);
+    expect(contractProblems("work.self-note.put", put, "invalid_input")).toEqual([]);
+    // N4: the notes live in keptOf, outside the state object, so this reads them
+    // where they are kept rather than JSON.stringify(state), which never held them.
+    expect(keptOf(state, IDS.document)).toEqual({ note: null, readingPlace: null });
+    expect(JSON.stringify(keptOf(state, IDS.document))).not.toContain("Izmišljena bilješka.");
+    expect((await send(state, SELF_NOTE, { headers: student })).json).toEqual({
+      note: null,
+      readingPlace: null,
+    });
+    const foreign = await send(state, SELF_NOTE, {
+      method: "PUT",
+      headers: teacher,
+      body: { text: "Tuđa bilješka.", place: PLACE },
+    });
+    expect(foreign.status).toBe(404);
     expect((await send(state, SELF_NOTE, { headers: teacher })).status).toBe(404);
     const reading = await send(state, `/api/v1/works/${IDS.document}/reading-place`, {
       method: "PUT",

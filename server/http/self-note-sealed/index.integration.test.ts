@@ -203,3 +203,57 @@ it("refuses a missing session, a wrong media type, broken JSON and a work id tha
   expect((await fetch(note("%20rad"), { headers: cookie })).status).toBe(404);
   expect(query).not.toHaveBeenCalled();
 });
+
+// SRV-NF6-SIFRA-2 (S2): starting over only under the key (and version) named.
+const checked = (id = KEY_ID, search = "") => `${key()}/${id}${search}`;
+
+it("starts over under the key named and passes the version, or null without one", async () => {
+  query.mockResolvedValueOnce({ rows: [{ deleted: true }], rowCount: 1 });
+  const named = await send("DELETE", checked(KEY_ID, "?ifVersion=2"));
+  expect(named.status).toBe(200);
+  expect(await named.json()).toEqual({ key: null });
+  const [sql, args] = query.mock.calls[0]!;
+  expect(sql).toMatch(/collaboration\.delete_self_note_key_checked\(\$1::uuid, \$2::integer\)/);
+  expect(args).toEqual([KEY_ID, 2]);
+  query.mockResolvedValueOnce({ rows: [{ deleted: true }], rowCount: 1 });
+  expect((await send("DELETE", checked())).status).toBe(200);
+  expect(query.mock.calls[1]![1]).toEqual([KEY_ID, null]);
+});
+
+it("answers 409 when the key or the version named is not the one kept, and 503 for a row that is not a deletion", async () => {
+  query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD409" }));
+  const stale = await send("DELETE", checked(KEY_ID, "?ifVersion=1"));
+  expect(stale.status).toBe(409);
+  expect(((await stale.json()) as { code: string }).code).toBe("conflict");
+  query.mockResolvedValueOnce({ rows: [{ deleted: false }], rowCount: 1 });
+  expect((await send("DELETE", checked())).status).toBe(503);
+});
+
+it.each([
+  ["an uppercase key id", KEY_ID.toUpperCase(), ""],
+  ["a key id that is not a UUID", "nije-kljuc", ""],
+  ["version 0", KEY_ID, "?ifVersion=0"],
+  ["a signed version", KEY_ID, "?ifVersion=%2B1"],
+  ["a leading zero", KEY_ID, "?ifVersion=01"],
+  ["a version of ten digits", KEY_ID, "?ifVersion=1000000000"],
+  ["an empty version", KEY_ID, "?ifVersion="],
+  ["the version twice", KEY_ID, "?ifVersion=1&ifVersion=1"],
+  ["another parameter", KEY_ID, "?keyVersion=1"],
+])(
+  "refuses a checked start over with %s and never reaches the database",
+  async (_name, id, search) => {
+    expect((await send("DELETE", checked(id, search))).status).toBe(422);
+    expect(query).not.toHaveBeenCalled();
+  },
+);
+
+it("refuses a checked start over without a session, with a body or from another site", async () => {
+  expect((await fetch(checked(), { method: "DELETE", headers: { origin: ORIGIN } })).status).toBe(
+    401,
+  );
+  expect((await send("DELETE", checked(), "{}")).status).toBe(413);
+  expect(
+    (await send("DELETE", checked(), undefined, { origin: "https://drugo.invalid" })).status,
+  ).toBe(403);
+  expect(query).not.toHaveBeenCalled();
+});

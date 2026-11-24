@@ -52,14 +52,11 @@ export type FollowRefusal = {
 };
 export type Answer<T> = ({ readonly status: "ok" } & T) | FollowRefusal;
 
+// No write of a note in the clear (SRV-NF6-SIFRA-2, S1): work.self-note.put
+// is refused at the edge after the owner check of readSelfNote; the note is
+// sealed through server/database/self-note-sealed.
 export type MentorshipFollow = {
   readSelfNote(token: string, documentId: string): Promise<Answer<{ state: SelfNoteState }>>;
-  writeSelfNote(
-    token: string,
-    documentId: string,
-    text: string,
-    place: WorkPlace | null,
-  ): Promise<Answer<{ state: SelfNoteState }>>;
   writeReadingPlace(
     token: string,
     documentId: string,
@@ -229,10 +226,6 @@ export function createMentorshipFollow(withActor: WithActor): MentorshipFollow {
 
   return {
     readSelfNote: (token, documentId) => state(token, SQL.read, [documentId]),
-    // No note is kept in the clear (SRV-NF6-SIFRA, 1.110.0): the owner is
-    // checked as for a read and answered what is kept, note null; the text
-    // never reaches the database. The note is sealed through work.sealed-self-note.put.
-    writeSelfNote: (token, documentId) => state(token, SQL.read, [documentId]),
     writeReadingPlace: (token, documentId, at) =>
       state(token, SQL.writeReading, [documentId, JSON.stringify(at)]),
     clear: (token, documentId, part) => state(token, SQL.clear, [documentId, part]),
