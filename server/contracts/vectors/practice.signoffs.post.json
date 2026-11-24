@@ -578,6 +578,37 @@
           "requestId": "00000000-0000-4000-8000-000000007042"
         }
       }
+    },
+    {
+      "name": "through-date-outside-period",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-dnevnik-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a101"
+        },
+        "body": {
+          "throughDate": "2030-01-01",
+          "comment": "Potvrdujem zapise."
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000007fff"
+        }
+      }
     }
   ]
 }

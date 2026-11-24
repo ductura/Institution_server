@@ -45486,7 +45486,7 @@
     "/api/v1/practice/placements": {
       "get": {
         "operationId": "practice.placements.get",
-        "summary": "The placements of the caller: a student reads their own, a teacher only those of mentorships they are the mentor of. Latest start first, then placementId. entryCount counts every entry, corrections included; signedThrough is the latest date a signoff covers, null while none exists. It is a list of facts: no hours total, no comparison, no state of good or bad.",
+        "summary": "The placements of the caller: a student reads their own, a teacher only those of mentorships they are the mentor of. Latest start first, then placementId. entryCount counts every entry, corrections included; signedThrough is the latest throughDate of a signoff (not a promise that every later-added entry up to it is signed), null while none exists. It is a list of facts: no hours total, no comparison, no state of good or bad.",
         "x-access": "signed_in",
         "x-inventory": "app/api/practice/placements/route.ts",
         "responses": {
@@ -45656,7 +45656,7 @@
       },
       "post": {
         "operationId": "practice.placements.post",
-        "summary": "The mentor of an active mentorship opens a placement for its student: the organisation (one line, 1 to 120 code points) and the period (startsOn on or before endsOn). A mentorship that is another's, unknown, ended or malformed reads 404. A student has no such call. The placement belongs to that mentorship and has that one mentor.",
+        "summary": "The mentor of an active mentorship opens a placement for its student: the organisation (one line, 1 to 120 code points) and the period (startsOn on or before endsOn). A mentorship id that is not a UUID is 422 invalid_input; one that is another's, unknown or ended reads 404. A student has no such call. The placement belongs to that mentorship and has that one mentor.",
         "x-access": "mentor_teacher",
         "x-inventory": "app/api/practice/placements/route.ts",
         "requestBody": {
@@ -46519,7 +46519,7 @@
       },
       "post": {
         "operationId": "practice.signoffs.post",
-        "summary": "The mentor signs every entry of the placement up to and including throughDate that exists now: the answer says how many and the JCS SHA-256 of that set. A signoff is a record in Ductura of who signed which set and when, with an optional comment (up to 1000 code points); it is not a qualified signature and is never withdrawn (a later signoff replaces it in the view, the earlier one stays in the history). With no entry to sign it is 409 nothing_to_sign. The student and anyone else read 404.",
+        "summary": "The mentor signs every entry of the placement up to and including throughDate that exists now: the answer says how many and the JCS SHA-256 of that set. A signoff is a record in Ductura of who signed which set and when, with an optional comment (up to 1000 code points); it is not a qualified signature and is never withdrawn (a later signoff replaces it in the view, the earlier one stays in the history). throughDate must not be in the future and must lie inside the period of the placement, else 422 invalid_input; so signedThrough only ever names a date that was in the past and in the period when it was signed. Entries added later for a date up to it are corrections that need a new signoff: signedThrough does not say that every entry up to that date is signed, entryCount and entriesSha256 of the signoff say which were. With no entry to sign it is 409 nothing_to_sign. The student and anyone else read 404.",
         "x-access": "mentor_teacher",
         "x-inventory": "app/api/practice/placements/[placementId]/signoffs/route.ts",
         "parameters": [

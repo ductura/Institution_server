@@ -34,11 +34,11 @@ Pristup u ugovoru je deklaracija; odlučuje baza (RLS i RPC, kasniji zadatak).
 
 ### `practice.placements.post`
 
-Tijelo: `{mentorshipId, organisationName, startsOn, endsOn}`; `organisationName` jedan redak od 1 do 120 točaka koda; datumi ISO (`YYYY-MM-DD`), `startsOn` ≤ `endsOn` (inače 422). Odgovor `201 {placementId}`. Mentorstvo koje je tuđe, nepoznato, završeno ili neispravno je 404. Ustanova može dodati ograničenje duljine razdoblja kasnije; ugovor ga ne određuje.
+Tijelo: `{mentorshipId, organisationName, startsOn, endsOn}`; `organisationName` jedan redak od 1 do 120 točaka koda; datumi ISO (`YYYY-MM-DD`), `startsOn` ≤ `endsOn` (inače 422). Odgovor `201 {placementId}`. `mentorshipId` koji nije UUID je 422 `invalid_input` (greška oblika tijela); mentorstvo koje je tuđe, nepoznato ili završeno je 404. Ustanova može dodati ograničenje duljine razdoblja kasnije; ugovor ga ne određuje.
 
 ### `practice.placements.get`
 
-`200 {placements:[{placementId, mentorshipId, organisationName, startsOn, endsOn, entryCount, signedThrough|null}]}`; najkasniji početak prvi, zatim `placementId`; najviše 200. `entryCount` broji sve zapise, ispravke također; `signedThrough` je najkasniji datum koji neki potpis pokriva, `null` dok potpisa nema.
+`200 {placements:[{placementId, mentorshipId, organisationName, startsOn, endsOn, entryCount, signedThrough|null}]}`; najkasniji početak prvi, zatim `placementId`; najviše 200. `entryCount` broji sve zapise, ispravke također; `signedThrough` je najkasniji `throughDate` nekog potpisa (ne jamči da su svi zapisi dodani poslije do tog datuma potpisani), `null` dok potpisa nema.
 
 ### `practice.entries.get`
 
@@ -58,7 +58,7 @@ Odgovor `201 {entryId}`. Mentor i svi ostali dobivaju 404.
 
 ### `practice.signoffs.post`
 
-Tijelo: `{throughDate, comment?}`; `comment` 1 do 1000 točaka koda. Potpis pokriva sve zapise prakse do uključivo `throughDate` koji postoje u trenutku potpisa. Odgovor `201 {signoffId, entryCount, entriesSha256}`: `entriesSha256` je JCS SHA-256 tog skupa zapisa. Bez ijednog zapisa za potpis je **409 `nothing_to_sign`**. Student i svi ostali dobivaju 404.
+Tijelo: `{throughDate, comment?}`; `comment` 1 do 1000 točaka koda. Potpis pokriva sve zapise prakse do uključivo `throughDate` koji postoje u trenutku potpisa. `throughDate` ne smije biti u budućnosti ni izvan razdoblja prakse (422 `invalid_input`). Zapis dodan poslije za datum do `throughDate` nije u potpisanom skupu i traži novi potpis; zato `signedThrough` u `practice.placements.get` kaže samo do kojeg je datuma neki potpis izdan, a koji su zapisi potpisani kažu `entryCount` i `entriesSha256` potpisa. Odgovor `201 {signoffId, entryCount, entriesSha256}`: `entriesSha256` je JCS SHA-256 tog skupa zapisa. Bez ijednog zapisa za potpis je **409 `nothing_to_sign`**. Student i svi ostali dobivaju 404.
 
 ### `practice.signoffs.get`
 

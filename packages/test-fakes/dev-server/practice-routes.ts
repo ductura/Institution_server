@@ -1,7 +1,7 @@
 // The practice journal on the dev fake server (SRV-V19-DNEVNIK-UGOVOR): one
 // invented placement of the invented mentorship, entries only added, signoffs
 // of the mentor. The real rules are the database's (a later task); the fake
-// keeps its records in a WeakMap by state, so it adds nothing to State, and its
+// keeps its records in a WeakMap keyed by state.mentorships (a reset of the state replaces that array, so the records go with it), and its
 // entriesSha256 is a plain SHA-256 of the entries, not the JCS of the contract.
 import { createHash, randomUUID } from "node:crypto";
 
@@ -43,9 +43,10 @@ type Placement = {
 };
 
 const PLACEMENTS = new WeakMap<object, Placement[]>();
+const SIGNOFFS_MAX = 500;
 
 function placementsOf(state: State): Placement[] {
-  let list = PLACEMENTS.get(state);
+  let list = PLACEMENTS.get(state.mentorships);
   if (list === undefined) {
     const first = state.mentorships[0];
     list =
@@ -62,7 +63,7 @@ function placementsOf(state: State): Placement[] {
               signoffs: [],
             },
           ];
-    PLACEMENTS.set(state, list);
+    PLACEMENTS.set(state.mentorships, list);
   }
   return list;
 }
@@ -142,7 +143,10 @@ export const PRACTICE_HANDLERS: Handlers = {
       status: 200,
       body: {
         entries: [...found.placement.entries].sort(byDate).map((e) => ({ ...e })),
-        signoffs: [...found.placement.signoffs].sort(latestFirst).map((s) => ({ ...s })),
+        signoffs: [...found.placement.signoffs]
+          .sort(latestFirst)
+          .slice(0, SIGNOFFS_MAX)
+          .map((s) => ({ ...s })),
       },
     };
   },
@@ -175,6 +179,13 @@ export const PRACTICE_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const found = reach(state, account, params.placementId);
     if (found === undefined || found.role !== "mentor") return { error: "not_found" };
+    if (
+      body.throughDate > now.toISOString().slice(0, 10) ||
+      body.throughDate < found.placement.startsOn ||
+      body.throughDate > found.placement.endsOn
+    ) {
+      return { error: "invalid_input" };
+    }
     const covered = found.placement.entries.filter((e) => e.date <= body.throughDate).sort(byDate);
     if (covered.length === 0) return { error: "nothing_to_sign" };
     const signoff: Signoff = {
@@ -202,7 +213,12 @@ export const PRACTICE_HANDLERS: Handlers = {
     if (found === undefined) return { error: "not_found" };
     return {
       status: 200,
-      body: { signoffs: [...found.placement.signoffs].sort(latestFirst).map((s) => ({ ...s })) },
+      body: {
+        signoffs: [...found.placement.signoffs]
+          .sort(latestFirst)
+          .slice(0, SIGNOFFS_MAX)
+          .map((s) => ({ ...s })),
+      },
     };
   },
 };
