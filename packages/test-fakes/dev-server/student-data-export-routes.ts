@@ -40,6 +40,21 @@ export const STUDENT_DATA_EXPORT_HANDLERS: Handlers = {
       },
     };
   },
+  // SRV-NF7-IZVOZ-STUDENT: the same reach as the list, only the person and the state.
+  "institution.student-data-export-students.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    const all =
+      state.registryClerks.includes(account.id) || account.roles.includes("institution_admin");
+    return {
+      status: 200,
+      body: {
+        exports: state.studentDataExports
+          .filter((e) => all || e.studentId === account.id)
+          .toSorted((a, b) => (a.requestedAt < b.requestedAt ? 1 : -1))
+          .map(({ exportId, studentId, state: s }) => ({ exportId, studentId, state: s })),
+      },
+    };
+  },
   "institution.student-data-exports.post": ({ state, account, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     if (!state.registryClerks.includes(account.id) || account.roles.includes("institution_admin")) {

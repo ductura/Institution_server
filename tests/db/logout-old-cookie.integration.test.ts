@@ -1678,6 +1678,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-NF7-IZVOZ-STUDENT: the same reach as the list, so the same 200 with none.
+  "institution.student-data-export-students.get": {
+    method: "GET",
+    path: "/api/v1/institution/student-data-export-students",
+    body: () => undefined,
+    live: 200,
+  },
   "institution.student-data-exports.post": {
     path: "/api/v1/institution/student-data-exports",
     body: () => ({

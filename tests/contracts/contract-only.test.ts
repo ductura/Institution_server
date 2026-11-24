@@ -456,6 +456,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createStudentDataExportRoutesFor(databases.main, process.env, process.cwd())",
     ids: [
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",
@@ -967,6 +968,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.legal-holds.post",
       "institution.legal-hold-release.post",
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",

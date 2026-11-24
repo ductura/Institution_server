@@ -18401,6 +18401,113 @@
     }
   },
   {
+    "route": "institution.student-data-export-students.get",
+    "name": "students",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-referade-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "exports": [
+          {
+            "exportId": "00000000-0000-4000-8000-0000000001f1",
+            "studentId": "00000000-0000-4000-8000-000000000201",
+            "state": "ready"
+          },
+          {
+            "exportId": "00000000-0000-4000-8000-0000000001f2",
+            "studentId": "00000000-0000-4000-8000-000000000202",
+            "state": "requested"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.student-data-export-students.get",
+    "name": "no-students",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "exports": []
+      }
+    }
+  },
+  {
+    "route": "institution.student-data-export-students.get",
+    "name": "unauthorized",
+    "request": {
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000013a4"
+      }
+    }
+  },
+  {
+    "route": "institution.student-data-export-students.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-referade-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000013a5"
+      }
+    }
+  },
+  {
+    "route": "institution.student-data-export-students.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-referade-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000013a6"
+      }
+    }
+  },
+  {
     "route": "institution.student-data-exports-approve.post",
     "name": "approved",
     "request": {
@@ -30197,7 +30304,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.117.0",
+        "apiVersion": "1.118.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -30213,7 +30320,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.117.0",
+        "apiVersion": "1.118.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
