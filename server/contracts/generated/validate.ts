@@ -3615,6 +3615,35 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.origin-segments.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.origin-segments.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  const local1 = /^[^\u0000-\u001f\u007f-\u009f]{1,128}$/;
+  const local2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['revision'] === 'number' && Number.isInteger(value['revision'])) &&
+      value['revision'] <= 9007199254740991 &&
+      value['revision'] >= 0 &&
+      Array.isArray(value['segments']) &&
+      value['segments'].length <= 10000 &&
+      value['segments'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['blockId'] === 'string') && local0.test(value['blockId']) && (typeof value['start'] === 'number' && Number.isInteger(value['start'])) && value['start'] <= 9999999 && value['start'] >= 0 && (typeof value['end'] === 'number' && Number.isInteger(value['end'])) && value['end'] <= 10000000 && value['end'] >= 1 && (((value['kind'] === 'typed')) || ((value['kind'] === 'assistant_inserted')) || ((value['kind'] === 'assistant_match')) || ((value['kind'] === 'imported_file')) || ((value['kind'] === 'pasted_known')) || ((value['kind'] === 'pasted_unknown'))) && (value['segmentRef'] !== undefined ? ((typeof value['segmentRef'] === 'string') && local1.test(value['segmentRef'])) : true) && (value['changeId'] !== undefined ? ((typeof value['changeId'] === 'string') && local2.test(value['changeId'])) : true) && Object.getOwnPropertyNames(value).every(key => ['blockId', 'start', 'end', 'kind', 'segmentRef', 'changeId'].includes(key))))) { return false }; return true; })(value['segments']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
   "work.origin-thresholds.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {

@@ -4,6 +4,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { SegmentRef } from "./assistant-match.ts";
 import { WorkId } from "./collaboration.ts";
+import { MUTATION_GUARD } from "./shared.ts";
 
 // SRV-0910 (Ductus#2052; P-1, rules 1 and 8, C-6): the composition of a work by
 // the kind of origin of its changes, as a share per kind of a closed list. The
@@ -116,4 +117,67 @@ export const originSegmentsGet = defineRoute({
   ],
 });
 
-export const originCompositionRoutes = [originCompositionGet, originSegmentsGet] as const;
+// SRV-KARTA-RASPON-RUTA (Ductus#2055, variant A): the student who owns the work
+// records the ranges of a revision they saved, once; the readers only read them
+// through work.origin-segments.get. Database: app.work_origin_segments_record
+// (20261218100000), which checks the revision, ownership and every range again.
+
+/** The largest body of a write of ranges. */
+export const ORIGIN_SEGMENTS_MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+const SegmentInput = closed({
+  blockId: BlockId,
+  start: Type.Integer({ minimum: 0, maximum: ORIGIN_SEGMENT_END_MAX - 1 }),
+  end: Type.Integer({ minimum: 1, maximum: ORIGIN_SEGMENT_END_MAX }),
+  kind: Type.Union(ORIGIN_KINDS.map((kind) => Type.Literal(kind))),
+  segmentRef: Type.Optional(SegmentRef),
+  /** The origin change of this work the range comes from (same kind). */
+  changeId: Type.Optional(
+    Type.String({ pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }),
+  ),
+});
+
+export const originSegmentsPost = defineRoute({
+  id: "work.origin-segments.post",
+  method: "POST",
+  path: "/api/v1/works/{documentId}/origin-segments",
+  inventory: "app/api/works/[documentId]/origin-segments/route.ts",
+  access: "student_owner",
+  summary:
+    "The student who owns the work records the ranges of origin of one revision they saved, exactly {revision, segments}: 1 to 10000 ranges, each {blockId, start, end, kind, segmentRef?, changeId?} as work.origin-segments.get reads them, end above start; pasted_known only with the changeId of an explained change of the same kind. Recorded once per revision and never rewritten: a second write of the same revision is 409. Answers 201 with the revision and the number of ranges recorded. A body that is not exactly this, a range that is empty or a revision the student did not save is 422. Anyone but the owner of the work (the teacher too) and an unknown or malformed work get 404. It says where text came from, not who wrote it.",
+  request: {
+    params: closed({ documentId: WorkId }),
+    contentType: "application/json",
+    maxBodyBytes: ORIGIN_SEGMENTS_MAX_BODY_BYTES,
+    body: closed({
+      revision: SegmentRevision,
+      segments: Type.Array(SegmentInput, { minItems: 1, maxItems: ORIGIN_SEGMENTS_MAX }),
+    }),
+  },
+  responses: [
+    {
+      status: 201,
+      description: "the ranges are recorded",
+      body: closed({
+        revision: SegmentRevision,
+        recorded: Type.Integer({ minimum: 1, maximum: ORIGIN_SEGMENTS_MAX }),
+      }),
+    },
+  ],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
+    error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
+export const originCompositionRoutes = [
+  originCompositionGet,
+  originSegmentsGet,
+  originSegmentsPost,
+] as const;

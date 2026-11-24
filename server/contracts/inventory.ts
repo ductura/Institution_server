@@ -497,8 +497,9 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
   // SRV-KARTA-RASPON (Ductus#2055 c.7140935386, NF-5 PG-2): the ranges of origin of a revision of a work; Ductus has no such route.
+  // SRV-KARTA-RASPON-RUTA (Ductus#2055, variant A): POST, the owner records the ranges of a revision once.
   "app/api/works/[documentId]/origin-segments/route.ts": {
-    methods: ["GET"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7140935386",
   },
   // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
