@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createAdminActionLog } from "./index.ts";
-import type { WithActor } from "../with-actor.ts";
+import type { WithActor } from "../index.ts";
 
 const TOKEN = "izmisljeni-token-admina-0000000000000000001";
 const COURSE = "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601";
