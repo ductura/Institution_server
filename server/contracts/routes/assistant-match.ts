@@ -31,7 +31,7 @@ const Uuid = Type.String({
 });
 const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
 /** The reference of the segment in the work: 1 to 128 characters without a control character. */
-const SegmentRef = Type.String({ pattern: "^[^\\u0000-\\u001f\\u007f-\\u009f]{1,128}$" });
+export const SegmentRef = Type.String({ pattern: "^[^\\u0000-\\u001f\\u007f-\\u009f]{1,128}$" });
 const Text = Type.String({ minLength: 1, maxLength: 40_000 });
 const RunWords = Type.Integer({ minimum: 8, maximum: 100_000 });
 /** The student's explanation of a finding: 1 to 2000 characters. */

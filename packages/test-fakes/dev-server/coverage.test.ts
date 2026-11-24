@@ -1511,6 +1511,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.origin-composition.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-composition`, as: "nastavnik" },
   },
+  "work.origin-segments.get": {
+    request: { path: `/api/v1/works/${IDS.document}/origin-segments?revision=5`, as: "nastavnik" },
+  },
   "work.event-disputes.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: CREATE_EVENT_DISPUTE,
