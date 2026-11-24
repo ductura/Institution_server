@@ -1578,12 +1578,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [SET_NOTE_KEY, SEAL_NOTE],
     request: { method: "DELETE", path: SEALED_NOTE, as: "student", headers: ORIGIN },
   },
-  "me.self-note-key.get": {
+  "profile.self-note-key.get": {
     before: [SET_NOTE_KEY],
     request: { path: "/api/v1/me/self-note-key", as: "student" },
   },
-  "me.self-note-key.put": { request: SET_NOTE_KEY },
-  "me.self-note-key.delete": {
+  "profile.self-note-key.put": { request: SET_NOTE_KEY },
+  "profile.self-note-key.delete": {
     before: [SET_NOTE_KEY, SEAL_NOTE],
     request: { method: "DELETE", path: "/api/v1/me/self-note-key", as: "student", headers: ORIGIN },
   },

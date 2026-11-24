@@ -306,13 +306,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
-  "me.self-note-key.get": {
+  "profile.self-note-key.get": {
     method: "GET",
     path: "/api/v1/me/self-note-key",
     body: () => undefined,
     live: 200,
   },
-  "me.self-note-key.put": {
+  "profile.self-note-key.put": {
     method: "PUT",
     path: "/api/v1/me/self-note-key",
     body: () => ({
@@ -333,7 +333,7 @@ const SESSION_ROUTES = {
     }),
     live: 200,
   },
-  "me.self-note-key.delete": {
+  "profile.self-note-key.delete": {
     method: "DELETE",
     path: "/api/v1/me/self-note-key",
     body: () => undefined,

@@ -1,5 +1,5 @@
 // SRV-NF6-SIFRA on the dev fake server: the sealed note to self
-// (work.sealed-self-note.*) and the wrapped note key (me.self-note-key.*).
+// (work.sealed-self-note.*) and the wrapped note key (profile.self-note-key.*).
 // Invented data only. The real rules are the RPCs of 20261217150000: the
 // note is the owner's alone (anyone else reads 404), a note needs the key the
 // owner keeps now (409 otherwise), a key is set once and rewrapped only under
@@ -55,11 +55,11 @@ export const SELF_NOTE_SEALED_HANDLERS: Handlers = {
     keptOf(state, params.documentId).note = null;
     return { status: 200, body: snapshot(state, params.documentId) };
   },
-  "me.self-note-key.get": ({ state, account }) => {
+  "profile.self-note-key.get": ({ state, account }) => {
     if (account === null) return { error: "unauthorized" };
     return { status: 200, body: { key: keysOf(state).get(account.id) ?? null } };
   },
-  "me.self-note-key.put": ({ state, account, body, now }) => {
+  "profile.self-note-key.put": ({ state, account, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     if (body.phrase.salt === body.recovery.salt) return { error: "invalid_input" };
     const keys = keysOf(state);
@@ -80,7 +80,7 @@ export const SELF_NOTE_SEALED_HANDLERS: Handlers = {
     keys.set(account.id, key);
     return { status: 200, body: { key } };
   },
-  "me.self-note-key.delete": ({ state, account }) => {
+  "profile.self-note-key.delete": ({ state, account }) => {
     if (account === null) return { error: "unauthorized" };
     if (keysOf(state).delete(account.id)) {
       for (const work of state.works) {

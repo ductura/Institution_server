@@ -108,11 +108,11 @@ SealedNote = {v: 1, keyId, iv, ct}
 
 Tablica `collaboration.self_note_key` (jedan redak po korisniku i ustanovi, prisilni RLS, bez izravnih prava ijedne uloge; pristup samo kroz RPC-ove) i rute:
 
-| Ruta                              | Operacija                 | Svrha                                                                                                                      |
-| --------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/me/self-note-key`    | `me.self-note-key.get`    | `{key}`: omotani zapis ili `null`                                                                                          |
-| `PUT /api/v1/me/self-note-key`    | `me.self-note-key.put`    | postavljanje (`ifVersion: null`, samo kad ključa nema) i ponovno omatanje (`ifVersion` = trenutačna verzija, isti `keyId`) |
-| `DELETE /api/v1/me/self-note-key` | `me.self-note-key.delete` | „počni ispočetka”: u istoj transakciji briše ključ i sve šifrirane poruke studenta (ne i položaje čitanja)                 |
+| Ruta                              | Operacija                      | Svrha                                                                                                                      |
+| --------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/self-note-key`    | `profile.self-note-key.get`    | `{key}`: omotani zapis ili `null`                                                                                          |
+| `PUT /api/v1/me/self-note-key`    | `profile.self-note-key.put`    | postavljanje (`ifVersion: null`, samo kad ključa nema) i ponovno omatanje (`ifVersion` = trenutačna verzija, isti `keyId`) |
+| `DELETE /api/v1/me/self-note-key` | `profile.self-note-key.delete` | „počni ispočetka”: u istoj transakciji briše ključ i sve šifrirane poruke studenta (ne i položaje čitanja)                 |
 
 ```text
 PUT tijelo = {v: 1, keyId, kdf: {alg: "PBKDF2-SHA-256", iterations}, phrase: Wrap, recovery: Wrap, ifVersion}
@@ -147,7 +147,7 @@ Nije dio odluke; ne gradi se.
 
 - migracija `db/main/migrations/20261217150000_self_note_sealed.sql`;
 - pgTAP `db/main/tests/242-self-note-sealed.sql` (katalog, prava, nema tekstualnih stupaca, šifrat nepromijenjen, tuđi pristup, 409/422, brisanje ključa); `237-mentorship-self-note-overview.sql` prilagođen šifratu;
-- rute `server/contracts/routes/self-note-sealed.ts`, vektori `server/contracts/vectors/work.sealed-self-note.*`, `me.self-note-key.*`;
+- rute `server/contracts/routes/self-note-sealed.ts`, vektori `server/contracts/vectors/work.sealed-self-note.*`, `profile.self-note-key.*`;
 - priključak baze `server/database/self-note-sealed/`, HTTP rub `server/http/self-note-sealed/` (montiran u `server/server.ts`);
 - lažni dev server `packages/test-fakes/dev-server/self-note-sealed-routes.ts`.
 

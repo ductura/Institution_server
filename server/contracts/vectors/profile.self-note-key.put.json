@@ -1,5 +1,5 @@
 {
-  "route": "me.self-note-key.put",
+  "route": "profile.self-note-key.put",
   "vectors": [
     {
       "name": "set",

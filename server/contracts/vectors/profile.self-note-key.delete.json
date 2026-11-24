@@ -1,5 +1,5 @@
 {
-  "route": "me.self-note-key.delete",
+  "route": "profile.self-note-key.delete",
   "vectors": [
     {
       "name": "deleted",

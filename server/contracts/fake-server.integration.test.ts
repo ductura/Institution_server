@@ -167,7 +167,7 @@ describe("fake server over HTTP", () => {
     // work.consultation-slot-close.post, work.consultation-tasks.post and
     // work.consultation-task-mark.post five each.
     // SRV-MENTOR-3: work.self-note.put/.delete, work.reading-place.put/.delete and work.seen.post five each.
-    // SRV-NF6-SIFRA: work.sealed-self-note.put/.delete and me.self-note-key.put/.delete five each.
+    // SRV-NF6-SIFRA: work.sealed-self-note.put/.delete and profile.self-note-key.put/.delete five each.
     expect(VECTORS.length - overHttp.length).toBe(691);
   });
 

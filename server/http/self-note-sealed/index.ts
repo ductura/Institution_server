@@ -1,6 +1,6 @@
 // SRV-NF6-SIFRA (Ductus#2055; owner decision B2 of 24 Nov 2026): the HTTP
 // edge of the sealed note to self (work.sealed-self-note.*) and the wrapped
-// note key (me.self-note-key.*). The edge only, as mentorship-follow: a live
+// note key (profile.self-note-key.*). The edge only, as mentorship-follow: a live
 // session cookie (401), for a note the work id decoded once by workIdFromPath
 // (one that is not a work id is the same 404 as another's work, C-23), for a
 // write the media type, the bounded body and its shape, then
@@ -121,11 +121,11 @@ function routeFor(sealed: SelfNoteSealed, contract: Contract): Route {
         if (!empty.ok) return refuse(response, empty.status, empty.reason);
       }
 
-      if (contract.id.startsWith("me.")) {
-        if (contract.id === "me.self-note-key.get") {
+      if (contract.id.startsWith("profile.")) {
+        if (contract.id === "profile.self-note-key.get") {
           return answer(response, contract, () => sealed.readKey(token), keyOf);
         }
-        if (contract.id === "me.self-note-key.delete") {
+        if (contract.id === "profile.self-note-key.delete") {
           return answer(response, contract, () => sealed.deleteKey(token), keyOf);
         }
         const body = await jsonBody(request, response, contract);

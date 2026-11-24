@@ -40,7 +40,7 @@ describe("sealed note to self", () => {
       headers: student,
       body: { ...KEY_BODY, ifVersion: null },
     });
-    expect(contractProblems("me.self-note-key.put", set)).toEqual([]);
+    expect(contractProblems("profile.self-note-key.put", set)).toEqual([]);
     expect(set.json).toMatchObject({ key: { ...KEY_BODY, version: 1 } });
     const again = await send(state, KEY, {
       method: "PUT",

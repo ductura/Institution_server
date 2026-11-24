@@ -140,7 +140,7 @@ export const workSealedSelfNotePut = defineRoute({
   path: "/api/v1/works/{documentId}/sealed-self-note",
   inventory: "app/api/works/[documentId]/sealed-self-note/route.ts",
   access: "student_owner",
-  summary: `Writes the sealed note, replacing the earlier one: {sealed: {v: 1, keyId, iv, ct}}, iv 12 and ct 1296 bytes in base64url. keyId must be the note key the owner keeps now (me.self-note-key.get), else 409 and nothing is written. The server checks only the shape and the lengths; the rules of the text (1 to 280 characters) are the device's. ${NEVER_CLEAR} ${OWNER_ONLY}`,
+  summary: `Writes the sealed note, replacing the earlier one: {sealed: {v: 1, keyId, iv, ct}}, iv 12 and ct 1296 bytes in base64url. keyId must be the note key the owner keeps now (profile.self-note-key.get), else 409 and nothing is written. The server checks only the shape and the lengths; the rules of the text (1 to 280 characters) are the device's. ${NEVER_CLEAR} ${OWNER_ONLY}`,
   request: {
     params,
     contentType: "application/json",
@@ -163,8 +163,8 @@ export const workSealedSelfNoteDelete = defineRoute({
   errors: deleteErrors,
 });
 
-export const meSelfNoteKeyGet = defineRoute({
-  id: "me.self-note-key.get",
+export const profileSelfNoteKeyGet = defineRoute({
+  id: "profile.self-note-key.get",
   method: "GET",
   path: "/api/v1/me/self-note-key",
   inventory: "app/api/me/self-note-key/route.ts",
@@ -175,8 +175,8 @@ export const meSelfNoteKeyGet = defineRoute({
   errors: [error(401, "unauthorized"), error(503, "unavailable")],
 });
 
-export const meSelfNoteKeyPut = defineRoute({
-  id: "me.self-note-key.put",
+export const profileSelfNoteKeyPut = defineRoute({
+  id: "profile.self-note-key.put",
   method: "PUT",
   path: "/api/v1/me/self-note-key",
   inventory: "app/api/me/self-note-key/route.ts",
@@ -199,8 +199,8 @@ export const meSelfNoteKeyPut = defineRoute({
   ],
 });
 
-export const meSelfNoteKeyDelete = defineRoute({
-  id: "me.self-note-key.delete",
+export const profileSelfNoteKeyDelete = defineRoute({
+  id: "profile.self-note-key.delete",
   method: "DELETE",
   path: "/api/v1/me/self-note-key",
   inventory: "app/api/me/self-note-key/route.ts",
@@ -217,5 +217,9 @@ export const sealedSelfNoteRoutes = [
   workSealedSelfNotePut,
   workSealedSelfNoteDelete,
 ] as const;
-export const selfNoteKeyRoutes = [meSelfNoteKeyGet, meSelfNoteKeyPut, meSelfNoteKeyDelete] as const;
+export const selfNoteKeyRoutes = [
+  profileSelfNoteKeyGet,
+  profileSelfNoteKeyPut,
+  profileSelfNoteKeyDelete,
+] as const;
 export const selfNoteSealedRoutes = [...sealedSelfNoteRoutes, ...selfNoteKeyRoutes] as const;

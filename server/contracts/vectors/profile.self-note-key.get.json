@@ -1,5 +1,5 @@
 {
-  "route": "me.self-note-key.get",
+  "route": "profile.self-note-key.get",
   "vectors": [
     {
       "name": "no-key",

@@ -36296,1520 +36296,6 @@
         ]
       }
     },
-    "/api/v1/me/self-note-key": {
-      "delete": {
-        "operationId": "me.self-note-key.delete",
-        "summary": "Starting over after the phrase and the recovery code are both lost: deletes the caller's note key and, in the same transaction, every sealed note of the caller on every work; the reading places stay. Nobody, the institution included, can restore them. Deleting no key changes nothing. Answers {key: null}.",
-        "x-access": "signed_in",
-        "x-inventory": "app/api/me/self-note-key/route.ts",
-        "responses": {
-          "200": {
-            "description": "no key is kept",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "key"
-                  ],
-                  "properties": {
-                    "key": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "type": "object",
-                          "required": [
-                            "v",
-                            "keyId",
-                            "kdf",
-                            "phrase",
-                            "recovery",
-                            "version",
-                            "updatedAt"
-                          ],
-                          "properties": {
-                            "v": {
-                              "const": 1,
-                              "type": "number"
-                            },
-                            "keyId": {
-                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
-                              "type": "string"
-                            },
-                            "kdf": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "alg",
-                                "iterations"
-                              ],
-                              "properties": {
-                                "alg": {
-                                  "const": "PBKDF2-SHA-256",
-                                  "type": "string"
-                                },
-                                "iterations": {
-                                  "minimum": 600000,
-                                  "maximum": 10000000,
-                                  "type": "integer"
-                                }
-                              }
-                            },
-                            "phrase": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "recovery": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "version": {
-                              "minimum": 1,
-                              "type": "integer"
-                            },
-                            "updatedAt": {
-                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
-                              "type": "string"
-                            }
-                          }
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "content_length_invalid, content_length_mismatch, body_stream_error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "content_length_invalid",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "content_length_invalid",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.contentLengthInvalid",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "content_length_mismatch",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "content_length_mismatch",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.contentLengthMismatch",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "body_stream_error",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "body_stream_error",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.bodyStreamError",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unauthorized",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 401,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "origin_missing, origin_mismatch, cross_site",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "origin_missing",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "origin_missing",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.originMissing",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "origin_mismatch",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "origin_mismatch",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.originMismatch",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "cross_site",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "cross_site",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.crossSite",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "408": {
-            "description": "body_timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "body_timeout",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "body_timeout",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.bodyTimeout",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 408,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "body_too_large",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "body_too_large",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "body_too_large",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.bodyTooLarge",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 413,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unavailable",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 503,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-errors": [
-          {
-            "status": 403,
-            "code": "origin_missing",
-            "key": "errors.origin_missing"
-          },
-          {
-            "status": 403,
-            "code": "origin_mismatch",
-            "key": "errors.origin_mismatch"
-          },
-          {
-            "status": 403,
-            "code": "cross_site",
-            "key": "errors.cross_site"
-          },
-          {
-            "status": 413,
-            "code": "body_too_large",
-            "key": "errors.body_too_large"
-          },
-          {
-            "status": 408,
-            "code": "body_timeout",
-            "key": "errors.body_timeout"
-          },
-          {
-            "status": 400,
-            "code": "content_length_invalid",
-            "key": "errors.content_length_invalid"
-          },
-          {
-            "status": 400,
-            "code": "content_length_mismatch",
-            "key": "errors.content_length_mismatch"
-          },
-          {
-            "status": 400,
-            "code": "body_stream_error",
-            "key": "errors.body_stream_error"
-          },
-          {
-            "status": 401,
-            "code": "unauthorized",
-            "key": "errors.unauthorized"
-          },
-          {
-            "status": 503,
-            "code": "unavailable",
-            "key": "errors.unavailable"
-          }
-        ]
-      },
-      "get": {
-        "operationId": "me.self-note-key.get",
-        "summary": "The caller's own note key, wrapped by the phrase and by the recovery code (B2), with its version; null until it is set. Nobody reads another person's key. The server never sees the text, the place of the note, the phrase, the recovery code or the note key.",
-        "x-access": "signed_in",
-        "x-inventory": "app/api/me/self-note-key/route.ts",
-        "responses": {
-          "200": {
-            "description": "the caller's wrapped key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "key"
-                  ],
-                  "properties": {
-                    "key": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "type": "object",
-                          "required": [
-                            "v",
-                            "keyId",
-                            "kdf",
-                            "phrase",
-                            "recovery",
-                            "version",
-                            "updatedAt"
-                          ],
-                          "properties": {
-                            "v": {
-                              "const": 1,
-                              "type": "number"
-                            },
-                            "keyId": {
-                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
-                              "type": "string"
-                            },
-                            "kdf": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "alg",
-                                "iterations"
-                              ],
-                              "properties": {
-                                "alg": {
-                                  "const": "PBKDF2-SHA-256",
-                                  "type": "string"
-                                },
-                                "iterations": {
-                                  "minimum": 600000,
-                                  "maximum": 10000000,
-                                  "type": "integer"
-                                }
-                              }
-                            },
-                            "phrase": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "recovery": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "version": {
-                              "minimum": 1,
-                              "type": "integer"
-                            },
-                            "updatedAt": {
-                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
-                              "type": "string"
-                            }
-                          }
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unauthorized",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 401,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unavailable",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 503,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-errors": [
-          {
-            "status": 401,
-            "code": "unauthorized",
-            "key": "errors.unauthorized"
-          },
-          {
-            "status": 503,
-            "code": "unavailable",
-            "key": "errors.unavailable"
-          }
-        ]
-      },
-      "put": {
-        "operationId": "me.self-note-key.put",
-        "summary": "Sets the caller's note key ({v: 1, keyId, kdf, phrase, recovery, ifVersion: null}, only when none is kept) or rewraps the same key under a new phrase or recovery code (ifVersion the current version, the same keyId); the version then rises by one. Any other case (a key already there, none there, another keyId, another version) is 409 and changes nothing, so two devices never overwrite each other. kdf PBKDF2-SHA-256 with 600000 to 10000000 iterations; each wrap has its own 16-byte salt, a 12-byte iv and 48 bytes of wrapped key, in base64url. The server never sees the text, the place of the note, the phrase, the recovery code or the note key.",
-        "x-access": "signed_in",
-        "x-inventory": "app/api/me/self-note-key/route.ts",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": false,
-                "type": "object",
-                "required": [
-                  "v",
-                  "keyId",
-                  "kdf",
-                  "phrase",
-                  "recovery",
-                  "ifVersion"
-                ],
-                "properties": {
-                  "v": {
-                    "const": 1,
-                    "type": "number"
-                  },
-                  "keyId": {
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
-                    "type": "string"
-                  },
-                  "kdf": {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "alg",
-                      "iterations"
-                    ],
-                    "properties": {
-                      "alg": {
-                        "const": "PBKDF2-SHA-256",
-                        "type": "string"
-                      },
-                      "iterations": {
-                        "minimum": 600000,
-                        "maximum": 10000000,
-                        "type": "integer"
-                      }
-                    }
-                  },
-                  "phrase": {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "salt",
-                      "iv",
-                      "ct"
-                    ],
-                    "properties": {
-                      "salt": {
-                        "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                        "type": "string"
-                      },
-                      "iv": {
-                        "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                        "type": "string"
-                      },
-                      "ct": {
-                        "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "recovery": {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "salt",
-                      "iv",
-                      "ct"
-                    ],
-                    "properties": {
-                      "salt": {
-                        "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                        "type": "string"
-                      },
-                      "iv": {
-                        "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                        "type": "string"
-                      },
-                      "ct": {
-                        "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "ifVersion": {
-                    "anyOf": [
-                      {
-                        "minimum": 1,
-                        "type": "integer"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-max-body-bytes": 2048,
-        "responses": {
-          "200": {
-            "description": "the caller's wrapped key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "key"
-                  ],
-                  "properties": {
-                    "key": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "type": "object",
-                          "required": [
-                            "v",
-                            "keyId",
-                            "kdf",
-                            "phrase",
-                            "recovery",
-                            "version",
-                            "updatedAt"
-                          ],
-                          "properties": {
-                            "v": {
-                              "const": 1,
-                              "type": "number"
-                            },
-                            "keyId": {
-                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
-                              "type": "string"
-                            },
-                            "kdf": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "alg",
-                                "iterations"
-                              ],
-                              "properties": {
-                                "alg": {
-                                  "const": "PBKDF2-SHA-256",
-                                  "type": "string"
-                                },
-                                "iterations": {
-                                  "minimum": 600000,
-                                  "maximum": 10000000,
-                                  "type": "integer"
-                                }
-                              }
-                            },
-                            "phrase": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "recovery": {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "salt",
-                                "iv",
-                                "ct"
-                              ],
-                              "properties": {
-                                "salt": {
-                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "iv": {
-                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
-                                  "type": "string"
-                                },
-                                "ct": {
-                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "version": {
-                              "minimum": 1,
-                              "type": "integer"
-                            },
-                            "updatedAt": {
-                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
-                              "type": "string"
-                            }
-                          }
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "content_length_invalid, content_length_mismatch, body_stream_error, invalid_json",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "content_length_invalid",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "content_length_invalid",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.contentLengthInvalid",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "content_length_mismatch",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "content_length_mismatch",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.contentLengthMismatch",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "body_stream_error",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "body_stream_error",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.bodyStreamError",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "invalid_json",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "invalid_json",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.invalidJson",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 400,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unauthorized",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unauthorized",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 401,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "origin_missing, origin_mismatch, cross_site",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "origin_missing",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "origin_missing",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.originMissing",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "origin_mismatch",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "origin_mismatch",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.originMismatch",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "error"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "cross_site",
-                          "type": "string"
-                        },
-                        "code": {
-                          "const": "cross_site",
-                          "type": "string"
-                        },
-                        "messageKey": {
-                          "const": "errors.crossSite",
-                          "type": "string"
-                        },
-                        "status": {
-                          "const": 403,
-                          "type": "number"
-                        },
-                        "requestId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "408": {
-            "description": "body_timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "body_timeout",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "body_timeout",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.bodyTimeout",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 408,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "conflict",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "conflict",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.conflict",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 409,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "body_too_large",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "body_too_large",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "body_too_large",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.bodyTooLarge",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 413,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "unsupported_media_type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unsupported_media_type",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unsupported_media_type",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unsupportedMediaType",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 415,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "invalid_input",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "invalid_input",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "invalid_input",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.invalidInput",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 422,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "code": {
-                      "const": "unavailable",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.unavailable",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 503,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-errors": [
-          {
-            "status": 403,
-            "code": "origin_missing",
-            "key": "errors.origin_missing"
-          },
-          {
-            "status": 403,
-            "code": "origin_mismatch",
-            "key": "errors.origin_mismatch"
-          },
-          {
-            "status": 403,
-            "code": "cross_site",
-            "key": "errors.cross_site"
-          },
-          {
-            "status": 413,
-            "code": "body_too_large",
-            "key": "errors.body_too_large"
-          },
-          {
-            "status": 408,
-            "code": "body_timeout",
-            "key": "errors.body_timeout"
-          },
-          {
-            "status": 400,
-            "code": "content_length_invalid",
-            "key": "errors.content_length_invalid"
-          },
-          {
-            "status": 400,
-            "code": "content_length_mismatch",
-            "key": "errors.content_length_mismatch"
-          },
-          {
-            "status": 400,
-            "code": "body_stream_error",
-            "key": "errors.body_stream_error"
-          },
-          {
-            "status": 401,
-            "code": "unauthorized",
-            "key": "errors.unauthorized"
-          },
-          {
-            "status": 415,
-            "code": "unsupported_media_type",
-            "key": "errors.unsupported_media_type"
-          },
-          {
-            "status": 400,
-            "code": "invalid_json",
-            "key": "errors.invalid_json"
-          },
-          {
-            "status": 422,
-            "code": "invalid_input",
-            "key": "errors.invalid_input"
-          },
-          {
-            "status": 409,
-            "code": "conflict",
-            "key": "errors.conflict"
-          },
-          {
-            "status": 503,
-            "code": "unavailable",
-            "key": "errors.unavailable"
-          }
-        ]
-      }
-    },
     "/api/v1/mentorships/{id}/key-dates": {
       "get": {
         "operationId": "mentorship.key-dates.get",
@@ -46360,6 +44846,1520 @@
             "status": 403,
             "code": "forbidden",
             "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/me/self-note-key": {
+      "delete": {
+        "operationId": "profile.self-note-key.delete",
+        "summary": "Starting over after the phrase and the recovery code are both lost: deletes the caller's note key and, in the same transaction, every sealed note of the caller on every work; the reading places stay. Nobody, the institution included, can restore them. Deleting no key changes nothing. Answers {key: null}.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/me/self-note-key/route.ts",
+        "responses": {
+          "200": {
+            "description": "no key is kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "key"
+                  ],
+                  "properties": {
+                    "key": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "v",
+                            "keyId",
+                            "kdf",
+                            "phrase",
+                            "recovery",
+                            "version",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "v": {
+                              "const": 1,
+                              "type": "number"
+                            },
+                            "keyId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                              "type": "string"
+                            },
+                            "kdf": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "alg",
+                                "iterations"
+                              ],
+                              "properties": {
+                                "alg": {
+                                  "const": "PBKDF2-SHA-256",
+                                  "type": "string"
+                                },
+                                "iterations": {
+                                  "minimum": 600000,
+                                  "maximum": 10000000,
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            "phrase": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "recovery": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "version": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "updatedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
+      "get": {
+        "operationId": "profile.self-note-key.get",
+        "summary": "The caller's own note key, wrapped by the phrase and by the recovery code (B2), with its version; null until it is set. Nobody reads another person's key. The server never sees the text, the place of the note, the phrase, the recovery code or the note key.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/me/self-note-key/route.ts",
+        "responses": {
+          "200": {
+            "description": "the caller's wrapped key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "key"
+                  ],
+                  "properties": {
+                    "key": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "v",
+                            "keyId",
+                            "kdf",
+                            "phrase",
+                            "recovery",
+                            "version",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "v": {
+                              "const": 1,
+                              "type": "number"
+                            },
+                            "keyId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                              "type": "string"
+                            },
+                            "kdf": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "alg",
+                                "iterations"
+                              ],
+                              "properties": {
+                                "alg": {
+                                  "const": "PBKDF2-SHA-256",
+                                  "type": "string"
+                                },
+                                "iterations": {
+                                  "minimum": 600000,
+                                  "maximum": 10000000,
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            "phrase": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "recovery": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "version": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "updatedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "profile.self-note-key.put",
+        "summary": "Sets the caller's note key ({v: 1, keyId, kdf, phrase, recovery, ifVersion: null}, only when none is kept) or rewraps the same key under a new phrase or recovery code (ifVersion the current version, the same keyId); the version then rises by one. Any other case (a key already there, none there, another keyId, another version) is 409 and changes nothing, so two devices never overwrite each other. kdf PBKDF2-SHA-256 with 600000 to 10000000 iterations; each wrap has its own 16-byte salt, a 12-byte iv and 48 bytes of wrapped key, in base64url. The server never sees the text, the place of the note, the phrase, the recovery code or the note key.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/me/self-note-key/route.ts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "v",
+                  "keyId",
+                  "kdf",
+                  "phrase",
+                  "recovery",
+                  "ifVersion"
+                ],
+                "properties": {
+                  "v": {
+                    "const": 1,
+                    "type": "number"
+                  },
+                  "keyId": {
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                    "type": "string"
+                  },
+                  "kdf": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "alg",
+                      "iterations"
+                    ],
+                    "properties": {
+                      "alg": {
+                        "const": "PBKDF2-SHA-256",
+                        "type": "string"
+                      },
+                      "iterations": {
+                        "minimum": 600000,
+                        "maximum": 10000000,
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "phrase": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "salt",
+                      "iv",
+                      "ct"
+                    ],
+                    "properties": {
+                      "salt": {
+                        "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                        "type": "string"
+                      },
+                      "iv": {
+                        "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                        "type": "string"
+                      },
+                      "ct": {
+                        "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "recovery": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "salt",
+                      "iv",
+                      "ct"
+                    ],
+                    "properties": {
+                      "salt": {
+                        "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                        "type": "string"
+                      },
+                      "iv": {
+                        "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                        "type": "string"
+                      },
+                      "ct": {
+                        "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "ifVersion": {
+                    "anyOf": [
+                      {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 2048,
+        "responses": {
+          "200": {
+            "description": "the caller's wrapped key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "key"
+                  ],
+                  "properties": {
+                    "key": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "v",
+                            "keyId",
+                            "kdf",
+                            "phrase",
+                            "recovery",
+                            "version",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "v": {
+                              "const": 1,
+                              "type": "number"
+                            },
+                            "keyId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                              "type": "string"
+                            },
+                            "kdf": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "alg",
+                                "iterations"
+                              ],
+                              "properties": {
+                                "alg": {
+                                  "const": "PBKDF2-SHA-256",
+                                  "type": "string"
+                                },
+                                "iterations": {
+                                  "minimum": 600000,
+                                  "maximum": 10000000,
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            "phrase": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "recovery": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "salt",
+                                "iv",
+                                "ct"
+                              ],
+                              "properties": {
+                                "salt": {
+                                  "pattern": "^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "iv": {
+                                  "pattern": "^[A-Za-z0-9_-]{16}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "ct": {
+                                  "pattern": "^[A-Za-z0-9_-]{64}(?![\\s\\S])",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "version": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "updatedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error, invalid_json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidJson",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "conflict",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "conflict",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.conflict",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 409,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupportedMediaType",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 400,
+            "code": "invalid_json",
+            "key": "errors.invalid_json"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 409,
+            "code": "conflict",
+            "key": "errors.conflict"
           },
           {
             "status": 503,
@@ -133704,7 +133704,7 @@
       },
       "put": {
         "operationId": "work.sealed-self-note.put",
-        "summary": "Writes the sealed note, replacing the earlier one: {sealed: {v: 1, keyId, iv, ct}}, iv 12 and ct 1296 bytes in base64url. keyId must be the note key the owner keeps now (me.self-note-key.get), else 409 and nothing is written. The server checks only the shape and the lengths; the rules of the text (1 to 280 characters) are the device's. The server never sees the text, the place of the note, the phrase, the recovery code or the note key. Only the student who owns the work; to anyone else, the mentor and the teachers of the work included, and for an unknown or malformed work it is 404.",
+        "summary": "Writes the sealed note, replacing the earlier one: {sealed: {v: 1, keyId, iv, ct}}, iv 12 and ct 1296 bytes in base64url. keyId must be the note key the owner keeps now (profile.self-note-key.get), else 409 and nothing is written. The server checks only the shape and the lengths; the rules of the text (1 to 280 characters) are the device's. The server never sees the text, the place of the note, the phrase, the recovery code or the note key. Only the student who owns the work; to anyone else, the mentor and the teachers of the work included, and for an unknown or malformed work it is 404.",
         "x-access": "student_owner",
         "x-inventory": "app/api/works/[documentId]/sealed-self-note/route.ts",
         "parameters": [
