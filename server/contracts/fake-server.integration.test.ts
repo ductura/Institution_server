@@ -64,8 +64,7 @@ function send(
 function multipartOf(v: FakeVector, body: Record<string, string>): Buffer {
   const boundary = /boundary=([^;]+)/u.exec(v.request.headers?.["content-type"] ?? "")?.[1];
   const schema = ROUTES.find((r) => r.id === v.route)?.request.body as
-    | { properties?: Record<string, { contentMediaType?: string }> }
-    | undefined;
+    { properties?: Record<string, { contentMediaType?: string }> } | undefined;
   const parts = Object.entries(body).map(([name, value]) => {
     const type = schema?.properties?.[name]?.contentMediaType;
     const head =

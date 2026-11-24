@@ -73,11 +73,7 @@ export type AssignmentContent = {
   dueAt: string;
   aiPolicy: AiPolicy;
   aiPurposes: (
-    | "formatting"
-    | "proofreading"
-    | "literature_search"
-    | "transcription"
-    | "translation"
+    "formatting" | "proofreading" | "literature_search" | "transcription" | "translation"
   )[];
   evidenceProfile: "basic" | "extended";
   importAllowed: boolean;
@@ -314,12 +310,7 @@ export type AccessEntry = {
   readonly at: string;
   readonly role: "teacher" | "mentor" | "seminar_teacher" | "unknown";
   readonly surface:
-    | "live_view"
-    | "process_summary"
-    | "fast_path"
-    | "replay"
-    | "submitted_text"
-    | "unknown";
+    "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
 };
 
 export type SettingValue = {
