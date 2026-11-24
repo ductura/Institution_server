@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.108.0",
+    "version": "1.112.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -23535,7 +23535,7 @@
                             ]
                           },
                           "periodStatus": {
-                            "description": "decided: retentionDays is a number; awaiting_decision: retentionDays is null because nobody has decided the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
+                            "description": "decided: retentionDays is a number; awaiting_decision: retentionDays is null because the faculty has not set the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
                             "anyOf": [
                               {
                                 "const": "decided",

@@ -12,7 +12,7 @@ const RetentionPeriodStatus = Type.Union(
   RETENTION_PERIOD_STATUSES.map((status) => Type.Literal(status)),
   {
     description:
-      "decided: retentionDays is a number; awaiting_decision: retentionDays is null because nobody has decided the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
+      "decided: retentionDays is a number; awaiting_decision: retentionDays is null because the faculty has not set the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
   },
 );
 
@@ -32,7 +32,7 @@ export const RetentionClassReport = closed({
   lastRunAt: Type.Union([Type.String({ format: "date-time", maxLength: 24 }), Type.Null()]),
   // SRV-ADMIN-3 (owner decision of 23. 11. 2026., item 5): why a period is what
   // it is. decided: retentionDays is a number; awaiting_decision: retentionDays
-  // is null because nobody has decided it yet (never a made-up period);
+  // is null because the faculty has not set it yet (never a made-up period);
   // never_deleted: the class proves a submission and is never deleted.
   // periodStatusKey is the text of the server's catalogue (locales,
   // adminSettings.retentionPeriod). Optional in v1: new response fields.

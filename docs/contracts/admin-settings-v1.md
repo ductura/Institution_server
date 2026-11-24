@@ -50,14 +50,14 @@ Katalog obrazaca fakulteta (`institution.thesis_form`, `app.read_thesis_forms`) 
 | `periodStatus`      | Kada                                                                         | `retentionDays` | Tekst (`periodStatusKey`)                        |
 | ------------------- | ---------------------------------------------------------------------------- | --------------- | ------------------------------------------------ |
 | `decided`           | rok je određen                                                               | broj dana       | `adminSettings.retentionPeriod.decided`          |
-| `awaiting_decision` | rok nije određen; nije odlučeno ni tko ga određuje                           | `null`          | `adminSettings.retentionPeriod.awaitingDecision` |
+| `awaiting_decision` | rok nije određen; određuje ga fakultet                                       | `null`          | `adminSettings.retentionPeriod.awaitingDecision` |
 | `never_deleted`     | klasa dokazuje predaju i nakon brisanja sadržaja i nikad se ne briše (D-272) | `null`          | `adminSettings.retentionPeriod.neverDeleted`     |
 
 Nijedan rok nije izmišljen. Klasa s `null` rokom ostaje probni prolaz i ništa se ne briše.
 
-### Klase bez roka: za Danielovu odluku prije pilota
+### Klase bez roka: rok određuje fakultet prije pilota
 
-Po odluci 5 rokovi moraju biti određeni prije pilota, a tko ih određuje još nije odlučeno. Danas bez roka (`awaiting_decision`, katalog `server/domain/retention/catalog.ts`, test `server/database/retention-dry-run/index.test.ts`):
+Po odluci 5 rokovi moraju biti određeni prije pilota, a određuje ih fakultet. Danas bez roka (`awaiting_decision`, katalog `server/domain/retention/catalog.ts`, test `server/database/retention-dry-run/index.test.ts`):
 
 | Ključ          | Klasa (Ductus `docs/privacy/06-klase-podataka.md` §2) | Napomena                           |
 | -------------- | ----------------------------------------------------- | ---------------------------------- |
@@ -68,7 +68,7 @@ Po odluci 5 rokovi moraju biti određeni prije pilota, a tko ih određuje još n
 
 Određene ili izvan odluke: `sessions` (30 dana nakon kraja, D-273, briše se) i `receipts` (27: sažeci i potvrde predaje, ne brišu se nikad, D-272).
 
-Pitanja za odluku: (1) tko određuje rokove (fakultet, Ductura ili oboje); (2) rok za svaku od četiri klase. Druge klase koje se ne vode u ovom katalogu (npr. sadržaj tipki iz Ustava v1.9, najkasnije 30 dana nakon predaje) nisu dio ove rute.
+Pitanje za odluku: rok za svaku od četiri klase (rokove određuje fakultet). Druge klase koje se ne vode u ovom katalogu (npr. sadržaj tipki iz Ustava v1.9, najkasnije 30 dana nakon predaje) nisu dio ove rute.
 
 ## 5. Testovi
 
