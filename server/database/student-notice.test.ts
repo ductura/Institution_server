@@ -1,6 +1,6 @@
-// SRV-NG: the notice of the current version for a student of the course, over
-// a fake withActor. Who asks comes only from the session; a row the port
-// cannot vouch for is row_malformed. Every token, id and text is invented.
+// SRV-NG: the notice of the current version for a student of the course or of
+// the mentorship (SRV-MENTOR-NOTICE), over a fake withActor. Who asks comes
+// only from the session; a row the port cannot vouch for is row_malformed. Every token, id and text is invented.
 import { describe, expect, it } from "vitest";
 
 import {
@@ -79,7 +79,20 @@ describe("student notice", () => {
       },
     });
     expect(seen[1]!.values).toEqual([A]);
-    expect(seen[1]!.text).toContain("m.role = 'student' AND m.member_to IS NULL");
+  });
+
+  it("asks for a student of the assignment, by course or by mentorship, never the role alone", async () => {
+    const { port, seen } = reader([actorRow(USER)], [row()]);
+    await port.read(TOKEN, A);
+    const text = seen[1]!.text;
+    // SRV-MENTOR-NOTICE: one helper covers both relations (course and open
+    // mentorship); joining course_member alone left a mentorship's notice 404.
+    expect(text).toContain(
+      "a.id = ANY ((SELECT institution.actor_assignment_ids('{student}'))::uuid[])",
+    );
+    expect(text).not.toMatch(/teacher|course_member/u);
+    // read_at and acknowledged_at are the caller's own, from the session.
+    expect(text.match(/student_id = \(SELECT app\.current_user_id\(\)\)/gu)).toHaveLength(2);
   });
 
   it("a session that no longer stands is unauthenticated; no row is not_found", async () => {
