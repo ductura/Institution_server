@@ -293,13 +293,27 @@ function repoFiles(overlay: Record<string, string> = {}): Files {
   const virtual = new Map(
     Object.entries(overlay).map(([path, text]) => [join(REPO_ROOT, path).toLowerCase(), text]),
   );
+  // One walk reads each directory once (F4-SYNC-SRV: with the base's routes
+  // the graph from server/server.ts grew, and re-reading every directory for
+  // every candidate path ran past the 5 s test timeout on CI). The disk does
+  // not change during a walk, so the answers are the same.
+  const entries = new Map<string, readonly string[] | null>();
+  const listing = (dir: string): readonly string[] | null => {
+    let names = entries.get(dir);
+    if (names === undefined) {
+      names = statSync(dir).isDirectory() ? readdirSync(dir) : null;
+      entries.set(dir, names);
+    }
+    return names;
+  };
   const onDisk = (path: string): string | undefined => {
     const rel = relative(REPO_ROOT, path);
     if (rel.startsWith("..") || isAbsolute(rel)) return undefined;
     let current = REPO_ROOT;
     for (const segment of rel.split(sep).filter(Boolean)) {
-      if (!statSync(current).isDirectory()) return undefined;
-      const match = readdirSync(current).find((n) => n.toLowerCase() === segment.toLowerCase());
+      const names = listing(current);
+      if (names === null) return undefined;
+      const match = names.find((n) => n.toLowerCase() === segment.toLowerCase());
       if (match === undefined) return undefined;
       current = join(current, match);
     }
@@ -341,6 +355,20 @@ function resolveModule(files: Files, from: string, specifier: string): string | 
   return undefined;
 }
 
+// The specifiers of a file, parsed once per file and text: every walk below
+// reads the same files except the one line a case adds (F4-SYNC-SRV, see
+// repoFiles). The key holds the whole text, so a changed file parses again.
+const specifierCache = new Map<string, readonly string[]>();
+function specifiersIn(file: string, text: string): readonly string[] {
+  const key = `${file}\0${text}`;
+  let found = specifierCache.get(key);
+  if (found === undefined) {
+    found = [...moduleSpecifiers(file, text), ...pathStrings(file, text)];
+    specifierCache.set(key, found);
+  }
+  return found;
+}
+
 /** Every file reachable from `entry`, as repository paths. */
 function reachable(files: Files, entry: string): string[] {
   const seen = new Set<string>();
@@ -351,7 +379,7 @@ function reachable(files: Files, entry: string): string[] {
     seen.add(file);
     if (!/\.[cm]?ts$/iu.test(file)) continue;
     const text = files.read(file) ?? "";
-    for (const spec of [...moduleSpecifiers(file, text), ...pathStrings(file, text)]) {
+    for (const spec of specifiersIn(file, text)) {
       const next = resolveModule(files, file, spec);
       if (next !== undefined) queue.push(next);
     }
