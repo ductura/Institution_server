@@ -42,6 +42,14 @@ export { createRevisionRestoreRouteFor } from "./revision-restore/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
+export {
+  createProblemReportInboxRoutes,
+  createProblemReportInboxRoutesFor,
+} from "./problem-report-inbox/index.ts";
+export {
+  createAdminActionLogRoute,
+  createAdminActionLogRouteFor,
+} from "./admin-action-log/index.ts";
 export { createRetentionRouteFor } from "./retention/index.ts";
 export { createFacultyRuleRoutesFor } from "./faculty-rules/index.ts";
 export { createAssistantSettingRouteFor } from "./assistant-setting/index.ts";

@@ -127,6 +127,13 @@ export type Operations = {
     success: { status: 200; body: { "acknowledgedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_assignment_id" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "notice_changed" | "unavailable";
   };
+  "institution.admin-actions.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "entries": ({ "at": string; "actorRole": "institution_admin" | "registry_clerk" | "operator"; "action": "role_confirmed" | "role_revoked" | "rule_published" | "threshold_changed" | "hold_placed" | "hold_released" | "export_requested" | "export_approved"; "subjectRole": "teacher" | "institution_admin" | "network_engineer" | "registry_clerk" | null; "outcome": "completed" })[]; "truncated": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.admin-courses.get": {
     params: undefined;
     query: { "academicYear": string };
@@ -918,6 +925,13 @@ export type Operations = {
     success: { status: 200; body: { "status": "submitted"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "blocked" | "stale_revision" | "already_requested" | "not_acknowledged" | "not_open" | "unavailable";
   };
+  "support.problem-report-status.post": {
+    params: { "reference": string };
+    query: undefined;
+    body: { "status": "received" | "resolved" };
+    success: { status: 200; body: { "reference": string; "status": "received" | "resolved"; "statusChangedAt": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
+  };
   "support.problem-report.post": {
     params: undefined;
     query: undefined;
@@ -925,10 +939,17 @@ export type Operations = {
     success: { status: 201; body: { "reference": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
   };
+  "support.problem-reports.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "reports": ({ "reference": string; "category": "technical" | "account" | "course"; "routedTo": "network_engineer" | "course_teacher" | "institution_admin"; "courseId": string | null; "description": string; "route": string | null; "appVersion": string; "browser": { "family": "chromium" | "firefox" | "safari" | "other"; "major": number | null }; "syncState": "EDITING" | "SAVING_LOCAL" | "LOCAL_DURABLE" | "SYNCING" | "SYNCED" | "CONFLICT" | "ERROR" | "RECOVERY_REQUIRED" | null; "createdAt": string; "status": "received" | "resolved"; "statusChangedAt": string | null; "statusChangedByRole": "network_engineer" | "course_teacher" | "institution_admin" | null; "statusChangedByMe": boolean })[]; "truncated": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "support.problem-reports.post": {
     params: undefined;
     query: undefined;
-    body: { "category": "technical" | "account" | "course"; "description": string; "appVersion": string };
+    body: { "category": "technical" | "account" | "course"; "description": string; "appVersion": string; "courseId"?: string };
     success: { status: 201; body: { "reference": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
   };

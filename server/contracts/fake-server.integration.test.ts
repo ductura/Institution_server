@@ -161,7 +161,8 @@ describe("fake server over HTTP", () => {
     // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV: work.assistant-match-explanation.post five.
     // SRV-MENTOR-2: the five thesis writes (forms, setting, form state, consent, stage) five each.
     // SRV-IZJAVA-PITANJE: teacher.declaration-question.put five.
-    expect(VECTORS.length - overHttp.length).toBe(606);
+    // SRV-ADMIN-1: support.problem-report-status.post five.
+    expect(VECTORS.length - overHttp.length).toBe(611);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
