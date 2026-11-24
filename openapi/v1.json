@@ -23492,7 +23492,7 @@
                             ]
                           },
                           "periodStatus": {
-                            "description": "decided: retentionDays is a number; awaiting_decision: retentionDays is null because nobody has decided the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
+                            "description": "decided: retentionDays is a number; awaiting_decision: retentionDays is null because the faculty has not set the period yet (none is ever made up); never_deleted: the class proves a submission and is never deleted.",
                             "anyOf": [
                               {
                                 "const": "decided",
