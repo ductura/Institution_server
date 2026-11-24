@@ -1849,6 +1849,13 @@ export type Operations = {
     success: { status: 200; body: { "parts": ({ "kind": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "percent": number })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "work.origin-segments.get": {
+    params: { "documentId": string };
+    query: { "revision"?: string };
+    body: undefined;
+    success: { status: 200; body: { "revision": number | null; "segments": ({ "blockId": string; "start": number; "end": number; "kind": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "segmentRef": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.origin-thresholds.get": {
     params: { "documentId": string };
     query: undefined;

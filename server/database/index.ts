@@ -500,6 +500,10 @@ export {
   type OriginKindName,
   type OriginPart,
   type OriginRecordOutcome,
+  type OriginSegment,
+  type OriginSegmentInput,
+  type OriginSegmentsOutcome,
+  type OriginSegmentsRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
   createDeclarationQuestionPort,
