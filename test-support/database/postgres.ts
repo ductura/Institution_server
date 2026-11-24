@@ -124,7 +124,10 @@ export function exclusive<T>(db: TestDatabase, work: () => Promise<T>): Promise<
   return turnsOf(db).exclusive(work);
 }
 
-/** Resolves once no turn of `db` waits or runs, turns queued meanwhile included. */
+/**
+ * Resolves once no turn of `db` waits or runs, turns queued meanwhile
+ * included. Not from inside a turn of `db`: it would wait for itself.
+ */
 export function settled(db: TestDatabase): Promise<void> {
   return turnsOf(db).settled();
 }
