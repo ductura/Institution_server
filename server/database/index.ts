@@ -762,6 +762,13 @@ export {
   type SelfNoteState,
   type WorkPlace,
 } from "./mentorship-follow/index.ts";
+export {
+  createSelfNoteSealed,
+  type SealedNote,
+  type SealedRefusal,
+  type SelfNoteKeyWrite,
+  type SelfNoteSealed,
+} from "./self-note-sealed/index.ts";
 export { createNotifications } from "./notifications/index.ts";
 export {
   ASSISTANT_REQUEST_STATES,

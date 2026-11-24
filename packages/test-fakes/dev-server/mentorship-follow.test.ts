@@ -12,7 +12,7 @@ const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
 const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 7 };
 
 describe("note to self", () => {
-  it("is kept for the owner and is 404 for the teacher", async () => {
+  it("keeps no text, keeps the reading place for the owner and is 404 for the teacher", async () => {
     const state = createState();
     const student = { ...(await signIn(state, "student")), ...ORIGIN };
     const teacher = { ...(await signIn(state, "nastavnik")), ...ORIGIN };
@@ -22,17 +22,16 @@ describe("note to self", () => {
       body: { text: "Izmišljena bilješka.", place: PLACE },
     });
     expect(contractProblems("work.self-note.put", put)).toEqual([]);
-    expect(put.json).toMatchObject({ note: { text: "Izmišljena bilješka.", place: PLACE } });
+    // SRV-NF6-SIFRA: the text is dropped; the note is sealed through work.sealed-self-note.put.
+    expect(put.json).toEqual({ note: null, readingPlace: null });
+    expect(JSON.stringify(state)).not.toContain("Izmišljena bilješka.");
     expect((await send(state, SELF_NOTE, { headers: teacher })).status).toBe(404);
     const reading = await send(state, `/api/v1/works/${IDS.document}/reading-place`, {
       method: "PUT",
       headers: student,
       body: { place: PLACE },
     });
-    expect(reading.json).toMatchObject({
-      note: { text: "Izmišljena bilješka." },
-      readingPlace: { place: PLACE },
-    });
+    expect(reading.json).toMatchObject({ note: null, readingPlace: { place: PLACE } });
     const deleted = await send(state, SELF_NOTE, { method: "DELETE", headers: student });
     expect(deleted.json).toMatchObject({ note: null, readingPlace: { place: PLACE } });
   });

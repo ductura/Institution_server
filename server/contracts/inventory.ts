@@ -650,6 +650,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
   },
+  // SRV-NF6-SIFRA (Ductus#2055 c.7120208960; owner decision B2 of 24 Nov 2026): the sealed note to self and the wrapped note key; Ductus has no such routes.
+  "app/api/works/[documentId]/sealed-self-note/route.ts": {
+    methods: ["GET", "PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7120208960",
+  },
+  "app/api/me/self-note-key/route.ts": {
+    methods: ["GET", "PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7120208960",
+  },
   "app/api/works/[documentId]/reading-place/route.ts": {
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
