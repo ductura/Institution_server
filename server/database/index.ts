@@ -24,6 +24,7 @@ export {
 } from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
 export {
   createInstitutionConfigStore,
   facultyRulesProblems,

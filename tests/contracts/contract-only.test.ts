@@ -58,6 +58,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
@@ -227,6 +228,18 @@ const SRV_1408 = [
   "institution.teaching-group-members.put",
 ];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
+const SRV_MENTOR_2 = [
+  "institution.thesis-forms.get",
+  "institution.thesis-forms.post",
+  "institution.thesis-settings.get",
+  "institution.thesis-settings.put",
+  "work.thesis-forms.get",
+  "work.thesis-form.put",
+  "work.mentor-consent.get",
+  "work.mentor-consent.put",
+  "work.thesis-stage.get",
+  "work.thesis-stage.put",
+];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -543,6 +556,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorNotesRoutesFor(databases.main)",
     ids: SRV_1413,
     routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisRoutesFor(databases.main)",
+    ids: SRV_MENTOR_2,
+    routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -943,6 +961,7 @@ describe("routes the entry point mounts itself", () => {
       "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
+      ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",

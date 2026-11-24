@@ -1,0 +1,3 @@
+# Obrasci fakulteta, suglasnost mentora i stanje nakon predaje (HTTP)
+
+`createThesisRoutesFor` (SRV-MENTOR-2) poslužuje deset ruta iz `server/contracts/routes/thesis.ts`: popis obrazaca fakulteta i objavu nove verzije (`/api/v1/institution/thesis-forms`), postavku fakulteta (`/api/v1/institution/thesis-settings`), stanje obrazaca rada, suglasnost mentora i stanje nakon predaje (`/api/v1/works/{documentId}/thesis-forms`, `/mentor-consent`, `/thesis-stage`). Pristup odlučuje baza; adapter provjerava oblik zahtjeva i greške `ZD401`–`ZD422` pretvara u zatvorene riječi ugovora. Odgovori koriste `Cache-Control: no-store`.
