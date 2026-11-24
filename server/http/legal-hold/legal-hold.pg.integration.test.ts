@@ -5,7 +5,7 @@
 // hold of another institution is 404. All persons, cases and reasons are invented.
 import { readFileSync } from "node:fs";
 
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { createTestDatabase } from "../../../test-support/database/index.ts";
 import type { WithActor } from "../../database/index.ts";
@@ -29,12 +29,29 @@ it("places a hold, refuses its own release, releases it as another administrator
     );
     const { rows } = await db.query<{ name: string; val: string }>("SELECT name, val FROM ref");
     const ids = new Map(rows.map(({ name, val }) => [name, val]));
-    const withActor: WithActor = async (token, run) => {
+    // One connection serves every withActor of this test, so the calls take
+    // turns, as on a pool of one connection. A route schedules its session
+    // activity touch after its answer (session/activity.ts) without awaiting
+    // it; run side by side on this connection, the touch mixed its token, role
+    // and savepoints into the next request's and ended the test's transaction
+    // (ZEL-SRV-SESIJA-UTRKA). Production takes a connection per call.
+    let turn: Promise<unknown> = Promise.resolve();
+    const settled = async (): Promise<void> => {
+      for (let last = turn; ; last = turn) {
+        await last;
+        if (last === turn) return;
+      }
+    };
+    // The token of each activity touch, in order, and every failed one.
+    const touches: string[] = [];
+    const failed = vi.spyOn(console, "error");
+    const actorTransaction: WithActor = async (token, run) => {
       await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
       await db.exec("SET LOCAL ROLE ductus_app");
       try {
         return await run({
           async query<Row>(text: string, values?: readonly unknown[]) {
+            if (text.includes("identity.touch_current_session()")) touches.push(token ?? "");
             const { rows: found } = await db.query<Row>(text, [...(values ?? [])]);
             return { rows: found, rowCount: found.length };
           },
@@ -42,6 +59,11 @@ it("places a hold, refuses its own release, releases it as another administrator
       } finally {
         await db.exec("RESET ROLE");
       }
+    };
+    const withActor: WithActor = (token, run) => {
+      const mine = turn.then(() => actorTransaction(token, run));
+      turn = mine.catch(() => undefined);
+      return mine;
     };
     const server = await startServer({
       host: "127.0.0.1",
@@ -133,8 +155,19 @@ it("places a hold, refuses its own release, releases it as another administrator
         }),
       ]);
       expect((await call(LEA, "GET", BASE)).body).toEqual({ holds: [] });
+
+      // The place and the release were touched once each, in their turn, with
+      // their own session, and no touch failed.
+      await settled();
+      expect(touches).toEqual([IVA.repeat(43), BORIS.repeat(43)]);
+      expect(
+        failed.mock.calls.filter(([first]) => first === "session activity not recorded:"),
+      ).toEqual([]);
     } finally {
       await server.close();
+      // A touch still running would meet the rollback of close().
+      await settled();
+      failed.mockRestore();
     }
   } finally {
     await db.close();
