@@ -67,6 +67,7 @@ import {
   createStudentNoticeRouteFor,
   createStudentAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
+  createStudentConversationsRouteFor,
   createStudentWriteRoutesFor,
   createHealthRoute,
   createReadyRoute,
@@ -1386,6 +1387,13 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-NG: a live session naming an assignment it is no student of gets 404.
+  // SRV-ASIST-CITANJE: a live session naming an assignment it is no student of gets 404.
+  "student.assistant-conversations.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/assistant-conversations`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.notice.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/notice`,
@@ -2117,6 +2125,7 @@ const FACTORIES = [
   "createMerlinPackageRoutesFor",
   "createTeacherSubmissionsBulkRoutesFor",
   "createAssistantRoutesFor",
+  "createStudentConversationsRouteFor",
   "createStatementRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
@@ -2243,6 +2252,7 @@ const MOUNTED = [
   ...createMerlinPackageRoutesFor(databases.main),
   ...createTeacherSubmissionsBulkRoutesFor(databases.main, ORIGIN),
   ...createAssistantRoutesFor(databases.main),
+  createStudentConversationsRouteFor(databases.main),
   ...createStatementRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
