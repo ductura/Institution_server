@@ -1379,6 +1379,19 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // The receipt PDF reads through the same readers: no submission of the caller is 404.
+  "student.receipt-pdf.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/pdf`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.receipt-pdf.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submissions/${randomUUID()}/pdf`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1213: a live session that may not read that declaration gets 404 (ZD403).
   "teacher.declaration.get": {
     method: "GET",
