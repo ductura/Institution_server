@@ -188,6 +188,14 @@ export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
 export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
+export { createRosterImports } from "./roster-imports.ts";
+export type {
+  RosterConfirmOutcome,
+  RosterDatabaseStatus,
+  RosterImportCandidate,
+  RosterImports,
+  RosterPreviewOutcome,
+} from "./roster-imports.ts";
 export type {
   CourseGroup,
   CourseGroupsOutcome,

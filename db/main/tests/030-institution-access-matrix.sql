@@ -194,7 +194,9 @@ SELECT bag_eq(
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
-        'mentorship_opening'],
+        'mentorship_opening',
+        -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
+        'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -331,7 +333,9 @@ SELECT bag_eq(
     'work_thesis_form_event: work_thesis_form_event_owner ALL to ductus_identity',
     'work_mentor_consent_event: work_mentor_consent_event_owner ALL to ductus_identity',
     'work_thesis_stage_event: work_thesis_stage_event_owner ALL to ductus_identity',
-    'mentorship_opening: mentorship_opening_owner ALL to ductus_identity'
+    'mentorship_opening: mentorship_opening_owner ALL to ductus_identity',
+    'roster_import: roster_import_owner ALL to ductus_identity',
+    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -378,7 +382,9 @@ SELECT bag_eq(
         'merlin_package_download: merlin_package_download_no_truncate 34 O',
         'submission_withdrawal_setting: submission_withdrawal_setting_immutable 27 O',
         'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O',
-        'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O'],
+        'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O',
+        'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
+        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -595,7 +601,15 @@ SELECT bag_eq(
     'insert_consultation_slot(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer)',
     'consultation_slot_details(p_document_id text) definer app',
     'request_consultation_slot_detail(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer) definer app',
-    'close_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_reason text) definer app'
+    'close_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_reason text) definer app',
+    'refuse_roster_import_change()',
+    'roster_import_max_rows()',
+    'roster_import_valid_for()',
+    'roster_name_key(p_name text)',
+    'roster_import_admin(OUT user_id uuid, OUT institution_id uuid)',
+    'roster_import_ineligible(p_user uuid, p_actor uuid)',
+    'preview_roster_import(p_course_id uuid, p_source text, p_rows jsonb) definer app',
+    'confirm_roster_import(p_import_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

@@ -888,6 +888,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",
   },
+  // SRV-ADMIN-2 (NF-7 OA-10): the administrator's import of a course's students; Ductus has no such route.
+  "app/api/institution/admin/courses/[courseId]/roster-imports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133893",
+  },
+  "app/api/institution/admin/roster-imports/[importId]/confirm/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133893",
+  },
 };
 
 /**
