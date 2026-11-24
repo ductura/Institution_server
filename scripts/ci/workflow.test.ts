@@ -12,9 +12,15 @@ const ALL_JOBS = ["scope", ...jobsFor("full")];
 const SHARD_ENV = "\n          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}\n";
 const MATRIX = (legs: string) =>
   `\n      fail-fast: false\n      matrix:\n        shard: [${legs}]\n`;
-// checks runs three legs, database two.
-const LEGS: Readonly<Record<string, string>> = { checks: "1, 2, 3", database: "1, 2" };
+// database runs three legs; checks runs the static leg and four test legs.
+const LEGS: Readonly<Record<string, string>> = { database: "1, 2, 3" };
 const LEG_NAME = /^ {4}name: .+ \(\$\{\{ matrix\.shard \}\}\/\$\{\{ strategy\.job-total \}\}\)$/;
+// SRV-CI-UBRZANJE: the legs of checks, each test leg its own vitest shard i/n.
+const STATIC_LEG = "provjere";
+const TEST_LEGS = ["1/4", "2/4", "3/4", "4/4"];
+const CHECKS_MATRIX = `\n      fail-fast: false\n      matrix:\n        leg: [${[STATIC_LEG, ...TEST_LEGS].join(", ")}]\n`;
+const CHECKS_SHARD_ENV = "\n          SHARD: ${{ matrix.leg }}\n";
+const CHECKS_LEG_NAME = /^ {4}name: Provjere i testovi \(\$\{\{ matrix\.leg \}\}\)$/;
 // pnpm test:database as its two vitest runs, each with the leg's shard.
 const DATABASE_TESTS =
   /\n {8}run: \|\n {10}pnpm exec vitest run --project database --shard="\$SHARD"\n {10}pnpm test:integration:pg --shard="\$SHARD"\n/;
@@ -187,24 +193,26 @@ describe("ci.yml", () => {
       expect(checks).toMatch(new RegExp(`\\n {8}run: pnpm ${script}\\n`));
     }
     for (const script of ["test:unit", "test:integration"]) {
-      expect(checks).toContain(`${SHARD_ENV}        run: pnpm ${script} --shard="$SHARD"\n`);
+      expect(checks).toContain(`${CHECKS_SHARD_ENV}        run: pnpm ${script} --shard="$SHARD"\n`);
     }
-    // Each static check runs on one leg that exists, the property tests on two
-    // legs (two seeds per run, as before); the sharded tests run on every leg.
-    // ZEL-CI-SRV: equality, the release dry run, the contract check and both
-    // images run once per run, on leg 1, instead of once per leg.
+    // Each static check runs on the static leg, the property tests on two test
+    // legs (two seeds per run, as before); the sharded tests on every test leg.
+    // SRV-CI-UBRZANJE: the static leg runs in parallel with the test legs;
+    // every check still runs once per run, as on leg 1 before (ZEL-CI-SRV).
+    const onStatic = `matrix.leg == '${STATIC_LEG}'`;
     const legs: Record<string, string> = {
-      "pnpm typecheck": "matrix.shard == 1",
-      "node scripts/db/migrations-ledger.ts --base": "matrix.shard == 1",
-      "pnpm lint": "matrix.shard == 1",
-      "pnpm format:check": "matrix.shard == 1",
-      "pnpm test:property": "matrix.shard != 1",
-      "pnpm test:equality": "matrix.shard == 1",
-      "pnpm release:check": "matrix.shard == 1",
-      "pnpm contracts:breaking FETCH_HEAD":
-        "github.event_name == 'pull_request' && matrix.shard == 1",
-      "docker build -f infra/web/Dockerfile -t ductura-web:ci .": "matrix.shard == 1",
-      "docker build -f infra/web/Dockerfile --target test-server": "matrix.shard == 1",
+      "pnpm typecheck": onStatic,
+      "node scripts/db/migrations-ledger.ts --base": onStatic,
+      "pnpm lint": onStatic,
+      "pnpm format:check": onStatic,
+      "pnpm test:property": "matrix.leg == '3/4' || matrix.leg == '4/4'",
+      "pnpm test:equality": onStatic,
+      "pnpm release:check": onStatic,
+      "pnpm contracts:breaking FETCH_HEAD": `github.event_name == 'pull_request' && ${onStatic}`,
+      "docker build -f infra/web/Dockerfile -t ductura-web:ci .": onStatic,
+      "docker build -f infra/web/Dockerfile --target test-server": onStatic,
+      "pnpm test:unit --shard": `matrix.leg != '${STATIC_LEG}'`,
+      "pnpm test:integration --shard": `matrix.leg != '${STATIC_LEG}'`,
     };
     for (const [command, leg] of Object.entries(legs)) {
       const at = checks.indexOf(command);
@@ -212,32 +220,35 @@ describe("ci.yml", () => {
       expect(at, command).toBeGreaterThan(0);
       expect(step, command).toContain(`\n        if: ${leg}\n`);
     }
-    // Every condition names a leg of the matrix: a step on leg 4 of 3 would never run.
-    for (const leg of checks.matchAll(/matrix\.shard [!=]= (\d+)/g)) {
-      expect(LEGS["checks"]!.split(", "), leg[0]).toContain(leg[1]);
+    // Every condition names a leg of the matrix: a step on a leg that does not exist would never run.
+    const conditions = [...checks.matchAll(/matrix\.leg [!=]= '([^']+)'/g)];
+    expect(conditions.length).toBeGreaterThan(0);
+    for (const leg of conditions) {
+      expect([STATIC_LEG, ...TEST_LEGS], leg[0]).toContain(leg[1]);
     }
-    for (const script of ["test:unit", "test:integration"]) {
-      const at = checks.indexOf(`run: pnpm ${script} `);
-      expect(checks.slice(checks.lastIndexOf("\n      - ", at), at), script).not.toContain("if:");
-    }
+    expect(checks).not.toContain("matrix.shard");
   });
 
-  // Both test jobs run as legs (checks three, database two). Each leg runs its
+  // Both test jobs run as legs (checks four test legs and a static one, database three). Each leg runs its
   // share of the files of the unit, integration, database and integration-pg
   // projects, and in database its share of the main pgTAP files (ZEL-CI-SRV,
   // scripts/db/native-db.ts); database runs every other step (migrations, the
-  // other pgTAP, VS-1) on both legs, checks each other step on one or two
+  // other pgTAP, VS-1) on every leg, checks each other step on one or two
   // legs. ci-ok sees one result per job, failed when any leg failed.
   it("splits the vitest projects across the legs of checks and database, nothing else", () => {
-    for (const name of ["checks", "database"]) {
+    for (const [name, matrixText, legName] of [
+      ["checks", CHECKS_MATRIX, CHECKS_LEG_NAME],
+      ["database", MATRIX(LEGS["database"]!), LEG_NAME],
+    ] as const) {
       const body = job(name);
-      const matrix = body.indexOf(MATRIX(LEGS[name]!));
-      expect(body.split("\n")[2], name).toMatch(LEG_NAME);
+      const matrix = body.indexOf(matrixText);
+      expect(body.split("\n")[2], name).toMatch(legName);
       expect(matrix, name).toBeGreaterThan(body.indexOf("\n    strategy:\n"));
       expect(matrix, name).toBeLessThan(body.indexOf("\n    steps:\n"));
       expect([...body.matchAll(/--shard="\$SHARD"/g)], name).toHaveLength(2);
     }
     expect([...CI.matchAll(/strategy:|--shard=/g)]).toHaveLength(6);
+    expect([...job("checks").matchAll(/SHARD: /g)]).toHaveLength(2);
     const database = job("database");
     const tests = database.search(DATABASE_TESTS);
     expect(database.slice(database.indexOf("- name: Testovi migracija"), tests)).toContain(
