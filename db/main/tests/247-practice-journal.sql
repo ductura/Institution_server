@@ -150,6 +150,27 @@ SELECT is(pg_temp.ask('marko', format('SELECT count(*) FROM app.practice_signoff
 SELECT is(pg_temp.ask(a, format('SELECT count(*) FROM app.practice_signoffs(%L::uuid)', pg_temp.pl())), 'ZD404: not found', a || ' does not read the signatures')
   FROM (VALUES ('iva'), ('vesna'), ('boris'), ('dora'), ('lea')) AS t(a);
 
+-- 6b. A NULL id is the same refusal, and the digest does not depend on DateStyle.
+SELECT is(pg_temp.ask(a, 'SELECT count(*) FROM app.practice_entries(NULL)'), 'ZD404: not found', a || ': a NULL practice id is ZD404')
+  FROM (VALUES ('ana'), ('marko')) AS t(a);
+SELECT is(pg_temp.ask('ana', 'SELECT count(*) FROM app.practice_signoffs(NULL)'), 'ZD404: not found', 'a NULL id for the signatures too');
+SELECT is(pg_temp.ask('ana', format('SELECT app.add_practice_entry(NULL, %L::date, 1, %L, NULL)', pg_temp.d(-3), 'Tekst.')), 'ZD404: not found', 'a NULL id for an entry');
+CREATE TEMP TABLE dg (iso text, dmy text);
+INSERT INTO dg (iso) SELECT entries_sha256 FROM institution.practice_entries_digest(pg_temp.pl()::uuid, current_date);
+SET LOCAL datestyle = 'SQL, DMY';
+UPDATE dg SET dmy = (SELECT entries_sha256 FROM institution.practice_entries_digest(pg_temp.pl()::uuid, current_date));
+SET LOCAL datestyle = 'ISO, MDY';
+SELECT is((SELECT dmy FROM dg), (SELECT iso FROM dg), 'the digest is the same under another DateStyle');
+
+-- 6c. A revoked teacher keeps no mentor part: no list, no read, no signature.
+SELECT is(pg_temp.ask('marko', 'SELECT count(*) FROM app.practice_placements()'), '2', 'before the revocation Marko lists both practices');
+UPDATE institution.institution_role SET revoked_at = now()
+ WHERE user_id = pg_temp.id('marko') AND role = 'teacher';
+SELECT is(pg_temp.ask('marko', 'SELECT count(*) FROM app.practice_placements()'), '0', 'after the revocation he lists none');
+SELECT is(pg_temp.ask('marko', format('SELECT count(*) FROM app.practice_entries(%L::uuid)', pg_temp.pl())), 'ZD404: not found', 'and reads no entries');
+SELECT is(pg_temp.sign('marko', pg_temp.pl(), -1), 'ZD404: not found', 'and signs nothing');
+SELECT is(pg_temp.ask('ana', 'SELECT count(*) FROM app.practice_placements()'), '2', 'the student still lists the practices');
+
 -- 7. A closed mentorship takes no entry; the table refuses UPDATE, DELETE and TRUNCATE for the owner too.
 UPDATE institution.mentorship SET ended_at = now() WHERE id = pg_temp.id('ms1');
 SELECT is(pg_temp.add('ana', pg_temp.pl(), -2, '2', 'Nakon kraja.'), 'ZD409: placement closed', 'an ended mentorship closes the practice');

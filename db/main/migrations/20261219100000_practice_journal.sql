@@ -150,7 +150,7 @@ AS $$
   SELECT count(*)::integer,
          encode(sha256(convert_to('[' || coalesce(string_agg(
            '{"correctsEntryId":' || coalesce(to_json(e.corrects_entry_id::text)::text, 'null')
-           || ',"date":' || to_json(e.entry_date::text)::text
+           || ',"date":' || to_json(to_char(e.entry_date, 'YYYY-MM-DD'))::text
            || ',"entryId":' || to_json(e.id::text)::text
            || ',"hours":' || CASE WHEN e.hours = trunc(e.hours) THEN trunc(e.hours)::text ELSE e.hours::text END
            || ',"text":' || to_json(e.body)::text || '}', ',' ORDER BY e.entry_date, e.seq), '') || ']', 'UTF8')), 'hex'),
@@ -173,18 +173,21 @@ DECLARE
   v_placement record;
 BEGIN
   SELECT r.user_id, r.institution_id INTO o_user_id, o_institution_id FROM institution.require_actor() r;
-  IF p_placement_id IS NOT NULL THEN
-    SELECT p.student_id, p.starts_on, p.ends_on, m.mentor_id, m.ended_at IS NULL AS open
-      INTO v_placement
-      FROM institution.practice_placement p
-      JOIN institution.mentorship m ON m.id = p.mentorship_id AND m.institution_id = p.institution_id
-     WHERE p.id = p_placement_id AND p.institution_id = o_institution_id;
-  END IF;
-  IF v_placement IS NULL THEN
+  IF p_placement_id IS NULL THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
+  SELECT p.student_id, p.starts_on, p.ends_on, m.mentor_id, m.ended_at IS NULL AS open
+    INTO v_placement
+    FROM institution.practice_placement p
+    JOIN institution.mentorship m ON m.id = p.mentorship_id AND m.institution_id = p.institution_id
+   WHERE p.id = p_placement_id AND p.institution_id = o_institution_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
+  END IF;
+  -- The mentor part needs the mentorship and a confirmed, unrevoked teacher role
+  -- (as institution.actor_mentorship_role): a revoked teacher keeps no access.
   o_part := CASE WHEN v_placement.student_id = o_user_id THEN 'student'
-                 WHEN v_placement.mentor_id = o_user_id THEN 'mentor' END;
+                 WHEN v_placement.mentor_id = o_user_id AND institution.actor_has_role('teacher') THEN 'mentor' END;
   IF o_part IS NULL THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
@@ -285,7 +288,7 @@ DECLARE
   v_id uuid;
 BEGIN
   SELECT * INTO v_ctx FROM institution.practice_context(p_placement_id);
-  IF v_ctx.o_part <> 'mentor' THEN
+  IF v_ctx.o_part <> 'mentor' OR institution.lock_teacher_role(v_ctx.o_user_id) IS NULL THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
   IF p_through_date IS NULL OR p_through_date < v_ctx.o_starts_on OR p_through_date > v_ctx.o_ends_on
@@ -338,7 +341,8 @@ BEGIN
       JOIN institution.mentorship m ON m.id = p.mentorship_id AND m.institution_id = p.institution_id
       LEFT JOIN identity.person_name n ON n.user_id = p.student_id AND n.institution_id = p.institution_id
      WHERE p.institution_id = v_actor.institution_id
-       AND (p.student_id = v_actor.user_id OR m.mentor_id = v_actor.user_id)
+       AND (p.student_id = v_actor.user_id
+            OR (m.mentor_id = v_actor.user_id AND institution.actor_has_role('teacher')))
      ORDER BY p.starts_on DESC, p.created_at DESC, p.id;
 END
 $$;
