@@ -18,8 +18,11 @@ import { z } from "zod";
 export const FACULTY_RULES_FORMAT = "ductura-faculty-rules-v1";
 /** The `identity.institution.slug` CHECK, matched exactly. */
 export const FACULTY_SLUG_PATTERN = /^[a-z0-9-]{2,32}$/u;
-/** The style catalogue has one file, whose faculty is fpzg (D-83). */
-export const CITATION_STYLES = ["fpzg"] as const;
+/**
+ * The style IDs of the settings catalogue (`citation.style`, D-83), which stays
+ * the source: `server/citation-styles.test.ts` fails when the lists differ.
+ */
+export const CITATION_STYLES = ["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"] as const;
 /** `institution.is_work_language`. */
 export const WORK_LANGUAGES = ["hr", "en"] as const;
 /** The bound of `app.institution_config.rules` and of a rules file. */

@@ -153,6 +153,18 @@ describe("ci.yml", () => {
     expect(tests).toBeGreaterThan(count);
   });
 
+  // ZEL-SRV-PGCTL: `pg_ctl: could not start server` names no reason; the job
+  // prints the last lines of every postmaster log of it when it fails.
+  it("the database job prints the postmaster logs of every cluster when it fails", () => {
+    const database = job("database");
+    const step = database.slice(database.indexOf("- name: Dijagnostika PostgreSQL-a"));
+    expect(step).toMatch(/if: failure\(\)/);
+    for (const log of ["pg.log", "main.log", "logs.log", "native.log", ".stack/vs1/postgres.log"]) {
+      expect(step.slice(0, step.indexOf("\n      #"))).toContain(log);
+    }
+    expect(step).toContain("tail -n 100");
+  });
+
   // S-1F-d (DAN-797): the pgTAP of every database runs in the database job,
   // which ci-ok requires on the full profile, after that database is migrated,
   // with nothing that would let the step fail without failing the job.
