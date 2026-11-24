@@ -7,6 +7,13 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // are those of the editor prototype; this package imports nothing from the
 // server, so the test in server/http/text-check-config keeps them equal to
 // server/domain/settings/text-check-rules.ts. No work content is in the answer.
+// SRV-V20-STIL-STUDENT (Val 20): citationStyle is the citation style of the same
+// institution (the catalogue key citation.style, fpzg when none is set), so a
+// student can format the bibliography without reading the institution level.
+
+// The closed list of the catalogue key citation.style; kept equal to
+// server/domain/settings/catalogue.ts by the test in server/http/text-check-config.
+const CITATION_STYLES = ["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"] as const;
 
 export const studentTextCheckConfigGet = defineRoute({
   id: "student.text-check-config.get",
@@ -15,7 +22,7 @@ export const studentTextCheckConfigGet = defineRoute({
   inventory: "app/api/student/assignments/[assignmentId]/text-check-config/route.ts",
   access: "student_enrolled",
   summary:
-    "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
+    "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none) and its citation style (citationStyle, fpzg when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
   request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
   responses: [
     {
@@ -26,6 +33,7 @@ export const studentTextCheckConfigGet = defineRoute({
           maxItems: 32,
         }),
         lektaProfileId: Type.Union([Type.String({ minLength: 1, maxLength: 128 }), Type.Null()]),
+        citationStyle: Type.Union(CITATION_STYLES.map((style) => Type.Literal(style))),
       }),
     },
   ],

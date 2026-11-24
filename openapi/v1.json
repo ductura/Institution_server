@@ -66655,7 +66655,7 @@
     "/api/v1/student/assignments/{assignmentId}/text-check-config": {
       "get": {
         "operationId": "student.text-check-config.get",
-        "summary": "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
+        "summary": "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none) and its citation style (citationStyle, fpzg when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
         "x-access": "student_enrolled",
         "x-inventory": "app/api/student/assignments/[assignmentId]/text-check-config/route.ts",
         "parameters": [
@@ -66679,7 +66679,8 @@
                   "type": "object",
                   "required": [
                     "enabledCheckIds",
-                    "lektaProfileId"
+                    "lektaProfileId",
+                    "citationStyle"
                   ],
                   "properties": {
                     "enabledCheckIds": {
@@ -66700,6 +66701,34 @@
                         },
                         {
                           "type": "null"
+                        }
+                      ]
+                    },
+                    "citationStyle": {
+                      "anyOf": [
+                        {
+                          "const": "fpzg",
+                          "type": "string"
+                        },
+                        {
+                          "const": "apa",
+                          "type": "string"
+                        },
+                        {
+                          "const": "chicago",
+                          "type": "string"
+                        },
+                        {
+                          "const": "ieee",
+                          "type": "string"
+                        },
+                        {
+                          "const": "vancouver",
+                          "type": "string"
+                        },
+                        {
+                          "const": "fusnote",
+                          "type": "string"
                         }
                       ]
                     }
