@@ -64,6 +64,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
@@ -371,6 +372,8 @@ async function main(): Promise<void> {
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
+      // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
+      ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.

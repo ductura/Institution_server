@@ -105,7 +105,7 @@ Migracija `20261215120000_roster_import.sql`:
 - RPC-ovi `institution.preview_roster_import(uuid, text, jsonb)` i `institution.confirm_roster_import(uuid)` (SECURITY DEFINER, `ductus_app` ih smije izvršiti). Obje tablice imaju prisilni RLS samo s politikom vlasnika; aplikacija ih ne čita izravno.
 - Pristup: samo potvrđeni, neopozvani administrator fakulteta kolegija; redak uloge drži se `FOR SHARE` do kraja transakcije, pa opoziv čeka. Uloga se ne može sama sebi dodijeliti (administratore imenuje operater ili drugi administrator). Administrator ne postaje član kolegija i ne čita njegov sadržaj (C-23).
 - Upis radi kao upis kodom: ista zaključavanja po studentu (`institution.enroll_with_code:<id>`), mjesta u seminarskim grupama drže se `FOR SHARE`, a uklonjeni student bez dopuštenja povratka ne upisuje se.
-- pgTAP: `db/main/tests/232-roster-import.sql` (ćelije po ulozi, ulaz, pregled, potvrda, idempotentnost, uklonjeni, istek, nepromjenjivost) i retci u `030-institution-access-matrix.sql`.
+- pgTAP: `db/main/tests/235-roster-import.sql` (ćelije po ulozi, ulaz, pregled, potvrda, idempotentnost, uklonjeni, istek, nepromjenjivost) i retci u `030-institution-access-matrix.sql`.
 
 ## 5. Otvoreno
 

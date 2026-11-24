@@ -895,6 +895,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.thesis-forms.post:body": (() => {
+  const local0 = /^[a-z][a-z0-9-]{1,47}(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,200}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['code'] === 'string') &&
+      local0.test(value['code']) &&
+      (typeof value['title'] === 'string') &&
+      local1.test(value['title']) &&
+      Array.isArray(value['workTypes']) &&
+      value['workTypes'].length <= 4 &&
+      value['workTypes'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'bachelor_thesis')) || ((value === 'master_thesis')) || ((value === 'specialist_thesis')) || ((value === 'doctoral_thesis')))))) { return false }; return true; })(value['workTypes']) &&
+      (typeof value['active'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
+  "institution.thesis-settings.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['mentorConsentRequired'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "institution.work-language.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -3061,6 +3087,39 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.mentor-consent.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.mentor-consent.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.mentor-consent.put:body": (() => {
+  const local0 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\uD800-\uDFFF]){1,1000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['given'] === 'boolean') &&
+      (value['comment'] !== undefined ? ((typeof value['comment'] === 'string') && local0.test(value['comment'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['given', 'comment'].includes(key))
+    )
+  }
+  })(),
   "work.messages.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -3461,6 +3520,71 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['page'] !== undefined ? ((((typeof value['page'] === 'string') && local1.test(value['page'])) || ((value['page'] === null)))) : true) &&
       (value['note'] !== undefined ? ((((typeof value['note'] === 'string') && local2.test(value['note'])) || ((value['note'] === null)))) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['quote', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
+  "work.thesis-form.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[a-z][a-z0-9-]{1,47}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['code'] === 'string') &&
+      local1.test(value['code']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.thesis-form.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['state'] === 'not_submitted')) || ((value['state'] === 'submitted')) || ((value['state'] === 'accepted'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "work.thesis-forms.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.thesis-stage.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.thesis-stage.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.thesis-stage.put:body": (() => {
+  const local0 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['stage'] === 'none')) || ((value['stage'] === 'submitted_to_office')) || ((value['stage'] === 'defense_scheduled')) || ((value['stage'] === 'defended'))) &&
+      (value['defenseAt'] !== undefined ? ((typeof value['defenseAt'] === 'string') && local0.test(value['defenseAt'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['stage', 'defenseAt'].includes(key))
     )
   }
   })(),
