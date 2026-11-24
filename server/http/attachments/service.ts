@@ -9,6 +9,7 @@ import {
 } from "../../database/index.ts";
 
 import { imageDetails } from "./image.ts";
+import { withoutMetadata } from "./metadata.ts";
 import type { AttachmentStorage } from "./storage.ts";
 
 type AddRefusal = Exclude<WorkAttachmentAdd, { status: "added" }>;
@@ -47,10 +48,22 @@ export function createAttachments(withActor: WithActor, storage: AttachmentStora
 
   return {
     async upload(token: string, assignmentId: string, imageBase64: string) {
-      const bytes = Buffer.from(imageBase64, "base64");
-      if (bytes.length > WORK_ATTACHMENT_MAX_BYTES) return { status: "body_too_large" } as const;
-      const image = imageDetails(bytes);
-      if (image === undefined || bytes.toString("base64") !== imageBase64) {
+      const received = Buffer.from(imageBase64, "base64");
+      if (received.length > WORK_ATTACHMENT_MAX_BYTES) {
+        return { status: "body_too_large" } as const;
+      }
+      const image = imageDetails(received);
+      if (image === undefined || received.toString("base64") !== imageBase64) {
+        return { status: "invalid_input" } as const;
+      }
+      // Only the image without location and other metadata is stored, hashed and returned.
+      const bytes = withoutMetadata(received, image.mediaType);
+      const kept = bytes === undefined ? undefined : imageDetails(bytes);
+      if (
+        bytes === undefined ||
+        kept?.pixelWidth !== image.pixelWidth ||
+        kept.pixelHeight !== image.pixelHeight
+      ) {
         return { status: "invalid_input" } as const;
       }
       try {
