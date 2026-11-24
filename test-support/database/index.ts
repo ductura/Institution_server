@@ -9,6 +9,7 @@ export {
   pgliteAllowedIn,
   testDatabaseNamed,
 } from "./create-test-database.ts";
+export { exclusive, settled } from "./postgres.ts";
 export type {
   TestDatabase,
   TestDatabaseEngine,
