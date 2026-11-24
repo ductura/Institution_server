@@ -3,6 +3,10 @@ import type { Handlers } from "./server.ts";
 import { parseInstant, readerOf, type Account, type State } from "./state.ts";
 
 type Slot = Operations["work.consultation-slots.post"]["success"]["body"];
+type Entry = State["consultationSlots"][number];
+
+/** SRV-KONZ-STANJA: an open slot with its topic (null for none), as the server sends it. */
+const withTopic = ({ slot, detail }: Entry): Slot => ({ ...slot, topic: detail?.topic ?? null });
 
 export function workRole(state: State, documentId: string, account: Account | null) {
   return readerOf(
@@ -28,7 +32,7 @@ export const CONSULTATION_SLOT_HANDLERS: Handlers = {
     // SRV-MENTOR-1: a closed slot is left out, as institution.consultation_slots does.
     const slots = state.consultationSlots
       .filter(({ documentId, closed }) => documentId === params.documentId && closed === undefined)
-      .map(({ slot }) => slot)
+      .map(withTopic)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id));
     return { status: 200, body: { slots } };
   },
@@ -41,14 +45,18 @@ export const CONSULTATION_SLOT_HANDLERS: Handlers = {
     ).length;
     if (startsAt === null || pending >= 20) return { error: "invalid_input" };
     const sequence = String(state.consultationSlots.length + 1).padStart(12, "0");
-    const slot: Slot = {
-      id: `c0200000-0000-4000-8000-${sequence}`,
-      startsAt,
-      proposedAt: now.toISOString(),
-      state: "requested",
+    const entry: Entry = {
+      documentId: params.documentId,
+      slot: {
+        id: `c0200000-0000-4000-8000-${sequence}`,
+        startsAt,
+        proposedAt: now.toISOString(),
+        state: "requested",
+      },
+      detail: { topic: body.topic ?? null, preparation: null },
     };
-    state.consultationSlots.push({ documentId: params.documentId, slot });
-    return { status: 201, body: slot };
+    state.consultationSlots.push(entry);
+    return { status: 201, body: withTopic(entry) };
   },
   "work.consultation-slots.patch": ({ state, account, params, body, now }) => {
     const entry = state.consultationSlots.find(
@@ -66,6 +74,6 @@ export const CONSULTATION_SLOT_HANDLERS: Handlers = {
       startsAt,
       state: body.action === "counter" ? "countered" : "confirmed",
     };
-    return { status: 200, body: entry.slot };
+    return { status: 200, body: withTopic(entry) };
   },
 };

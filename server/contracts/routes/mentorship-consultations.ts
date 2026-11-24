@@ -27,7 +27,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END, Name } from "./teacher.ts";
 
 /** 1 to max code points with a non-space; NFC, control and bidi characters stay the server's (422). */
-const Text = (max: number) =>
+export const Text = (max: number) =>
   Type.String({ pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,${max}}${END}` });
 /** A UUID in any case; the server reads it in lowercase. */
 const AnyCaseUuid = Type.String({

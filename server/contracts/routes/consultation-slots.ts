@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { SLOT_TOPIC_MAX, Text } from "./mentorship-consultations.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END } from "./teacher.ts";
 
@@ -27,7 +28,19 @@ const Slot = closed({
     Type.Literal("countered"),
     Type.Literal("confirmed"),
   ]),
+  /**
+   * SRV-KONZ-STANJA (1.113.0): the topic the student gave with the request, or
+   * null for none. Optional only so that a client of 1.112.0 stays valid; the
+   * server always sends it.
+   */
+  topic: Type.Optional(Type.Union([Text(SLOT_TOPIC_MAX), Type.Null()])),
 });
+// SRV-KONZ-STANJA (1.113.0): post takes an optional topic (1 to 200 code points,
+// not blank; NFC, control and bidi characters are the server's 422) and every
+// answer carries it. The list keeps only requested, countered and confirmed;
+// withdraw, decline and cancel are work.consultation-slot-close.post and a
+// closed slot is read by work.consultation-slot-details.get. A route summary
+// is part of the published contract (contracts:breaking), so it stays as is.
 const errors = [
   error(401, "unauthorized"),
   error(403, "forbidden"),
@@ -68,7 +81,7 @@ export const consultationSlotRoutes = [
     request: {
       ...mutation,
       params: closed({ documentId: DocumentId }),
-      body: closed({ startsAt: InputTime }),
+      body: closed({ startsAt: InputTime, topic: Type.Optional(Text(SLOT_TOPIC_MAX)) }),
     },
     responses: [{ status: 201, description: "the requested slot", body: Slot }],
     errors: mutationErrors,
