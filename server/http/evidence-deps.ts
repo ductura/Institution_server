@@ -8,6 +8,12 @@
 // or shared bucket and no fake in production. Protocol 2 (DAN-518, the
 // worker signs) only under the process's own DUCTUS_EVIDENCE_ASYNC_SIGNING
 // exactly "1" (DAN-821-3); off by default, so no unsigned acceptance.
+// DAN-963: a complete DUCTUS_KMS_* configuration (server/settings/kms.ts)
+// selects the AWS KMS signer in every NODE_ENV, over the official SDK client;
+// any KMS variable that is not usable refuses (server.ts does not start), and
+// never falls back to the development signer.
+import { KMSClient } from "@aws-sdk/client-kms";
+
 import { createEvidenceCommitter } from "../database/index.ts";
 import { createEvidenceService } from "../evidence/index.ts";
 import {
@@ -18,9 +24,13 @@ import {
   loadEvidenceStorageConfig,
 } from "../external/storage/index.ts";
 import {
+  AwsKmsEd25519SigningKeyProvider,
+  AwsSdkKmsEd25519Transport,
+  type KmsCommandSender,
   PersistentDevelopmentEd25519SigningKeyProvider,
   type SigningKeyProvider,
 } from "../external/keys/index.ts";
+import { kmsProblems, kmsSettings, type KmsSettings } from "../settings/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { createEvidenceCommitRoute } from "./evidence-commit.ts";
@@ -59,7 +69,49 @@ export const REFUSING_SIGNER: SigningKeyProvider = Object.freeze({
   publicVerificationKey: () => Promise.reject(new Error("signing_key_unavailable")),
 });
 
-function signerOf(env: Env, repositoryRoot: string): SigningKeyProvider {
+/** The deadline of one KMS call (Sign, Verify, GetPublicKey); on expiry 503 signing. */
+export const KMS_CALL_TIMEOUT_MS = 5_000;
+
+/** Makes the KMS client of a complete configuration; tests hand in the fake KMS. */
+export type KmsClientFactory = (settings: KmsSettings) => KmsCommandSender;
+
+/**
+ * The official SDK client in the configured region. Credentials come from the
+ * SDK's default chain of the running host (role), never from this repository.
+ */
+const sdkKmsClient: KmsClientFactory = (settings) => new KMSClient({ region: settings.region });
+
+export type EvidenceIngestOptions = {
+  /** The KMS client of a complete configuration; absent is the SDK's own. */
+  readonly kmsClient?: KmsClientFactory;
+};
+
+function kmsSignerOf(settings: KmsSettings, kmsClient: KmsClientFactory): SigningKeyProvider {
+  const transport = new AwsSdkKmsEd25519Transport(kmsClient(settings), {
+    timeoutMs: KMS_CALL_TIMEOUT_MS,
+  });
+  // The configured key ARN is the one trusted version (kms.ts takes no alias):
+  // a signature of any other key neither signs nor verifies here.
+  return new AwsKmsEd25519SigningKeyProvider(transport, settings.keyId, [settings.keyId]);
+}
+
+function signerOf(
+  env: Env,
+  repositoryRoot: string,
+  options: EvidenceIngestOptions,
+): SigningKeyProvider {
+  const kms = kmsSettings(env);
+  if (kms !== null) {
+    try {
+      return kmsSignerOf(kms, options.kmsClient ?? sdkKmsClient);
+    } catch {
+      // A client that cannot be made: no signature, and no development key instead.
+      return REFUSING_SIGNER;
+    }
+  }
+  // Some KMS variable is set but not usable: the server does not start
+  // (server.ts, kmsProblems); here, too, it is never the development signer.
+  if (kmsProblems(env).length > 0) return REFUSING_SIGNER;
   try {
     return new PersistentDevelopmentEd25519SigningKeyProvider(env, repositoryRoot);
   } catch {
@@ -95,13 +147,18 @@ function payloadsOf(env: Env): Payloads {
 export function evidenceIngestDependencies(
   env: Env,
   repositoryRoot: string,
+  options: EvidenceIngestOptions = {},
 ): EvidenceIngestDependencies & { readonly signer: SigningKeyProvider } {
   // A copy, as Ductus handed over: later changes of the process environment change nothing.
   const own: Env = { ...env };
   // Only the process's own value: Ductus read env.X === "1", which an
   // inherited value (or a polluted Object.prototype) would also satisfy.
   const asyncSigning = Object.hasOwn(own, ASYNC_SIGNING_FLAG) && own[ASYNC_SIGNING_FLAG] === "1";
-  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own), asyncSigning };
+  return {
+    signer: signerOf(own, repositoryRoot, options),
+    payloads: payloadsOf(own),
+    asyncSigning,
+  };
 }
 
 /** The commit route over the main database and this process's signer and storage. */
