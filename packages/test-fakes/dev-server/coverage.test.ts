@@ -1523,6 +1523,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.origin-segments.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-segments?revision=5`, as: "nastavnik" },
   },
+  "work.origin-segments.post": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/origin-segments`,
+      as: "student",
+      headers: ORIGIN,
+      body: {
+        revision: 4,
+        segments: [
+          { blockId: "1b0c2d3e-4f50-4a61-8b72-0c1d2e3f4a51", start: 0, end: 40, kind: "typed" },
+        ],
+      },
+    },
+  },
   "work.event-disputes.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: CREATE_EVENT_DISPUTE,

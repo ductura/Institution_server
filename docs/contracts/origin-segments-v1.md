@@ -39,6 +39,23 @@ Zadatak: SRV-KARTA-RASPON `podrijetlo-rasponi-odlomaka` (Ductus#2055, nalog c.71
 - Rasponi istog bloka se ne preklapaju (smiju se dodirivati).
 - Greške: 401 `unauthorized`; 404 `not_found` (tuđi, nepoznat ili neispravan rad, isti odgovor); 422 `invalid_input` (upit koji nije točno `?revision=n`, n cijeli broj od 0 do 2^53−1); 503 `unavailable` (i za redak koji ugovor ne dopušta).
 
+## Ruta `work.origin-segments.post`
+
+SRV-KARTA-RASPON-RUTA (Ductus#2055, varijanta A; API 1.115.0). `POST /api/v1/works/{documentId}/origin-segments`, pristup `student_owner`, zaštita mutacije kao ostale POST rute (origin, `sec-fetch-site`), `application/json`, tijelo najviše 2 MiB.
+
+```
+{ revision: integer,                  // revizija koju je student spremio
+  segments: [                         // 1 do 10000
+    { blockId, start, end, kind, segmentRef?, changeId? }
+  ] }
+201 { revision, recorded }            // recorded = broj zapisanih raspona
+```
+
+- Upisuje samo student vlasnik rada. Nastavnik, mentor i bilo tko drugi dobivaju 404 kao za nepoznat rad; rasponi se čitaju samo kroz `work.origin-segments.get`.
+- Jedan upis po reviziji; drugi upis iste revizije je 409 `conflict` i ništa ne mijenja.
+- 422 `invalid_input`: tijelo koje nije točno ovo, prazan raspon (`end` ≤ `start`), revizija koju student nije spremio, `pasted_known` bez `changeId` ili `changeId` druge vrste ili drugog rada, preklapanje raspona istog bloka.
+- Ostale greške: 401 `unauthorized`, 415, 400 `invalid_json`, 413, 408, 403 (zaštita mutacije), 503 `unavailable`.
+
 ## Pohrana
 
 Migracija `20261218100000_origin_segments.sql`:
@@ -51,5 +68,6 @@ Migracija `20261218100000_origin_segments.sql`:
 ## Poznate granice
 
 - Rasponi su ono što je klijent zabilježio, kao i `work_origin_record` (SRV-0910): poslužitelj provjerava oblik, vlasništvo, spremljenu reviziju i nepreklapanje, ali ne uspoređuje raspone s tekstom revizije (granice bloka nisu provjerene na poslužitelju).
-- Upis raspona za sada ima samo RPC i port (`OriginKind.recordSegments`), bez HTTP rute, kao i upis promjena podrijetla iz SRV-0910. Ruta upisa je zaseban zadatak.
+- Upis raspona ide rutom `work.origin-segments.post` (SRV-KARTA-RASPON-RUTA). Upis promjena podrijetla iz SRV-0910 još nema HTTP rutu, pa `changeId` (i time `pasted_known`) klijent za sada ne može dobiti.
+- Tijelo je ograničeno na 2 MiB, pa 10000 raspona stane samo kad su kratki (oko 200 bajtova po rasponu).
 - Prazna revizija nema snimku (najmanje jedan raspon), pa za nju čitanje vraća prethodnu zapisanu reviziju; `revision` u odgovoru to pokazuje.

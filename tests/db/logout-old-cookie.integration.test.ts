@@ -1194,6 +1194,18 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-KARTA-RASPON-RUTA: the same on the owner's write of the ranges.
+  "work.origin-segments.post": {
+    method: "POST",
+    path: "/api/v1/works/izmisljeni-rad-0001/origin-segments",
+    body: () => ({
+      revision: 1,
+      segments: [
+        { blockId: "1b0c2d3e-4f50-4a61-8b72-0c1d2e3f4a51", start: 0, end: 9, kind: "typed" },
+      ],
+    }),
+    live: 404,
+  },
   // SRV-1230: a live session that has no such work gets 404 on the match with the assistant.
   "work.assistant-match.get": {
     method: "GET",
