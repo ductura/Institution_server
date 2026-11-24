@@ -9,11 +9,23 @@
 // answers are server/institution/student-submission-route.ts and
 // student-requirements-route.ts; a body the contract does not accept, or a
 // throw, is 503 and the throw is reported, never a partial answer.
+// SRV-NF1-PREDANO: GET /api/v1/student/assignment-submissions
+// (student.assignment-submissions.get), when each own submission was confirmed,
+// has no assignment id; its answer is student-assignment-submissions-route.ts.
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
-import { createMySubmissionStateReader, type MySubmissionStateReader } from "../database/index.ts";
-import { readStudentRequirements, readStudentSubmission } from "../institution/index.ts";
+import {
+  createMyAssignmentSubmissionsReader,
+  createMySubmissionStateReader,
+  type MyAssignmentSubmissionsReader,
+  type MySubmissionStateReader,
+} from "../database/index.ts";
+import {
+  readStudentAssignmentSubmissions,
+  readStudentRequirements,
+  readStudentSubmission,
+} from "../institution/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
 import type { Databases } from "./databases.ts";
@@ -68,6 +80,40 @@ function createRoute(id: string, reader: MySubmissionStateReader, read: Read): R
   };
 }
 
+/** The own submissions of every assignment at once, over the list reader. */
+export function createStudentAssignmentSubmissionsRoute(
+  reader: MyAssignmentSubmissionsReader,
+): Route {
+  const id = "student.assignment-submissions.get";
+  const { contract, body } = contractOf(id);
+  return {
+    contract,
+    async handle(request, response) {
+      const site = request.headersDistinct["sec-fetch-site"];
+      if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        return sendProblem(response, 403, "forbidden");
+      }
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      try {
+        const answer = await readStudentAssignmentSubmissions(reader, token);
+        if (answer.status !== 200)
+          return sendProblem(response, answer.status, PROBLEM[answer.status]);
+        if (Value.Check(body, answer.body)) return sendJson(response, 200, answer.body);
+        reportServerError(
+          "route",
+          new Error("answer outside the contract"),
+          requestIdOf(response),
+          id,
+        );
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), id);
+      }
+      return sendProblem(response, 503, "unavailable");
+    },
+  };
+}
+
 /** The two routes over one reader: the submission state, then the requirements. */
 export function createStudentSubmissionRoutes(reader: MySubmissionStateReader): Route[] {
   return [
@@ -82,5 +128,10 @@ export function createStudentSubmissionRoutesFor(
 ): Route[] {
   const reader = createMySubmissionStateReader(main.withActor);
   // SRV-30: the teacher's read of one student's state shares the reader.
-  return [...createStudentSubmissionRoutes(reader), createTeacherSubmissionReceiptRoute(reader)];
+  // SRV-NF1-PREDANO: the list of the same states, over its own one statement.
+  return [
+    ...createStudentSubmissionRoutes(reader),
+    createTeacherSubmissionReceiptRoute(reader),
+    createStudentAssignmentSubmissionsRoute(createMyAssignmentSubmissionsReader(main.withActor)),
+  ];
 }

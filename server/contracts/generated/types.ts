@@ -771,6 +771,13 @@ export type Operations = {
     success: { status: 200; body: { "wordRange": { "min": number; "max": number | null } | { "min": null; "max": number } | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "student.assignment-submissions.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submittedAt": string; "afterDeadline": boolean } | { "assignmentId": string; "submittedAt": null; "afterDeadline": null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
   "student.assignment-work.get": {
     params: undefined;
     query: undefined;

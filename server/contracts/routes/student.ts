@@ -330,6 +330,51 @@ export const studentAssignmentRequirementsGet = defineRoute({
   errors: assignmentReadErrors,
 });
 
+// SRV-NF1-PREDANO (Ductus#2055, NF-1 P-6): when each own submission was confirmed, for the
+// whole list at once. A route of its own, not two fields of student.assignment-work.get: a
+// new member of an existing route is a major release of @ductura/contracts
+// (scripts/release/README.md, QA #92). The values are those of the signed receipt
+// (receipt.payload.requestedAt and .afterDeadline), so the list never says more than
+// student.submission.get would for the same assignment.
+/** isSubmissionInstant: the database clock with exactly six fraction digits, in UTC. */
+const Microsecond = Type.String({
+  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+});
+
+export const studentAssignmentSubmissionsGet = defineRoute({
+  id: "student.assignment-submissions.get",
+  method: "GET",
+  path: "/api/v1/student/assignment-submissions",
+  inventory: "app/api/student/assignment-submissions/route.ts",
+  access: "signed_in",
+  summary:
+    "When the caller's own submission was confirmed, for every assignment student.assignment-work.get would list at the same instant: one row per assignment, by assignmentId (lowercase). With a signed receipt, submittedAt and afterDeadline are receipt.payload.requestedAt and receipt.payload.afterDeadline of the receipt student.submission.get returns. With no submission, a withdrawn one or one still waiting for its receipt (ceka), both are null. The identity comes from the session only, so the list holds only the caller's own assignments. A row or a receipt the read cannot vouch for makes the whole answer 503, never a partial list.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "ready (an empty list when the student has no course)",
+      body: closed({
+        assignments: Type.Array(
+          Type.Union([
+            closed({
+              assignmentId: LowerUuid,
+              submittedAt: Microsecond,
+              afterDeadline: Type.Boolean(),
+            }),
+            closed({
+              assignmentId: LowerUuid,
+              submittedAt: Type.Null(),
+              afterDeadline: Type.Null(),
+            }),
+          ]),
+        ),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(503, "unavailable")],
+});
+
 const NoteText = Type.String({
   pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\u0000\\uD800-\\uDFFF]){1,600}${END}`,
 });
@@ -385,6 +430,7 @@ export const studentRoutes = [
   studentNoticeGet,
   studentSubmissionGet,
   studentAssignmentRequirementsGet,
+  studentAssignmentSubmissionsGet,
   studentSubmissionNotesGet,
   studentSubmissionNotesPost,
 ] as const;

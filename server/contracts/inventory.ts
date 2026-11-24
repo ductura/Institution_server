@@ -290,6 +290,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
   },
+  // SRV-NF1-PREDANO (Ductus#2055 c.7145546227, NF-1 P-6): when each own submission was
+  // confirmed, for the same set of assignments; Ductus has no such route.
+  "app/api/student/assignment-submissions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7145546227",
+  },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],

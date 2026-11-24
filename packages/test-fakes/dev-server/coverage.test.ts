@@ -997,6 +997,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.assignment-work.get": {
     request: { path: "/api/v1/student/assignment-work", as: "student" },
   },
+  "student.assignment-submissions.get": {
+    request: { path: "/api/v1/student/assignment-submissions", as: "student" },
+  },
   "student.assignments.get": { request: { path: "/api/v1/student/assignments", as: "student" } },
   "student-work.start.post": {
     request: {
@@ -2329,6 +2332,25 @@ describe("student submission on the dev fake server", () => {
       receipt: JSON.parse(submitted.body).receipt,
     });
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("lists the receipt's time only to its own student", async () => {
+    const state = createState();
+    const list = SCENARIOS["student.assignment-submissions.get"].request;
+    const before = JSON.parse((await run(state, list)).body).assignments;
+    expect(before.length).toBeGreaterThan(0);
+    for (const row of before) expect(row).toMatchObject({ submittedAt: null, afterDeadline: null });
+    const submit = SCENARIOS["submission.submit.post"];
+    for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+    const { payload } = JSON.parse((await run(state, submit.request)).body).receipt;
+    const after = JSON.parse((await run(state, list)).body).assignments;
+    expect(after).toContainEqual({
+      assignmentId: payload.assignmentId,
+      submittedAt: payload.requestedAt,
+      afterDeadline: payload.afterDeadline,
+    });
+    const other = JSON.parse((await run(state, { ...list, as: "student-2" })).body).assignments;
+    for (const row of other) expect(row).toMatchObject({ submittedAt: null, afterDeadline: null });
   });
 
   it("shows a recorded submission awaiting a receipt", async () => {

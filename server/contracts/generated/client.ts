@@ -113,6 +113,7 @@ export const ROUTE_TABLE = {
   "student-work.works.get": { method: "GET", path: "/api/v1/student/works", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "student.access-log.get": { method: "GET", path: "/api/v1/student/works/{documentId}/access-log", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "student.assignment-requirements.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/requirements", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
+  "student.assignment-submissions.get": { method: "GET", path: "/api/v1/student/assignment-submissions", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
   "student.assignment-work.get": { method: "GET", path: "/api/v1/student/assignment-work", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
   "student.assignments.get": { method: "GET", path: "/api/v1/student/assignments", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
   "student.assistant-conversation.get": { method: "GET", path: "/api/v1/student/assistant/conversations/{conversationId}", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },

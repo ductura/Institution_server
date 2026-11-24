@@ -725,6 +725,8 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      // SRV-NF1-PREDANO: the same states for every own assignment at once.
+      "student.assignment-submissions.get",
     ],
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
@@ -1042,6 +1044,7 @@ describe("routes the entry point mounts itself", () => {
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      "student.assignment-submissions.get",
       "student.receipt-pdf.get",
       "teacher.receipt-pdf.get",
       "student.notice.get",

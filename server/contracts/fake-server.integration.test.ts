@@ -358,6 +358,45 @@ describe("fake server over HTTP", () => {
       expect(await as(name)(route, none)).toEqual({ ok: false, status, code });
   });
 
+  it("the generated client reads when each own submission was confirmed (SRV-NF1-PREDANO)", async () => {
+    const route = "student.assignment-submissions.get";
+    const vector = (name: string) => {
+      const v = VECTORS.find((x) => x.route === route && x.name === name);
+      if (v === undefined) throw new Error(`no vector ${name}`);
+      return v;
+    };
+    const as = (name: string) =>
+      createClient(`http://127.0.0.1:${port}`, (async (url: URL, init: RequestInit) =>
+        fetch(url, {
+          ...init,
+          headers: { ...vector(name).request.headers, [FAKE_VECTOR_HEADER]: name },
+        })) as typeof fetch);
+    const none = { params: undefined, query: undefined, body: undefined };
+    const ready = await as("ready")(route, none);
+    expect(ready).toEqual({
+      ok: true,
+      status: 200,
+      body: vector("ready").response.body,
+      headers: {},
+    });
+    expect(ready.ok ? ready.body.assignments.map((row) => row.afterDeadline) : []).toEqual([
+      null,
+      false,
+      true,
+    ]);
+    expect(await as("ready-empty")(route, none)).toEqual({
+      ok: true,
+      status: 200,
+      body: { assignments: [] },
+      headers: {},
+    });
+    for (const [name, status, code] of [
+      ["signed-out", 401, "unauthorized"],
+      ["unavailable", 503, "unavailable"],
+    ] as const)
+      expect(await as(name)(route, none)).toEqual({ ok: false, status, code });
+  });
+
   it("the generated client reads the student's own access log page by page (DAN-904)", async () => {
     const route = "student.access-log.get";
     const vector = (name: string) => {

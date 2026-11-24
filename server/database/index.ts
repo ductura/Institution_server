@@ -266,6 +266,11 @@ export type {
   StoredSubmissionState,
   StoredWordRange,
 } from "./my-submission-state.ts";
+export { createMyAssignmentSubmissionsReader } from "./my-assignment-submissions.ts";
+export type {
+  MyAssignmentSubmissionsReader,
+  StoredAssignmentSubmission,
+} from "./my-assignment-submissions.ts";
 export {
   createStudentNoticeReader,
   STUDENT_NOTICE_DATABASE_ERROR,
