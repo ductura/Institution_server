@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.112.0",
+    "version": "1.113.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -107755,6 +107755,17 @@
                                 "type": "string"
                               }
                             ]
+                          },
+                          "topic": {
+                            "anyOf": [
+                              {
+                                "pattern": "^(?=[\\s\\S]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         }
                       }
@@ -107962,6 +107973,10 @@
                   "startsAt": {
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)(?![\\s\\S])",
                     "type": "string"
+                  },
+                  "topic": {
+                    "pattern": "^(?=[\\s\\S]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                    "type": "string"
                   }
                 }
               }
@@ -108009,6 +108024,17 @@
                         {
                           "const": "confirmed",
                           "type": "string"
+                        }
+                      ]
+                    },
+                    "topic": {
+                      "anyOf": [
+                        {
+                          "pattern": "^(?=[\\s\\S]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -108725,6 +108751,17 @@
                         {
                           "const": "confirmed",
                           "type": "string"
+                        }
+                      ]
+                    },
+                    "topic": {
+                      "anyOf": [
+                        {
+                          "pattern": "^(?=[\\s\\S]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }

@@ -2873,12 +2873,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "work.consultation-slots.post:body": (() => {
   const local0 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,200}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['startsAt'] === 'string') &&
       local0.test(value['startsAt']) &&
-      Object.getOwnPropertyNames(value).length === 1
+      (value['topic'] !== undefined ? ((typeof value['topic'] === 'string') && local1.test(value['topic'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['startsAt', 'topic'].includes(key))
     )
   }
   })(),

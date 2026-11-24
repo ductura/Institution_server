@@ -30197,7 +30197,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.112.0",
+        "apiVersion": "1.113.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -30213,7 +30213,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.112.0",
+        "apiVersion": "1.113.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -70480,7 +70480,8 @@
             "id": "00000000-0000-4000-8000-000000000001",
             "startsAt": "2026-12-04T12:00:00.000Z",
             "proposedAt": "2026-11-20T11:11:00.000Z",
-            "state": "requested"
+            "state": "requested",
+            "topic": "Izmišljena tema: struktura uvoda"
           }
         ]
       }
@@ -70626,7 +70627,8 @@
         "id": "00000000-0000-4000-8000-000000000001",
         "startsAt": "2026-12-04T12:00:00.000Z",
         "proposedAt": "2026-11-20T11:11:00.000Z",
-        "state": "confirmed"
+        "state": "confirmed",
+        "topic": null
       }
     }
   },
@@ -70659,7 +70661,8 @@
         "id": "00000000-0000-4000-8000-000000000001",
         "startsAt": "2026-12-05T13:00:00.000Z",
         "proposedAt": "2026-11-20T11:11:00.000Z",
-        "state": "countered"
+        "state": "countered",
+        "topic": null
       }
     }
   },
@@ -70691,7 +70694,8 @@
         "id": "00000000-0000-4000-8000-000000000001",
         "startsAt": "2026-12-05T13:00:00.000Z",
         "proposedAt": "2026-11-20T11:11:00.000Z",
-        "state": "confirmed"
+        "state": "confirmed",
+        "topic": null
       }
     }
   },
@@ -71198,7 +71202,41 @@
         "id": "00000000-0000-4000-8000-000000000001",
         "startsAt": "2026-12-04T12:00:00.000Z",
         "proposedAt": "2026-11-20T11:11:00.000Z",
-        "state": "requested"
+        "state": "requested",
+        "topic": null
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slots.post",
+    "name": "requested-with-topic",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-termini-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "topic": "Izmišljena tema: struktura uvoda"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-20T11:11:00.000Z",
+        "state": "requested",
+        "topic": "Izmišljena tema: struktura uvoda"
       }
     }
   },
@@ -71619,6 +71657,36 @@
       },
       "body": {
         "startsAt": "2026-12-04"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slots.post",
+    "name": "invalid-input-blank-topic",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-termini-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "topic": "   "
       }
     },
     "response": {
