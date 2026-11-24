@@ -26,8 +26,9 @@ SELECT is_empty(
      WHERE has_function_privilege(r.rolname, 'app.legal_hold_trail()', 'EXECUTE') $$,
   'the trail of legal holds is private to the two owners');
 SELECT is(pg_get_function_result('app.admin_action_log()'::regprocedure),
-  'TABLE(occurred_at timestamp with time zone, actor_role text, action text, subject_role text, outcome text)',
-  'a row has a time, a role, an action, the role it concerns and the outcome; nothing names a person');
+  'TABLE(occurred_at timestamp with time zone, actor_role text, action text, subject_role text, outcome text,'
+  ' course_id uuid, enrolled_count integer, already_enrolled_count integer, skipped_count integer)',
+  'a row has a time, a role, an action, the role it concerns, the outcome and the counts of an import (240-); nothing names a person');
 SELECT is(pg_get_function_result('app.legal_hold_trail()'::regprocedure),
   'TABLE(occurred_at timestamp with time zone, action text, by_operator boolean)',
   'the trail of holds carries no subject, case or reason');
