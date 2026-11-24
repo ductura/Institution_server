@@ -603,6 +603,13 @@ export type Operations = {
     success: { status: 200; body: { "notifications": ({ "id": string; "targetId": string; "documentId": string; "comment": string; "revisionDueAt": string | null; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
+  "ops.events.get": {
+    params: undefined;
+    query: { "from": string; "to": string; "after"?: string };
+    body: undefined;
+    success: { status: 200; body: { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": null } | { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": number }; headers: {  } };
+    errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "ops.pilot-metrics.get": {
     params: undefined;
     query: { [key: string]: unknown };

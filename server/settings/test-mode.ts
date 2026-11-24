@@ -9,13 +9,13 @@
 // variable, never its value.
 import { isNonProductionBuild } from "./non-production.ts";
 
-type Env = Readonly<Record<string, string | undefined>>;
+export type Env = Readonly<Record<string, string | undefined>>;
 
 const MODE = "DUCTURA_MODE";
 const TEST = "test";
 
-/** The own value: undefined when unset, null when it is not a plain string. */
-function ownValue(env: Env, name: string): string | null | undefined {
+/** The own value: undefined when unset, null when it is not a plain string (also DAN-963). */
+export function ownValue(env: Env, name: string): string | null | undefined {
   const descriptor = Object.getOwnPropertyDescriptor(env, name);
   if (descriptor === undefined) return undefined;
   const value: unknown = descriptor.value;

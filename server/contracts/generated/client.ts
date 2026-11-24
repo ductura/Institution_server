@@ -89,6 +89,7 @@ export const ROUTE_TABLE = {
   "notifications.mentorship-opened.list.get": { method: "GET", path: "/api/v1/notifications/mentorship-opened", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "notifications.read.post": { method: "POST", path: "/api/v1/notifications/{id}/read", body: null, headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"503":["unavailable"]} },
   "notifications.returned-for-revision.list.get": { method: "GET", path: "/api/v1/notifications/returned-for-revision", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
+  "ops.events.get": { method: "GET", path: "/api/v1/ops/events", body: null, headers: [], errors: {"401":["unauthenticated"],"403":["forbidden"],"422":["invalid_input"],"503":["unavailable"]} },
   "ops.pilot-metrics.get": { method: "GET", path: "/api/v1/ops/pilot-metrics", body: null, headers: [], errors: {"401":["unauthenticated"],"403":["forbidden"],"422":["invalid_input"],"503":["unavailable"]} },
   "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, headers: [], errors: {} },
   "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, headers: [], errors: {"503":["unavailable","draining"]} },

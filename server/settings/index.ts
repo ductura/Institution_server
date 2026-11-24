@@ -29,3 +29,4 @@ export {
 } from "./deployment.ts";
 export { isNonProductionBuild } from "./non-production.ts";
 export { testModeProblems } from "./test-mode.ts";
+export { kmsProblems, kmsSettings, type KmsSettings } from "./kms.ts";

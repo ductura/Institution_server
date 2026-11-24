@@ -7,6 +7,8 @@
 import type { Handlers } from "./server.ts";
 
 const MIN_GROUP = 5;
+/** The longest window of ops.events.get: 24 hours, exactly 24 allowed. */
+const WINDOW_MS = 24 * 60 * 60 * 1000;
 const shown = (count: number): 0 | number | null =>
   count > 0 && count < MIN_GROUP ? null : count - (count % MIN_GROUP);
 
@@ -38,5 +40,17 @@ export const OPS_HANDLERS: Handlers = {
           recorded >= MIN_GROUP ? { p50Ms: 1200, p95Ms: 2500 } : { p50Ms: null, p95Ms: null },
       },
     };
+  },
+  // DAN-843-1 (merged from main, F4-SYNC-SRV): the operator's read of the log.
+  // The fake keeps no log chain, so a valid window is an empty page; the
+  // administrator stands in for the operator as above, and the window keeps
+  // the contract's bounds (from before to, at most 24 hours apart).
+  "ops.events.get": ({ account, query }) => {
+    if (account === null) return { error: "unauthenticated" };
+    if (!account.roles.includes("institution_admin")) return { error: "forbidden" };
+    const from = Date.parse(query.from);
+    const to = Date.parse(query.to);
+    if (!(from < to) || to - from > WINDOW_MS) return { error: "invalid_input" };
+    return { status: 200, body: { events: [], next: null } };
   },
 };
