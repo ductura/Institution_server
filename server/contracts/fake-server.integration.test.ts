@@ -168,7 +168,8 @@ describe("fake server over HTTP", () => {
     // work.consultation-task-mark.post five each.
     // SRV-MENTOR-3: work.self-note.put/.delete, work.reading-place.put/.delete and work.seen.post five each.
     // SRV-NF6-SIFRA: work.sealed-self-note.put/.delete and profile.self-note-key.put/.delete five each.
-    expect(VECTORS.length - overHttp.length).toBe(691);
+    // SRV-NF6-SIFRA-2: profile.self-note-key-checked.delete five.
+    expect(VECTORS.length - overHttp.length).toBe(696);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

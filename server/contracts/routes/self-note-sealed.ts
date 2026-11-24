@@ -212,6 +212,40 @@ export const profileSelfNoteKeyDelete = defineRoute({
   errors: [...MUTATION_GUARD, error(401, "unauthorized"), error(503, "unavailable")],
 });
 
+/** A version in a query string: 1 to 999999999 in decimal, no sign, no leading zero. */
+const VersionText = Type.String({ pattern: `^[1-9][0-9]{0,8}${END}` });
+
+/** The key id and the version the checked delete names (profileSelfNoteKeyCheckedDelete). */
+export const SelfNoteKeyCheckedParams = closed({ keyId: Uuid });
+export const SelfNoteKeyCheckedQuery = closed({ ifVersion: Type.Optional(VersionText) });
+
+// SRV-NF6-SIFRA-2 (review of SRV #676, S2): starting over under the key the
+// device holds. profile.self-note-key.delete names nothing, and its contract
+// cannot take a parameter or a 409 without breaking clients of 1.110.0
+// (contracts:breaking), so the check is this route of its own.
+export const profileSelfNoteKeyCheckedDelete = defineRoute({
+  id: "profile.self-note-key-checked.delete",
+  method: "DELETE",
+  path: "/api/v1/me/self-note-key/{keyId}",
+  inventory: "app/api/me/self-note-key/[keyId]/route.ts",
+  access: "signed_in",
+  summary:
+    "Starting over as profile.self-note-key.delete, but only under the key the device names: deletes the caller's note key and, in the same transaction, every sealed note of the caller, only when keyId is the key the caller keeps now and, when the query names ifVersion, only at that version. No key, another keyId or another version is 409 and changes nothing, so a device that read the key before another device rewrapped it or started over deletes nothing it has not seen. A keyId that is not a lowercase UUID, an ifVersion that is not a decimal 1 to 999999999 or any other query parameter is 422. Answers {key: null}.",
+  request: {
+    params: SelfNoteKeyCheckedParams,
+    query: SelfNoteKeyCheckedQuery,
+    maxBodyBytes: 0,
+  },
+  responses: [{ status: 200, description: "no key is kept", body: SelfNoteKeyState }],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(422, "invalid_input"),
+    error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const sealedSelfNoteRoutes = [
   workSealedSelfNoteGet,
   workSealedSelfNotePut,
@@ -221,5 +255,6 @@ export const selfNoteKeyRoutes = [
   profileSelfNoteKeyGet,
   profileSelfNoteKeyPut,
   profileSelfNoteKeyDelete,
+  profileSelfNoteKeyCheckedDelete,
 ] as const;
 export const selfNoteSealedRoutes = [...sealedSelfNoteRoutes, ...selfNoteKeyRoutes] as const;

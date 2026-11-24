@@ -5,7 +5,8 @@
 // of 20261217100000: the note is the owner's alone (anyone else reads 404),
 // the first instant of a mark stays, and the overview has no score or rank.
 // SRV-NF6-SIFRA (20261217150000): the note is sealed (self-note-sealed-routes);
-// these routes keep no text and answer note null, as the real server.
+// these routes keep no text and answer note null, as the real server; since
+// SRV-NF6-SIFRA-2 work.self-note.put is refused (422 for the owner).
 // The fake knows the author of a message only by its senderRole, so a
 // teacher reads as "own" every mark the student made on a teacher's message
 // and on every other kind of item.
@@ -46,7 +47,6 @@ function marksOf(state: State, documentId: string, readerId: string): Mark[] {
 
 /** What the routes in the clear answer: never a note (SRV-NF6-SIFRA). */
 const snapshot = (kept: Kept) => ({ note: null, readingPlace: kept.readingPlace });
-const BAD_TEXT = /[‪-‮⁦-⁩]/u;
 
 /** The owned work, or null for anyone but its student (the RPC's ZD403). */
 export function owned(state: State, accountId: string, documentId: string): Work | null {
@@ -60,12 +60,12 @@ export const MENTORSHIP_FOLLOW_HANDLERS: Handlers = {
     if (owned(state, account.id, params.documentId) === null) return { error: "not_found" };
     return { status: 200, body: snapshot(keptOf(state, params.documentId)) };
   },
-  // Keeps nothing: the text is dropped, as the real server (1.110.0).
-  "work.self-note.put": ({ state, account, params, body }) => {
+  // Refused, as the real server (SRV-NF6-SIFRA-2): 404 for anyone but the
+  // owner, 422 for the owner; the text is never looked at nor kept.
+  "work.self-note.put": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     if (owned(state, account.id, params.documentId) === null) return { error: "not_found" };
-    if (body.text.trim() === "" || BAD_TEXT.test(body.text)) return { error: "invalid_input" };
-    return { status: 200, body: snapshot(keptOf(state, params.documentId)) };
+    return { error: "invalid_input" };
   },
   "work.self-note.delete": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };

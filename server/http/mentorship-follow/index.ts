@@ -1,7 +1,9 @@
 // SRV-MENTOR-3 (Ductus#2055; MK-8, MK-9, MK-11, PG-9): the HTTP edge of the
 // note to self and the reading place (work.self-note.*, work.reading-place.*),
 // the seen marks (work.seen.post, work.seen-by-student.get) and the mentor's
-// overview (mentorship.overview.get). The edge only, as work-messages: a live
+// overview (mentorship.overview.get). Since SRV-NF6-SIFRA-2 (S1) the note in
+// the clear is refused (work.self-note.put is 422 for the owner, 404 for
+// anyone else) and never reaches the port. The edge only, as work-messages: a live
 // session cookie (401), the work id decoded once by workIdFromPath (one that
 // is not a work id is the same 404 as another's work, C-23), for a write the
 // media type, the bounded body and its shape, then
@@ -17,7 +19,6 @@ import {
   mentorshipFollowRoutes,
   ReadingPlaceInput,
   SeenInput,
-  SelfNoteInput,
   workIdFromPath,
 } from "../../contracts/index.ts";
 import {
@@ -42,7 +43,6 @@ import {
 } from "../index.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
-const BIDI = /[‪-‮⁦-⁩]/u;
 
 type Contract = (typeof mentorshipFollowRoutes)[number];
 
@@ -52,15 +52,6 @@ function refusalOf(response: ServerResponse, status: FollowRefusal["status"]): v
   if (status === "not_found") return sendProblem(response, 404, "not_found");
   if (status === "invalid") return sendProblem(response, 422, "invalid_input");
   return sendProblem(response, 503, "unavailable");
-}
-
-/** A note the database would refuse: not NFC, a control character, a bidi control. */
-function badText(text: string): boolean {
-  return (
-    text !== text.normalize("NFC") ||
-    /\p{Cc}/u.test(text.replace(/[\n\t]/gu, "")) ||
-    BIDI.test(text)
-  );
 }
 
 type Body = { ok: true; value: unknown } | { ok: false };
@@ -104,6 +95,25 @@ async function answer(
   try {
     const result = await call();
     if (result.status === "ok") return sendJson(response, 200, pick(result));
+    return refusalOf(response, result.status as FollowRefusal["status"]);
+  } catch (error) {
+    reportServerError("route", error, requestIdOf(response), contract.id);
+    return sendProblem(response, 503, "unavailable");
+  }
+}
+
+/**
+ * work.self-note.put since SRV-NF6-SIFRA-2: the owner check of a read, then
+ * 422 for the owner; a refusal of the relation keeps its own answer.
+ */
+async function refuseNoteInTheClear(
+  response: ServerResponse,
+  contract: Contract,
+  owner: () => Promise<Answered>,
+): Promise<void> {
+  try {
+    const result = await owner();
+    if (result.status === "ok") return sendProblem(response, 422, "invalid_input");
     return refusalOf(response, result.status as FollowRefusal["status"]);
   } catch (error) {
     reportServerError("route", error, requestIdOf(response), contract.id);
@@ -155,15 +165,13 @@ function routeFor(follow: MentorshipFollow, contract: Contract): Route {
       const body = await jsonBody(request, response, contract);
       if (!body.ok) return;
       if (contract.id === "work.self-note.put") {
-        if (!Value.Check(SelfNoteInput, body.value))
-          return sendProblem(response, 422, "invalid_input");
-        const { text, place } = body.value as { text: string; place?: WorkPlace | null };
-        if (badText(text)) return sendProblem(response, 422, "invalid_input");
-        return answer(
-          response,
-          contract,
-          () => follow.writeSelfNote(token, documentId, text, place ?? null),
-          state,
+        // SRV-NF6-SIFRA-2 (review of SRV #676, S1): a note in the clear is
+        // refused, never kept. The body was read under its bound and is
+        // dropped unread; the owner is checked as for a read, so anyone else
+        // still reads 404 (C-23), and the owner gets 422: the note is sealed
+        // on the device and written through work.sealed-self-note.put.
+        return refuseNoteInTheClear(response, contract, () =>
+          follow.readSelfNote(token, documentId),
         );
       }
       if (contract.id === "work.reading-place.put") {

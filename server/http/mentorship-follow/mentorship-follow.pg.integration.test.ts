@@ -51,13 +51,9 @@ it("keeps the note to self for its owner alone and records what the student has 
       status: "ok",
       state: { note: null, readingPlace: null },
     });
-    // Since 20261217150000 no note is kept in the clear: a write is only a read.
-    expect(
-      await follow.writeSelfNote(STUDENT, WORK, "Izmišljena bilješka.", {
-        nodeId: NODE,
-        offset: 3,
-      }),
-    ).toEqual({ status: "ok", state: { note: null, readingPlace: null } });
+    // Since SRV-NF6-SIFRA-2 the port has no write of a note in the clear at all
+    // (work.self-note.put is refused at the edge); nothing is kept.
+    expect("writeSelfNote" in follow).toBe(false);
     const kept = await db.query<{ n: string }>(
       "SELECT count(*)::text AS n FROM collaboration.work_self_note",
     );
@@ -70,9 +66,6 @@ it("keeps the note to self for its owner alone and records what the student has 
 
     // The teacher of the work, another student and no session read nothing.
     expect(await follow.readSelfNote(TEACHER, WORK)).toEqual({ status: "not_found" });
-    expect(await follow.writeSelfNote(TEACHER, WORK, "Tuđe.", null)).toEqual({
-      status: "not_found",
-    });
     expect(await follow.readSelfNote(OTHER_STUDENT, WORK)).toEqual({ status: "not_found" });
     expect(await follow.readSelfNote("Z".repeat(43), WORK)).toEqual({ status: "unauthenticated" });
 

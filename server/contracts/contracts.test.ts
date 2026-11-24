@@ -281,6 +281,7 @@ describe("route inventory", () => {
       "profile.self-note-key.get: app/api/me/self-note-key/route.ts is not in the inventory",
       "profile.self-note-key.put: app/api/me/self-note-key/route.ts is not in the inventory",
       "profile.self-note-key.delete: app/api/me/self-note-key/route.ts is not in the inventory",
+      "profile.self-note-key-checked.delete: app/api/me/self-note-key/[keyId]/route.ts is not in the inventory",
       "notifications.list.get: app/api/notifications/route.ts is not in the inventory",
       "notifications.read.post: app/api/notifications/[id]/read/route.ts is not in the inventory",
       "notifications.returned-for-revision.list.get: app/api/notifications/returned-for-revision/route.ts is not in the inventory",

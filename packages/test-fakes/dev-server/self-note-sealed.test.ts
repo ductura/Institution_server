@@ -94,3 +94,45 @@ describe("sealed note to self", () => {
     });
   });
 });
+
+// SRV-NF6-SIFRA-2 (S2): starting over only under the key and version named.
+describe("checked start over", () => {
+  it("deletes nothing under another key, a stale version or a malformed name", async () => {
+    const state = createState();
+    const student = { ...(await signIn(state, "student")), ...ORIGIN };
+    const other = { ...(await signIn(state, "student-2")), ...ORIGIN };
+    const checked = (search: string) => `${KEY}/${search}`;
+    await send(state, KEY, {
+      method: "PUT",
+      headers: student,
+      body: { ...KEY_BODY, ifVersion: null },
+    });
+    await send(state, NOTE, { method: "PUT", headers: student, body: { sealed: SEALED } });
+
+    for (const [target, status] of [
+      [`6f1e2d3c-4b5a-4968-8776-6554433221d1`, 409],
+      [`${KEY_ID}?ifVersion=2`, 409],
+      [`${KEY_ID.toUpperCase()}`, 422],
+      [`${KEY_ID}?ifVersion=0`, 422],
+      [`${KEY_ID}?drugo=1`, 422],
+    ] as const) {
+      const refused = await send(state, checked(target), { method: "DELETE", headers: student });
+      expect(refused.status, target).toBe(status);
+    }
+    const foreign = await send(state, checked(KEY_ID), { method: "DELETE", headers: other });
+    expect(foreign.status).toBe(409);
+    expect((await send(state, NOTE, { headers: student })).json).toMatchObject({
+      note: { sealed: SEALED },
+    });
+
+    const gone = await send(state, checked(`${KEY_ID}?ifVersion=1`), {
+      method: "DELETE",
+      headers: student,
+    });
+    expect(contractProblems("profile.self-note-key-checked.delete", gone)).toEqual([]);
+    expect(gone.json).toEqual({ key: null });
+    expect((await send(state, NOTE, { headers: student })).json).toMatchObject({ note: null });
+    const again = await send(state, checked(KEY_ID), { method: "DELETE", headers: student });
+    expect(again.status).toBe(409);
+  });
+});

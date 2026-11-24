@@ -652,6 +652,13 @@ export type Operations = {
     success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null; "journalScope": string; "sessionTag": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "profile.self-note-key-checked.delete": {
+    params: { "keyId": string };
+    query: { "ifVersion"?: string };
+    body: undefined;
+    success: { status: 200; body: { "key": { "v": 1; "keyId": string; "kdf": { "alg": "PBKDF2-SHA-256"; "iterations": number }; "phrase": { "salt": string; "iv": string; "ct": string }; "recovery": { "salt": string; "iv": string; "ct": string }; "version": number; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "conflict" | "unavailable";
+  };
   "profile.self-note-key.delete": {
     params: undefined;
     query: undefined;

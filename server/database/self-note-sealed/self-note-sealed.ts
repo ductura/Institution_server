@@ -63,6 +63,15 @@ export type SelfNoteSealed = {
     ifVersion: number | null,
   ): Promise<SealedAnswer<{ key: SelfNoteKey }>>;
   deleteKey(token: string): Promise<SealedAnswer<{ key: null }>>;
+  /**
+   * Starts over only under the key named and, when ifVersion is not null, only
+   * at that version; anything else is conflict and changes nothing (S2).
+   */
+  deleteKeyChecked(
+    token: string,
+    keyId: string,
+    ifVersion: number | null,
+  ): Promise<SealedAnswer<{ key: null }>>;
 };
 
 /** Byte lengths, as the migration's checks and the contract's SEALED_LENGTHS. */
@@ -82,6 +91,8 @@ const SQL = {
   readKey: `SELECT ${KEY_COLUMNS} FROM collaboration.get_self_note_key()`,
   writeKey: `SELECT ${KEY_COLUMNS} FROM collaboration.put_self_note_key($1::uuid, $2::integer, $3::integer, $4::bytea, $5::bytea, $6::bytea, $7::bytea, $8::bytea, $9::bytea)`,
   deleteKey: 'SELECT collaboration.delete_self_note_key() AS "deleted"',
+  deleteKeyChecked:
+    'SELECT collaboration.delete_self_note_key_checked($1::uuid, $2::integer) AS "deleted"',
 } as const;
 
 /** Thrown inside the transaction for a row of an unexpected shape. */
@@ -243,6 +254,13 @@ export function createSelfNoteSealed(withActor: WithActor): SelfNoteSealed {
       run(token, async (tx) => {
         const rows = await rowsOf(tx, SQL.deleteKey, []);
         if (rows.length !== 1 || typeof rows[0]!["deleted"] !== "boolean") throw new Malformed();
+        return { status: "ok" as const, key: null };
+      }),
+    deleteKeyChecked: (token, keyId, ifVersion) =>
+      run(token, async (tx) => {
+        const rows = await rowsOf(tx, SQL.deleteKeyChecked, [keyId, ifVersion]);
+        // The RPC answers true or refuses (ZD409): a checked delete never deletes nothing.
+        if (rows.length !== 1 || rows[0]!["deleted"] !== true) throw new Malformed();
         return { status: "ok" as const, key: null };
       }),
   };

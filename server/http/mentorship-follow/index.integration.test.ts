@@ -60,15 +60,15 @@ it("reads nothing kept as two nulls, and never a note: only the reading place", 
   expect(query.mock.calls[1]![0]).not.toMatch(/note_text|note_place|note_ct/);
 });
 
-it("keeps no note in the clear: a write by the owner is only a read, the text never reaches the database (SRV-NF6-SIFRA)", async () => {
+it("refuses a note in the clear: 422 for the owner after the owner check, the text never reaches the database (SRV-NF6-SIFRA-2)", async () => {
   query.mockResolvedValue({ rows: [ROW], rowCount: 1 });
-  const written = await send(
+  const refused = await send(
     "PUT",
     work("self-note"),
     JSON.stringify({ text: "Izmišljena bilješka.", place: PLACE }),
   );
-  expect(written.status).toBe(200);
-  expect(await written.json()).toEqual(STATE);
+  expect(refused.status).toBe(422);
+  expect(((await refused.json()) as { code: string }).code).toBe("invalid_input");
   expect(query).toHaveBeenCalledTimes(1);
   expect(query.mock.calls[0]![0]).toMatch(/collaboration\.get_work_self_note\(\$1\)/);
   expect(query.mock.calls[0]![1]).toEqual(["izmisljeni-rad"]);
@@ -77,21 +77,35 @@ it("keeps no note in the clear: a write by the owner is only a read, the text ne
   expect((await send("PUT", work("self-note"), JSON.stringify({ text: "Tuđa." }))).status).toBe(
     404,
   );
+  query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD401" }));
+  expect((await send("PUT", work("self-note"), JSON.stringify({ text: "Tuđa." }))).status).toBe(
+    401,
+  );
+  query.mockRejectedValueOnce(new Error("boom"));
+  expect((await send("PUT", work("self-note"), JSON.stringify({ text: "Tuđa." }))).status).toBe(
+    503,
+  );
+  expect(JSON.stringify(query.mock.calls)).not.toContain("Tuđa.");
 });
 
 it.each([
+  ["valid", { text: "Izmišljena valjana bilješka.", place: PLACE }],
   ["too long", { text: "a".repeat(281) }],
   ["blank", { text: "   " }],
   ["control character", { text: "a\u0000b" }],
-  ["bidi override", { text: "a‮b" }],
-  ["not normalized", { text: "é" }],
+  ["bidi override", { text: "a\u202eb" }],
+  ["not normalized", { text: "e\u0301" }],
   ["quote in the place", { text: "x", place: { ...PLACE, quote: "y" } }],
   ["negative offset", { text: "x", place: { nodeId: NODE, offset: -1 } }],
   ["unknown key", { text: "x", extra: 1 }],
-])("refuses a note that is %s and never reaches the database", async (_name, body) => {
-  expect((await send("PUT", work("self-note"), JSON.stringify(body))).status).toBe(422);
-  expect(query).not.toHaveBeenCalled();
-});
+])(
+  "refuses a note in the clear that is %s and passes no part of it to the database",
+  async (_name, body) => {
+    query.mockResolvedValue({ rows: [], rowCount: 0 });
+    expect((await send("PUT", work("self-note"), JSON.stringify(body))).status).toBe(422);
+    for (const [, args] of query.mock.calls) expect(args).toEqual(["izmisljeni-rad"]);
+  },
+);
 
 it("writes and deletes the reading place, and deletes the note", async () => {
   query.mockResolvedValue({ rows: [], rowCount: 0 });

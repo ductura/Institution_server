@@ -43,6 +43,8 @@ export {
   SEALED_LENGTHS,
   SealedSelfNoteInput,
   SealedSelfNoteState,
+  SelfNoteKeyCheckedParams,
+  SelfNoteKeyCheckedQuery,
   SelfNoteKeyInput,
   SelfNoteKeyState,
   selfNoteSealedRoutes,
