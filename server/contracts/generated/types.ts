@@ -463,6 +463,20 @@ export type Operations = {
     success: { status: 200; body: { "version": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
   };
+  "institution.work-template.get": {
+    params: { "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" };
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "current": { "version": number; "effectiveFrom": string; "titlePage": ("title" | "author" | "mentor" | "course" | "date")[]; "sections": ({ "title": string; "hint": string })[]; "citationStyle": "fpzg" } | null; "versions": ({ "version": number; "effectiveFrom": string; "titlePage": ("title" | "author" | "mentor" | "course" | "date")[]; "sections": ({ "title": string; "hint": string })[]; "citationStyle": "fpzg" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.work-template.put": {
+    params: { "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" };
+    query: undefined;
+    body: { "expectedVersion": number; "titlePage": ("title" | "author" | "mentor" | "course" | "date")[]; "sections": ({ "title": string; "hint": string })[]; "citationStyle": "fpzg" };
+    success: { status: 200; body: { "version": number; "effectiveFrom": string; "titlePage": ("title" | "author" | "mentor" | "course" | "date")[]; "sections": ({ "title": string; "hint": string })[]; "citationStyle": "fpzg" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "conflict" | "unavailable";
+  };
   "institution.work-work-language.get": {
     params: { "assignmentId": string; "documentId": string };
     query: undefined;

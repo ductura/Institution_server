@@ -1297,6 +1297,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  "institution.work-template.get": {
+    request: { path: "/api/v1/institution/work-templates/seminar_paper", as: "administrator" },
+  },
+  "institution.work-template.put": {
+    request: {
+      method: "PUT",
+      path: "/api/v1/institution/work-templates/seminar_paper",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        titlePage: ["title", "author", "mentor"],
+        sections: [
+          { title: "Uvod", hint: "Predstavite temu i pitanje rada." },
+          { title: "Zaključak", hint: "" },
+        ],
+        citationStyle: "fpzg",
+      },
+    },
+  },
   "work.milestone-states.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
   },

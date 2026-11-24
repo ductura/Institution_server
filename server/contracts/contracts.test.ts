@@ -325,6 +325,8 @@ describe("route inventory", () => {
       "work.milestone-plan.get: app/api/works/[documentId]/milestone-plan/route.ts is not in the inventory",
       "work.milestone-plan.add.post: app/api/works/[documentId]/milestone-plan/milestones/route.ts is not in the inventory",
       "work.milestone-plan.apply-template.post: app/api/works/[documentId]/milestone-plan/apply-template/route.ts is not in the inventory",
+      "institution.work-template.get: app/api/institution/work-templates/[workType]/route.ts is not in the inventory",
+      "institution.work-template.put: app/api/institution/work-templates/[workType]/route.ts is not in the inventory",
       "work.return-for-revision.post: app/api/works/[documentId]/return-for-revision/route.ts is not in the inventory",
       "institution.thesis-forms.get: app/api/institution/thesis-forms/route.ts is not in the inventory",
       "institution.thesis-forms.post: app/api/institution/thesis-forms/route.ts is not in the inventory",
