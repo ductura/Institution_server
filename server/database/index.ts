@@ -751,6 +751,17 @@ export {
   type WorkMessageRefusal,
   type WorkMessages,
 } from "./work-messages/index.ts";
+export {
+  createMentorshipFollow,
+  SEEN_READ_LIMIT,
+  type FollowRefusal,
+  type MentorshipFollow,
+  type MentorStudent,
+  type SeenKind,
+  type SeenMark,
+  type SelfNoteState,
+  type WorkPlace,
+} from "./mentorship-follow/index.ts";
 export { createNotifications } from "./notifications/index.ts";
 export {
   ASSISTANT_REQUEST_STATES,

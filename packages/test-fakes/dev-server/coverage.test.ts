@@ -49,6 +49,10 @@ const commit = (txid: string, baseRevision: number): Step => ({
     document: EMPTY_DOCUMENT,
   },
 });
+const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
+const READING_PLACE = `/api/v1/works/${IDS.document}/reading-place`;
+const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 12 };
+const NOTE_BODY = { text: "Izmišljena bilješka za sebe.", place: PLACE };
 const ADD_TASK: Step = {
   path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/tasks`,
   as: "nastavnik",
@@ -1528,6 +1532,49 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  // SRV-MENTOR-3: the note to self, the reading place, the seen marks and the mentor's overview.
+  "work.self-note.get": { request: { path: SELF_NOTE, as: "student" } },
+  "work.self-note.put": {
+    request: { method: "PUT", path: SELF_NOTE, as: "student", headers: ORIGIN, body: NOTE_BODY },
+  },
+  "work.self-note.delete": {
+    before: [{ method: "PUT", path: SELF_NOTE, as: "student", headers: ORIGIN, body: NOTE_BODY }],
+    request: { method: "DELETE", path: SELF_NOTE, as: "student", headers: ORIGIN },
+  },
+  "work.reading-place.put": {
+    request: {
+      method: "PUT",
+      path: READING_PLACE,
+      as: "student",
+      headers: ORIGIN,
+      body: { place: PLACE },
+    },
+  },
+  "work.reading-place.delete": {
+    request: { method: "DELETE", path: READING_PLACE, as: "student", headers: ORIGIN },
+  },
+  "work.seen.post": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/seen`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { items: [{ kind: "comment", id: "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e05" }] },
+    },
+  },
+  "work.seen-by-student.get": {
+    before: [
+      {
+        path: `/api/v1/works/${IDS.document}/seen`,
+        as: "student",
+        headers: ORIGIN,
+        body: { items: [{ kind: "revision_request", id: "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e06" }] },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/seen-by-student`, as: "nastavnik" },
+  },
+  "mentorship.overview.get": {
+    request: { path: "/api/v1/teacher/mentorship-overview", as: "nastavnik" },
   },
   "notifications.list.get": {
     request: { path: "/api/v1/notifications", as: "student" },

@@ -108,6 +108,7 @@ import {
   createRevisionRequestsRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createMentorshipFollowRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createImportRoutesFor,
@@ -320,6 +321,8 @@ async function main(): Promise<void> {
       createRevisionRequestsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      // SRV-MENTOR-3: note to self and reading place (MK-9), seen marks (MK-11), the mentor's overview (MK-8).
+      ...createMentorshipFollowRoutesFor(databases.main),
       ...createNotificationsRoutesFor(databases.main, reminderCooldown),
       // SRV-1703: delayed comments (D-51), the comment bank (N-03) and the changes since the last review (N-05).
       ...createCommentRoutesFor(databases.main, evidenceDeps),

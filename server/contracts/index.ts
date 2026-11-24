@@ -78,6 +78,7 @@ import {
   teacherSubmissionsBulkRoutes,
   workVersionGet,
   workMessagesRoutes,
+  mentorshipFollowRoutes,
   notificationsRoutes,
   commentsRoutes,
   workCompareRoutes,
@@ -97,6 +98,15 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
+export {
+  mentorshipFollowRoutes,
+  ReadingPlaceInput,
+  SeenInput,
+  SEEN_MARKS_MAX,
+  SelfNoteInput,
+  SelfNoteState,
+  WorkPlace,
+} from "./routes/index.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { AssistantSetting, assistantSettingGet } from "./routes/index.ts";
@@ -286,6 +296,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherSubmissionsBulkRoutes,
   workVersionGet,
   ...workMessagesRoutes,
+  ...mentorshipFollowRoutes,
   ...notificationsRoutes,
   ...commentsRoutes,
   ...workCompareRoutes,

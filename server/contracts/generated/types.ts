@@ -519,6 +519,13 @@ export type Operations = {
     success: { status: 201; body: { "mentorshipId": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
   };
+  "mentorship.overview.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "students": ({ "mentorshipId": string; "assignmentId": string; "documentId": string | null; "givenName": string | null; "familyName": string | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "title": string; "stage": { "milestoneId": string; "title": string; "position": number; "state": "not_submitted" | "submitted" | "revision_requested" } | null; "stageCount": number; "waitingOn": "mentor" | "student" | "none"; "nextDeadlineAt": string | null; "daysToNextDeadline": number | null; "newMessages": number })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
   "mentorship.request-approve.post": {
     params: { "requestId": string };
     query: undefined;
@@ -1814,6 +1821,20 @@ export type Operations = {
     success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "work.reading-place.delete": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "note": { "text": string; "place": { "nodeId": string; "offset": number } | null; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.reading-place.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "place": { "nodeId": string; "offset": number } };
+    success: { status: 200; body: { "note": { "text": string; "place": { "nodeId": string; "offset": number } | null; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.restore.post": {
     params: { "documentId": string };
     query: undefined;
@@ -1834,6 +1855,41 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.seen-by-student.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "items": ({ "kind": "comment" | "revision_request" | "milestone_revision" | "message"; "id": string; "firstSeenAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.seen.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "items": ({ "kind": "comment" | "revision_request" | "milestone_revision" | "message"; "id": string })[] };
+    success: { status: 200; body: { "items": ({ "kind": "comment" | "revision_request" | "milestone_revision" | "message"; "id": string; "firstSeenAt": string })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "work.self-note.delete": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "note": { "text": string; "place": { "nodeId": string; "offset": number } | null; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.self-note.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "note": { "text": string; "place": { "nodeId": string; "offset": number } | null; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.self-note.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "text": string; "place"?: { "nodeId": string; "offset": number } | null };
+    success: { status: 200; body: { "note": { "text": string; "place": { "nodeId": string; "offset": number } | null; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "work.source-notes.delete": {
     params: { "id": string; "sourceId": string };
