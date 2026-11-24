@@ -31,6 +31,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentConversationsRouteFor,
   createStudentAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
   createStudentWriteRoutesFor,
@@ -462,6 +463,8 @@ async function main(): Promise<void> {
       ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
+      // SRV-ASIST-CITANJE: the student's own assistant conversations of an assignment.
+      createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server

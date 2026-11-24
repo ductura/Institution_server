@@ -225,6 +225,7 @@ describe("route inventory", () => {
       "mentorship.notes.post: app/api/mentorships/[id]/notes/route.ts is not in the inventory",
       "student.assistant-request.post: app/api/student/assistant/requests/route.ts is not in the inventory",
       "student.assistant-conversation.get: app/api/student/assistant/conversations/[conversationId]/route.ts is not in the inventory",
+      "student.assistant-conversations.get: app/api/student/assignments/[assignmentId]/assistant-conversations/route.ts is not in the inventory",
       "student.declaration.get: app/api/student/assignments/[assignmentId]/declaration/route.ts is not in the inventory",
       "student.declaration.put: app/api/student/assignments/[assignmentId]/declaration/route.ts is not in the inventory",
       "student.declaration-attachments.post: app/api/student/assignments/[assignmentId]/declaration-attachments/route.ts is not in the inventory",

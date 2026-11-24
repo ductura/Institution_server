@@ -272,6 +272,12 @@ export const studentNoticeGet = defineRoute({
         wordMax: WordBound,
         readAt: Type.Union([Instant, Type.Null()]),
         acknowledgedAt: Type.Union([Instant, Type.Null()]),
+        /**
+         * SRV-ASIST-CITANJE (Ductus#2055): the purpose catalog of this version,
+         * whose keys aiPurposes names; the assistant request sends it back as
+         * purposeCatalogVersion. Not a member of the notice fingerprint.
+         */
+        purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
       }),
     },
   ],

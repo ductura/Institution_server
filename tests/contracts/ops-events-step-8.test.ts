@@ -99,6 +99,7 @@ import {
   createStatementRoutesFor,
   createStatusRouteFor,
   createStudentAccessLogRouteFor,
+  createStudentConversationsRouteFor,
   createStudentAssignmentsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentDataExportRoutesFor,
@@ -633,6 +634,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
     () => createTeacherSubmissionsBulkRoutesFor(STAND_IN, STAND_IN),
   ],
   ["createAssistantRoutesFor", () => createAssistantRoutesFor(STAND_IN)],
+  ["createStudentConversationsRouteFor", () => [createStudentConversationsRouteFor(STAND_IN)]],
   ["createStatementRoutesFor", () => createStatementRoutesFor(STAND_IN)],
   [
     "createTeacherMentorshipRequestRoutesFor",
