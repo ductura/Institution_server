@@ -2089,7 +2089,7 @@ export const hr = {
       "Za ovog studenta već postoji otvoren zahtjev za izvoz podataka. Pratite njegovo stanje na popisu zahtjeva umjesto da podnosite novi.",
     retentionPeriod: {
       decided: "Rok čuvanja je određen.",
-      awaitingDecision: "Rok čuvanja nije određen: čeka odluku.",
+      awaitingDecision: "Rok čuvanja nije određen; određuje ga fakultet.",
       neverDeleted: "Ne briše se: dokazuje predaju i nakon brisanja sadržaja.",
     },
   },
