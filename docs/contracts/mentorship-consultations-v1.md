@@ -1,13 +1,13 @@
 # Otvaranje mentorstva, termini konzultacija i dogovoreni zadaci v1
 
-**Status: PRIMIJENJEN** u SRV-MENTOR-1 `mentorstvo-otvaranje-termini` (`Risk: critical`), API 1.100.0.
+**Status: PRIMIJENJEN** u SRV-MENTOR-1 `mentorstvo-otvaranje-termini` (`Risk: critical`), API 1.102.0.
 
 Izvori:
 
 - Odluke vlasnika od 23. 11. 2026. za NF-6 (nalog na Ductus#2055, c.7116183714) i potvrda od 24. 11. 2026. („1 da”, ductura/Institution_server#667 c.7117304685) da zapisnik i dopune piše samo mentor za sve radove: (1) zapisnik konzultacija piše i dopunjuje samo mentor, student čita; (4) mentorstvo otvara nastavnik, student ne traži mentora nego vidi odluku i mentora; (6) student smije uz zahtjev za termin priložiti pripremu uz napomenu „zapis o unosu, ne o autorstvu”.
 - Nalaz `docs/nalazi/nove-funkcije-6-mentorstvo-konzultacije.md` u `ductura/Institution_front_web_chrome` (MK-7, MK-3, MK-10, MK-5 i otvorena pitanja O1, O2, O4).
 - Ustav C-23: pristup nastaje samo iz odnosa (student vlasnik rada, nastavnik rada, mentor), nikad iz uloge same.
-- Baza: migracija `db/main/migrations/20261215110000_mentorship_opening_consultations.sql`, pgTAP `db/main/tests/234-mentorship-opening-consultations.sql` i retci u `030-institution-access-matrix.sql`.
+- Baza: migracija `db/main/migrations/20261216130000_mentorship_opening_consultations.sql`, pgTAP `db/main/tests/235-mentorship-opening-consultations.sql` i retci u `030-institution-access-matrix.sql`.
 - Ugovor ruta: `server/contracts/routes/mentorship-consultations.ts`; vektori u `server/contracts/vectors/`.
 
 ## Načelo: samo dodavanje

@@ -415,6 +415,31 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
   // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV (Ductus#2052 c.7092390512, P-1, rule 13): the student's explanation of a finding; Ductus has no such route.
+  // SRV-MENTOR-2 (NF-6, MK-12 and MK-14): thesis forms, mentor consent, stage after submission.
+  "app/api/institution/thesis-forms/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
+  "app/api/institution/thesis-settings/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
+  "app/api/works/[documentId]/thesis-forms/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
+  "app/api/works/[documentId]/thesis-forms/[code]/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
+  "app/api/works/[documentId]/mentor-consent/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
+  "app/api/works/[documentId]/thesis-stage/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
+  },
   "app/api/works/[documentId]/assistant-match/explanation/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7092390512",
