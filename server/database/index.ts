@@ -438,6 +438,13 @@ export {
   type MilestoneTemplateItem,
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
+export {
+  createAssignmentRubric,
+  defaultRubricCriteria,
+  type AssignmentRubric,
+  type AssignmentRubricStore,
+  type RubricCriterion,
+} from "./assignment-rubric/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";

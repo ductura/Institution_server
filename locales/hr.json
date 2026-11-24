@@ -145,6 +145,11 @@
     "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata.",
     "analysis_entries_invalid": "Zapisi za analizu nisu ispravan popis ili ih je previše, pa analiza nije pokrenuta."
   },
+  "assignmentRubric": {
+    "levelLow": "Treba doraditi",
+    "levelMid": "Dobro",
+    "levelHigh": "Vrlo dobro"
+  },
   "workingCriteria": {
     "topic": "Tema, cilj i istraživačko pitanje",
     "structure": "Struktura i logika izlaganja",

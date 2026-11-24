@@ -79,7 +79,7 @@ describe("scanLocales on locales/", () => {
     expect(scan.read).toEqual({
       "hr.ts": 1465,
       "en.ts": 1465,
-      "hr.json": 129,
+      "hr.json": 132,
       "receipt-pdf.ts": 13,
       "interview-pdf.ts": 21,
       "merlin.ts": 19,
@@ -109,7 +109,7 @@ describe("invariant 1: every leaf is read", () => {
     expect(report(copy()).read).toEqual({
       "hr.ts": 1465,
       "en.ts": 1465,
-      "hr.json": 129,
+      "hr.json": 132,
       "receipt-pdf.ts": 13,
       "interview-pdf.ts": 21,
       "merlin.ts": 19,

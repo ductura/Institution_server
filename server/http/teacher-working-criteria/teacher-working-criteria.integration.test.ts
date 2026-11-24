@@ -137,13 +137,26 @@ it("maps database refusals and a malformed answer", async () => {
   expect((await put(one("sources"), { assessment: 1, note: null })).status).toBe(503);
 });
 
+// SRV-V17-RUBRIC-DEF: the rubric of an assignment is a separate, student-visible thing (the words of
+// the criteria and levels the teacher chose, before submitting). It is the only student route that
+// may speak of criteria, and it must hold no assessment, working note or mark of any work.
+const RUBRIC_ROUTE = "student.assignment-rubric.get";
+
 it("keeps criteria out of every student-facing and export contract", () => {
   const found = ROUTES.filter(
     (route) => route.access !== "course_teacher" && route.access !== "teacher",
   )
+    .filter((route) => route.id !== RUBRIC_ROUTE)
     .filter((route) =>
       /criteri|assessment|working/iu.test(JSON.stringify([route.responses, route.request])),
     )
     .map((route) => route.id);
   expect(found).toEqual([]);
+});
+
+it("lets the student rubric carry no assessment, working note or mark", () => {
+  const route = ROUTES.find((r) => r.id === RUBRIC_ROUTE)!;
+  expect(JSON.stringify(route.responses)).not.toMatch(
+    /assessment|working|note|mark|points|score|grade/iu,
+  );
 });

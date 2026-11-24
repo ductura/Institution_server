@@ -138,6 +138,12 @@ export {
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
 export {
+  AssignmentRubricInput,
+  assignmentRubricRoutes,
+  RUBRIC_LEVELS,
+  RUBRIC_MAX_CRITERIA,
+} from "./assignment-rubric.ts";
+export {
   courseAggregateGet,
   CourseAggregateParams,
   type CourseAggregate,

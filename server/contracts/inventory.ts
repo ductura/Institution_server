@@ -788,6 +788,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-V17-RUBRIC-DEF (Ductus#2055, val 17): the rubric of an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
+  "app/api/student/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
   // SRV-1521 (Ductus#2052, N-15 etape): the template of milestones and the plan of one work; Ductus has no such route.
   "app/api/institution/milestone-template/route.ts": {
     methods: ["GET", "PUT"],

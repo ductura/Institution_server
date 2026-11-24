@@ -353,6 +353,8 @@ ALTER TABLE evidence.origin_segment DISABLE TRIGGER origin_segment_no_truncate;
 -- The agreed tasks of a consultation record (SRV-MENTOR-1) reference the assignment through the record; they are append only.
 ALTER TABLE collaboration.consultation_task DISABLE TRIGGER consultation_task_no_truncate;
 ALTER TABLE collaboration.consultation_task_mark DISABLE TRIGGER consultation_task_mark_no_truncate;
+-- The versions of the rubric of an assignment (SRV-V17-RUBRIC-DEF) reference the assignment; they are append only.
+ALTER TABLE institution.assignment_rubric_version DISABLE TRIGGER assignment_rubric_version_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
