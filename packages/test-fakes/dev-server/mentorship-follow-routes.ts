@@ -4,6 +4,8 @@
 // (mentorship.overview.get). Invented data only. The real rules are the RPCs
 // of 20261217100000: the note is the owner's alone (anyone else reads 404),
 // the first instant of a mark stays, and the overview has no score or rank.
+// SRV-NF6-SIFRA (20261217150000): the note is sealed (self-note-sealed-routes);
+// these routes keep no text and answer note null, as the real server.
 // The fake knows the author of a message only by its senderRole, so a
 // teacher reads as "own" every mark the student made on a teacher's message
 // and on every other kind of item.
@@ -12,8 +14,10 @@ import { conversationOf } from "./messages-routes.ts";
 import { readerOf, type State, type Work } from "./state.ts";
 
 type Place = { nodeId: string; offset: number };
-type Kept = {
-  note: { text: string; place: Place | null; updatedAt: string } | null;
+/** The sealed parts as the contract writes them; the fake reads them no more than the server. */
+export type Sealed = { v: 1; keyId: string; iv: string; ct: string };
+export type Kept = {
+  note: { sealed: Sealed; updatedAt: string } | null;
   readingPlace: { place: Place; updatedAt: string } | null;
 };
 type Kind = "comment" | "revision_request" | "milestone_revision" | "message";
@@ -23,7 +27,7 @@ type Mark = { kind: Kind; id: string; firstSeenAt: string };
 const NOTES = new WeakMap<State, Map<string, Kept>>();
 const MARKS = new WeakMap<State, Map<string, Mark[]>>();
 
-function keptOf(state: State, documentId: string): Kept {
+export function keptOf(state: State, documentId: string): Kept {
   let all = NOTES.get(state);
   if (all === undefined) NOTES.set(state, (all = new Map()));
   let one = all.get(documentId);
@@ -40,11 +44,12 @@ function marksOf(state: State, documentId: string, readerId: string): Mark[] {
   return one;
 }
 
-const snapshot = (kept: Kept) => ({ note: kept.note, readingPlace: kept.readingPlace });
+/** What the routes in the clear answer: never a note (SRV-NF6-SIFRA). */
+const snapshot = (kept: Kept) => ({ note: null, readingPlace: kept.readingPlace });
 const BAD_TEXT = /[‪-‮⁦-⁩]/u;
 
 /** The owned work, or null for anyone but its student (the RPC's ZD403). */
-function owned(state: State, accountId: string, documentId: string): Work | null {
+export function owned(state: State, accountId: string, documentId: string): Work | null {
   const work = state.works.find((w) => w.documentId === documentId);
   return work !== undefined && work.studentId === accountId ? work : null;
 }
@@ -55,13 +60,12 @@ export const MENTORSHIP_FOLLOW_HANDLERS: Handlers = {
     if (owned(state, account.id, params.documentId) === null) return { error: "not_found" };
     return { status: 200, body: snapshot(keptOf(state, params.documentId)) };
   },
-  "work.self-note.put": ({ state, account, params, body, now }) => {
+  // Keeps nothing: the text is dropped, as the real server (1.110.0).
+  "work.self-note.put": ({ state, account, params, body }) => {
     if (account === null) return { error: "unauthorized" };
     if (owned(state, account.id, params.documentId) === null) return { error: "not_found" };
     if (body.text.trim() === "" || BAD_TEXT.test(body.text)) return { error: "invalid_input" };
-    const kept = keptOf(state, params.documentId);
-    kept.note = { text: body.text, place: body.place ?? null, updatedAt: now.toISOString() };
-    return { status: 200, body: snapshot(kept) };
+    return { status: 200, body: snapshot(keptOf(state, params.documentId)) };
   },
   "work.self-note.delete": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };

@@ -16,6 +16,8 @@ Ništa od ovoga ne piše dokument, reviziju, segment, potvrdu ni sažetak, pa ni
 
 Student uz svoj rad drži jednu bilješku sebi (do 280 znakova, po želji s položajem u radu) i položaj čitanja. Oboje je na poslužitelju, po studentu i radu, pa radi i na drugom računalu.
 
+> **Od API 1.110.0 (SRV-NF6-SIFRA, odluka vlasnika B2 od 24. 11. 2026.)** bilješka se šifrira na uređaju i ide kroz `work.sealed-self-note.*` i `me.self-note-key.*` (`docs/contracts/self-note-sealed-v1.md`). Rute u ovom odjeljku ne čuvaju tekst: `note` je uvijek `null`, `PUT .../self-note` tekst ne sprema, a `DELETE .../self-note` briše šifriranu bilješku. Položaj čitanja radi kako je opisano niže.
+
 | Ruta                                              | Operacija                   | Tijelo                      | Odgovor 200     |
 | ------------------------------------------------- | --------------------------- | --------------------------- | --------------- |
 | `GET /api/v1/works/{documentId}/self-note`        | `work.self-note.get`        | —                           | `SelfNoteState` |

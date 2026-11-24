@@ -14,17 +14,9 @@ const TOKEN = "A".repeat(43);
 const AT = new Date("2026-11-23T09:00:00.000Z");
 const NODE = "1f0e2d3c-4b5a-4968-8776-655443322110";
 const PLACE = { nodeId: NODE, offset: 12 };
-const NOTE_ROW = {
-  noteText: "Izmišljena bilješka.",
-  notePlace: PLACE,
-  noteUpdatedAt: AT,
-  readingPlace: null,
-  readingUpdatedAt: null,
-};
-const NOTE_STATE = {
-  note: { text: "Izmišljena bilješka.", place: PLACE, updatedAt: AT.toISOString() },
-  readingPlace: null,
-};
+// Since 20261217150000 the note is sealed: these routes read only the reading place.
+const ROW = { readingPlace: PLACE, readingUpdatedAt: AT };
+const STATE = { note: null, readingPlace: { place: PLACE, updatedAt: AT.toISOString() } };
 const MSG = "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e02";
 
 const query = vi.fn<ActorTransaction["query"]>();
@@ -58,31 +50,33 @@ const send = (method: string, url: string, body?: string, headers: Record<string
     ...(body === undefined ? {} : { body }),
   });
 
-it("reads nothing kept as two nulls, and the note as the database keeps it", async () => {
+it("reads nothing kept as two nulls, and never a note: only the reading place", async () => {
   query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
   const empty = await fetch(work("self-note"), { headers: cookie });
   expect(empty.status).toBe(200);
   expect(await empty.json()).toEqual({ note: null, readingPlace: null });
-  query.mockResolvedValueOnce({ rows: [NOTE_ROW], rowCount: 1 });
-  expect(await (await fetch(work("self-note"), { headers: cookie })).json()).toEqual(NOTE_STATE);
+  query.mockResolvedValueOnce({ rows: [ROW], rowCount: 1 });
+  expect(await (await fetch(work("self-note"), { headers: cookie })).json()).toEqual(STATE);
+  expect(query.mock.calls[1]![0]).not.toMatch(/note_text|note_place|note_ct/);
 });
 
-it("writes the note with and without a place", async () => {
-  query.mockResolvedValue({ rows: [NOTE_ROW], rowCount: 1 });
+it("keeps no note in the clear: a write by the owner is only a read, the text never reaches the database (SRV-NF6-SIFRA)", async () => {
+  query.mockResolvedValue({ rows: [ROW], rowCount: 1 });
   const written = await send(
     "PUT",
     work("self-note"),
     JSON.stringify({ text: "Izmišljena bilješka.", place: PLACE }),
   );
   expect(written.status).toBe(200);
-  expect(await written.json()).toEqual(NOTE_STATE);
-  expect(query.mock.calls[0]![1]).toEqual([
-    "izmisljeni-rad",
-    "Izmišljena bilješka.",
-    JSON.stringify(PLACE),
-  ]);
-  await send("PUT", work("self-note"), JSON.stringify({ text: "Bez mjesta." }));
-  expect(query.mock.calls[1]![1]).toEqual(["izmisljeni-rad", "Bez mjesta.", null]);
+  expect(await written.json()).toEqual(STATE);
+  expect(query).toHaveBeenCalledTimes(1);
+  expect(query.mock.calls[0]![0]).toMatch(/collaboration\.get_work_self_note\(\$1\)/);
+  expect(query.mock.calls[0]![1]).toEqual(["izmisljeni-rad"]);
+  expect(JSON.stringify(query.mock.calls)).not.toContain("Izmišljena bilješka.");
+  query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD403" }));
+  expect((await send("PUT", work("self-note"), JSON.stringify({ text: "Tuđa." }))).status).toBe(
+    404,
+  );
 });
 
 it.each([
@@ -201,10 +195,10 @@ it("answers 404 for a relation the database refuses, 503 for a fault and for a m
   query.mockRejectedValueOnce(new Error("boom"));
   expect((await fetch(work("self-note"), { headers: cookie })).status).toBe(503);
   query.mockResolvedValueOnce({
-    rows: [{ ...NOTE_ROW, notePlace: { nodeId: NODE } }],
+    rows: [{ ...ROW, readingPlace: { nodeId: NODE } }],
     rowCount: 1,
   });
   expect((await fetch(work("self-note"), { headers: cookie })).status).toBe(503);
-  query.mockResolvedValueOnce({ rows: [NOTE_ROW, NOTE_ROW], rowCount: 2 });
+  query.mockResolvedValueOnce({ rows: [ROW, ROW], rowCount: 2 });
   expect((await fetch(work("self-note"), { headers: cookie })).status).toBe(503);
 });

@@ -79,11 +79,11 @@ export type MentorshipFollow = {
   overview(token: string): Promise<Answer<{ students: MentorStudent[] }>>;
 };
 
-const NOTE_COLUMNS =
-  'note_text AS "noteText", note_place AS "notePlace", note_updated_at AS "noteUpdatedAt", reading_place AS "readingPlace", reading_updated_at AS "readingUpdatedAt"';
+// SRV-NF6-SIFRA (20261217150000): the note is sealed and read through
+// server/database/self-note-sealed; these routes answer only the reading place.
+const NOTE_COLUMNS = 'reading_place AS "readingPlace", reading_updated_at AS "readingUpdatedAt"';
 const SQL = {
   read: `SELECT ${NOTE_COLUMNS} FROM collaboration.get_work_self_note($1)`,
-  writeNote: `SELECT ${NOTE_COLUMNS} FROM collaboration.set_work_self_note($1, $2, $3::jsonb)`,
   writeReading: `SELECT ${NOTE_COLUMNS} FROM collaboration.set_work_reading_place($1, $2::jsonb)`,
   clear: `SELECT ${NOTE_COLUMNS} FROM collaboration.clear_work_self_note($1, $2)`,
   mark: 'SELECT item_kind AS "itemKind", item_id AS "itemId", first_seen_at AS "firstSeenAt" FROM collaboration.mark_work_items_seen($1, $2::text[], $3::uuid[])',
@@ -129,22 +129,16 @@ function place(value: unknown): WorkPlace {
   return { nodeId, offset: offset as number };
 }
 
-/** No row is nothing kept; one row is what the owner keeps. */
+/**
+ * No row is nothing kept; one row is what the owner keeps. The note is never
+ * in the clear since 20261217150000, so it is always null here.
+ */
 function toState(rows: readonly Record<string, unknown>[]): SelfNoteState {
   if (rows.length === 0) return { note: null, readingPlace: null };
   if (rows.length !== 1) throw new Malformed();
   const row = rows[0]!;
-  const text = row["noteText"];
-  if (text !== null && typeof text !== "string") throw new Malformed();
   return {
-    note:
-      text === null
-        ? null
-        : {
-            text,
-            place: row["notePlace"] === null ? null : place(row["notePlace"]),
-            updatedAt: instant(row["noteUpdatedAt"]),
-          },
+    note: null,
     readingPlace:
       row["readingPlace"] === null
         ? null
@@ -235,8 +229,10 @@ export function createMentorshipFollow(withActor: WithActor): MentorshipFollow {
 
   return {
     readSelfNote: (token, documentId) => state(token, SQL.read, [documentId]),
-    writeSelfNote: (token, documentId, note, at) =>
-      state(token, SQL.writeNote, [documentId, note, at === null ? null : JSON.stringify(at)]),
+    // No note is kept in the clear (SRV-NF6-SIFRA, 1.110.0): the owner is
+    // checked as for a read and answered what is kept, note null; the text
+    // never reaches the database. The note is sealed through work.sealed-self-note.put.
+    writeSelfNote: (token, documentId) => state(token, SQL.read, [documentId]),
     writeReadingPlace: (token, documentId, at) =>
       state(token, SQL.writeReading, [documentId, JSON.stringify(at)]),
     clear: (token, documentId, part) => state(token, SQL.clear, [documentId, part]),

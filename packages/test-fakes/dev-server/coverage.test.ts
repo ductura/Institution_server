@@ -53,6 +53,32 @@ const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
 const READING_PLACE = `/api/v1/works/${IDS.document}/reading-place`;
 const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 12 };
 const NOTE_BODY = { text: "Izmišljena bilješka za sebe.", place: PLACE };
+// SRV-NF6-SIFRA: invented bytes in base64url, of the lengths the contract fixes.
+const B64 = (byte: number, length: number) => Buffer.alloc(length, byte).toString("base64url");
+const SEALED_NOTE = `/api/v1/works/${IDS.document}/sealed-self-note`;
+const NOTE_KEY_ID = "6f1e2d3c-4b5a-4968-8776-6554433221a1";
+const NOTE_KEY_BODY = {
+  v: 1,
+  keyId: NOTE_KEY_ID,
+  kdf: { alg: "PBKDF2-SHA-256", iterations: 600000 },
+  phrase: { salt: B64(1, 16), iv: B64(2, 12), ct: B64(3, 48) },
+  recovery: { salt: B64(4, 16), iv: B64(5, 12), ct: B64(6, 48) },
+  ifVersion: null,
+};
+const SET_NOTE_KEY: Step = {
+  method: "PUT",
+  path: "/api/v1/me/self-note-key",
+  as: "student",
+  headers: ORIGIN,
+  body: NOTE_KEY_BODY,
+};
+const SEAL_NOTE: Step = {
+  method: "PUT",
+  path: SEALED_NOTE,
+  as: "student",
+  headers: ORIGIN,
+  body: { sealed: { v: 1, keyId: NOTE_KEY_ID, iv: B64(7, 12), ct: B64(8, 1296) } },
+};
 const ADD_TASK: Step = {
   path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/tasks`,
   as: "nastavnik",
@@ -1541,6 +1567,25 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.self-note.delete": {
     before: [{ method: "PUT", path: SELF_NOTE, as: "student", headers: ORIGIN, body: NOTE_BODY }],
     request: { method: "DELETE", path: SELF_NOTE, as: "student", headers: ORIGIN },
+  },
+  // SRV-NF6-SIFRA: the sealed note to self and the wrapped note key.
+  "work.sealed-self-note.get": {
+    before: [SET_NOTE_KEY, SEAL_NOTE],
+    request: { path: SEALED_NOTE, as: "student" },
+  },
+  "work.sealed-self-note.put": { before: [SET_NOTE_KEY], request: SEAL_NOTE },
+  "work.sealed-self-note.delete": {
+    before: [SET_NOTE_KEY, SEAL_NOTE],
+    request: { method: "DELETE", path: SEALED_NOTE, as: "student", headers: ORIGIN },
+  },
+  "me.self-note-key.get": {
+    before: [SET_NOTE_KEY],
+    request: { path: "/api/v1/me/self-note-key", as: "student" },
+  },
+  "me.self-note-key.put": { request: SET_NOTE_KEY },
+  "me.self-note-key.delete": {
+    before: [SET_NOTE_KEY, SEAL_NOTE],
+    request: { method: "DELETE", path: "/api/v1/me/self-note-key", as: "student", headers: ORIGIN },
   },
   "work.reading-place.put": {
     request: {
