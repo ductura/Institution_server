@@ -1186,6 +1186,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-KARTA-RASPON: the same for the ranges of origin of a revision.
+  "work.origin-segments.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/origin-segments",
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1230: a live session that has no such work gets 404 on the match with the assistant.
   "work.assistant-match.get": {
     method: "GET",

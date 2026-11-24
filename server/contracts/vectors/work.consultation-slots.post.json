@@ -28,7 +28,41 @@
           "id": "00000000-0000-4000-8000-000000000001",
           "startsAt": "2026-12-04T12:00:00.000Z",
           "proposedAt": "2026-11-20T11:11:00.000Z",
-          "state": "requested"
+          "state": "requested",
+          "topic": null
+        }
+      }
+    },
+    {
+      "name": "requested-with-topic",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-termini-000000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "startsAt": "2026-12-04T12:00:00.000Z",
+          "topic": "Izmišljena tema: struktura uvoda"
+        }
+      },
+      "response": {
+        "status": 201,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "startsAt": "2026-12-04T12:00:00.000Z",
+          "proposedAt": "2026-11-20T11:11:00.000Z",
+          "state": "requested",
+          "topic": "Izmišljena tema: struktura uvoda"
         }
       }
     },
@@ -464,6 +498,37 @@
         },
         "body": {
           "startsAt": "2026-12-04"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "invalid-input-blank-topic",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-termini-000000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "startsAt": "2026-12-04T12:00:00.000Z",
+          "topic": "   "
         }
       },
       "response": {

@@ -348,6 +348,8 @@ ALTER TABLE audit.declaration_question_event DISABLE TRIGGER declaration_questio
 ALTER TABLE declaration.question_answer DISABLE TRIGGER question_answer_no_truncate;
 -- The record of a restore (INT-21) references the revisions of a work; it is append only.
 ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
+-- The ranges of origin of a revision (SRV-KARTA-RASPON) reference the revisions of a work; append only.
+ALTER TABLE evidence.origin_segment DISABLE TRIGGER origin_segment_no_truncate;
 -- The agreed tasks of a consultation record (SRV-MENTOR-1) reference the assignment through the record; they are append only.
 ALTER TABLE collaboration.consultation_task DISABLE TRIGGER consultation_task_no_truncate;
 ALTER TABLE collaboration.consultation_task_mark DISABLE TRIGGER consultation_task_mark_no_truncate;
@@ -357,6 +359,7 @@ SELECT is(
   'with the TRUNCATE trigger disabled the same statement empties the versions'
 );
 ALTER TABLE evidence.revision_restore ENABLE TRIGGER revision_restore_no_truncate;
+ALTER TABLE evidence.origin_segment ENABLE TRIGGER origin_segment_no_truncate;
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;

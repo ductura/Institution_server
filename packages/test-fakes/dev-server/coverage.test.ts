@@ -232,7 +232,10 @@ const REQUEST_SLOT: Step = {
   path: CONSULTATION_SLOTS,
   as: "student",
   headers: ORIGIN,
-  body: { startsAt: new Date(Date.now() + 86_400_000).toISOString() },
+  body: {
+    startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+    topic: "Izmišljena tema termina",
+  },
 };
 const REQUEST_SLOT_DETAIL: Step = {
   path: `/api/v1/works/${IDS.document}/consultation-slot-requests`,
@@ -1510,6 +1513,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "work.origin-composition.get": {
     request: { path: `/api/v1/works/${IDS.document}/origin-composition`, as: "nastavnik" },
+  },
+  "work.origin-segments.get": {
+    request: { path: `/api/v1/works/${IDS.document}/origin-segments?revision=5`, as: "nastavnik" },
   },
   "work.event-disputes.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
