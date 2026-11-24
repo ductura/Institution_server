@@ -8,7 +8,9 @@ import type { WithActor } from "../index.ts";
 // itself), then the institution settings the caller may read
 // (settings.read_institution_values, SRV-7E: a student sees only lekta.profile
 // and citation.style). Nothing of any work is read.
-const IN_WORKSPACE = "SELECT 1 FROM app.student_workspace() WHERE assignment_id = $1::uuid";
+// INT-31: a mentored assignment (no course) is in the sibling workspace.
+const IN_WORKSPACE = `SELECT 1 FROM app.student_workspace() WHERE assignment_id = $1::uuid
+  UNION ALL SELECT 1 FROM app.student_mentored_workspace() WHERE assignment_id = $1::uuid`;
 const SETTINGS = "SELECT key, value FROM settings.read_institution_values()";
 
 export type TextCheckConfig = { enabledCheckIds: string[]; lektaProfileId: string | null };

@@ -290,6 +290,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
   },
+  // INT-31 (Ductus#2055): Ductus has no mentored-work list; the set is that
+  // of app.lock_student_assignment's mentorship branch.
+  "app/api/student/mentored-assignments/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7140530208",
+  },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],

@@ -515,6 +515,8 @@ SELECT bag_eq(
     'refuse_notice_read_change()',
     'mark_notice_read(p_assignment_id uuid) definer app',
     'student_assignments() definer app',
+    -- INT-31 (Ductus#2055): the assignments of the open mentorships of the caller.
+    'student_mentored_assignments() definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
     'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',

@@ -44,7 +44,7 @@ export type WorkState = "not_started" | "in_progress" | "submitted";
 export type AssignmentWork = { assignmentId: string; workState: WorkState };
 
 export type MyAssignmentWorkReader = {
-  /** One row per assignment of the caller's open student courses, by assignmentId. */
+  /** One row per assignment of the caller's open student courses and mentorships, by assignmentId. */
   read(token: string | undefined): Promise<Result<AssignmentWork[]>>;
 };
 
@@ -52,8 +52,13 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // Keep the workspace row if the submission function returns no row, so the
 // parser refuses an incomplete result instead of silently hiding an assignment.
+// INT-31 (Ductus#2055): the assignments of the caller's open mentorships come
+// from the sibling app.student_mentored_workspace() (no course), as
+// student.mentored-assignments.get lists them.
 const SQL = `SELECT w.assignment_id, w.document_id, s.state
-  FROM app.student_workspace() w
+  FROM (SELECT assignment_id, document_id FROM app.student_workspace()
+        UNION ALL
+        SELECT assignment_id, document_id FROM app.student_mentored_workspace()) w
   LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`;
 
 const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });

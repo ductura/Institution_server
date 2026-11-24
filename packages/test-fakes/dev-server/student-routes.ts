@@ -87,6 +87,34 @@ export const STUDENT_HANDLERS: Handlers = {
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
   },
+  // INT-31 (Ductus#2055): the assignments of the caller's mentorships, which
+  // no course lists. The fake keeps no ended mentorships and no notice of a
+  // mentored assignment, so every one is listed and asks for its notice first.
+  "student.mentored-assignments.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignments = state.mentorships
+      .filter((m) => m.studentId === account.id)
+      .sort(
+        (a, b) => a.dueAt.localeCompare(b.dueAt) || a.assignmentId.localeCompare(b.assignmentId),
+      )
+      .map((m) => {
+        const mentor = state.accounts.find((a) => a.id === m.mentorId);
+        return {
+          id: m.assignmentId,
+          mentorshipId: m.id,
+          title: m.title,
+          dueAt: m.dueAt,
+          noticeFirst: true,
+          workType: m.workType,
+          mentor:
+            mentor === undefined
+              ? null
+              : { id: mentor.id, givenName: mentor.givenName, familyName: mentor.familyName },
+          extendedDueAt: null,
+        };
+      });
+    return { status: 200, body: { assignments } };
+  },
   "student.deadline-history.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = ownAssignment(state, account, params.assignmentId);

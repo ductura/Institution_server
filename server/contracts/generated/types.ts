@@ -848,6 +848,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "enrolled" | "already_enrolled" | "enrolled_no_assignment"; "courseId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_code" | "expired_code" | "too_many_attempts" | "forbidden" | "unavailable";
   };
+  "student.mentored-assignments.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "assignments": ({ "id": string; "mentorshipId": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor": { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
   "student.notice-read.post": {
     params: { "assignmentId": string };
     query: undefined;

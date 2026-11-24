@@ -199,7 +199,9 @@ describe("my assignment work: the state per assignment", () => {
       {
         token: TOKEN,
         text: `SELECT w.assignment_id, w.document_id, s.state
-  FROM app.student_workspace() w
+  FROM (SELECT assignment_id, document_id FROM app.student_workspace()
+        UNION ALL
+        SELECT assignment_id, document_id FROM app.student_mentored_workspace()) w
   LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`,
         values: [],
       },
