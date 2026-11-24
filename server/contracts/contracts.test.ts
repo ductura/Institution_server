@@ -296,6 +296,7 @@ describe("route inventory", () => {
       "work.comments.publish-selected.post: app/api/works/[documentId]/comments/publish-selected/route.ts is not in the inventory",
       "teacher.comment-bank.get: app/api/teacher/comment-bank/route.ts is not in the inventory",
       "teacher.comment-bank.post: app/api/teacher/comment-bank/route.ts is not in the inventory",
+      "teacher.comment-bank-entry.put: app/api/teacher/comment-bank/[entryId]/route.ts is not in the inventory",
       "teacher.comment-bank.delete: app/api/teacher/comment-bank/[entryId]/route.ts is not in the inventory",
       "work.review.post: app/api/works/[documentId]/review/route.ts is not in the inventory",
       "work.changes-since-review.get: app/api/works/[documentId]/changes-since-review/route.ts is not in the inventory",

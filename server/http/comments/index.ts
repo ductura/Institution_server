@@ -54,6 +54,7 @@ const PUBLISH = find("work.comments.publish.post");
 const PUBLISH_SELECTED = find("work.comments.publish-selected.post");
 const BANK_GET = find("teacher.comment-bank.get");
 const BANK_POST = find("teacher.comment-bank.post");
+const BANK_PUT = find("teacher.comment-bank-entry.put");
 const BANK_DELETE = find("teacher.comment-bank.delete");
 const REVIEW = find("work.review.post");
 const CHANGES = find("work.changes-since-review.get");
@@ -259,6 +260,32 @@ export function createCommentDraftRoutes(delay: CommentDelay): Route[] {
   ];
 }
 
+type BankBody = {
+  text: string;
+  kind: "must" | "sugg" | "q" | "praise";
+  label?: string | null;
+};
+
+/** readBody, and the label rule: NFC and no bidi control (the rest is the contract's). */
+async function readBankBody(
+  request: IncomingMessage,
+  response: ServerResponse,
+  contract: { request: { maxBodyBytes?: number; body?: TSchema } },
+): Promise<BankBody | null> {
+  const body = await readBody<BankBody>(request, response, contract);
+  if (body === null) return null;
+  const label = body.label;
+  if (
+    label !== undefined &&
+    label !== null &&
+    (label !== label.normalize("NFC") || BIDI.test(label))
+  ) {
+    sendProblem(response, 422, "invalid_input");
+    return null;
+  }
+  return body;
+}
+
 export function createCommentBankRoutes(notes: TeacherNotes): Route[] {
   return [
     {
@@ -274,6 +301,7 @@ export function createCommentBankRoutes(notes: TeacherNotes): Route[] {
               id: entry.templateId,
               kind: entry.kind,
               text: entry.body,
+              label: entry.label,
               createdAt: entry.createdAt,
             })),
           });
@@ -287,20 +315,46 @@ export function createCommentBankRoutes(notes: TeacherNotes): Route[] {
       async handle(request, response) {
         const token = liveSessionTokenFromCookie(request.headers.cookie);
         if (token === undefined) return refuse(response, 401, "unauthorized");
-        const body = await readBody<{ text: string; kind: "must" | "sugg" | "q" | "praise" }>(
-          request,
-          response,
-          BANK_POST,
-        );
+        const body = await readBankBody(request, response, BANK_POST);
         if (body === null) return;
         try {
-          const answer = await notes.createTemplate(token, body.text, body.kind);
+          const answer = await notes.createTemplate(
+            token,
+            body.text,
+            body.kind,
+            body.label ?? null,
+          );
           if (answer.status === "created") {
             return sendJson(response, 201, { id: answer.id, createdAt: answer.createdAt });
           }
           return refusalOf(response, answer.status);
         } catch (error) {
           return unavailable(response, BANK_POST.id, error);
+        }
+      },
+    },
+    {
+      contract: BANK_PUT,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        const entryId = idOf(params?.entryId);
+        // A path that is no id is the same 404 as another's entry or a missing one.
+        if (entryId === null) return refuse(response, 404, "not_found");
+        const body = await readBankBody(request, response, BANK_PUT);
+        if (body === null) return;
+        try {
+          const answer = await notes.updateTemplate(
+            token,
+            entryId,
+            body.text,
+            body.kind,
+            body.label ?? null,
+          );
+          if (answer.status === "updated") return noContent(response);
+          return refusalOf(response, answer.status);
+        } catch (error) {
+          return unavailable(response, BANK_PUT.id, error);
         }
       },
     },
