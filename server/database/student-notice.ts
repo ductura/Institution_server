@@ -1,9 +1,10 @@
 // SRV-NG (Ductus#2028 c.7019543739): the notice of the current version of an
-// assignment for a student of its course, for student.notice.get. One
-// withActor transaction under RLS (the web role reads course_member,
-// assignment, assignment_version, notice_read and notice_acknowledgment
-// through their read policies), the caller only from the session. An
-// assignment of another course, an unknown one and a removed student read
+// assignment for a student of its course or of its mentorship
+// (SRV-MENTOR-NOTICE, Ductus#2055), for student.notice.get. One withActor
+// transaction under RLS (the web role reads assignment, assignment_version,
+// notice_read and notice_acknowledgment through their read policies), the
+// caller only from the session. An assignment of another course or
+// mentorship, an unknown one, an ended mentorship and a removed student read
 // NOT_FOUND alike (C-23); a session that no longer stands is UNAUTHENTICATED.
 // The row is checked against the contract's shape; one it cannot vouch for is
 // ROW_MALFORMED, never a partial answer. Writes nothing.
@@ -62,19 +63,22 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const ACTOR_SQL = "SELECT app.current_user_id() AS user_id";
-// The open student membership is joined explicitly: RLS alone would also show
-// the assignment to a teacher of the course.
+// The caller must be a student of the assignment: of its course (an open
+// student membership) or of its open mentorship (SRV-MENTOR-NOTICE). It is
+// asked explicitly through actor_assignment_ids('{student}'), the same helper
+// the read policies use: RLS alone would also show the assignment to its
+// teacher or mentor.
 const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instructions, v.work_type,
     v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.word_min, v.word_max,
     (SELECT r.read_at FROM institution.notice_read r
-      WHERE r.assignment_id = a.id AND r.student_id = m.user_id) AS read_at,
+      WHERE r.assignment_id = a.id AND r.student_id = (SELECT app.current_user_id())) AS read_at,
     (SELECT k.acknowledged_at FROM institution.notice_acknowledgment k
-      WHERE k.assignment_id = a.id AND k.version_no = v.version_no AND k.student_id = m.user_id) AS acknowledged_at
+      WHERE k.assignment_id = a.id AND k.version_no = v.version_no
+        AND k.student_id = (SELECT app.current_user_id())) AS acknowledged_at
   FROM institution.assignment a
   JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
-  JOIN institution.course_member m ON m.course_id = a.course_id AND m.institution_id = a.institution_id
-   AND m.user_id = app.current_user_id() AND m.role = 'student' AND m.member_to IS NULL
-  WHERE a.id = $1::uuid`;
+  WHERE a.id = $1::uuid
+    AND a.id = ANY ((SELECT institution.actor_assignment_ids('{student}'))::uuid[])`;
 
 const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });
 const own = (row: object, key: string): unknown =>
