@@ -2106,7 +2106,7 @@ const en = {
       "There is already an open data export request for this student. Follow its state in the list of requests instead of submitting a new one.",
     retentionPeriod: {
       decided: "The retention period is set.",
-      awaitingDecision: "The retention period is not set: it awaits a decision.",
+      awaitingDecision: "The retention period is not set; the faculty sets it.",
       neverDeleted: "Not deleted: it proves the submission even after the content is deleted.",
     },
   },

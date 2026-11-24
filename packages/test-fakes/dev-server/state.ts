@@ -767,7 +767,6 @@ function seedAdminActions(): State["adminActions"] {
       action: "role_confirmed",
       subjectRole: "institution_admin",
       outcome: "completed",
-      rosterImport: null,
     },
     {
       at: "2026-10-02T09:00:00.000Z",
@@ -775,7 +774,6 @@ function seedAdminActions(): State["adminActions"] {
       action: "role_confirmed",
       subjectRole: "teacher",
       outcome: "completed",
-      rosterImport: null,
     },
     {
       at: "2026-10-05T10:00:00.000Z",
@@ -783,7 +781,6 @@ function seedAdminActions(): State["adminActions"] {
       action: "rule_published",
       subjectRole: null,
       outcome: "completed",
-      rosterImport: null,
     },
   ];
 }

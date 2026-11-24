@@ -17,8 +17,7 @@ const SQL = `SELECT class_key AS "key",
 /**
  * SRV-ADMIN-3 (owner decision of 23. 11. 2026., item 5): why a period is what
  * it is. A number of days is decided; a null period of a class that may be
- * deleted waits for a decision (nobody has decided who sets it yet, so no
- * period is made up); the class that is never deleted (hashes and receipts)
+ * deleted waits for a decision (the faculty sets it, so no period is made up); the class that is never deleted (hashes and receipts)
  * keeps its null period for that reason.
  */
 export type RetentionPeriodStatus = "decided" | "awaiting_decision" | "never_deleted";

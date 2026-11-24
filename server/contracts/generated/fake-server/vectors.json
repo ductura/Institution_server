@@ -6105,80 +6105,70 @@
             "actorRole": "institution_admin",
             "action": "export_approved",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-22T09:00:00.000Z",
             "actorRole": "registry_clerk",
             "action": "export_requested",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-21T15:00:00.000Z",
             "actorRole": "operator",
             "action": "hold_released",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-21T09:15:00.000Z",
             "actorRole": "institution_admin",
             "action": "hold_placed",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-20T12:00:00.000Z",
             "actorRole": "institution_admin",
             "action": "threshold_changed",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-20T11:00:00.000Z",
             "actorRole": "institution_admin",
             "action": "rule_published",
             "subjectRole": null,
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-19T08:00:00.000Z",
             "actorRole": "institution_admin",
             "action": "role_revoked",
             "subjectRole": "teacher",
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-18T08:00:00.000Z",
             "actorRole": "institution_admin",
             "action": "role_confirmed",
             "subjectRole": "network_engineer",
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-17T08:00:00.000Z",
             "actorRole": "operator",
             "action": "role_confirmed",
             "subjectRole": "registry_clerk",
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           },
           {
             "at": "2026-11-16T08:00:00.000Z",
             "actorRole": "operator",
             "action": "role_confirmed",
             "subjectRole": "institution_admin",
-            "outcome": "completed",
-            "rosterImport": null
+            "outcome": "completed"
           }
         ],
         "truncated": false
@@ -29984,7 +29974,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.108.0",
+        "apiVersion": "1.109.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -30000,7 +29990,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.108.0",
+        "apiVersion": "1.109.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

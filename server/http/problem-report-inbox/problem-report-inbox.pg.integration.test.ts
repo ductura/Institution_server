@@ -182,7 +182,6 @@ it("routes each report to its readers, keeps the state and logs the administrato
         action: "role_confirmed",
         subjectRole: "network_engineer",
         outcome: "completed",
-        rosterImport: null,
       });
       expect(JSON.stringify(log.body)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/u);
       expect((await call(VESNA, "GET", "/api/v1/institution/admin-actions")).status).toBe(403);

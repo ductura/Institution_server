@@ -112,5 +112,5 @@ Migracija `20261215120000_roster_import.sql`:
 - **Format datoteke** čeka primjer stvarnog izvoza iz Merlina i ISVU-a (vlasnik).
 - **Student bez računa** (`unknown_account`): račun nastaje tek prvom prijavom kroz AAI@EduHr. Predupis (čuvanje identifikatora osobe koja još nije korisnik) nije građen jer je to odluka o osobnim podacima (vlasnik, DPIA).
 - **Rokovi čuvanja** uvoza: čeka odluku (NF-7 točka 5); ništa ga još ne briše.
-- **Dnevnik radnji administratora** (SRV-ADMIN-1, OA-3, `app.admin_action_log`): potvrda uvoza je vrsta radnje `roster_import_confirmed` (SRV-ADMIN-2B): vrijeme, uloga administratora, id kolegija i brojevi upisanih, već upisanih i preskočenih, bez osoba. Pregled i ponovljena potvrda ne ostavljaju unos. Pojedinosti u `operator-admin-v1.md` §2.
+- **Dnevnik radnji administratora** (SRV-ADMIN-1, OA-3, `app.admin_action_log`): potvrda uvoza je u bazi vrsta radnje `roster_import_confirmed` (SRV-ADMIN-2B): vrijeme, uloga administratora, id kolegija i brojevi upisanih, već upisanih i preskočenih, bez osoba. Pregled i ponovljena potvrda ne ostavljaju unos. HTTP ruta dnevnika ih još ne objavljuje (zaštita ugovora), vidi `operator-admin-v1.md` §2.
 - **Nositelj kolegija** ne može uvoziti: ugovor ne daje nastavniku izravan upis studenata, samo kod za upis.
