@@ -65,3 +65,8 @@ export const WORK_TEMPLATE_HANDLERS: Handlers = {
     return { status: 200, body: made };
   },
 };
+
+/** The latest version of one work type's template on the fake, for the assignment pin (SRV-V17-TEMPLATE-ASSIGN). */
+export function latestWorkTemplate(state: State, workType: string): Version | undefined {
+  return versions.get(state.milestoneProgress)?.get(workType)?.at(-1);
+}

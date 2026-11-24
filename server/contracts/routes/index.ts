@@ -79,6 +79,7 @@ export {
   WorkTemplateType,
   workTemplateRoutes,
 } from "./work-template.ts";
+export { AssignmentTemplateInput, assignmentTemplateRoutes } from "./assignment-template.ts";
 export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,

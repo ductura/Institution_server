@@ -71,6 +71,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createWorkTemplateRoutesFor,
+  createAssignmentTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
@@ -672,6 +673,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createAssignmentTemplateRoutesFor(databases.main)",
+    ids: ["teacher.assignment-template.put", "student.assignment-template.get"],
+    routes: () => createAssignmentTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createReturnForRevisionRoutesFor(databases.main)",
     ids: ["work.return-for-revision.post"],
     routes: () => createReturnForRevisionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -1039,6 +1045,8 @@ describe("routes the entry point mounts itself", () => {
       "work.milestone-plan.apply-template.post",
       "institution.work-template.get",
       "institution.work-template.put",
+      "teacher.assignment-template.put",
+      "student.assignment-template.get",
       "work.return-for-revision.post",
       "work.source-notes.get",
       "work.source-notes.post",

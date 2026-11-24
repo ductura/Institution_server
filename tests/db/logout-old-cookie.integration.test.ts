@@ -36,6 +36,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createWorkTemplateRoutesFor,
+  createAssignmentTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -1000,6 +1001,19 @@ const SESSION_ROUTES = {
     path: "/api/v1/institution/work-templates/seminar_paper",
     body: () => ({ expectedVersion: 0, titlePage: [], sections: [], citationStyle: "fpzg" }),
     live: 403,
+  },
+  // SRV-V17-TEMPLATE-ASSIGN: a live session that teaches no such assignment gets 404.
+  "teacher.assignment-template.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/template`,
+    body: () => ({ useInstitutionTemplate: true }),
+    live: 404,
+  },
+  "student.assignment-template.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/template`,
+    body: () => undefined,
+    live: 404,
   },
   "work.milestone-plan.get": {
     method: "GET",
@@ -2110,6 +2124,7 @@ const FACTORIES = [
   "createWorkMilestonesRoutesFor",
   "createMilestoneTemplateRoutesFor",
   "createWorkTemplateRoutesFor",
+  "createAssignmentTemplateRoutesFor",
   "createReturnForRevisionRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
@@ -2238,6 +2253,7 @@ const MOUNTED = [
   ...createWorkMilestonesRoutesFor(databases.main),
   ...createMilestoneTemplateRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
+  ...createAssignmentTemplateRoutesFor(databases.main),
   ...createReturnForRevisionRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),

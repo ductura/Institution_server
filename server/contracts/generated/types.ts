@@ -792,6 +792,13 @@ export type Operations = {
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submittedAt": string; "afterDeadline": boolean } | { "assignmentId": string; "submittedAt": null; "afterDeadline": null })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
+  "student.assignment-template.get": {
+    params: { "assignmentId": string };
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "version": number; "titlePage": ("title" | "author" | "mentor" | "course" | "date")[]; "sections": ({ "title": string; "hint": string })[]; "citationStyle": "fpzg" }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "student.assignment-work.get": {
     params: undefined;
     query: undefined;
@@ -1092,6 +1099,13 @@ export type Operations = {
     body: { "assignmentIds": (string)[] };
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.assignment-template.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "useInstitutionTemplate": boolean };
+    success: { status: 200; body: { "useInstitutionTemplate": boolean; "version": number | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "not_found" | "conflict" | "invalid_input" | "unavailable";
   };
   "teacher.comment-bank.delete": {
     params: { "entryId": string };
