@@ -402,23 +402,31 @@ const OVERVIEW_STATES = [
 // revision, read together with the overview. A revision has no deadline in the
 // record, so none is returned.
 const OVERVIEW_FOLLOWUP = {
-  noticeReadAt: Type.Union([Instant, Type.Null()]),
-  noticeAcknowledged: Type.Union([
-    closed({ versionNo: Type.Integer({ minimum: 1 }), acknowledgedAt: Instant }),
-    Type.Null(),
-  ]),
-  revision: Type.Union([
-    closed({
-      state: Type.Union([
-        Type.Literal("open"),
-        Type.Literal("responded"),
-        Type.Literal("closed"),
-        Type.Literal("withdrawn"),
-      ]),
-      changedAt: Instant,
+  noticeReadAt: Type.Optional(
+    Type.Union([Instant, Type.Null()], {
+      description: "When the student marked the notice as read; null before.",
     }),
-    Type.Null(),
-  ]),
+  ),
+  noticeAcknowledged: Type.Optional(
+    Type.Union([
+      closed({ versionNo: Type.Integer({ minimum: 1 }), acknowledgedAt: Instant }),
+      Type.Null(),
+    ]),
+  ),
+  revision: Type.Optional(
+    Type.Union([
+      closed({
+        state: Type.Union([
+          Type.Literal("open"),
+          Type.Literal("responded"),
+          Type.Literal("closed"),
+          Type.Literal("withdrawn"),
+        ]),
+        changedAt: Instant,
+      }),
+      Type.Null(),
+    ]),
+  ),
 } as const;
 const AssignmentOverviewStudent = Type.Union(
   STUDENT_NAME_FIELDS.flatMap((names) =>
@@ -441,7 +449,7 @@ export const teacherAssignmentOverviewGet = defineRoute({
   inventory: "app/api/teacher/assignments/[assignmentId]/overview/route.ts",
   access: "course_teacher",
   summary:
-    "Submission overview for each student visible to the caller, with a UTC minute and the record state from the signed receipt. A recorded submission awaiting its receipt has a null evidenceRecord. Each student also has noticeReadAt (when the student marked the notice as read, null before), noticeAcknowledged (version and time of the latest acknowledgment, null before) and revision (the state of the latest revision request on the assignment: open, responded, closed or withdrawn, with the time of its last change; null when there is none). This read opens no work and returns no work text, hash or submission id. An inaccessible, unknown or malformed assignment id returns the same empty list as an assignment with no students.",
+    "Submission overview for each student visible to the caller, with a UTC minute and the record state from the signed receipt. A recorded submission awaiting its receipt has a null evidenceRecord. This read opens no work and returns no work text, hash or submission id. An inaccessible, unknown or malformed assignment id returns the same empty list as an assignment with no students.",
   request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
   responses: [
     {
