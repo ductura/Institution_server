@@ -86,4 +86,4 @@ Ulogu ne može sam sebi dodijeliti: imenuje je i opoziva samo potvrđeni adminis
 - Student ne vidi stanje svoje prijave (O-8); ovaj zadatak to ne traži.
 - Ruta za tehničke prijave ne prolazi korak 8 (drugi faktor) jer nije pod `/api/v1/ops`; mrežni inženjer je čita sesijom AAI@EduHr. Treba li i ovdje drugi faktor, odlučuje vlasnik.
 - `app.pilot_metrics()` u bazi pušta svaku živu sesiju i oslanja se na korak 8; uže vezanje na imenovanje mrežnog inženjera bi isključilo operatera koji nije mrežni inženjer ustanove, pa je ostavljeno vlasniku.
-- Rokovi čuvanja traga stanja prijava i dnevnika: **čeka odluku** (odluka 5 od 23. 11.; tko određuje rokove još nije odlučeno).
+- Rokovi čuvanja traga stanja prijava i dnevnika: **nije određen; određuje ga fakultet** (odluka 5 od 23. 11.).
