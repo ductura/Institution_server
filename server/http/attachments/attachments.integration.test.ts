@@ -15,6 +15,8 @@ import {
   GPS_LATITUDE,
   JPEG_BROKEN_AFTER_SCAN,
   JPEG_TRUNCATED_EXIF,
+  JPEG_ORIENTATION_6_STORED,
+  JPEG_ORIENTATION_6_WITH_GPS,
   JPEG_WITH_GPS,
   PNG_WITH_TEXT,
 } from "./metadata.fixture.ts";
@@ -184,6 +186,7 @@ it("refuses non-images, an oversize decoded image and altered stored bytes", asy
 
 it.each([
   ["image/jpeg", JPEG_WITH_GPS, CLEAN_JPEG],
+  ["image/jpeg", JPEG_ORIENTATION_6_WITH_GPS, JPEG_ORIENTATION_6_STORED],
   ["image/png", PNG_WITH_TEXT, CLEAN_PNG],
 ])("stores and returns a %s without its metadata", async (mediaType, sent, clean) => {
   const { upload, download, put } = await fixture();

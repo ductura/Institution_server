@@ -80,6 +80,61 @@ export const JPEG_WITH_GPS = Buffer.concat([
   CLEAN_JPEG.subarray(-2),
 ]);
 
+const exifSegment = (tiff: Buffer) =>
+  segment(0xe1, Buffer.concat([Buffer.from("Exif\0\0", "latin1"), tiff]));
+/** CLEAN_JPEG with an APP1 Exif block that holds `tiff`, right after JFIF. */
+export const jpegWithExif = (tiff: Buffer) =>
+  Buffer.concat([
+    CLEAN_JPEG.subarray(0, JFIF_END),
+    exifSegment(tiff),
+    CLEAN_JPEG.subarray(JFIF_END),
+  ]);
+
+/**
+ * Phone-style big-endian Exif: IFD0 with an invented Make, Orientation and a GPS
+ * pointer, then the GPS IFD with the invented latitude (offsets 8, 50 and 80).
+ */
+export const phoneTiff = (orientation: number, type = 3) =>
+  Buffer.concat([
+    Buffer.from("MM\0*", "latin1"),
+    u32(8),
+    u16(3),
+    Buffer.concat([u16(0x010f), u16(2), u32(4), Buffer.from("Izm\0", "latin1")]),
+    Buffer.concat([u16(0x0112), u16(type), u32(1), u16(orientation), u16(0)]),
+    Buffer.concat([u16(0x8825), u16(4), u32(1), u32(50)]),
+    u32(0),
+    u16(2),
+    Buffer.concat([u16(1), u16(2), u32(2), Buffer.from("N\0\0\0", "latin1")]),
+    Buffer.concat([u16(2), u16(5), u32(3), u32(80)]),
+    u32(0),
+    GPS_LATITUDE,
+  ]);
+
+/** Orientation 6 (rotate 90°) with GPS, after an XMP block, as a phone might save it. */
+export const JPEG_ORIENTATION_6_WITH_GPS = Buffer.concat([
+  CLEAN_JPEG.subarray(0, JFIF_END),
+  segment(0xe1, `http://ns.adobe.com/xap/1.0/\0${XMP}`),
+  exifSegment(phoneTiff(6)),
+  segment(0xfe, "Izmisljen komentar"),
+  CLEAN_JPEG.subarray(JFIF_END),
+]);
+
+/** The only APP1 a stored JPEG may have: Exif, big-endian TIFF, IFD0 = { Orientation: 6 }. */
+export const ORIENTATION_6_APP1 = Buffer.from(
+  "ffe10022" +
+    "457869660000" +
+    "4d4d002a00000008" +
+    "0001" +
+    "011200030000000100060000" +
+    "00000000",
+  "hex",
+);
+export const JPEG_ORIENTATION_6_STORED = Buffer.concat([
+  CLEAN_JPEG.subarray(0, JFIF_END),
+  ORIENTATION_6_APP1,
+  CLEAN_JPEG.subarray(JFIF_END),
+]);
+
 /** Passes the type check before the scan, but a segment after the scan overruns the file. */
 export const JPEG_BROKEN_AFTER_SCAN = Buffer.concat([
   CLEAN_JPEG.subarray(0, -2),
