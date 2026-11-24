@@ -176,6 +176,8 @@ describe("route inventory", () => {
       "teacher.assignment-copy.post: app/api/teacher/assignments/[assignmentId]/copy/route.ts is not in the inventory",
       "teacher.merlin-roster.get: app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts is not in the inventory",
       "teacher.merlin-roster-csv.get: app/api/teacher/assignments/[assignmentId]/merlin/csv/route.ts is not in the inventory",
+      "institution.roster-imports.post: app/api/institution/admin/courses/[courseId]/roster-imports/route.ts is not in the inventory",
+      "institution.roster-import-confirm.post: app/api/institution/admin/roster-imports/[importId]/confirm/route.ts is not in the inventory",
       "teacher.merlin-packages.post: app/api/teacher/assignments/[assignmentId]/merlin/packages/route.ts is not in the inventory",
       "teacher.merlin-package.get: app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/route.ts is not in the inventory",
       "teacher.merlin-package-download.get: app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts is not in the inventory",

@@ -19,12 +19,14 @@ import {
 import { fakeImportIds } from "./import-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
+import { plantRosterImport } from "./roster-import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
 // fits the contract. A route added to ROUTE_TABLE without a handler or without
 // a scenario here fails this file.
 
+const ROSTER_IMPORT = "5d1c2b3a-4f5e-4a6b-9c7d-8e9f0a1b2c31";
 type Step = Sent & { readonly path: string; readonly as?: AccountKey };
 type Scenario = {
   readonly before?: readonly Step[];
@@ -711,6 +713,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         holderId: IDS.teacher2,
         groups: ["Grupa A"],
       },
+    },
+  },
+  // SRV-ADMIN-2: the preview of a list with the second student, then the confirmation of an unknown import.
+  "institution.roster-imports.post": {
+    request: {
+      path: `/api/v1/institution/admin/courses/${IDS.course}/roster-imports`,
+      as: "administrator",
+      body: {
+        source: "merlin",
+        csv: "identifikator;ime;prezime\r\ndemo-student-2@demo.ductus.test;Marko;Ljubić\r\n",
+      },
+    },
+  },
+  "institution.roster-import-confirm.post": {
+    prepare: (state) =>
+      plantRosterImport(state, ROSTER_IMPORT, IDS.course, [IDS.student2], new Date(8.64e15)),
+    request: {
+      path: `/api/v1/institution/admin/roster-imports/${ROSTER_IMPORT}/confirm`,
+      as: "administrator",
+      body: {},
     },
   },
   "institution.admin-courses.get": {

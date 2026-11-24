@@ -52,6 +52,7 @@ import {
   submissionsRoutes,
   assignmentCopyRoutes,
   merlinRosterRoutes,
+  rosterImportRoutes,
   merlinPackageRoutes,
   supportRoutes,
   problemReportsPost,
@@ -112,6 +113,12 @@ export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./routes/index.ts"
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { RESTORE_MAX_FROM_REVISION, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
 export { WORK_INTERVIEW_NOTE_MAX_BYTES } from "./routes/index.ts";
+export {
+  ROSTER_IMPORT_MAX_CSV_LENGTH,
+  ROSTER_IMPORT_MAX_ROWS,
+  ROSTER_IMPORT_REASONS,
+  ROSTER_IMPORT_SOURCES,
+} from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export {
   WorkMilestoneApprovalInput,
@@ -247,6 +254,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...submissionsRoutes,
   ...assignmentCopyRoutes,
   ...merlinRosterRoutes,
+  ...rosterImportRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
   problemReportsPost,

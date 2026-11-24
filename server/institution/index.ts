@@ -1,5 +1,15 @@
 // Public interface of server/institution; other areas import only this file.
 export {
+  isPlainName,
+  parseRosterCsv,
+  ROSTER_IMPORT_MAX_CSV_LENGTH,
+  ROSTER_IMPORT_MAX_ROWS,
+  type RosterFileError,
+  type RosterParse,
+  type RosterRow,
+  type RosterRowProblem,
+} from "./roster-import.ts";
+export {
   facultyRuleRefusal,
   publishFacultyRule,
   readFacultyRules,

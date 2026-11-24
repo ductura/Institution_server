@@ -28,6 +28,7 @@ import {
   createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
+  createRosterImportRoutesFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
@@ -343,6 +344,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createAdminCourseRouteFor(databases.main)",
     ids: ["institution.admin-courses.post"],
     routes: () => [createAdminCourseRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-ADMIN-2: the administrator's roster import, preview and confirmation.
+    call: "...createRosterImportRoutesFor(databases.main)",
+    ids: ["institution.roster-imports.post", "institution.roster-import-confirm.post"],
+    routes: () => createRosterImportRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // SRV-15: a course's seminar groups and their teachers.
@@ -900,6 +907,8 @@ describe("routes the entry point mounts itself", () => {
       "institution.assignment.get",
       "teacher.assignment-grade.get",
       "institution.admin-courses.post",
+      "institution.roster-imports.post",
+      "institution.roster-import-confirm.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",

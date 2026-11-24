@@ -12,6 +12,7 @@ import {
   AREA_NAMES,
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
+  createRosterImportRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createAssignmentGradeRouteFor,
   createAttachmentRoutesFor,
@@ -1856,6 +1857,17 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-ADMIN-2: the administrator's roster import; not an administrator, so 403.
+  "institution.roster-imports.post": {
+    path: `/api/v1/institution/admin/courses/${COURSE}/roster-imports`,
+    body: () => ({ source: "merlin", csv: "identifikator;ime;prezime\r\n" }),
+    live: 403,
+  },
+  "institution.roster-import-confirm.post": {
+    path: `/api/v1/institution/admin/roster-imports/${randomUUID()}/confirm`,
+    body: () => ({}),
+    live: 403,
+  },
   // SRV-1304: the administrator's retention dry run; not an administrator, so 403.
   "institution.retention.get": {
     method: "GET",
@@ -1902,6 +1914,7 @@ const FACTORIES = [
   "createAssignmentGradeRouteFor",
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
+  "createRosterImportRoutesFor",
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createRevisionRequestsRouteFor",
@@ -2024,6 +2037,7 @@ const MOUNTED = [
   createAssignmentGradeRouteFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
+  ...createRosterImportRoutesFor(databases.main),
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   createRevisionRequestsRouteFor(databases.main),
