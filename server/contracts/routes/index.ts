@@ -58,6 +58,18 @@ export {
   ReturnForRevisionResult,
   returnForRevisionRoutes,
 } from "./return-for-revision.ts";
+export {
+  MentorConsentInput,
+  THESIS_FORM_STATES,
+  THESIS_STAGES,
+  THESIS_WORK_TYPES,
+  ThesisFormCode,
+  ThesisFormInput,
+  ThesisSettingInput,
+  ThesisStageInput,
+  WorkThesisFormInput,
+  thesisRoutes,
+} from "./thesis.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export {

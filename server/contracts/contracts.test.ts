@@ -296,6 +296,16 @@ describe("route inventory", () => {
       "work.milestone-plan.add.post: app/api/works/[documentId]/milestone-plan/milestones/route.ts is not in the inventory",
       "work.milestone-plan.apply-template.post: app/api/works/[documentId]/milestone-plan/apply-template/route.ts is not in the inventory",
       "work.return-for-revision.post: app/api/works/[documentId]/return-for-revision/route.ts is not in the inventory",
+      "institution.thesis-forms.get: app/api/institution/thesis-forms/route.ts is not in the inventory",
+      "institution.thesis-forms.post: app/api/institution/thesis-forms/route.ts is not in the inventory",
+      "institution.thesis-settings.get: app/api/institution/thesis-settings/route.ts is not in the inventory",
+      "institution.thesis-settings.put: app/api/institution/thesis-settings/route.ts is not in the inventory",
+      "work.thesis-forms.get: app/api/works/[documentId]/thesis-forms/route.ts is not in the inventory",
+      "work.thesis-form.put: app/api/works/[documentId]/thesis-forms/[code]/route.ts is not in the inventory",
+      "work.mentor-consent.get: app/api/works/[documentId]/mentor-consent/route.ts is not in the inventory",
+      "work.mentor-consent.put: app/api/works/[documentId]/mentor-consent/route.ts is not in the inventory",
+      "work.thesis-stage.get: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
+      "work.thesis-stage.put: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
