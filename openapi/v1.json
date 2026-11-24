@@ -73934,7 +73934,7 @@
     "/api/v1/teacher/assignments/{assignmentId}/overview": {
       "get": {
         "operationId": "teacher.assignment-overview.get",
-        "summary": "Submission overview for each student visible to the caller, with a UTC minute and the record state from the signed receipt. A recorded submission awaiting its receipt has a null evidenceRecord. This read opens no work and returns no work text, hash or submission id. An inaccessible, unknown or malformed assignment id returns the same empty list as an assignment with no students.",
+        "summary": "Submission overview for each student visible to the caller, with a UTC minute and the record state from the signed receipt. A recorded submission awaiting its receipt has a null evidenceRecord. Each student also has noticeReadAt (when the student marked the notice as read, null before), noticeAcknowledged (version and time of the latest acknowledgment, null before) and revision (the state of the latest revision request on the assignment: open, responded, closed or withdrawn, with the time of its last change; null when there is none). This read opens no work and returns no work text, hash or submission id. An inaccessible, unknown or malformed assignment id returns the same empty list as an assignment with no students.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/overview/route.ts",
         "parameters": [
@@ -73982,7 +73982,10 @@
                               "submitted",
                               "requestedMinute",
                               "afterDeadline",
-                              "evidenceRecord"
+                              "evidenceRecord",
+                              "noticeReadAt",
+                              "noticeAcknowledged",
+                              "revision"
                             ],
                             "properties": {
                               "studentId": {
@@ -74020,6 +74023,83 @@
                               },
                               "evidenceRecord": {
                                 "type": "null"
+                              },
+                              "noticeReadAt": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "noticeAcknowledged": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "versionNo",
+                                      "acknowledgedAt"
+                                    ],
+                                    "properties": {
+                                      "versionNo": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "acknowledgedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "revision": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "state",
+                                      "changedAt"
+                                    ],
+                                    "properties": {
+                                      "state": {
+                                        "anyOf": [
+                                          {
+                                            "const": "open",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "responded",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "closed",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "withdrawn",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "changedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -74034,7 +74114,10 @@
                               "submitted",
                               "requestedMinute",
                               "afterDeadline",
-                              "evidenceRecord"
+                              "evidenceRecord",
+                              "noticeReadAt",
+                              "noticeAcknowledged",
+                              "revision"
                             ],
                             "properties": {
                               "studentId": {
@@ -74089,6 +74172,83 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "noticeReadAt": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "noticeAcknowledged": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "versionNo",
+                                      "acknowledgedAt"
+                                    ],
+                                    "properties": {
+                                      "versionNo": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "acknowledgedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "revision": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "state",
+                                      "changedAt"
+                                    ],
+                                    "properties": {
+                                      "state": {
+                                        "anyOf": [
+                                          {
+                                            "const": "open",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "responded",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "closed",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "withdrawn",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "changedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -74103,7 +74263,10 @@
                               "submitted",
                               "requestedMinute",
                               "afterDeadline",
-                              "evidenceRecord"
+                              "evidenceRecord",
+                              "noticeReadAt",
+                              "noticeAcknowledged",
+                              "revision"
                             ],
                             "properties": {
                               "studentId": {
@@ -74139,6 +74302,83 @@
                               },
                               "evidenceRecord": {
                                 "type": "null"
+                              },
+                              "noticeReadAt": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "noticeAcknowledged": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "versionNo",
+                                      "acknowledgedAt"
+                                    ],
+                                    "properties": {
+                                      "versionNo": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "acknowledgedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "revision": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "state",
+                                      "changedAt"
+                                    ],
+                                    "properties": {
+                                      "state": {
+                                        "anyOf": [
+                                          {
+                                            "const": "open",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "responded",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "closed",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "withdrawn",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "changedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -74153,7 +74393,10 @@
                               "submitted",
                               "requestedMinute",
                               "afterDeadline",
-                              "evidenceRecord"
+                              "evidenceRecord",
+                              "noticeReadAt",
+                              "noticeAcknowledged",
+                              "revision"
                             ],
                             "properties": {
                               "studentId": {
@@ -74201,6 +74444,83 @@
                                         "type": "string"
                                       }
                                     ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "noticeReadAt": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "noticeAcknowledged": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "versionNo",
+                                      "acknowledgedAt"
+                                    ],
+                                    "properties": {
+                                      "versionNo": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "acknowledgedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "revision": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "state",
+                                      "changedAt"
+                                    ],
+                                    "properties": {
+                                      "state": {
+                                        "anyOf": [
+                                          {
+                                            "const": "open",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "responded",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "closed",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "withdrawn",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "changedAt": {
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                        "type": "string"
+                                      }
+                                    }
                                   },
                                   {
                                     "type": "null"

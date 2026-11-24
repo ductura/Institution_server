@@ -130,7 +130,14 @@ type AssignmentWork = {
 };
 type RosterStudent = GroupStudent & { assignments: AssignmentWork[] };
 type EvidenceRecord = "continuous" | "with_gaps" | null;
+type RevisionStatus = "open" | "responded" | "closed" | "withdrawn";
+type OverviewFollowup = {
+  noticeReadAt: string | null;
+  noticeAcknowledged: { versionNo: number; acknowledgedAt: string } | null;
+  revision: { state: RevisionStatus; changedAt: string } | null;
+};
 type OverviewStudent = GroupStudent &
+  OverviewFollowup &
   (
     | { submitted: false; requestedMinute: null; afterDeadline: null; evidenceRecord: null }
     | {
@@ -158,11 +165,15 @@ SELECT r.student_id::text AS student_id, r.given_name, r.family_name, r.group_na
   FROM roster r LEFT JOIN works w ON w.student_id = r.student_id
  ORDER BY r.student_id, w.assignment_id`;
 
-const OVERVIEW_SQL = `SELECT student_id::text AS student_id, given_name, family_name,
-       group_name AS "groupName", submitted, requested_minute AS "requestedMinute",
-       after_deadline AS "afterDeadline", evidence_record AS "evidenceRecord"
-  FROM app.assignment_overview($1::uuid)
- ORDER BY student_id`;
+const OVERVIEW_SQL = `SELECT o.student_id::text AS student_id, o.given_name, o.family_name,
+       o.group_name AS "groupName", o.submitted, o.requested_minute AS "requestedMinute",
+       o.after_deadline AS "afterDeadline", o.evidence_record AS "evidenceRecord",
+       f.notice_read_at AS "noticeReadAt", f.notice_ack_version AS "noticeAckVersion",
+       f.notice_ack_at AS "noticeAckAt", f.revision_state AS "revisionState",
+       f.revision_changed_at AS "revisionChangedAt"
+  FROM app.assignment_overview($1::uuid) o
+  JOIN app.assignment_overview_followup($1::uuid) f ON f.student_id = o.student_id
+ ORDER BY o.student_id`;
 
 function groupStudentOf(row: Row): GroupStudent | null {
   const student = namedStudentOf(row);
@@ -219,10 +230,46 @@ function rosterOf(rows: Row[]): RosterStudent[] | null {
   return [...students.values()];
 }
 
+const REVISION_STATES: ReadonlySet<unknown> = new Set(["open", "responded", "closed", "withdrawn"]);
+
+function instantOf(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined;
+  const iso = value.toISOString();
+  return iso.length === 24 ? iso : undefined;
+}
+
+/** The notice and revision columns of one row, or null when they are not what the function returns. */
+function followupOf(row: Row): OverviewFollowup | null {
+  const { noticeAckVersion, revisionState } = row;
+  const readAt = instantOf(row.noticeReadAt);
+  const ackAt = instantOf(row.noticeAckAt);
+  const changedAt = instantOf(row.revisionChangedAt);
+  if (readAt === undefined || ackAt === undefined || changedAt === undefined) return null;
+  let noticeAcknowledged: OverviewFollowup["noticeAcknowledged"] = null;
+  if (noticeAckVersion === null || ackAt === null) {
+    if (noticeAckVersion !== null || ackAt !== null) return null;
+  } else {
+    if (!Number.isInteger(noticeAckVersion) || (noticeAckVersion as number) < 1) return null;
+    noticeAcknowledged = { versionNo: noticeAckVersion as number, acknowledgedAt: ackAt };
+  }
+  let revision: OverviewFollowup["revision"] = null;
+  if (revisionState === null || changedAt === null) {
+    if (revisionState !== null || changedAt !== null) return null;
+  } else {
+    if (!REVISION_STATES.has(revisionState)) return null;
+    revision = { state: revisionState as RevisionStatus, changedAt };
+  }
+  return { noticeReadAt: readAt, noticeAcknowledged, revision };
+}
+
 function overviewStudentOf(row: Row): OverviewStudent | null {
-  const student = groupStudentOf(row);
+  const base = groupStudentOf(row);
+  const followup = followupOf(row);
+  if (base === null || followup === null) return null;
+  const student = { ...base, ...followup };
   const { submitted, requestedMinute, afterDeadline, evidenceRecord } = row;
-  if (student === null || !isEvidenceRecord(evidenceRecord)) return null;
+  if (!isEvidenceRecord(evidenceRecord)) return null;
   if (
     submitted === false &&
     requestedMinute === null &&

@@ -28,7 +28,16 @@
               "submitted": true,
               "requestedMinute": "2026-12-20T21:14:00.000Z",
               "afterDeadline": false,
-              "evidenceRecord": "continuous"
+              "evidenceRecord": "continuous",
+              "noticeReadAt": "2026-12-18T09:00:00.000Z",
+              "noticeAcknowledged": {
+                "versionNo": 2,
+                "acknowledgedAt": "2026-12-18T09:05:00.000Z"
+              },
+              "revision": {
+                "state": "closed",
+                "changedAt": "2026-12-19T10:30:00.000Z"
+              }
             },
             {
               "studentId": "00000000-0000-4000-8000-0000000000e2",
@@ -38,7 +47,13 @@
               "submitted": true,
               "requestedMinute": "2026-12-20T21:14:00.000Z",
               "afterDeadline": true,
-              "evidenceRecord": "with_gaps"
+              "evidenceRecord": "with_gaps",
+              "noticeReadAt": "2026-12-18T11:00:00.000Z",
+              "noticeAcknowledged": null,
+              "revision": {
+                "state": "open",
+                "changedAt": "2026-12-19T08:00:00.000Z"
+              }
             },
             {
               "studentId": "00000000-0000-4000-8000-0000000000e3",
@@ -48,7 +63,13 @@
               "submitted": true,
               "requestedMinute": "2026-12-20T21:14:00.000Z",
               "afterDeadline": false,
-              "evidenceRecord": null
+              "evidenceRecord": null,
+              "noticeReadAt": null,
+              "noticeAcknowledged": null,
+              "revision": {
+                "state": "responded",
+                "changedAt": "2026-12-19T12:00:00.000Z"
+              }
             },
             {
               "studentId": "00000000-0000-4000-8000-0000000000e4",
@@ -58,7 +79,10 @@
               "submitted": false,
               "requestedMinute": null,
               "afterDeadline": null,
-              "evidenceRecord": null
+              "evidenceRecord": null,
+              "noticeReadAt": null,
+              "noticeAcknowledged": null,
+              "revision": null
             }
           ]
         }

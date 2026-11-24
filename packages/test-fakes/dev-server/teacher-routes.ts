@@ -92,6 +92,51 @@ function names(state: State, studentId: string) {
     : { givenName: student.givenName, familyName: student.familyName };
 }
 
+const REVISION_STATE = {
+  open: "open",
+  reopened: "open",
+  responded: "responded",
+  accepted: "closed",
+  withdrawn: "withdrawn",
+} as const;
+
+/**
+ * NZ-8 and NZ-12: when the student read the notice, the latest acknowledged
+ * version, and the state of the latest revision request on the student's work.
+ * Read from the same state as the student's own routes; a revision has no
+ * deadline in the record, so none is returned.
+ */
+function followup(state: State, assignment: Assignment | null, studentId: string) {
+  const acknowledged = assignment?.acknowledged.get(studentId) ?? null;
+  const readTimes = [...(assignment?.read ?? [])]
+    .filter(([key]) => key.startsWith(`${studentId}:`))
+    .map(([, at]) => at)
+    .sort();
+  const documentId = state.works.find(
+    (w) => w.assignmentId === assignment?.id && w.studentId === studentId,
+  )?.documentId;
+  const latest = state.revisionRequests
+    .filter((r) => r.documentId === documentId)
+    .sort((a, b) => b.seq - a.seq)[0];
+  return {
+    noticeReadAt: readTimes[0] ?? null,
+    noticeAcknowledged:
+      acknowledged === null
+        ? null
+        : { versionNo: acknowledged.version, acknowledgedAt: acknowledged.at },
+    revision:
+      latest === undefined
+        ? null
+        : {
+            state: REVISION_STATE[latest.state],
+            changedAt: [latest.openedAt, latest.response?.at, latest.closing?.at]
+              .filter((at): at is string => at !== undefined)
+              .sort()
+              .at(-1)!,
+          },
+  };
+}
+
 function groupName(state: State, courseId: string, studentId: string): string | null {
   const course = state.courses.find((c) => c.id === courseId);
   return course?.groups.find((g) => g.studentIds.includes(studentId))?.name ?? null;
@@ -414,6 +459,7 @@ export const TEACHER_HANDLERS: Handlers = {
         studentId: s.studentId,
         ...names(state, s.studentId),
         groupName: groupName(state, assignment?.courseId ?? "", s.studentId),
+        ...followup(state, assignment, s.studentId),
       };
       if (!s.submitted)
         return {
