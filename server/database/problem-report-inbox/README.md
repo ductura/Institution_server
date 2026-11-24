@@ -1,0 +1,3 @@
+# Prijave problema po primatelju
+
+Čitanje i stanje prijava problema za one kojima su usmjerene (SRV-ADMIN-1, NF-7 OA-7; migracija `20261215100000_problem_report_routing.sql`). Kome prijava stiže odlučuje baza: tehnička mrežnom inženjeru ustanove, prijava o računu i ulogama potvrđenom administratoru ustanove, prijava o kolegiju nastavničkom timu tog kolegija (bez navedenog kolegija administratoru). Redak nikad ne imenuje pošiljatelja. `identity.set_problem_report_status` mijenja stanje „zaprimljeno” ili „riješeno”; svaka promjena ostaje u tragu koji se samo dopisuje (pgTAP `db/main/tests/232-problem-report-routing.sql`). `ZD401`, `ZD403`, `ZD404` i `ZD422` postaju odbijanja; drugo i redak izvan svoje klase su `unavailable`.

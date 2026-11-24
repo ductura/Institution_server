@@ -274,3 +274,31 @@ describe("problem report port: success and calls", () => {
       expect(text).not.toContain(leak);
   });
 });
+
+describe("problem report port: a course report (SRV-ADMIN-1)", () => {
+  const COURSE = "00000000-0000-4000-8000-0000000000c1";
+  const COURSE_SQL =
+    "SELECT identity.submit_course_problem_report($1::uuid, $2, $3, $4, $5, $6::integer, $7) AS reference";
+
+  it("calls the course RPC with the course in place of the category", async () => {
+    const { port, calls } = store({ rows: [{ reference: REFERENCE }] });
+    const course = { ...REPORT, category: "course" as const };
+    expect(await port.submit(TOKEN, course, COURSE)).toEqual({ ok: true, value: REFERENCE });
+    expect(calls.queries).toEqual([
+      { text: COURSE_SQL, values: [COURSE, ...IN_ORDER.slice(1)], token: TOKEN },
+    ]);
+  });
+
+  it("keeps the plain call when no course is named", async () => {
+    const { port, calls } = store({ rows: [{ reference: REFERENCE }] });
+    await port.submit(TOKEN, REPORT);
+    expect(calls.queries.map((query) => query.text)).toEqual([SQL]);
+  });
+
+  it("a course outside the reporter's reach is the database's ZD422", async () => {
+    const { port } = store({ throws: dbError("ZD422") });
+    expect(await port.submit(TOKEN, { ...REPORT, category: "course" }, COURSE)).toEqual(
+      fail(PROBLEM_REPORT_INVALID),
+    );
+  });
+});

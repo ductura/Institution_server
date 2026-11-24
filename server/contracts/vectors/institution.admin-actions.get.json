@@ -1,0 +1,201 @@
+{
+  "route": "institution.admin-actions.get",
+  "vectors": [
+    {
+      "name": "log",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": [
+            {
+              "at": "2026-11-22T10:30:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "export_approved",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-22T09:00:00.000Z",
+              "actorRole": "registry_clerk",
+              "action": "export_requested",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-21T15:00:00.000Z",
+              "actorRole": "operator",
+              "action": "hold_released",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-21T09:15:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "hold_placed",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-20T12:00:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "threshold_changed",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-20T11:00:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "rule_published",
+              "subjectRole": null,
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-19T08:00:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "role_revoked",
+              "subjectRole": "teacher",
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-18T08:00:00.000Z",
+              "actorRole": "institution_admin",
+              "action": "role_confirmed",
+              "subjectRole": "network_engineer",
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-17T08:00:00.000Z",
+              "actorRole": "operator",
+              "action": "role_confirmed",
+              "subjectRole": "registry_clerk",
+              "outcome": "completed"
+            },
+            {
+              "at": "2026-11-16T08:00:00.000Z",
+              "actorRole": "operator",
+              "action": "role_confirmed",
+              "subjectRole": "institution_admin",
+              "outcome": "completed"
+            }
+          ],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": [],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000000ad01"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000000ad02"
+        }
+      }
+    },
+    {
+      "name": "query",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        },
+        "query": {
+          "od": "2026-11-01"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000000ad03"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000ad04"
+        }
+      }
+    }
+  ]
+}

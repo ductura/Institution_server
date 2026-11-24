@@ -26,6 +26,31 @@
       }
     },
     {
+      "name": "course-named",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "appVersion": "1.4.0",
+          "category": "course",
+          "courseId": "00000000-0000-4000-8000-0000000000c1",
+          "description": "Izmišljeni opis: ne vidim rok zadatka."
+        }
+      },
+      "response": {
+        "status": 201,
+        "contentType": "application/json",
+        "body": {
+          "reference": "PR-2A3B4C5D6E"
+        }
+      }
+    },
+    {
       "name": "origin-missing",
       "kind": "error",
       "code": "origin_missing",
@@ -411,6 +436,36 @@
           "messageKey": "errors.unavailable",
           "status": 503,
           "requestId": "00000000-0000-4000-8000-000000000032"
+        }
+      }
+    },
+    {
+      "name": "course-on-another-kind",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "appVersion": "1.4.0",
+          "category": "technical",
+          "courseId": "00000000-0000-4000-8000-0000000000c1",
+          "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000000af12"
         }
       }
     }

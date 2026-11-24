@@ -87,6 +87,8 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createProblemReportInboxRoutesFor,
+  createAdminActionLogRouteFor,
   createRetentionRouteFor,
   createFacultyRuleRoutesFor,
   createAssistantSettingRouteFor,
@@ -1388,6 +1390,26 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  // SRV-ADMIN-1: a live session with no reader position (no administrator,
+  // network engineer or teacher role) reads no reports, changes no state and
+  // reads no action log.
+  "support.problem-reports.get": {
+    method: "GET",
+    path: "/api/v1/problem-reports",
+    body: () => undefined,
+    live: 403,
+  },
+  "support.problem-report-status.post": {
+    path: "/api/v1/problem-reports/PR-0A1B2C3D4E/status",
+    body: () => ({ status: "resolved" }),
+    live: 403,
+  },
+  "institution.admin-actions.get": {
+    method: "GET",
+    path: "/api/v1/institution/admin-actions",
+    body: () => undefined,
+    live: 403,
+  },
   "institution.legal-holds.get": {
     method: "GET",
     path: "/api/v1/institution/legal-holds",
@@ -1868,6 +1890,8 @@ const FACTORIES = [
   "createTeacherDeclarationRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
+  "createProblemReportInboxRoutesFor",
+  "createAdminActionLogRouteFor",
   "createRetentionRouteFor",
   "createFacultyRuleRoutesFor",
   "createAssistantSettingRouteFor",
@@ -1988,6 +2012,8 @@ const MOUNTED = [
   createTeacherDeclarationRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
+  ...createProblemReportInboxRoutesFor(databases.main),
+  createAdminActionLogRouteFor(databases.main),
   createRetentionRouteFor(databases.main),
   ...createFacultyRuleRoutesFor(databases.main),
   createAssistantSettingRouteFor(databases.main),
@@ -2252,6 +2278,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id === "support.problem-reports.post" ||
+        id === "support.problem-reports.get" ||
+        id === "support.problem-report-status.post" ||
         id === "sources.lookup.post" ||
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||

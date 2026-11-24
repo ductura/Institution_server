@@ -2,7 +2,7 @@
 // (work.self-note.*, work.reading-place.*), the seen marks (work.seen.post,
 // work.seen-by-student.get) and the mentor's overview
 // (mentorship.overview.get). Invented data only. The real rules are the RPCs
-// of 20261214160000: the note is the owner's alone (anyone else reads 404),
+// of 20261217100000: the note is the owner's alone (anyone else reads 404),
 // the first instant of a mark stays, and the overview has no score or rank.
 // The fake knows the author of a message only by its senderRole, so a
 // teacher reads as "own" every mark the student made on a teacher's message

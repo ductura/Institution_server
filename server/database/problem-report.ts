@@ -56,12 +56,19 @@ export const PROBLEM_REPORT_PARAMETERS = Object.freeze([
 
 /** The port the problem report service submits through. */
 export type ProblemReportStore = {
-  submit(token: string, report: ProblemReport): Promise<Result<string>>;
+  /**
+   * SRV-ADMIN-1 (OA-7): with `courseId`, a course report about that course of
+   * the reporter (identity.submit_course_problem_report); a course outside the
+   * reporter's reach is PROBLEM_REPORT_INVALID, like any value outside its class.
+   */
+  submit(token: string, report: ProblemReport, courseId?: string): Promise<Result<string>>;
 };
 
 // Spelled out in full, as in Ductus, so a search for "identity.<name>(" finds it.
 const SUBMIT_SQL =
   "SELECT identity.submit_problem_report($1, $2, $3, $4, $5, $6::integer, $7) AS reference";
+const SUBMIT_COURSE_SQL =
+  "SELECT identity.submit_course_problem_report($1::uuid, $2, $3, $4, $5, $6::integer, $7) AS reference";
 const REFERENCE = /^PR-[0-9A-F]{10}$/;
 const KNOWN: ReadonlyMap<unknown, AppError> = new Map([
   ["ZD401", PROBLEM_REPORT_UNAUTHENTICATED],
@@ -92,13 +99,16 @@ function referenceOf(result: unknown): string | null {
 /** The problem report port over a withActor; it never throws. */
 export function createProblemReportStore(withActor: WithActor): ProblemReportStore {
   return {
-    async submit(token, report) {
+    async submit(token, report, courseId) {
       let result: unknown;
       try {
         const values = PROBLEM_REPORT_PARAMETERS.map((key) => report[key]);
-        result = await withActor(token, (tx) =>
-          tx.query<{ reference: unknown }>(SUBMIT_SQL, values),
-        );
+        // The course call takes the course in place of the category, which is "course".
+        const [sql, parameters] =
+          courseId === undefined
+            ? [SUBMIT_SQL, values]
+            : [SUBMIT_COURSE_SQL, [courseId, ...values.slice(1)]];
+        result = await withActor(token, (tx) => tx.query<{ reference: unknown }>(sql, parameters));
       } catch (thrown) {
         return fail(KNOWN.get(codeOf(thrown)) ?? PROBLEM_REPORT_DATABASE_ERROR);
       }

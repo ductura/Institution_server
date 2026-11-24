@@ -1,6 +1,6 @@
 // SRV-MENTOR-3 (Ductus#2055; MK-8, MK-9, MK-11, PG-9): the database port of
 // the note to self, the reading place, the seen marks and the mentor's
-// overview (20261214160000). Each call is one withActor transaction over one
+// overview (20261217100000). Each call is one withActor transaction over one
 // RPC of schema collaboration; the RPCs decide who may: the student owner
 // alone for the note and the reading place, the student and the teachers of
 // the work for the seen marks, the mentor of an open mentorship for the

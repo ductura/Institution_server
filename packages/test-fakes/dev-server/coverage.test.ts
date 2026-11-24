@@ -1041,6 +1041,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  // SRV-ADMIN-1 (OA-7, OA-3): the teacher of the course reads and resolves the
+  // invented report about it; the administrator reads the log.
+  "support.problem-reports.get": { request: { path: "/api/v1/problem-reports", as: "nastavnik" } },
+  "support.problem-report-status.post": {
+    request: {
+      path: "/api/v1/problem-reports/PR-2A3B4C5D6E/status",
+      as: "nastavnik",
+      body: { status: "resolved" },
+    },
+  },
+  "institution.admin-actions.get": {
+    request: { path: "/api/v1/institution/admin-actions", as: "administrator" },
+  },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
   "work.milestones.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestones`, as: "student" },

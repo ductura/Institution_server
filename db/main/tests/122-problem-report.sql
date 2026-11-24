@@ -15,8 +15,8 @@ SELECT is(
    FROM pg_attribute a WHERE a.attrelid = 'identity.problem_report'::regclass AND a.attnum > 0 AND NOT a.attisdropped),
   'id uuid not null, reference text not null, institution_id uuid not null, user_id uuid not null, category text not null, '
   'description text not null, route text, app_version text not null, browser_family text not null, browser_major integer, '
-  'sync_state text, created_at timestamp with time zone not null',
-  'problem_report has no column for a title, a paragraph, a work or a journal'
+  'sync_state text, created_at timestamp with time zone not null, course_id uuid',
+  'problem_report has no column for a title, a paragraph, a work or a journal (SRV-ADMIN-1 adds only the course key)'
 );
 SELECT is(
   (SELECT string_agg(a.attname, ',' ORDER BY a.attnum)
@@ -39,9 +39,19 @@ SELECT is(
           || CASE WHEN has_function_privilege('public', p.oid, 'EXECUTE') THEN ' public' ELSE '' END, ' | ' ORDER BY p.proname)
    FROM pg_proc p
    WHERE p.proname LIKE '%problem\_report%'),
-  'submit_problem_report(p_category text, p_description text, p_route text, p_app_version text, p_browser_family text, '
+  'problem_report_reader(OUT user_id uuid, OUT institution_id uuid, OUT is_admin boolean, OUT is_engineer boolean, '
+  'OUT is_teacher boolean) record s search_path="" | problem_report_routed_to(p_category text, p_course_id uuid, '
+  'p_user_id uuid, p_is_admin boolean, p_is_engineer boolean) text s search_path="" | routed_problem_reports() '
+  'TABLE(reference text, category text, routed_to text, course_id uuid, description text, route text, app_version text, '
+  'browser_family text, browser_major integer, sync_state text, created_at timestamp with time zone, status text, '
+  'status_changed_at timestamp with time zone, status_changed_by_role text, status_changed_by_me boolean) s definer '
+  'search_path="" app | set_problem_report_status(p_reference text, p_status text) timestamp with time zone v definer '
+  'search_path="" app | submit_course_problem_report(p_course_id uuid, p_description text, p_route text, '
+  'p_app_version text, p_browser_family text, p_browser_major integer, p_sync_state text) text v definer search_path="" app'
+  ' | submit_problem_report(p_category text, p_description text, p_route text, p_app_version text, p_browser_family text, '
   'p_browser_major integer, p_sync_state text) text v definer search_path="" app',
-  'one call for ductus_app, with no argument for a user, an institution or a work, and PUBLIC calls it not'
+  'the calls for ductus_app (submit, the course report, and since SRV-ADMIN-1 the routed read and the state) take no '
+  'user, institution or work, the two helpers are the owner''s, and PUBLIC calls none'
 );
 SELECT ok(
   (SELECT c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole

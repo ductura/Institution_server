@@ -145,7 +145,7 @@ SELECT bag_eq(
             ('collaboration.mark_work_items_seen(text,text[],uuid[])'),
             ('collaboration.list_work_items_seen_by_student(text)'),
             ('collaboration.mentor_student_overview()') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the seven note-to-self, seen and overview RPCs of 233');
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the seven note-to-self, seen and overview RPCs of 235');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
@@ -153,7 +153,7 @@ SELECT bag_eq(
             ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)'),
             ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_work_reviews(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)'),
             ('collaboration.delete_work_self_notes(text,uuid)'), ('collaboration.delete_work_items_seen(text,uuid)') $$,
-  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201 and the note-to-self and seen-mark deletes of 233');
+  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201 and the note-to-self and seen-mark deletes of 235');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_worker', 'ductus_auth', 'ductus_evidence']) AS r

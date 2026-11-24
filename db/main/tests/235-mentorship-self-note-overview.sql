@@ -1,6 +1,6 @@
 -- SRV-MENTOR-3 (Ductus#2055; MK-8, MK-9, MK-11, PG-9): the student's note to
 -- self and reading place, the "student je vidio" marks and the mentor's
--- overview of the own students (20261214160000). Personas of institution.inc,
+-- overview of the own students (20261217100000). Personas of institution.inc,
 -- evidence-acceptance.inc and mentorship.inc, all invented: Ana writes zm1
 -- under her mentor Marko (ms1) and doc-a in Vesna's course K1; Dora, Petra,
 -- Tomo and the others have no part in Ana's works.
@@ -82,7 +82,12 @@ CREATE FUNCTION pg_temp.overview(p_actor text) RETURNS text LANGUAGE sql AS $$
          FROM collaboration.mentor_student_overview() $q$)
 $$;
 SELECT is(pg_temp.overview('marko'), 't|f|f|master_thesis|Nacrt|1|2|not_submitted|student|10|0',
-  'before the work is opened Marko sees Ana waiting on the first stage, ten days to its deadline');
+  'before the work is opened Marko sees Ana waiting on the first stage, ten days to its deadline; she has no name pair yet');
+-- Ana's name pair as the sign-in stores it (invented); the overview carries it to her mentor.
+INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+VALUES (pg_temp.id('ana'), pg_temp.id('fak_a'), 'Ana', 'Izmišljena');
+SELECT is(pg_temp.ask('marko', $q$ SELECT given_name || ' ' || family_name FROM collaboration.mentor_student_overview() $q$),
+  'Ana Izmišljena', 'the mentor reads the student''s name in the overview');
 SELECT is(pg_temp.overview(a), 'empty', a || ' mentors no open mentorship and sees nobody')
   FROM (VALUES ('ana'), ('vesna'), ('dora'), ('petra'), ('tomo')) AS t (a);
 SELECT is(pg_temp.overview('nina'), 'empty', 'Nina, whose teacher role is unconfirmed, sees none of her mentorships');
@@ -135,12 +140,12 @@ SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_wo
 -- 4. Seen marks: messages, a milestone revision and a published comment.
 INSERT INTO ref SELECT 'msg_a', pg_temp.ask('ana', format($$ SELECT message_id FROM collaboration.create_work_message(%L, 'Poslala sam nacrt.') $$, pg_temp.mdoc()));
 INSERT INTO ref SELECT 'msg_m', pg_temp.ask('marko', format($$ SELECT message_id FROM collaboration.create_work_message(%L, 'Pogledat ću do petka.') $$, pg_temp.mdoc()));
-SELECT is(pg_temp.overview('marko'), 't|t|f|master_thesis|Nacrt|1|2|not_submitted|mentor|10|1',
+SELECT is(pg_temp.overview('marko'), 't|t|t|master_thesis|Nacrt|1|2|not_submitted|mentor|10|1',
   'an unopened message of Ana makes the work wait on Marko');
 SELECT is(pg_temp.ask('marko', format($$ SELECT string_agg(item_kind, ',') FROM collaboration.mark_work_items_seen(%L, ARRAY['message', 'message'], ARRAY[%L, %L]::uuid[]) $$,
     pg_temp.mdoc(), pg_temp.id('msg_a'), pg_temp.id('msg_m'))),
   'message', 'Marko opens both messages; only Ana''s is recorded, his own is passed over');
-SELECT is(pg_temp.overview('marko'), 't|t|f|master_thesis|Nacrt|1|2|not_submitted|student|10|0',
+SELECT is(pg_temp.overview('marko'), 't|t|t|master_thesis|Nacrt|1|2|not_submitted|student|10|0',
   'once opened, the message is no longer new');
 SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.list_work_items_seen_by_student(%L) $$, pg_temp.mdoc())), '0',
   'nothing of Marko''s has been seen by Ana yet');
@@ -149,12 +154,12 @@ SELECT is(pg_temp.ask('marko', format($$ SELECT count(*) FROM collaboration.list
 
 SELECT is(substr(pg_temp.ask('ana', format('SELECT state FROM app.submit_work_milestone(%L, %L::uuid)', pg_temp.mdoc(), '00000000-0000-4000-8000-000000000301')), 1, 9),
   'submitted', 'Ana submits the first stage');
-SELECT is(pg_temp.overview('marko'), 't|t|f|master_thesis|Nacrt|1|2|submitted|mentor|10|0',
+SELECT is(pg_temp.overview('marko'), 't|t|t|master_thesis|Nacrt|1|2|submitted|mentor|10|0',
   'a submitted stage waits on the mentor');
 SELECT is(pg_temp.ask('marko', format('SELECT state FROM app.request_work_milestone_revision(%L, %L::uuid, %L, %L::timestamptz)',
     pg_temp.mdoc(), '00000000-0000-4000-8000-000000000301', 'Dopuni uvod.', now() + interval '3 days')),
   'revision_requested', 'Marko asks for a revision within three days');
-SELECT is(pg_temp.overview('marko'), 't|t|f|master_thesis|Nacrt|1|2|revision_requested|student|3|0',
+SELECT is(pg_temp.overview('marko'), 't|t|t|master_thesis|Nacrt|1|2|revision_requested|student|3|0',
   'the revision deadline is the next one, and the work waits on Ana');
 INSERT INTO ref SELECT 'rev', e.id::text FROM institution.work_milestone_event e
  WHERE e.document_id = pg_temp.mdoc() AND e.kind = 'revision_requested';
@@ -204,7 +209,7 @@ SELECT is(substr(pg_temp.ask('ana', format('SELECT state FROM app.submit_work_mi
   'submitted', 'Ana submits the revision');
 SELECT is(pg_temp.ask('marko', format('SELECT state FROM app.approve_work_milestone(%L, %L::uuid, NULL)', pg_temp.mdoc(), '00000000-0000-4000-8000-000000000301')),
   'approved', 'Marko approves the first stage');
-SELECT is(pg_temp.overview('marko'), 't|t|f|master_thesis|Poglavlje|2|2|not_submitted|student|40|0',
+SELECT is(pg_temp.overview('marko'), 't|t|t|master_thesis|Poglavlje|2|2|not_submitted|student|40|0',
   'the second stage is now the current one, forty days to its deadline');
 SET LOCAL ROLE ductus_identity;
 UPDATE institution.mentorship SET ended_at = now() WHERE id = pg_temp.id('ms1');

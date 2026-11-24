@@ -71,6 +71,8 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createProblemReportInboxRoutesFor,
+  createAdminActionLogRouteFor,
   createRetentionRouteFor,
   createFacultyRuleRoutesFor,
   createAssistantSettingRouteFor,
@@ -406,6 +408,10 @@ async function main(): Promise<void> {
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
+      // SRV-ADMIN-1 (NF-7 OA-7, OA-3): problem reports routed by kind and their
+      // state; the administrator's log of administrator and operator actions.
+      ...createProblemReportInboxRoutesFor(databases.main),
+      createAdminActionLogRouteFor(databases.main),
       // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run.
       createRetentionRouteFor(databases.main),
       // SRV-1406: the versioned rules of the institution, for its administrator.

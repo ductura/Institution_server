@@ -1,6 +1,6 @@
-// SRV-MENTOR-3 over a real database (20261214160000): the port of the note to
+// SRV-MENTOR-3 over a real database (20261217100000): the port of the note to
 // self, the reading place and the seen marks, as the routes call it. The
-// rules themselves are db/main/tests/233-mentorship-self-note-overview.sql;
+// rules themselves are db/main/tests/235-mentorship-self-note-overview.sql;
 // this checks the mapping of real rows. Invented personas of the fixtures.
 import { readFileSync } from "node:fs";
 

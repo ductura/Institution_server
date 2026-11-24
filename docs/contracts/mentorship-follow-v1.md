@@ -1,11 +1,11 @@
 # Praćenje mentorskog rada v1: poruka sebi, „student je vidio” i „Moji studenti”
 
-**Status: ugovor zadatka SRV-MENTOR-3** (`mentorstvo-poruka-sebi-pregled`, `Risk: critical`). Izvor je nalog orkestratora na Ductus#2055 (c.7116185492) s odlukama vlasnika od 23. 11. 2026. za NF-6 (MK-8, MK-9, MK-11) i NF-5 PG-9. Ugovor je aditivan: ne mijenja nijednu postojeću rutu ni polje. API 1.99.0.
+**Status: ugovor zadatka SRV-MENTOR-3** (`mentorstvo-poruka-sebi-pregled`, `Risk: critical`). Izvor je nalog orkestratora na Ductus#2055 (c.7116185492) s odlukama vlasnika od 23. 11. 2026. za NF-6 (MK-8, MK-9, MK-11) i NF-5 PG-9. Ugovor je aditivan: ne mijenja nijednu postojeću rutu ni polje. API 1.102.0.
 
 Kod:
 
-- migracija `db/main/migrations/20261214160000_mentorship_self_note_overview.sql`;
-- pgTAP `db/main/tests/233-mentorship-self-note-overview.sql` (matrica pristupa tih tablica i RPC-ova, po uzoru na `164-work-message-access.sql`);
+- migracija `db/main/migrations/20261217100000_mentorship_self_note_overview.sql`;
+- pgTAP `db/main/tests/235-mentorship-self-note-overview.sql` (matrica pristupa tih tablica i RPC-ova, po uzoru na `164-work-message-access.sql`);
 - rute `server/contracts/routes/mentorship-follow.ts`, vektori `server/contracts/vectors/work.self-note.*`, `work.reading-place.*`, `work.seen*`, `mentorship.overview.get.json`;
 - priključak baze `server/database/mentorship-follow/`, HTTP rub `server/http/mentorship-follow/`;
 - lažni dev server `packages/test-fakes/dev-server/mentorship-follow-routes.ts` (samo izmišljeni podaci).
