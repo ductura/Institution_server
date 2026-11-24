@@ -8,6 +8,7 @@
 -- doc-b in Petra's course K3 (fak-b). Every "doc-gone-*" is a work of fak-a
 -- whose document is gone, with rows of one kind only, so each kind is found on
 -- its own; "doc-b" in fak-a names a document that exists only in fak-b.
+-- Section 6 covers the legal hold (review of #684).
 BEGIN;
 SET LOCAL lc_messages TO 'C';
 \ir fixtures/evidence-acceptance.inc
@@ -152,6 +153,52 @@ SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT collaboration.pur
 SELECT is((SELECT count(*) FROM collaboration.work_message WHERE document_id = 'doc-gone-mixed')
         + (SELECT count(*) FROM collaboration.work_review WHERE document_id = 'doc-gone-mixed'), 0::bigint,
   'and nothing of it is left');
+
+-- 6. Legal hold (review of #684): a gone work held on itself, on a student or
+-- on an assignment of its rows is neither counted nor removed; a gone work
+-- next to it without a hold goes. Holds are written as their owner would
+-- (no RPC places a hold on a work that does not exist).
+SELECT pg_temp.put('review', 'fak_a', 'doc-held-work', 'z1', 'ana', 'vesna');
+SELECT pg_temp.put('review', 'fak_a', 'doc-held-student', 'z1', 'dora', 'vesna');
+SELECT pg_temp.put('review', 'fak_a', 'doc-held-assignment', 'z2', 'nina', 'marko');
+INSERT INTO collaboration.work_item_seen (institution_id, document_id, item_kind, item_id, viewer_id)
+VALUES (pg_temp.id('fak_a'), 'doc-held-viewer', 'message', '00000000-0000-4000-8000-000000000392', pg_temp.id('boris'));
+SELECT pg_temp.put('review', 'fak_a', 'doc-free', 'z1', 'ana', 'vesna');
+INSERT INTO evidence.legal_hold (institution_id, subject_type, subject_id, case_reference, placed_by)
+VALUES (pg_temp.id('fak_a'), 'work', 'doc-held-work', 'Predmet 1/2026', pg_temp.id('iva')),
+       (pg_temp.id('fak_a'), 'student', pg_temp.id('dora')::text, 'Predmet 2/2026', pg_temp.id('iva')),
+       (pg_temp.id('fak_a'), 'assignment', pg_temp.id('z2')::text, 'Predmet 3/2026', pg_temp.id('iva')),
+       (pg_temp.id('fak_a'), 'student', pg_temp.id('boris')::text, 'Predmet 4/2026', pg_temp.id('iva'));
+CREATE FUNCTION pg_temp.held() RETURNS text LANGUAGE sql AS $$
+  SELECT concat_ws(' ',
+    (SELECT count(*) FROM collaboration.work_review WHERE document_id = 'doc-held-work'),
+    (SELECT count(*) FROM collaboration.work_review WHERE document_id = 'doc-held-student'),
+    (SELECT count(*) FROM collaboration.work_review WHERE document_id = 'doc-held-assignment'),
+    (SELECT count(*) FROM collaboration.work_item_seen WHERE document_id = 'doc-held-viewer'),
+    (SELECT count(*) FROM collaboration.work_review WHERE document_id = 'doc-free'))
+$$;
+SELECT is(pg_temp.held(), '1 1 1 1 1', 'four held gone works and one free gone work, one row each');
+SELECT is(pg_temp.dry_run(), '1', 'the dry run counts only the free work');
+SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT collaboration.purge_orphan_work_data()::text $$), '1',
+  'the purge removes only the free work''s row');
+SELECT is(pg_temp.held(), '1 1 1 1 0',
+  'the work held on itself, on its student, on its assignment and on the viewer of its mark stay untouched');
+SELECT is(pg_temp.rows('fak_b', 'doc-b') || ' ' || pg_temp.rows('fak_a', 'doc-a'), '1|1|1|1|1|1|1|1|1 1|1|1|1|1|1|1|1|1',
+  'and the existing works still keep every row');
+
+-- Once every hold is released, the next run removes them.
+UPDATE evidence.legal_hold SET released_at = now(), release_request_ref = 'Zahtjev 9/2026', release_reason = 'Predmet zatvoren.'
+ WHERE released_at IS NULL;
+SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT collaboration.purge_orphan_work_data()::text $$), '4',
+  'with the holds released, the four works go');
+SELECT is(pg_temp.held(), '0 0 0 0 0', 'and nothing of them is left');
+
+-- 7. The identity role, owner of the purge, may ask about a hold; no runtime role gains it.
+SELECT bag_eq(
+  $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_identity', 'ductus_auth', 'ductus_test_stranger', 'public']) AS r
+      WHERE has_function_privilege(r, 'app.is_on_legal_hold(text,text)', 'EXECUTE') $$,
+  $$ VALUES ('ductus_retention'), ('ductus_identity') $$,
+  'only retention and the identity role ask whether a subject is held');
 
 SELECT * FROM finish();
 ROLLBACK;
