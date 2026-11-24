@@ -30,6 +30,7 @@ import {
   createStaffAffiliationRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
   createStudentConversationsRouteFor,
   createStudentAssignmentsRouteFor,
@@ -406,6 +407,9 @@ async function main(): Promise<void> {
       // SRV-22: the student's own submission state and word range of one
       // assignment, the receipt byte for byte as the submission bound it.
       ...createStudentSubmissionRoutesFor(databases.main),
+      // SRV-9C, INT-31: the PDF of the receipt, for the student and for the
+      // teacher, its verification link on the same origin as the pipeline.
+      ...createReceiptPdfRoutesFor(databases.main, APP_ORIGIN),
       // SRV-NG: the notice of the current version for a student of the course (E-6).
       createStudentNoticeRouteFor(databases.main),
       // Faza 3 readiness: the student's assignment list (DAN-803), own access log

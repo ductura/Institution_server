@@ -1,9 +1,15 @@
 import { receiptPdfHr } from "../../locales/index.ts";
 import { ROUTES } from "../contracts/index.ts";
 import { renderReceiptPdf } from "../downloads/index.ts";
-import type { StudentSubmissionAnswer } from "../institution/index.ts";
+import { createMySubmissionStateReader } from "../database/index.ts";
+import {
+  readStudentSubmission,
+  readTeacherSubmission,
+  type StudentSubmissionAnswer,
+} from "../institution/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
+import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
@@ -62,4 +68,23 @@ export function createReceiptPdfRoutes(read: ReadReceipt, origin: string | null)
       },
     };
   });
+}
+
+/**
+ * The two PDF routes over main's application withActor (INT-31): the student
+ * reads their own receipt, the teacher one student's, through the same reader
+ * as student.submission.get and teacher.submission-receipt.get.
+ */
+export function createReceiptPdfRoutesFor(
+  main: Pick<Databases["main"], "withActor">,
+  origin: string | null,
+): Route[] {
+  const reader = createMySubmissionStateReader(main.withActor);
+  return createReceiptPdfRoutes(
+    (token, assignmentId, studentId) =>
+      studentId === undefined
+        ? readStudentSubmission(reader, token, assignmentId)
+        : readTeacherSubmission(reader, token, assignmentId, studentId),
+    origin,
+  );
 }

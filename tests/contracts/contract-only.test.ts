@@ -79,6 +79,7 @@ import {
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
   createStaffAffiliationRouteFor,
   createStudentNotesRoutesFor,
@@ -728,6 +729,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-9C, INT-31: the receipt PDF over the main database and the pipeline's origin.
+    call: "...createReceiptPdfRoutesFor(databases.main, APP_ORIGIN)",
+    ids: [...SRV_9C],
+    routes: () => createReceiptPdfRoutesFor(NO_ACTOR, null).map((route) => route.contract.id),
+  },
+  {
     // SRV-NG: the notice of the current version over the main database.
     call: "createStudentNoticeRouteFor(databases.main)",
     ids: ["student.notice.get"],
@@ -891,6 +898,7 @@ describe("CONTRACT_ONLY", () => {
         "collaboration.revision-requests.post",
         "institution.acknowledgment.post",
         "public.verification.post",
+        ...SRV_9C,
         ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
         ...SRV_02,
       ]
@@ -1034,6 +1042,8 @@ describe("routes the entry point mounts itself", () => {
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      "student.receipt-pdf.get",
+      "teacher.receipt-pdf.get",
       "student.notice.get",
       "profile.staff-affiliation.get",
       "public.verification.post",
