@@ -918,6 +918,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133893",
   },
+  // DAN-843-1: Ductus has no operator route; the rows are those of the
+  // function public.operator_log of this repository (S-1K.5-a, DAN-835-1).
+  "app/api/ops/events/route.ts": {
+    methods: ["GET"],
+    source: "ductura/server@ae3bf3c:db/logs/migrations/20261116190000_operator_log.sql",
+  },
 };
 
 /**
@@ -933,6 +939,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
+  "ops.events.get",
 ];
 
 /**

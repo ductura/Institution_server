@@ -262,12 +262,17 @@ const SRV_27 = [
   ...SRV_31,
 ] as const;
 
+// The operation of DAN-843-1 (the operator's read of events, Ductus#2028
+// OPSEG c.6979453212: contract now, handler in 843-2), frozen the same way.
+export const DAN_843: readonly string[] = ["ops.events.get"];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
   ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API, ...SRV_19, ...SRV_9B],
   ...SRV_9C,
   ...SRV_27,
+  ...DAN_843,
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be

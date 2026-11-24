@@ -30,6 +30,7 @@ import {
   liveRoutes,
   INTERNAL,
   METHOD_NOT_ALLOWED,
+  opsRoutes,
   platformRoutes,
   profileRoutes,
   staffAffiliationRoutes,
@@ -310,6 +311,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...milestoneTemplateRoutes,
   ...returnForRevisionRoutes,
   ...thesisRoutes,
+  ...opsRoutes,
 ];
 
 /**

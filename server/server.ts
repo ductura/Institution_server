@@ -152,6 +152,7 @@ import {
   institutionsProblems,
   isNonProductionBuild,
   isStagingDeployment,
+  kmsProblems,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -162,7 +163,8 @@ import {
 //    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
 //    institutions file built into the server must pass its schema (DAN-911),
 //    and so must every config/faculties/<faculty>/rules.json (SRV-1405).
-//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
+//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1). Any
+//    DUCTUS_KMS_* variable asks for all three, usable (DAN-963).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const rateLimitConfig = readRateLimitConfig(process.env);
 const problems = [
@@ -176,6 +178,7 @@ const problems = [
   ...testModeProblems(process.env),
   ...deploymentProblems(process.env),
   ...rateLimitConfig.problems,
+  ...kmsProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),

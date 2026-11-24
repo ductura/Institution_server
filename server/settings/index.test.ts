@@ -18,6 +18,8 @@ describe("server/settings public interface", () => {
       "isNonProductionBuild",
       "isProductionHost",
       "isStagingDeployment",
+      "kmsProblems",
+      "kmsSettings",
       "loadInstitutions",
       "metricsIntervalMs",
       "metricsIntervalProblems",

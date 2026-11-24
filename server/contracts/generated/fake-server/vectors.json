@@ -29752,6 +29752,229 @@
     }
   },
   {
+    "route": "ops.events.get",
+    "name": "page",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z",
+        "after": "40"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "events": [
+          {
+            "seq": 41,
+            "at": "2026-11-18T09:00:00.004Z",
+            "kind": "authz.operator_denied",
+            "requestId": "3f2a1b4c-5d6e-4f70-8a91-b2c3d4e5f601",
+            "accountKind": "anonymous",
+            "fields": {
+              "route": "/api/v1/ops/events",
+              "reason": "not_signed_in"
+            }
+          },
+          {
+            "seq": 42,
+            "at": "2026-11-18T09:00:00.010Z",
+            "kind": "traffic.request",
+            "requestId": "3f2a1b4c-5d6e-4f70-8a91-b2c3d4e5f601",
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "GET",
+              "route": "/api/v1/ops/events",
+              "ip": "198.51.100.0/24",
+              "status": 401,
+              "durationMs": 2,
+              "ipRule": "not_checked",
+              "rateLimit": "not_checked"
+            }
+          },
+          {
+            "seq": 43,
+            "at": "2026-11-18T09:00:05.001Z",
+            "kind": "traffic.ip_denied",
+            "requestId": "7b8c9d0e-1f2a-4b3c-9d4e-5f6a7b8c9d0e",
+            "accountKind": "anonymous",
+            "fields": {
+              "route": "/api/v1/ops/events",
+              "rule": "operator_only"
+            }
+          },
+          {
+            "seq": 44,
+            "at": "2026-11-18T09:00:05.006Z",
+            "kind": "traffic.request",
+            "requestId": "7b8c9d0e-1f2a-4b3c-9d4e-5f6a7b8c9d0e",
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "GET",
+              "route": "/api/v1/ops/events",
+              "ip": "203.0.113.0/24",
+              "status": 403,
+              "durationMs": 1,
+              "ipRule": "not_checked",
+              "rateLimit": "not_checked"
+            }
+          },
+          {
+            "seq": 45,
+            "at": "2026-11-18T10:30:00.000Z",
+            "kind": "traffic.request",
+            "requestId": "8c9d0e1f-2a3b-4c4d-9e5f-a0b1c2d3e4f5",
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "GET",
+              "route": "/api/v1/health",
+              "ip": "192.0.2.0/24",
+              "status": 200,
+              "durationMs": 12,
+              "ipRule": "not_checked",
+              "rateLimit": "not_checked"
+            }
+          },
+          {
+            "seq": 46,
+            "at": "2026-11-18T10:30:00.420Z",
+            "kind": "traffic.request",
+            "requestId": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "GET",
+              "route": "none",
+              "ip": "2001:db8::/48",
+              "status": 404,
+              "durationMs": 3,
+              "ipRule": "not_checked",
+              "rateLimit": "not_checked"
+            }
+          }
+        ],
+        "next": null
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "empty",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "events": [],
+        "next": null
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "no-session",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthenticated",
+        "code": "unauthenticated",
+        "messageKey": "errors.unauthenticated",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "no-second-factor",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "window-over-24-hours",
+    "request": {
+      "query": {
+        "from": "2026-11-17T00:00:00Z",
+        "to": "2026-11-18T00:00:00.001Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "unavailable",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
     "route": "ops.pilot-metrics.get",
     "name": "pilot-metrics",
     "request": {
@@ -29974,7 +30197,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.105.0",
+        "apiVersion": "1.111.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -29990,7 +30213,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.105.0",
+        "apiVersion": "1.111.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
