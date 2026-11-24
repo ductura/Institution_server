@@ -1386,7 +1386,6 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
-  // SRV-NG: a live session naming an assignment it is no student of gets 404.
   // SRV-ASIST-CITANJE: a live session naming an assignment it is no student of gets 404.
   "student.assistant-conversations.get": {
     method: "GET",
@@ -1394,6 +1393,7 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-NG: a live session naming an assignment it is no student of gets 404.
   "student.notice.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/notice`,
