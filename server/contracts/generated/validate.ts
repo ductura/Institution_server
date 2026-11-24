@@ -243,6 +243,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.admin-actions.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "institution.admin-courses.get:query": (() => {
   const local0 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1589,6 +1595,22 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "support.problem-report-status.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['reference'] === 'string') &&
+      value['reference'].length <= 64 &&
+      value['reference'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "support.problem-report-status.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['status'] === 'received')) || ((value['status'] === 'resolved'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "support.problem-report.post:body": (() => {
   const local0 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})$/;
   const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,1000}(?![\s\S])/;
@@ -1612,9 +1634,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "support.problem-reports.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "support.problem-reports.post:body": (() => {
   const local0 = /^(?=[\s\S]*[^\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,2000}(?![\s\S])/;
   const local1 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})(?![\s\S])/;
+  const local2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1623,7 +1652,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       local0.test(value['description']) &&
       (typeof value['appVersion'] === 'string') &&
       local1.test(value['appVersion']) &&
-      Object.getOwnPropertyNames(value).length === 3
+      (value['courseId'] !== undefined ? ((typeof value['courseId'] === 'string') && local2.test(value['courseId'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['category', 'description', 'appVersion', 'courseId'].includes(key))
     )
   }
   })(),

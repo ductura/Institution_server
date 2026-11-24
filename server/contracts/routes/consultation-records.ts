@@ -81,9 +81,9 @@ export const consultationRecordsPost = defineRoute({
   method: "POST",
   path: "/api/v1/works/{documentId}/consultation-records",
   inventory: "app/api/works/[documentId]/consultation-records/route.ts",
-  access: "mentor_teacher",
+  access: "owner_or_course_teacher",
   summary:
-    "Records a consultation about a work: the day it was held, the revision it is about (a revision of the same work), a topic and the agreement. Only the teacher of the work (the mentor) writes a record, for every work; the student reads it, and a student or anyone else without that relation gets 404, as for another's work (owner decision 1, NF-6). Exactly those four fields, at most 8 KiB. An empty topic, a date that does not exist or a revision of another work is 422. Answers 201 with the record, which has no additions yet.",
+    "Records a consultation about a work: the day it was held, the revision it is about (a revision of the same work), a topic and the agreement. Exactly those four fields, at most 8 KiB. An empty topic, a date that does not exist or a revision of another work is 422. Answers 201 with the record, which has no additions yet.",
   request: {
     params: closed({ documentId: WorkId }),
     contentType: "application/json",
@@ -99,9 +99,9 @@ export const consultationAdditionsPost = defineRoute({
   method: "POST",
   path: "/api/v1/works/{documentId}/consultation-records/{recordId}/additions",
   inventory: "app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts",
-  access: "mentor_teacher",
+  access: "owner_or_course_teacher",
   summary:
-    "Adds a text to a consultation record of the work. Only the teacher of the work (the mentor) adds, for every work; the student reads, and a student or anyone else without that relation gets 404 (owner decision 1, NF-6). A record is only added to, never changed. Exactly {text}, at most 8 KiB. An empty or blank text is 422; a record that is not this work's reads as 404. Answers 201 with the addition and its whole-minute time.",
+    "Adds a text to a consultation record of the work. Exactly {text}, at most 8 KiB. An empty or blank text is 422; a record that is not this work's reads as 404. Answers 201 with the addition and its whole-minute time.",
   request: {
     params: closed({ documentId: WorkId, recordId: RecordId }),
     contentType: "application/json",

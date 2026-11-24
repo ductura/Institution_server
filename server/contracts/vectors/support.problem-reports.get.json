@@ -1,0 +1,268 @@
+{
+  "route": "support.problem-reports.get",
+  "vectors": [
+    {
+      "name": "network-engineer",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-inzenjera-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reports": [
+            {
+              "reference": "PR-0A1B2C3D4E",
+              "category": "technical",
+              "routedTo": "network_engineer",
+              "courseId": null,
+              "description": "Izmišljeni opis: gumb za spremanje ne reagira.",
+              "route": "/rad/[assignmentId]",
+              "appVersion": "1.4.0",
+              "browser": {
+                "family": "firefox",
+                "major": 128
+              },
+              "syncState": "ERROR",
+              "createdAt": "2026-11-22T09:00:00.000Z",
+              "status": "received",
+              "statusChangedAt": null,
+              "statusChangedByRole": null,
+              "statusChangedByMe": false
+            },
+            {
+              "reference": "PR-1F2E3D4C5B",
+              "category": "technical",
+              "routedTo": "network_engineer",
+              "courseId": null,
+              "description": "Izmišljeni opis: stranica se sporo otvara.",
+              "route": null,
+              "appVersion": "1.4.0",
+              "browser": {
+                "family": "other",
+                "major": null
+              },
+              "syncState": null,
+              "createdAt": "2026-11-21T08:00:00.000Z",
+              "status": "resolved",
+              "statusChangedAt": "2026-11-21T10:00:00.000Z",
+              "statusChangedByRole": "network_engineer",
+              "statusChangedByMe": true
+            }
+          ],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "course-teacher",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reports": [
+            {
+              "reference": "PR-2A3B4C5D6E",
+              "category": "course",
+              "routedTo": "course_teacher",
+              "courseId": "00000000-0000-4000-8000-0000000000c1",
+              "description": "Izmišljeni opis: ne vidim rok zadatka.",
+              "route": null,
+              "appVersion": "1.4.0",
+              "browser": {
+                "family": "other",
+                "major": null
+              },
+              "syncState": null,
+              "createdAt": "2026-11-22T11:00:00.000Z",
+              "status": "resolved",
+              "statusChangedAt": "2026-11-22T12:00:00.000Z",
+              "statusChangedByRole": "course_teacher",
+              "statusChangedByMe": false
+            }
+          ],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "administrator",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reports": [
+            {
+              "reference": "PR-3B4C5D6E7F",
+              "category": "account",
+              "routedTo": "institution_admin",
+              "courseId": null,
+              "description": "Izmišljeni opis: nemam ulogu nastavnika.",
+              "route": null,
+              "appVersion": "1.4.0",
+              "browser": {
+                "family": "other",
+                "major": null
+              },
+              "syncState": null,
+              "createdAt": "2026-11-22T07:30:00.000Z",
+              "status": "received",
+              "statusChangedAt": null,
+              "statusChangedByRole": null,
+              "statusChangedByMe": false
+            },
+            {
+              "reference": "PR-4C5D6E7F8A",
+              "category": "course",
+              "routedTo": "institution_admin",
+              "courseId": null,
+              "description": "Izmišljeni opis: ne znam kojem kolegiju pripadam.",
+              "route": null,
+              "appVersion": "1.4.0",
+              "browser": {
+                "family": "other",
+                "major": null
+              },
+              "syncState": null,
+              "createdAt": "2026-11-21T07:30:00.000Z",
+              "status": "received",
+              "statusChangedAt": null,
+              "statusChangedByRole": null,
+              "statusChangedByMe": false
+            }
+          ],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reports": [],
+          "truncated": false
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000000ae01"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-00000000ae02"
+        }
+      }
+    },
+    {
+      "name": "query",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-inzenjera-00000000000000001"
+        },
+        "query": {
+          "kategorija": "technical"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-00000000ae03"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-inzenjera-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000ae04"
+        }
+      }
+    }
+  ]
+}

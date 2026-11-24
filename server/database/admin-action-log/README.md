@@ -1,0 +1,3 @@
+# Dnevnik radnji administratora i operatera
+
+Jedan poziv `app.admin_action_log()` preko `withActor` (SRV-ADMIN-1, NF-7 OA-3; migracija `20261215100100_admin_action_log.sql`). Čita ga samo potvrđeni administrator ustanove (`ZD403` inače, `ZD401` bez sesije). Redak ima vrijeme, ulogu koja je radila, vrstu radnje, ulogu na koju se radnja odnosi i ishod, a nikad osobu, studenta, rad, slučaj ni zahtjev. Zapisi dolaze iz postojećih tragova koji se samo dopisuju, pa se ne mijenjaju ni ne brišu (pgTAP `db/main/tests/233-admin-action-log.sql`). Čitač ponovno provjerava skupove vrijednosti i da samo radnja nad ulogom nosi ulogu.
