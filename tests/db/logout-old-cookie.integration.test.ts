@@ -1432,6 +1432,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-NF1-PREDANO: the own list answers a live session, empty or not.
+  "student.assignment-submissions.get": {
+    method: "GET",
+    path: "/api/v1/student/assignment-submissions",
+    body: () => undefined,
+    live: 200,
+  },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
   "settings.values.put": {

@@ -51,6 +51,11 @@ export {
   type StudentAccessLogEntry,
 } from "./student-access-log-route.ts";
 export {
+  readStudentAssignmentSubmissions,
+  type AssignmentSubmission,
+  type StudentAssignmentSubmissionsAnswer,
+} from "./student-assignment-submissions-route.ts";
+export {
   readStudentSubmission,
   type StudentSubmissionAnswer,
   type StudentSubmissionState,

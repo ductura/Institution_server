@@ -99,6 +99,7 @@ describe("route inventory", () => {
       "student.notice.get: app/api/student/assignments/[assignmentId]/notice/route.ts is not in the inventory",
       "student.submission.get: app/api/student/assignments/[assignmentId]/submission/route.ts is not in the inventory",
       "student.assignment-requirements.get: app/api/student/assignments/[assignmentId]/requirements/route.ts is not in the inventory",
+      "student.assignment-submissions.get: app/api/student/assignment-submissions/route.ts is not in the inventory",
       "student.submission-notes.get: app/api/student/assignments/[assignmentId]/submission-notes/route.ts is not in the inventory",
       "student.submission-notes.post: app/api/student/submission-notes/route.ts is not in the inventory",
       "student.work-sources.get: app/api/student/assignments/[assignmentId]/sources/route.ts is not in the inventory",

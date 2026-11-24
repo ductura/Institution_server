@@ -87,6 +87,26 @@ export const STUDENT_HANDLERS: Handlers = {
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
   },
+  // SRV-NF1-PREDANO: the confirmed receipt of each own assignment, as student.submission.get
+  // reads it one by one; none and ceka are null.
+  "student.assignment-submissions.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignments = studentAssignments(state, account)
+      .map((a) => {
+        const receipt = state.works.find(
+          (w) => w.assignmentId === a.id && w.studentId === account.id,
+        )?.submissionReceipt;
+        return receipt == null
+          ? ({ assignmentId: a.id, submittedAt: null, afterDeadline: null } as const)
+          : {
+              assignmentId: a.id,
+              submittedAt: receipt.payload.requestedAt,
+              afterDeadline: receipt.payload.afterDeadline,
+            };
+      })
+      .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
+    return { status: 200, body: { assignments } };
+  },
   "student.deadline-history.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = ownAssignment(state, account, params.assignmentId);

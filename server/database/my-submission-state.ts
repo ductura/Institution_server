@@ -93,7 +93,7 @@ const REQUIREMENTS_SQL = `SELECT outcome, word_min, word_max
   FROM app.my_assignment_requirements($1::uuid)`;
 
 const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });
-const NOT_FOUND = Symbol("not_found");
+export const NOT_FOUND = Symbol("not_found");
 
 /** An own column of the row, or undefined; never one from the prototype. */
 const own = (row: object, key: string): unknown =>
@@ -122,7 +122,15 @@ const revisionOf = (value: unknown): number | null =>
 
 function stateOf(rows: unknown): StoredSubmissionState | typeof NOT_FOUND | null {
   const row = onlyRow(rows);
-  if (row === null) return null;
+  return row === null ? null : storedStateOf(row);
+}
+
+/**
+ * One row of app.submission_state_of checked against the state it names, read only
+ * through its own keys; not_found is NOT_FOUND, anything else it cannot vouch for null.
+ * Shared with the list of my-assignment-submissions.ts, so both read a row alike.
+ */
+export function storedStateOf(row: object): StoredSubmissionState | typeof NOT_FOUND | null {
   const [state, revisionText, requestedAt, payload, digest, signature] = [
     "state",
     "revision",

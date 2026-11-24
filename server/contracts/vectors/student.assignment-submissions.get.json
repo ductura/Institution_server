@@ -1,0 +1,91 @@
+{
+  "route": "student.assignment-submissions.get",
+  "vectors": [
+    {
+      "name": "ready",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-predaja-00000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignments": [
+            {
+              "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01",
+              "submittedAt": null,
+              "afterDeadline": null
+            },
+            {
+              "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02",
+              "submittedAt": "2026-11-20T09:15:42.123456Z",
+              "afterDeadline": false
+            },
+            {
+              "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03",
+              "submittedAt": "2026-11-23T23:59:59.999999Z",
+              "afterDeadline": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready-empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-predaja-00000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignments": []
+        }
+      }
+    },
+    {
+      "name": "signed-out",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-predaja-00000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    }
+  ]
+}

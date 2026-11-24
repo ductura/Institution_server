@@ -51,6 +51,8 @@ describe("server/institution public interface", () => {
       "readFacultyRules",
       "readInstitutionCourses",
       "readStudentAccessLog",
+      // SRV-NF1-PREDANO: when each own submission was confirmed.
+      "readStudentAssignmentSubmissions",
       "readStudentRequirements",
       "readStudentSubmission",
       "readTeacherRoles",
