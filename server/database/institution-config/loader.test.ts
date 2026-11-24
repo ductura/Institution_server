@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  CITATION_STYLES,
   FACULTY_RULES_ERROR_CODES,
   FACULTY_RULES_FORMAT,
   facultyRulesProblems,
@@ -17,6 +18,16 @@ import {
 } from "./index.ts";
 
 const REPOSITORY = new URL("../../../config/faculties/", import.meta.url).pathname;
+/** The `citation.style` values of the settings catalogue, read from its source: areas may not import each other. */
+const catalogueStyles = (): string[] => {
+  const source = readFileSync(
+    new URL("../../domain/settings/catalogue.ts", import.meta.url),
+    "utf8",
+  );
+  const block = /key: "citation\.style"[\s\S]*?values: \[([^\]]*)\]/u.exec(source);
+  return [...(block?.[1] ?? "").matchAll(/"([^"]+)"/gu)].map((m) => m[1] as string);
+};
+
 const RULES = { citationStyle: "fpzg", workLanguages: ["hr", "en"], defaultWorkLanguage: "hr" };
 const file = (faculty: string, rules: unknown = RULES) => ({
   format: FACULTY_RULES_FORMAT,
@@ -47,10 +58,24 @@ describe("facultyRulesSchema", () => {
     ).toBe(true);
   });
 
+  it("lists exactly the styles of the settings catalogue", () => {
+    expect(catalogueStyles().length).toBeGreaterThan(1);
+    expect([...CITATION_STYLES]).toEqual(catalogueStyles());
+  });
+
+  it.each(["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"])(
+    "accepts the catalogue style %s",
+    (citationStyle) => {
+      expect(facultyRulesSchema.safeParse({ ...RULES, citationStyle }).success).toBe(true);
+    },
+  );
+
   it.each([
     ["an unknown key", { ...RULES, aiPolicy: "encouraged" }],
     ["an undecided retention", { ...RULES, retentionDays: 30 }],
-    ["an unknown citation style", { ...RULES, citationStyle: "apa" }],
+    ["an unknown citation style", { ...RULES, citationStyle: "mla" }],
+    ["a citation style in the wrong case", { ...RULES, citationStyle: "APA" }],
+    ["a citation style that is not a string", { ...RULES, citationStyle: ["apa"] }],
     ["an unknown language", { ...RULES, workLanguages: ["hr", "de"] }],
     ["no language", { ...RULES, workLanguages: [] }],
     ["a repeated language", { ...RULES, workLanguages: ["hr", "hr"] }],
