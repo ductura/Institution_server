@@ -1,0 +1,106 @@
+{
+  "route": "institution.thesis-settings.get",
+  "vectors": [
+    {
+      "name": "default-off",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "mentorConsentRequired": false,
+          "changedAt": null
+        }
+      }
+    },
+    {
+      "name": "switched-on",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "mentorConsentRequired": true,
+          "changedAt": "2026-11-22T08:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000233300"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000233301"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000233302"
+        }
+      }
+    }
+  ]
+}

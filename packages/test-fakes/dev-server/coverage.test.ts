@@ -395,6 +395,72 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { body: "Izmisljena privatna biljeska." },
     },
   },
+  // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
+  "institution.thesis-forms.get": {
+    request: { path: "/api/v1/institution/thesis-forms", as: "student" },
+  },
+  "institution.thesis-forms.post": {
+    request: {
+      path: "/api/v1/institution/thesis-forms",
+      as: "administrator",
+      method: "POST",
+      headers: ORIGIN,
+      body: {
+        code: "izjava-izvornost",
+        title: "Izjava o izvornosti rada",
+        workTypes: ["master_thesis", "bachelor_thesis"],
+        active: true,
+      },
+    },
+  },
+  "institution.thesis-settings.get": {
+    request: { path: "/api/v1/institution/thesis-settings", as: "administrator" },
+  },
+  "institution.thesis-settings.put": {
+    request: {
+      path: "/api/v1/institution/thesis-settings",
+      as: "administrator",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { mentorConsentRequired: true },
+    },
+  },
+  "work.thesis-forms.get": {
+    request: { path: `/api/v1/works/${IDS.document}/thesis-forms`, as: "student" },
+  },
+  "work.thesis-form.put": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/thesis-forms/prijava-teme`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { state: "submitted" },
+    },
+  },
+  "work.mentor-consent.get": {
+    request: { path: `/api/v1/works/${IDS.document}/mentor-consent`, as: "student" },
+  },
+  "work.mentor-consent.put": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/mentor-consent`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { given: true, comment: "Rad je spreman za predaju." },
+    },
+  },
+  "work.thesis-stage.get": {
+    request: { path: `/api/v1/works/${IDS.document}/thesis-stage`, as: "student" },
+  },
+  "work.thesis-stage.put": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/thesis-stage`,
+      as: "administrator",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { stage: "defense_scheduled", defenseAt: "2027-06-15T09:00:00Z" },
+    },
+  },
   "mentorship.request-approve.post": {
     before: [REQUEST_MENTORSHIP],
     request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },
