@@ -9,6 +9,15 @@ import type { WithActor } from "../../database/index.ts";
 import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
 
 import { createAttachmentRoutes } from "./index.ts";
+import {
+  CLEAN_JPEG,
+  CLEAN_PNG,
+  GPS_LATITUDE,
+  JPEG_BROKEN_AFTER_SCAN,
+  JPEG_TRUNCATED_EXIF,
+  JPEG_WITH_GPS,
+  PNG_WITH_TEXT,
+} from "./metadata.fixture.ts";
 import { createAttachments } from "./service.ts";
 import { attachmentStorage } from "./storage.ts";
 
@@ -171,4 +180,47 @@ it("refuses non-images, an oversize decoded image and altered stored bytes", asy
   expect((await upload(PNG)).status).toBe(200);
   await corrupt();
   expect((await download(OWNER)).status).toBe(503);
+});
+
+it.each([
+  ["image/jpeg", JPEG_WITH_GPS, CLEAN_JPEG],
+  ["image/png", PNG_WITH_TEXT, CLEAN_PNG],
+])("stores and returns a %s without its metadata", async (mediaType, sent, clean) => {
+  const { upload, download, put } = await fixture();
+  const answer = await upload(sent.toString("base64"));
+  const metadata = {
+    attachmentId: ATTACHMENT,
+    attachmentSha256: createHash("sha256").update(clean).digest("hex"),
+    mediaType,
+    byteSize: clean.length,
+    pixelWidth: 1,
+    pixelHeight: 1,
+  };
+  expect(answer.status).toBe(200);
+  expect(await answer.json()).toEqual({ ...metadata, created: true });
+  const stored = put.mock.calls[0]![1];
+  expect(stored.equals(clean)).toBe(true);
+  expect(stored.includes(GPS_LATITUDE)).toBe(false);
+  expect(await (await download(OWNER)).json()).toEqual({
+    ...metadata,
+    imageBase64: clean.toString("base64"),
+  });
+  // The same picture without metadata is the same stored attachment.
+  expect(await (await upload(clean.toString("base64"))).json()).toEqual({
+    ...metadata,
+    created: false,
+  });
+  expect(put).toHaveBeenCalledTimes(1);
+});
+
+it("refuses a malformed JPEG with the same error before storage I/O", async () => {
+  const { upload, put } = await fixture();
+  const notImage = await upload(Buffer.from("Izmišljeni tekst").toString("base64"));
+  const refusal = { ...((await notImage.json()) as object), requestId: expect.any(String) };
+  for (const broken of [JPEG_TRUNCATED_EXIF, JPEG_BROKEN_AFTER_SCAN]) {
+    const answer = await upload(broken.toString("base64"));
+    expect(answer.status).toBe(notImage.status);
+    expect(await answer.json()).toEqual(refusal);
+  }
+  expect(put).not.toHaveBeenCalled();
 });
