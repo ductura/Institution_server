@@ -137,8 +137,11 @@ SELECT bag_eq(
             ('collaboration.import_gate(text)'),
             ('collaboration.prepare_import(text,uuid,text,text,text)'),
             ('collaboration.confirm_import(text,uuid,text)'),
-            ('collaboration.create_revision_comment(text,text,jsonb,bigint)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231');
+            ('collaboration.create_revision_comment(text,text,jsonb,bigint)'),
+            ('collaboration.list_consultation_tasks(text)'),
+            ('collaboration.add_consultation_task(text,uuid,text)'),
+            ('collaboration.mark_consultation_task(text,uuid,boolean)') $$,
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,

@@ -27,6 +27,7 @@ import {
   createWorkInterviewPdfRouteFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createMentorshipConsultationRoutesFor,
   createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
@@ -491,6 +492,57 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  // SRV-MENTOR-1: a work the live account has no relation to; slots 403, tasks 404.
+  "work.consultation-slot-details.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/consultation-slot-details`,
+    body: () => undefined,
+    live: 403,
+  },
+  "work.consultation-slot-requests.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-slot-requests`,
+    body: () => ({ startsAt: new Date(Date.now() + 86_400_000).toISOString() }),
+    live: 403,
+  },
+  "work.consultation-slot-close.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}/close`,
+    body: () => ({ action: "withdraw" }),
+    live: 403,
+  },
+  "work.consultation-tasks.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/consultation-tasks`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.consultation-tasks.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-records/${randomUUID()}/tasks`,
+    body: () => ({ text: "Izmišljeni zadatak." }),
+    live: 404,
+  },
+  "work.consultation-task-mark.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-tasks/${randomUUID()}/mark`,
+    body: () => ({ done: true }),
+    live: 404,
+  },
+  // SRV-MENTOR-1: the live account is no teacher, so opening reads 404; its own lists are empty.
+  "mentorship.open.post": {
+    path: "/api/v1/mentorships",
+    body: () => ({ studentId: randomUUID(), workType: "master_thesis" }),
+    live: 404,
+  },
+  "mentorship.student-mentorships.get": {
+    method: "GET",
+    path: "/api/v1/student/mentorships",
+    body: () => undefined,
+    live: 200,
+  },
+  "notifications.mentorship-opened.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications/mentorship-opened",
+    body: () => undefined,
+    live: 200,
   },
   "work.interview.get": {
     method: "GET",
@@ -1895,6 +1947,7 @@ const FACTORIES = [
   "createWorkInterviewPdfRouteFor",
   "createMentorshipRequestRoutesFor",
   "createMentorshipStudentRoutesFor",
+  "createMentorshipConsultationRoutesFor",
   "createStudentWorkRoutesFor",
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
@@ -2018,6 +2071,7 @@ const MOUNTED = [
   createWorkInterviewPdfRouteFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
   ...createMentorshipStudentRoutesFor(databases.main),
+  ...createMentorshipConsultationRoutesFor(databases.main),
   ...createStudentWorkRoutesFor(databases.main),
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),

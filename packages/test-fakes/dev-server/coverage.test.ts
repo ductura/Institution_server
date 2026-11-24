@@ -49,6 +49,12 @@ const commit = (txid: string, baseRevision: number): Step => ({
     document: EMPTY_DOCUMENT,
   },
 });
+const ADD_TASK: Step = {
+  path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/tasks`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { text: "Izmišljeni dogovoreni zadatak." },
+};
 const CREATE_CONSULTATION: Step = {
   path: `/api/v1/works/${IDS.document}/consultation-records`,
   as: "nastavnik",
@@ -191,6 +197,22 @@ const REQUEST_SLOT: Step = {
   as: "student",
   headers: ORIGIN,
   body: { startsAt: new Date(Date.now() + 86_400_000).toISOString() },
+};
+const REQUEST_SLOT_DETAIL: Step = {
+  path: `/api/v1/works/${IDS.document}/consultation-slot-requests`,
+  as: "student",
+  headers: ORIGIN,
+  body: {
+    startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+    topic: "Izmišljena tema konzultacija",
+    preparation: { text: "Izmišljena priprema.", changedParagraphs: 3, resolvedComments: 1 },
+  },
+};
+const OPEN_MENTORSHIP: Step = {
+  path: "/api/v1/mentorships",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { studentId: IDS.student, workType: "master_thesis", topic: "Izmišljena tema rada" },
 };
 const INTERVIEW = `/api/v1/works/${IDS.document}/interview`;
 const INTERVIEW_QUESTION_ID = "c0300000-0000-4000-8000-000000000001";
@@ -569,6 +591,30 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: CONSULTATION_SLOTS, as: "nastavnik" },
   },
   "work.consultation-slots.post": { request: REQUEST_SLOT },
+  // SRV-MENTOR-1: slot details, a request with topic and preparation, and the closing moves.
+  "work.consultation-slot-details.get": {
+    before: [REQUEST_SLOT_DETAIL],
+    request: { path: `/api/v1/works/${IDS.document}/consultation-slot-details`, as: "nastavnik" },
+  },
+  "work.consultation-slot-requests.post": { request: REQUEST_SLOT_DETAIL },
+  "work.consultation-slot-close.post": {
+    before: [REQUEST_SLOT_DETAIL],
+    request: {
+      path: `${CONSULTATION_SLOTS}/c0200000-0000-4000-8000-000000000001/close`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { action: "decline", reason: "Izmišljeni razlog: termin je zauzet." },
+    },
+  },
+  "mentorship.open.post": { request: OPEN_MENTORSHIP },
+  "mentorship.student-mentorships.get": {
+    before: [OPEN_MENTORSHIP],
+    request: { path: "/api/v1/student/mentorships", as: "student" },
+  },
+  "notifications.mentorship-opened.list.get": {
+    before: [OPEN_MENTORSHIP],
+    request: { path: "/api/v1/notifications/mentorship-opened", as: "student" },
+  },
   "work.consultation-slots.patch": {
     before: [REQUEST_SLOT],
     request: {
@@ -1290,6 +1336,24 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       headers: ORIGIN,
       body: { text: "Izmišljena dopuna." },
+    },
+  },
+  // SRV-MENTOR-1 (MK-5): agreed tasks, written and marked by the teacher of the work.
+  "work.consultation-tasks.get": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION, ADD_TASK],
+    request: { path: `/api/v1/works/${IDS.document}/consultation-tasks`, as: "student" },
+  },
+  "work.consultation-tasks.post": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: ADD_TASK,
+  },
+  "work.consultation-task-mark.post": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION, ADD_TASK],
+    request: {
+      path: `/api/v1/works/${IDS.document}/consultation-tasks/000000c2-0000-4000-8000-000000000001/mark`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { done: true },
     },
   },
   "work.event-disputes.get": {

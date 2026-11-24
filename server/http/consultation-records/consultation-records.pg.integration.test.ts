@@ -79,13 +79,16 @@ it("stores one shared record under ductus_app that the student and the teacher b
       status: "ok",
       records: [{ id: created.record.id, ...input, additions: [added.addition] }],
     });
-    const studentAdded = await port.addAddition(STUDENT, DOCUMENT, created.record.id, "Razumijem.");
-    expect(studentAdded.status).toBe("ok");
+    // SRV-MENTOR-1, owner decision (1) of 23 Nov 2026: only the teacher of the work writes
+    // the record and its additions; the student reads, and a write reads as a missing work.
+    expect(await port.addAddition(STUDENT, DOCUMENT, created.record.id, "Razumijem.")).toEqual({
+      status: "not_found",
+    });
+    expect(await port.create(STUDENT, DOCUMENT, input)).toEqual({ status: "not_found" });
     const again = await port.list(TEACHER, DOCUMENT);
-    expect(again.status === "ok" && again.records[0]?.additions.map((a) => a.text)).toEqual([
-      "Rok je pomaknut.",
-      "Razumijem.",
-    ]);
+    expect(
+      again.status === "ok" && again.records.map((r) => r.additions.map((a) => a.text)),
+    ).toEqual([["Rok je pomaknut."]]);
 
     // Another student, another institution and an unknown work read a missing one.
     for (const token of [OTHER_STUDENT, OTHER_TENANT]) {

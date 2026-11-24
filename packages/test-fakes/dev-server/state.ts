@@ -361,6 +361,36 @@ export type State = {
   consultationSlots: {
     documentId: string;
     slot: Operations["work.consultation-slots.post"]["success"]["body"];
+    /** SRV-MENTOR-1 (MK-3, MK-10): the topic and preparation of a request, if any. */
+    detail?: {
+      topic: string | null;
+      preparation: { text: string; changedParagraphs: number; resolvedComments: number } | null;
+    };
+    /** SRV-MENTOR-1: set once the slot is withdrawn, declined or cancelled; work.consultation-slots.get leaves it out. */
+    closed?: {
+      state: "withdrawn" | "declined" | "cancelled";
+      by: "student" | "teacher";
+      reason: string | null;
+      at: string;
+    };
+  }[];
+  /** SRV-MENTOR-1 (MK-7): the opening of a mentorship by its teacher and the student's notice of it. */
+  mentorshipOpenings: {
+    mentorshipId: string;
+    topic: string | null;
+    openedAt: string;
+    notificationId: string;
+    readAt: string | null;
+  }[];
+  /** SRV-MENTOR-1 (MK-5): agreed tasks of the consultation records; marks are only added. */
+  consultationTasks: {
+    id: string;
+    documentId: string;
+    recordId: string;
+    position: number;
+    text: string;
+    createdAt: string;
+    marks: { done: boolean; at: string }[];
   }[];
   /** The interview preparation of a work (SRV-1530), with the author of each question. */
   workInterviews: Map<
@@ -612,6 +642,8 @@ export function createState(
     sourceNotes: new Map(),
     sourceProofs: [],
     consultationSlots: [],
+    mentorshipOpenings: [],
+    consultationTasks: [],
     workInterviews: new Map(),
     attachments: [],
     sourceProofCount: 0,

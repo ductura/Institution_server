@@ -99,6 +99,24 @@ it("leaves the returned-for-revision kind out of the inbox but counts it in the 
   expect(body.nextBefore).toBe(rows[49]?.id);
 });
 
+// SRV-MENTOR-1: the opening of a mentorship has a list of its own as well.
+it("leaves the mentorship-opened kind out of the inbox but counts it in the page", async () => {
+  const row = (i: number, kind: string) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+    targetId: ID,
+    kind,
+    createdAt: new Date(AT),
+    readAt: null,
+  });
+  const rows = [row(1, "deadline_reminder"), row(2, "mentorship_opened"), row(3, "comment_posted")];
+  query.mockResolvedValueOnce({ rows, rowCount: rows.length });
+  const response = await get();
+  expect(response.status).toBe(200);
+  const body = (await response.json()) as { notifications: { id: string }[]; nextBefore: null };
+  expect(body.notifications.map((n) => n.id)).toEqual([rows[0]?.id, rows[2]?.id]);
+  expect(body.nextBefore).toBeNull();
+});
+
 const REVISION_ID = "00000000-0000-4000-8000-000000001711";
 const revisionRow = (i: number) => ({
   id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,

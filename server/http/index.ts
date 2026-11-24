@@ -12,6 +12,7 @@ export { createWorkInterviewRoutesFor } from "./work-interview/index.ts";
 export { createWorkInterviewPdfRouteFor } from "./work-interview/pdf/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
 export { createMentorshipStudentRoutesFor } from "./mentorship/index.ts";
+export { createMentorshipConsultationRoutesFor } from "./mentorship-consultations/index.ts";
 export { createStudentWorkRoutesFor } from "./student-work/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";

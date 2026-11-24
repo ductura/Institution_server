@@ -23,7 +23,8 @@ import {
 
 const [LIST, READ, REVISIONS] = notificationsRoutes;
 // SRV-1607: its own list (REVISIONS); a new kind in LIST would break clients.
-const OWN_LIST_KINDS = new Set(["returned_for_revision"]);
+// SRV-MENTOR-1: mentorship_opened has its own list too (notifications.mentorship-opened.list.get).
+const OWN_LIST_KINDS = new Set(["returned_for_revision", "mentorship_opened"]);
 const MIN_REMINDER_SECONDS = 300;
 const BODY_TIMEOUT_MS = 5_000;
 

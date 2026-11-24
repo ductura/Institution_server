@@ -4,7 +4,7 @@ import { parseInstant, readerOf, type Account, type State } from "./state.ts";
 
 type Slot = Operations["work.consultation-slots.post"]["success"]["body"];
 
-function workRole(state: State, documentId: string, account: Account | null) {
+export function workRole(state: State, documentId: string, account: Account | null) {
   return readerOf(
     state,
     state.works.find((work) => work.documentId === documentId),
@@ -12,7 +12,7 @@ function workRole(state: State, documentId: string, account: Account | null) {
   );
 }
 
-function slotTime(value: string, now: Date): string | null {
+export function slotTime(value: string, now: Date): string | null {
   const time = parseInstant(value);
   const latest = new Date(now);
   latest.setUTCFullYear(now.getUTCFullYear() + 1);
@@ -25,8 +25,9 @@ function slotTime(value: string, now: Date): string | null {
 export const CONSULTATION_SLOT_HANDLERS: Handlers = {
   "work.consultation-slots.get": ({ state, account, params }) => {
     if (workRole(state, params.documentId, account) === null) return { error: "forbidden" };
+    // SRV-MENTOR-1: a closed slot is left out, as institution.consultation_slots does.
     const slots = state.consultationSlots
-      .filter(({ documentId }) => documentId === params.documentId)
+      .filter(({ documentId, closed }) => documentId === params.documentId && closed === undefined)
       .map(({ slot }) => slot)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id));
     return { status: 200, body: { slots } };
@@ -35,7 +36,8 @@ export const CONSULTATION_SLOT_HANDLERS: Handlers = {
     if (workRole(state, params.documentId, account) !== "owner") return { error: "forbidden" };
     const startsAt = slotTime(body.startsAt, now);
     const pending = state.consultationSlots.filter(
-      ({ documentId, slot }) => documentId === params.documentId && slot.state !== "confirmed",
+      ({ documentId, slot, closed }) =>
+        documentId === params.documentId && closed === undefined && slot.state !== "confirmed",
     ).length;
     if (startsAt === null || pending >= 20) return { error: "invalid_input" };
     const sequence = String(state.consultationSlots.length + 1).padStart(12, "0");
@@ -58,7 +60,7 @@ export const CONSULTATION_SLOT_HANDLERS: Handlers = {
     const needsState = body.action === "accept" ? "countered" : "requested";
     const startsAt = body.action === "counter" ? slotTime(body.startsAt, now) : entry.slot.startsAt;
     if (startsAt === null) return { error: "invalid_input" };
-    if (entry.slot.state !== needsState) return { error: "conflict" };
+    if (entry.closed !== undefined || entry.slot.state !== needsState) return { error: "conflict" };
     entry.slot = {
       ...entry.slot,
       startsAt,
