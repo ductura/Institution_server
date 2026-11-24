@@ -210,13 +210,15 @@ const TEMPLATE_KIND = literals(["must", "sugg", "q", "praise"]);
  * the like stay as for a comment.
  */
 const Label = Type.String({
+  description: "A short label of the teacher's, 1 to 40 characters, NFC; null or missing is none.",
   pattern: `^(?=[^\\u0000-\\u001f\\u007f-\\u009f]*\\S)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,40}${END}`,
 });
 const BankEntry = closed({
   id: Id,
   kind: TEMPLATE_KIND,
   text: Type.String(),
-  label: Type.Union([Label, Type.Null()]),
+  // Optional in the schema so that adding it does not break a client (scripts/check-breaking.ts); the server always sends it.
+  label: Type.Optional(Type.Union([Label, Type.Null()])),
   createdAt: Instant,
 });
 
@@ -246,7 +248,7 @@ export const teacherCommentBankPost = defineRoute({
   inventory: "app/api/teacher/comment-bank/route.ts",
   access: "teacher",
   summary:
-    "Saves a comment in the caller's bank: {text, kind, label?}, kind one of must, sugg, q, praise; the text is as a comment's; label is 1 to 40 characters, NFC, or null (none, also when missing); at most 4 KiB, sent as application/json. At most 200 entries (422). Only a teacher whose role is confirmed may; every other caller gets 404.",
+    "Saves a comment in the caller's bank: {text, kind}, kind one of must, sugg, q, praise; the text is as a comment's; at most 4 KiB, sent as application/json. At most 200 entries (422). Only a teacher whose role is confirmed may; every other caller gets 404.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 4 * 1024,

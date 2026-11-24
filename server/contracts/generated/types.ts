@@ -1097,7 +1097,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "label": string | null; "createdAt": string })[] }; headers: {  } };
+    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "label"?: string | null; "createdAt": string })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "teacher.comment-bank.post": {

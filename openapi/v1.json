@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.116.0",
+    "version": "1.117.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -75071,6 +75071,7 @@
                   "label": {
                     "anyOf": [
                       {
+                        "description": "A short label of the teacher's, 1 to 40 characters, NFC; null or missing is none.",
                         "pattern": "^(?=[^\\u0000-\\u001f\\u007f-\\u009f]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,40}(?![\\s\\S])",
                         "type": "string"
                       },
@@ -76124,7 +76125,6 @@
                           "id",
                           "kind",
                           "text",
-                          "label",
                           "createdAt"
                         ],
                         "properties": {
@@ -76158,6 +76158,7 @@
                           "label": {
                             "anyOf": [
                               {
+                                "description": "A short label of the teacher's, 1 to 40 characters, NFC; null or missing is none.",
                                 "pattern": "^(?=[^\\u0000-\\u001f\\u007f-\\u009f]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,40}(?![\\s\\S])",
                                 "type": "string"
                               },
@@ -76266,7 +76267,7 @@
       },
       "post": {
         "operationId": "teacher.comment-bank.post",
-        "summary": "Saves a comment in the caller's bank: {text, kind, label?}, kind one of must, sugg, q, praise; the text is as a comment's; label is 1 to 40 characters, NFC, or null (none, also when missing); at most 4 KiB, sent as application/json. At most 200 entries (422). Only a teacher whose role is confirmed may; every other caller gets 404.",
+        "summary": "Saves a comment in the caller's bank: {text, kind}, kind one of must, sugg, q, praise; the text is as a comment's; at most 4 KiB, sent as application/json. At most 200 entries (422). Only a teacher whose role is confirmed may; every other caller gets 404.",
         "x-access": "teacher",
         "x-inventory": "app/api/teacher/comment-bank/route.ts",
         "requestBody": {
@@ -76308,6 +76309,7 @@
                   "label": {
                     "anyOf": [
                       {
+                        "description": "A short label of the teacher's, 1 to 40 characters, NFC; null or missing is none.",
                         "pattern": "^(?=[^\\u0000-\\u001f\\u007f-\\u009f]*\\S)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,40}(?![\\s\\S])",
                         "type": "string"
                       },
