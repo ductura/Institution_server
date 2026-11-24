@@ -16,6 +16,13 @@ const ROSTER = `/api/v1/teacher/courses/${ID}/students`;
 const OVERVIEW = `/api/v1/teacher/assignments/${ID}/overview`;
 const student = { student_id: STUDENT, given_name: null, family_name: null, groupName: "Grupa B" };
 const minute = new Date("2026-11-20T12:34:00.000Z");
+const noFollowup = {
+  noticeReadAt: null,
+  noticeAckVersion: null,
+  noticeAckAt: null,
+  revisionState: null,
+  revisionChangedAt: null,
+};
 
 const query = vi.fn();
 const withActor: WithActor = (token, run) =>
@@ -126,6 +133,7 @@ it.each(["continuous", "with_gaps", null])(
           requestedMinute: minute,
           afterDeadline: true,
           evidenceRecord,
+          ...noFollowup,
           privateHash: "izmisljeni-otisak-koji-ne-izlazi",
         },
       ],
@@ -144,6 +152,9 @@ it.each(["continuous", "with_gaps", null])(
           requestedMinute: minute.toISOString(),
           afterDeadline: true,
           evidenceRecord,
+          noticeReadAt: null,
+          noticeAcknowledged: null,
+          revision: null,
         },
       ],
     });
@@ -158,6 +169,7 @@ it("fails the entire overview for an invalid row after a valid one", async () =>
     requestedMinute: null,
     afterDeadline: null,
     evidenceRecord: null,
+    ...noFollowup,
   };
   query.mockResolvedValue({ rows: [unsubmitted] });
   const answer = await get(OVERVIEW);
@@ -167,4 +179,64 @@ it("fails the entire overview for an invalid row after a valid one", async () =>
     rows: [unsubmitted, { ...unsubmitted, student_id: ID, requestedMinute: minute }],
   });
   expect((await get(OVERVIEW)).status).toBe(503);
+});
+
+describe("the notice and the revision of the overview", () => {
+  const read = new Date("2026-11-20T09:00:00.000Z");
+  const acked = new Date("2026-11-20T09:05:00.000Z");
+  const changed = new Date("2026-11-21T10:00:00.000Z");
+  const unsubmitted = {
+    ...student,
+    submitted: false,
+    requestedMinute: null,
+    afterDeadline: null,
+    evidenceRecord: null,
+  };
+  const full = {
+    noticeReadAt: read,
+    noticeAckVersion: 2,
+    noticeAckAt: acked,
+    revisionState: "responded",
+    revisionChangedAt: changed,
+  };
+
+  it("returns when the notice was read and acknowledged and the state of the revision", async () => {
+    query.mockResolvedValue({ rows: [{ ...unsubmitted, ...full }] });
+    const answer = await get(OVERVIEW);
+    const body: unknown = await answer.json();
+    expect(answer.status).toBe(200);
+    expect(body).toMatchObject({
+      students: [
+        {
+          noticeReadAt: read.toISOString(),
+          noticeAcknowledged: { versionNo: 2, acknowledgedAt: acked.toISOString() },
+          revision: { state: "responded", changedAt: changed.toISOString() },
+        },
+      ],
+    });
+    expect(Value.Check(routes[1]!.contract.responses[0]!.body!, body)).toBe(true);
+  });
+
+  it.each([
+    ["no follow-up columns at all", {}],
+    ["a version without its time", { noticeAckAt: null }],
+    ["a time without its version", { noticeAckVersion: null }],
+    ["a version below one", { noticeAckVersion: 0 }],
+    ["a revision state outside the closed set", { revisionState: "accepted" }],
+    ["a revision state without its time", { revisionChangedAt: null }],
+    ["a revision time without its state", { revisionState: null }],
+    ["a read time that is not a date", { noticeReadAt: "2026-11-20" }],
+  ])("answers 503 for %s", async (_name, change) => {
+    const row = { ...unsubmitted, ...full, ...change };
+    if (_name === "no follow-up columns at all") {
+      for (const key of Object.keys(full)) delete (row as Record<string, unknown>)[key];
+    }
+    query.mockResolvedValue({ rows: [row] });
+    expect((await get(OVERVIEW)).status).toBe(503);
+  });
+
+  it("selects the follow-up columns from the one function that reads them", async () => {
+    await get(OVERVIEW);
+    expect(query.mock.calls[0]![1]).toContain("app.assignment_overview_followup($1::uuid)");
+  });
 });

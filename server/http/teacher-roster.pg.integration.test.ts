@@ -31,6 +31,16 @@ it("serves group-scoped roster and submission data without opening a work", asyn
       SELECT pg_temp.ask('vesna', $$ SELECT institution.assign_group_student({group_b}, {ana}) $$);
     `);
     await db.exec(evidence);
+    // NZ-8 and NZ-12: Ana read and acknowledged the notice and her teacher
+    // opened a revision on her work; Dora did neither.
+    await db.exec(`
+      SELECT pg_temp.ask('ana', $$ SELECT institution.mark_notice_read({z1}) $$);
+      SELECT pg_temp.ask('ana', $$ SELECT institution.acknowledge_notice({z1}, 2, 1) $$);
+      SELECT pg_temp.ask('vesna', $$ SELECT state FROM collaboration.create_revision_request(
+        'doc-a',
+        '{"nodeId":"0f0e0d0c-0b0a-4000-8000-000000000001","quote":"prvi odlomak","prefix":"","suffix":" teksta","startHint":0,"endHint":12}'::jsonb,
+        'Dopuni prvi odlomak.', 0) $$);
+    `);
     await db.exec(`
       CREATE TEMP TABLE roster_due AS
       SELECT due_at FROM institution.assignment_version
@@ -118,13 +128,26 @@ it("serves group-scoped roster and submission data without opening a work", asyn
         ],
       });
       expect(await get(roster, "B")).toEqual({ students: [anaRoster] });
+      const anaFollowup = {
+        noticeReadAt: expect.stringMatching(/Z$/u),
+        noticeAcknowledged: { versionNo: 2, acknowledgedAt: expect.stringMatching(/Z$/u) },
+        revision: { state: "open", changedAt: expect.stringMatching(/Z$/u) },
+      };
+      // The fixture has Dora acknowledge version 1; she never read it and has no revision.
+      const doraFollowup = {
+        noticeReadAt: null,
+        noticeAcknowledged: { versionNo: 1, acknowledgedAt: expect.stringMatching(/Z$/u) },
+        revision: null,
+      };
       expect(await get(overview, "A")).toEqual({
         students: [
-          expect.objectContaining(late),
-          expect.objectContaining({ ...dora, submitted: false }),
+          expect.objectContaining({ ...late, ...anaFollowup }),
+          expect.objectContaining({ ...dora, submitted: false, ...doraFollowup }),
         ],
       });
-      expect(await get(overview, "B")).toEqual({ students: [expect.objectContaining(late)] });
+      expect(await get(overview, "B")).toEqual({
+        students: [expect.objectContaining({ ...late, ...anaFollowup })],
+      });
       for (const path of [roster, overview]) {
         expect(await get(path, "D")).toEqual({ students: [] });
         expect(await get(path, "I")).toEqual({ students: [] });
