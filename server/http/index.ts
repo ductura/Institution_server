@@ -405,6 +405,7 @@ export {
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
 export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
+export { createReceiptPdfRoutesFor } from "./receipt-pdf.ts";
 export {
   bearerMatches,
   checkProvisionBody,
