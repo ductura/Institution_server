@@ -22,6 +22,7 @@ export const ADMIN_ACTION_KINDS = [
   "hold_released",
   "export_requested",
   "export_approved",
+  "roster_import_confirmed",
 ] as const;
 
 export const ADMIN_ACTOR_ROLES = ["institution_admin", "registry_clerk", "operator"] as const;
@@ -36,6 +37,17 @@ export const ADMIN_SUBJECT_ROLES = [
 const literals = <T extends string>(values: readonly T[]) =>
   Type.Union(values.map((value) => Type.Literal(value)));
 
+/** The counts of a confirmed roster import (SRV-ADMIN-2B); no row of the file is kept. */
+export const AdminRosterImport = closed({
+  /** The course the import was for, an id and no name. */
+  courseId: Type.String({
+    pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+  }),
+  enrolled: Type.Integer({ minimum: 0, maximum: 1000 }),
+  alreadyEnrolled: Type.Integer({ minimum: 0, maximum: 1000 }),
+  skipped: Type.Integer({ minimum: 0, maximum: 1000 }),
+});
+
 /** Date.toISOString of a finite instant. */
 const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
 
@@ -47,6 +59,8 @@ export const AdminActionEntry = closed({
   subjectRole: Type.Union([literals(ADMIN_SUBJECT_ROLES), Type.Null()]),
   /** Only actions that took effect are recorded; a refused attempt leaves no row. */
   outcome: Type.Literal("completed"),
+  /** The counts of a confirmed roster import; null for any other action. */
+  rosterImport: Type.Union([AdminRosterImport, Type.Null()]),
 });
 
 export const adminActionsGet = defineRoute({
@@ -56,7 +70,7 @@ export const adminActionsGet = defineRoute({
   inventory: "app/api/institution/admin-actions/route.ts",
   access: "institution_admin",
   summary:
-    "The log of administrator and operator actions in the caller's institution, newest first, at most 500 (truncated says more exist): roles confirmed or revoked, rules published, thresholds changed, legal holds placed or released, data exports requested or approved. Each entry has the time, the acting role, the kind of action, the role it concerns and the outcome, and no person, student, work or case. Read only; a caller who is not a confirmed administrator is 403.",
+    "The log of administrator and operator actions in the caller's institution, newest first, at most 500 (truncated says more exist): roles confirmed or revoked, rules published, thresholds changed, legal holds placed or released, data exports requested or approved, imports of a course's students confirmed (with the course and the numbers enrolled, already enrolled and skipped). Each entry has the time, the acting role, the kind of action, the role it concerns, the outcome and, for an import, its counts, and no person, student, work or case. Read only; a caller who is not a confirmed administrator is 403.",
   request: { query: Type.Object({}, { maxProperties: 0 }) },
   responses: [
     {

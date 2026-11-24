@@ -139,6 +139,16 @@ export const ROSTER_IMPORT_HANDLERS: Handlers = {
       }
     }
     found.result = result;
+    // As the real log: a confirmation that took effect is one row, counts only
+    // (a repeated confirmation, above, adds none).
+    state.adminActions.push({
+      at: now.toISOString(),
+      actorRole: "institution_admin",
+      action: "roster_import_confirmed",
+      subjectRole: null,
+      outcome: "completed",
+      rosterImport: { courseId: course.id, ...result },
+    });
     return { status: 200, body: { ...result, alreadyConfirmed: false } };
   },
 };

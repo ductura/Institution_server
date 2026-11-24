@@ -67,6 +67,19 @@ describe("dev fake server: roster import", () => {
       ...before,
       IDS.student2,
     ]);
+
+    // SRV-ADMIN-2B: the confirmation is one entry of the action log, once.
+    const log = await send(state, "/api/v1/institution/admin-actions", {
+      method: "GET",
+      headers: admin,
+    });
+    expect(contractProblems("institution.admin-actions.get", log)).toEqual([]);
+    const imports = (log.json as { entries: { action: string; rosterImport: unknown }[] }).entries
+      .filter((entry) => entry.action === "roster_import_confirmed")
+      .map((entry) => entry.rosterImport);
+    expect(imports).toEqual([
+      { courseId: IDS.course, enrolled: 1, alreadyEnrolled: 0, skipped: 0 },
+    ]);
   });
 
   it("refuses a file without the columns and an unknown course", async () => {

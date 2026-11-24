@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.105.0",
+    "version": "1.108.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -9104,7 +9104,7 @@
     "/api/v1/institution/admin-actions": {
       "get": {
         "operationId": "institution.admin-actions.get",
-        "summary": "The log of administrator and operator actions in the caller's institution, newest first, at most 500 (truncated says more exist): roles confirmed or revoked, rules published, thresholds changed, legal holds placed or released, data exports requested or approved. Each entry has the time, the acting role, the kind of action, the role it concerns and the outcome, and no person, student, work or case. Read only; a caller who is not a confirmed administrator is 403.",
+        "summary": "The log of administrator and operator actions in the caller's institution, newest first, at most 500 (truncated says more exist): roles confirmed or revoked, rules published, thresholds changed, legal holds placed or released, data exports requested or approved, imports of a course's students confirmed (with the course and the numbers enrolled, already enrolled and skipped). Each entry has the time, the acting role, the kind of action, the role it concerns, the outcome and, for an import, its counts, and no person, student, work or case. Read only; a caller who is not a confirmed administrator is 403.",
         "x-access": "institution_admin",
         "x-inventory": "app/api/institution/admin-actions/route.ts",
         "responses": {
@@ -9138,7 +9138,8 @@
                           "actorRole",
                           "action",
                           "subjectRole",
-                          "outcome"
+                          "outcome",
+                          "rosterImport"
                         ],
                         "properties": {
                           "at": {
@@ -9194,6 +9195,10 @@
                               {
                                 "const": "export_approved",
                                 "type": "string"
+                              },
+                              {
+                                "const": "roster_import_confirmed",
+                                "type": "string"
                               }
                             ]
                           },
@@ -9227,6 +9232,44 @@
                           "outcome": {
                             "const": "completed",
                             "type": "string"
+                          },
+                          "rosterImport": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "courseId",
+                                  "enrolled",
+                                  "alreadyEnrolled",
+                                  "skipped"
+                                ],
+                                "properties": {
+                                  "courseId": {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                    "type": "string"
+                                  },
+                                  "enrolled": {
+                                    "minimum": 0,
+                                    "maximum": 1000,
+                                    "type": "integer"
+                                  },
+                                  "alreadyEnrolled": {
+                                    "minimum": 0,
+                                    "maximum": 1000,
+                                    "type": "integer"
+                                  },
+                                  "skipped": {
+                                    "minimum": 0,
+                                    "maximum": 1000,
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         }
                       }

@@ -131,7 +131,7 @@ export type Operations = {
     params: undefined;
     query: { [key: string]: unknown };
     body: undefined;
-    success: { status: 200; body: { "entries": ({ "at": string; "actorRole": "institution_admin" | "registry_clerk" | "operator"; "action": "role_confirmed" | "role_revoked" | "rule_published" | "threshold_changed" | "hold_placed" | "hold_released" | "export_requested" | "export_approved"; "subjectRole": "teacher" | "institution_admin" | "network_engineer" | "registry_clerk" | null; "outcome": "completed" })[]; "truncated": boolean }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "entries": ({ "at": string; "actorRole": "institution_admin" | "registry_clerk" | "operator"; "action": "role_confirmed" | "role_revoked" | "rule_published" | "threshold_changed" | "hold_placed" | "hold_released" | "export_requested" | "export_approved" | "roster_import_confirmed"; "subjectRole": "teacher" | "institution_admin" | "network_engineer" | "registry_clerk" | null; "outcome": "completed"; "rosterImport": { "courseId": string; "enrolled": number; "alreadyEnrolled": number; "skipped": number } | null })[]; "truncated": boolean }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
   };
   "institution.admin-courses.get": {
