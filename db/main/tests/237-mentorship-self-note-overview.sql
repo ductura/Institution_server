@@ -33,16 +33,15 @@ SELECT is_empty(
   'no runtime role reads or writes either table directly');
 SELECT bag_eq(
   $$ SELECT r || ' ' || f FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'ductus_test_stranger', 'public']) AS r
-      CROSS JOIN unnest(ARRAY['collaboration.get_work_self_note(text)', 'collaboration.set_work_self_note(text,text,jsonb)',
+      CROSS JOIN unnest(ARRAY['collaboration.get_work_self_note(text)', 'collaboration.set_work_sealed_self_note(text,uuid,bytea,bytea)',
         'collaboration.set_work_reading_place(text,jsonb)', 'collaboration.clear_work_self_note(text,text)',
         'collaboration.mark_work_items_seen(text,text[],uuid[])', 'collaboration.list_work_items_seen_by_student(text)',
         'collaboration.mentor_student_overview()', 'collaboration.delete_work_self_notes(text,uuid)',
         'collaboration.delete_work_items_seen(text,uuid)', 'collaboration.self_note_scope(text)',
-        'collaboration.work_item_author(uuid,text,text,uuid)', 'collaboration.is_work_place(jsonb)',
-        'collaboration.is_self_note_text(text)']) AS f
+        'collaboration.work_item_author(uuid,text,text,uuid)', 'collaboration.is_work_place(jsonb)']) AS f
       WHERE has_function_privilege(r, f, 'EXECUTE') $$,
   $$ VALUES ('ductus_app collaboration.get_work_self_note(text)'),
-            ('ductus_app collaboration.set_work_self_note(text,text,jsonb)'),
+            ('ductus_app collaboration.set_work_sealed_self_note(text,uuid,bytea,bytea)'),
             ('ductus_app collaboration.set_work_reading_place(text,jsonb)'),
             ('ductus_app collaboration.clear_work_self_note(text,text)'),
             ('ductus_app collaboration.mark_work_items_seen(text,text[],uuid[])'),
@@ -53,7 +52,7 @@ SELECT bag_eq(
   'the web role calls the seven RPCs, the retention role alone deletes, nobody calls the helpers');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
-      WHERE p.oid IN ('collaboration.get_work_self_note(text)'::regprocedure, 'collaboration.set_work_self_note(text,text,jsonb)'::regprocedure,
+      WHERE p.oid IN ('collaboration.get_work_self_note(text)'::regprocedure, 'collaboration.set_work_sealed_self_note(text,uuid,bytea,bytea)'::regprocedure,
         'collaboration.set_work_reading_place(text,jsonb)'::regprocedure, 'collaboration.clear_work_self_note(text,text)'::regprocedure,
         'collaboration.mark_work_items_seen(text,text[],uuid[])'::regprocedure, 'collaboration.list_work_items_seen_by_student(text)'::regprocedure,
         'collaboration.mentor_student_overview()'::regprocedure, 'collaboration.delete_work_self_notes(text,uuid)'::regprocedure,
@@ -96,18 +95,26 @@ SELECT matches(pg_temp.overview('anon'), '^ZD401', 'the overview needs a session
 SELECT is(substr(pg_temp.ask('ana', format('SELECT outcome FROM app.open_student_work(%L::uuid)', pg_temp.id('zm1'))), 1, 6),
   'opened', 'Ana opens her mentored work');
 
--- 3. The note to self: the owner alone.
+-- 3. The note to self: the owner alone. Since 20261217150000 the note is
+-- sealed on the device (242 tests the key and the ciphertext); here only who
+-- may read and write it, and the reading place next to it.
+SELECT is(pg_temp.ask('ana', $$ SELECT version::text FROM collaboration.put_self_note_key('00000000-0000-4000-8000-0000000005a1', NULL, 600000,
+    decode(repeat('01', 16), 'hex'), decode(repeat('02', 12), 'hex'), decode(repeat('03', 48), 'hex'),
+    decode(repeat('04', 16), 'hex'), decode(repeat('05', 12), 'hex'), decode(repeat('06', 48), 'hex')) $$), '1',
+  'Ana keeps her wrapped note key');
+CREATE FUNCTION pg_temp.seal(p_actor text, p_fill text) RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format($q$ SELECT count(*) FROM collaboration.set_work_sealed_self_note(%L, '00000000-0000-4000-8000-0000000005a1',
+    decode(repeat(%L, 12), 'hex'), decode(repeat(%L, 1296), 'hex')) $q$, pg_temp.mdoc(), p_fill, p_fill))
+$$;
 SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.get_work_self_note(%L) $$, pg_temp.mdoc())), '0',
   'no note is kept until Ana writes one');
-SELECT is(pg_temp.ask('ana', format($$ SELECT note_text || '|' || (note_place->>'offset') FROM collaboration.set_work_self_note(%L, 'Provjeriti izvor u drugom poglavlju.', '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 12}') $$, pg_temp.mdoc())),
-  'Provjeriti izvor u drugom poglavlju.|12', 'Ana writes a note at a place in her work');
-SELECT is(pg_temp.ask('ana', format($$ SELECT (reading_place->>'offset') || '|' || note_text FROM collaboration.set_work_reading_place(%L, '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 40}') $$, pg_temp.mdoc())),
-  '40|Provjeriti izvor u drugom poglavlju.', 'the reading place is kept next to the note');
+SELECT is(pg_temp.seal('ana', 'a1'), '1', 'Ana writes a sealed note on her work');
+SELECT is(pg_temp.ask('ana', format($$ SELECT (reading_place->>'offset') || '|' || octet_length(note_ct) FROM collaboration.set_work_reading_place(%L, '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 40}') $$, pg_temp.mdoc())),
+  '40|1296', 'the reading place is kept next to the note');
 SELECT is(pg_temp.ask(a, format($$ SELECT count(*) FROM collaboration.get_work_self_note(%L) $$, pg_temp.mdoc())), 'ZD403: forbidden',
   a || ' reads nothing of Ana''s note')
   FROM (VALUES ('marko'), ('vesna'), ('dora'), ('petra'), ('tomo'), ('boris')) AS t (a);
-SELECT is(pg_temp.ask(a, format($$ SELECT count(*) FROM collaboration.set_work_self_note(%L, 'Tuđa bilješka.', NULL) $$, pg_temp.mdoc())), 'ZD403: forbidden',
-  a || ' cannot write a note on Ana''s work')
+SELECT is(pg_temp.seal(a, 'b2'), 'ZD403: forbidden', a || ' cannot write a note on Ana''s work')
   FROM (VALUES ('marko'), ('dora')) AS t (a);
 SELECT is(pg_temp.ask('marko', format($$ SELECT count(*) FROM collaboration.set_work_reading_place(%L, '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 1}') $$, pg_temp.mdoc())), 'ZD403: forbidden',
   'the mentor cannot write the reading place');
@@ -115,27 +122,21 @@ SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.get_work_self
   'a missing work reads as another''s');
 SELECT matches(pg_temp.ask('anon', format($$ SELECT count(*) FROM collaboration.get_work_self_note(%L) $$, pg_temp.mdoc())), '^ZD401',
   'reading a note needs a session');
-SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_work_self_note(%L, %L, %L::jsonb) $$, pg_temp.mdoc(), b.body, b.place)), 'ZD422: invalid input',
-  'a note ' || b.why || ' is refused')
-  FROM (VALUES (repeat('a', 281), NULL, 'over 280 characters'), ('   ', NULL, 'of blanks only'), (NULL, NULL, 'missing'),
-               ('Bilješka.', '{"nodeId": "nije-uuid", "offset": 1}', 'at a malformed node'),
-               ('Bilješka.', '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": -1}', 'at a negative offset'),
-               ('Bilješka.', '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 1, "quote": "x"}', 'with a quote of the text')) AS b (body, place, why);
-SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_work_reading_place(%L, NULL) $$, pg_temp.mdoc())), 'ZD422: invalid input',
-  'a missing reading place is refused');
-SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_work_self_note(%L, %L, NULL) $$, pg_temp.mdoc(), repeat('ž', 280))), '1',
-  '280 characters are allowed');
+SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_work_reading_place(%L, %L::jsonb) $$, pg_temp.mdoc(), b.place)), 'ZD422: invalid input',
+  'a reading place ' || b.why || ' is refused')
+  FROM (VALUES (NULL, 'that is missing'), ('{"nodeId": "nije-uuid", "offset": 1}', 'at a malformed node'),
+               ('{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": -1}', 'at a negative offset'),
+               ('{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 1, "quote": "x"}', 'with a quote of the text')) AS b (place, why);
 SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.clear_work_self_note(%L, 'sve') $$, pg_temp.mdoc())), 'ZD422: invalid input',
   'only the note or the reading place is cleared');
-SELECT is(pg_temp.ask('ana', format($$ SELECT coalesce(note_text, '-') || '|' || (reading_place->>'offset') FROM collaboration.clear_work_self_note(%L, 'note') $$, pg_temp.mdoc())),
+SELECT is(pg_temp.ask('ana', format($$ SELECT coalesce(octet_length(note_ct)::text, '-') || '|' || (reading_place->>'offset') FROM collaboration.clear_work_self_note(%L, 'note') $$, pg_temp.mdoc())),
   '-|40', 'Ana deletes the note; the reading place stays');
 SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.clear_work_self_note(%L, 'reading') $$, pg_temp.mdoc())), '0',
   'deleting the reading place too leaves nothing');
 SELECT is((SELECT count(*) FROM collaboration.work_self_note), 0::bigint, 'and no row is kept');
 SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.clear_work_self_note(%L, 'note') $$, pg_temp.mdoc())), '0',
   'deleting what is not there changes nothing');
-SELECT is(pg_temp.ask('ana', format($$ SELECT count(*) FROM collaboration.set_work_self_note(%L, 'Opet.', NULL) $$, pg_temp.mdoc())), '1',
-  'Ana writes a note again');
+SELECT is(pg_temp.seal('ana', 'c3'), '1', 'Ana writes a note again');
 
 -- 4. Seen marks: messages, a milestone revision and a published comment.
 INSERT INTO ref SELECT 'msg_a', pg_temp.ask('ana', format($$ SELECT message_id FROM collaboration.create_work_message(%L, 'Poslala sam nacrt.') $$, pg_temp.mdoc()));
