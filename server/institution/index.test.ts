@@ -48,6 +48,8 @@ describe("server/institution public interface", () => {
       "readAssignmentOverview",
       // SRV-ADMIN-3: the faculty's assistant setting, read only (assistant-setting.ts).
       "readAssistantSetting",
+      // INT-32: whether a course has an active enrollment code, for its teacher (enrollment-code-state).
+      "readEnrollmentCodeState",
       "readFacultyRules",
       "readInstitutionCourses",
       "readStudentAccessLog",
