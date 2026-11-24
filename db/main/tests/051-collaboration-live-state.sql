@@ -158,8 +158,9 @@ SELECT bag_eq(
   $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)'),
             ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)'),
             ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_work_reviews(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)'),
-            ('collaboration.delete_work_self_notes(text,uuid)'), ('collaboration.delete_work_items_seen(text,uuid)') $$,
-  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201 and the note-to-self and seen-mark deletes of 237');
+            ('collaboration.delete_work_self_notes(text,uuid)'), ('collaboration.delete_work_items_seen(text,uuid)'),
+            ('collaboration.purge_orphan_work_data()') $$,
+  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201, the note-to-self and seen-mark deletes of 237 and the orphan work data purge of 239');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_worker', 'ductus_auth', 'ductus_evidence']) AS r

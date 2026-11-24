@@ -8,7 +8,7 @@ Feature područje. Danas ima provjeru tijela kolegija `parseCourseBody` (`schema
 
 ## Tko ga zove
 
-Samo `http`.
+Samo `http`; posao `purge_orphan_work_data` registrira ulazna točka workera (planirana) kroz `registerPurgeOrphanWorkData`.
 
 ## Koje podatke dira
 
@@ -23,6 +23,7 @@ Servis čita i piše kolegije i kodove upisa u glavnoj bazi samo kroz port `serv
 - `readStudentSubmission(reader, token, assignmentId)` (`student-submission-route.ts`) i `readStudentRequirements(reader, token, assignmentId)` (`student-requirements-route.ts`), SRV-22: logika ruta `student.submission.get` i `student.assignment-requirements.get` nad portom `MySubmissionStateReader`. `potvrdeno` vraća pohranjenu potvrdu sastavljenu kao u predaji, tek kad je tekst vlastiti JCS, odgovara pohranjenom sažetku i imenuje ovaj zadatak i reviziju; inače 503. Tuđi, nepoznat i neispravan zadatak daju isti 404;
 - `createInstitutionService({ courses, members, languages })` i tipove `InstitutionService` i `InvalidInput` (`service.ts`): `createCourse(token, value)`, `issueEnrollmentCode(token, courseId, value)`, `revokeEnrollmentCode(token, courseId)`, `removeStudent(token, courseId, studentId)`, `allowStudentReturn(token, courseId, studentId)` (port `InstitutionMembers`, ishod nepromijenjen), `setAssignmentWorkLanguage(token, assignmentId, value)`, `setWorkLanguage(token, assignmentId, studentId, value)` i `setWorkLanguageForDocument(token, assignmentId, documentId, value)` (port `WorkLanguages`); servis nikad ne baca;
 - `parseAssignmentWorkLanguageBody(value)`, `parseWorkLanguageExceptionBody(value)` i tipove `AssignmentWorkLanguageBody` i `WorkLanguageExceptionBody` (`work-language-bodies.ts`).
+- `purgeOrphanWorkDataJob(port)`, `registerPurgeOrphanWorkData(register, port)`, `PURGE_ORPHAN_WORK_DATA_JOB`, `PURGE_ORPHAN_WORK_DATA_EVERY_MS` i tipove `OrphanWorkDataPort` i `PurgeOrphanWorkDataJob` (`purge-orphan-work-data.ts`, SRV-MENTOR-3B): zakazani posao koji jednom dnevno briše poruke sebi, oznake „student je vidio”, poruke i bilješke nastavnika radova čiji dokument više ne postoji (`collaboration.purge_orphan_work_data`, samo `ductus_retention`, kroz port `createOrphanWorkDataPurge` iz `server/database/queue/schedule`). Definicija traži izvršavanje, ali raspored ga izvodi samo kao probni prolaz (broj kandidata) dok ime nije na `EXECUTE_ALLOWED`.
 
 ## Što ne smije uvoziti
 

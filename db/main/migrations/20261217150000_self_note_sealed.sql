@@ -30,8 +30,10 @@
 -- collaboration.set_work_self_note and is_self_note_text (the text in the
 -- clear) are dropped: nothing writes a note in the clear any more.
 -- Access is the owner's alone, as before: the key is the caller's own (no
--- parameter names a user), a note needs the student owner of the work
--- (self_note_scope). Errors carry no input: ZD401 no session, ZD403 not the
+-- parameter names a user); writing a note needs the student owner of the work
+-- (self_note_scope); reading and deleting it also the author of a kept note
+-- who no longer holds the student role (self_note_owner_scope,
+-- 20261217120000). Errors carry no input: ZD401 no session, ZD403 not the
 -- owner, ZD409 a key that is not there, is already there, or is not the one
 -- named (or its version is not), ZD422 invalid input.
 SET LOCAL ROLE ductus_migrator;
@@ -189,20 +191,21 @@ BEGIN
 END
 $$;
 
--- The owner's sealed note and reading place on a work: no row when neither is kept.
+-- The owner's sealed note and reading place on a work: no row when neither is
+-- kept. Read through the owner scope of 20261217120000, as before.
 CREATE FUNCTION collaboration.get_work_self_note(p_document_id text)
 RETURNS TABLE (note_key_id uuid, note_iv bytea, note_ct bytea, note_updated_at timestamptz,
                reading_place jsonb, reading_updated_at timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
-  v_scope record;
+  v_institution_id uuid;
 BEGIN
-  SELECT * INTO v_scope FROM collaboration.self_note_scope(p_document_id);
+  v_institution_id := collaboration.self_note_owner_scope(p_document_id);
   RETURN QUERY
     SELECT n.note_key_id, n.note_iv, n.note_ct, n.note_updated_at, n.reading_place, n.reading_updated_at
       FROM collaboration.work_self_note n
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
 END
 $$;
 
@@ -260,31 +263,35 @@ END
 $$;
 
 -- The owner deletes the note ('note') or the reading place ('reading'); a row
--- left with nothing goes. Deleting what is not there changes nothing.
+-- left with nothing goes. Deleting what is not there changes nothing. Through
+-- the owner scope of 20261217120000, and the answer is read here, as there.
 CREATE FUNCTION collaboration.clear_work_self_note(p_document_id text, p_part text)
 RETURNS TABLE (note_key_id uuid, note_iv bytea, note_ct bytea, note_updated_at timestamptz,
                reading_place jsonb, reading_updated_at timestamptz)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
-  v_scope record;
+  v_institution_id uuid;
 BEGIN
-  SELECT * INTO v_scope FROM collaboration.self_note_scope(p_document_id);
+  v_institution_id := collaboration.self_note_owner_scope(p_document_id);
   IF p_part IS NULL OR p_part NOT IN ('note', 'reading') THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
   DELETE FROM collaboration.work_self_note n
-   WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id
+   WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id
      AND CASE p_part WHEN 'note' THEN n.reading_place IS NULL ELSE n.note_ct IS NULL END;
   IF p_part = 'note' THEN
     UPDATE collaboration.work_self_note n
        SET note_key_id = NULL, note_iv = NULL, note_ct = NULL, note_updated_at = NULL
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
   ELSE
     UPDATE collaboration.work_self_note n SET reading_place = NULL, reading_updated_at = NULL
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
   END IF;
-  RETURN QUERY SELECT * FROM collaboration.get_work_self_note(p_document_id);
+  RETURN QUERY
+    SELECT n.note_key_id, n.note_iv, n.note_ct, n.note_updated_at, n.reading_place, n.reading_updated_at
+      FROM collaboration.work_self_note n
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
 END
 $$;
 
@@ -350,13 +357,13 @@ RETURNS TABLE (note_text text, note_place jsonb, note_updated_at timestamptz,
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
-  v_scope record;
+  v_institution_id uuid;
 BEGIN
-  SELECT * INTO v_scope FROM collaboration.self_note_scope(p_document_id);
+  v_institution_id := collaboration.self_note_owner_scope(p_document_id);
   RETURN QUERY
     SELECT n.note_text, n.note_place, n.note_updated_at, n.reading_place, n.reading_updated_at
       FROM collaboration.work_self_note n
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
 END
 $$;
 CREATE FUNCTION collaboration.set_work_self_note(p_document_id text, p_text text, p_place jsonb)
@@ -406,23 +413,26 @@ RETURNS TABLE (note_text text, note_place jsonb, note_updated_at timestamptz,
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
-  v_scope record;
+  v_institution_id uuid;
 BEGIN
-  SELECT * INTO v_scope FROM collaboration.self_note_scope(p_document_id);
+  v_institution_id := collaboration.self_note_owner_scope(p_document_id);
   IF p_part IS NULL OR p_part NOT IN ('note', 'reading') THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
   DELETE FROM collaboration.work_self_note n
-   WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id
+   WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id
      AND CASE p_part WHEN 'note' THEN n.reading_place IS NULL ELSE n.note_text IS NULL END;
   IF p_part = 'note' THEN
     UPDATE collaboration.work_self_note n SET note_text = NULL, note_place = NULL, note_updated_at = NULL
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
   ELSE
     UPDATE collaboration.work_self_note n SET reading_place = NULL, reading_updated_at = NULL
-     WHERE n.document_id = p_document_id AND n.institution_id = v_scope.institution_id;
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
   END IF;
-  RETURN QUERY SELECT * FROM collaboration.get_work_self_note(p_document_id);
+  RETURN QUERY
+    SELECT n.note_text, n.note_place, n.note_updated_at, n.reading_place, n.reading_updated_at
+      FROM collaboration.work_self_note n
+     WHERE n.document_id = p_document_id AND n.institution_id = v_institution_id;
 END
 $$;
 REVOKE ALL ON FUNCTION

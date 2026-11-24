@@ -25,4 +25,5 @@ export {
   type EndedSessionsPurge,
   type RetentionClient,
 } from "./ended-sessions.ts";
+export { createOrphanWorkDataPurge, type OrphanWorkDataPurge } from "./orphan-work-data.ts";
 export { slotId, slotOf, slotStart } from "./slot.ts";

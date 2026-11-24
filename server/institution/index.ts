@@ -83,3 +83,12 @@ export {
 // LOK-SRV-2: the administrator's reads of courses, academic years and teacher roles.
 export { readAcademicYears, readInstitutionCourses } from "./institution-courses.ts";
 export { readTeacherRoles } from "./teacher-roles.ts";
+// SRV-MENTOR-3B: the retention job of the data of works that no longer exist.
+export {
+  purgeOrphanWorkDataJob,
+  PURGE_ORPHAN_WORK_DATA_EVERY_MS,
+  PURGE_ORPHAN_WORK_DATA_JOB,
+  registerPurgeOrphanWorkData,
+  type OrphanWorkDataPort,
+  type PurgeOrphanWorkDataJob,
+} from "./purge-orphan-work-data.ts";

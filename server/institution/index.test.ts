@@ -13,6 +13,9 @@ describe("server/institution public interface", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
       "NOTICE_TEMPLATE_VERSION",
+      // SRV-MENTOR-3B: the retention job of the data of works that are gone (purge-orphan-work-data.ts).
+      "PURGE_ORPHAN_WORK_DATA_EVERY_MS",
+      "PURGE_ORPHAN_WORK_DATA_JOB",
       // SRV-ADMIN-2: the limits of the roster import (roster-import.ts).
       "ROSTER_IMPORT_MAX_CSV_LENGTH",
       "ROSTER_IMPORT_MAX_ROWS",
@@ -38,6 +41,7 @@ describe("server/institution public interface", () => {
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
       "publishFacultyRule",
+      "purgeOrphanWorkDataJob",
       // LOK-SRV-2: the administrator's reads (institution-courses.ts, teacher-roles.ts).
       "readAcademicYears",
       "readAssignmentCurrentVersion",
@@ -52,6 +56,7 @@ describe("server/institution public interface", () => {
       "readTeacherRoles",
       "readTeacherRoster",
       "readTeacherSubmission",
+      "registerPurgeOrphanWorkData",
       "studentCoursesOf",
     ]);
   });

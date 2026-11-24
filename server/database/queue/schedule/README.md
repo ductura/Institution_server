@@ -9,6 +9,7 @@ Raspored poslova u workeru nad postojećim pg-boss redom (SRV-1303, plan M10.0-S
 - Termin (slot) je početak razdoblja posla na fiksnoj mreži (`everyMs`, cijele minute, od jedne minute do tjedan dana). U red ide samo ID termina (`slotId`): oblik UUIDv7 s početkom termina u prvih 48 bitova i ostatkom iz SHA-256 imena posla i početka. Tijelo prolazi `parseJobBody` pri upisu i prije izvođenja, pa tekst rada ni ključ ne ulaze u red (D-74).
 - `run(queue, now)` za svaki posao stavi trenutni termin u red (jednom po terminu u procesu; red sam odbija drugi isti termin dok čeka ili radi) i izvede jedan posao. Posao radi za početak termina, nikad za sat u trenutku izvođenja, pa drugo izvođenje istog termina nema više što obrisati. Termin koji još nije počeo (`slot_in_future`), ID drugog posla (`invalid_slot`) i broj koji nije nenegativan cijeli broj (`invalid_count`) odbijaju se kodom.
 - `createEndedSessionsPurge(client)`: poziv `app.purge_ended_sessions(p_before)` prijavom uloge `ductus_retention`. `purge` briše i vraća broj; `count` zove istu funkciju u transakciji koju uvijek vraća (ROLLBACK), pa probni prolaz broji točno ono što bi brisanje obrisalo i ništa ne mijenja. Greške su zatvoreni kodovi (`invalid_cut`, `invalid_count`, `purge_unavailable`), nikad tekst baze.
+- `createOrphanWorkDataPurge(client)` (SRV-MENTOR-3B): poziv `collaboration.purge_orphan_work_data()` prijavom uloge `ductus_retention`, port posla `purge_orphan_work_data` iz `server/institution`. Briše poruke sebi, oznake „student je vidio”, poruke i bilješke nastavnika radova čiji dokument više ne postoji i vraća broj redaka; `count` kao gore u transakciji koja se uvijek vraća. Broj stiže kao `bigint` (tekst) i čita se strogo; greške `invalid_count` i `purge_unavailable`.
 
 ## Tko ga zove
 
@@ -16,11 +17,11 @@ Ulazna točka procesa workera (planirana, VS-1b): registrira poslove (npr. `regi
 
 ## Koje podatke dira
 
-Ništa izravno. Red poslova kroz port (`enqueue`, `runOnce`), a sesije samo kroz `app.purge_ended_sessions` (migracija `20261207100000`, pgTAP `181-purge-ended-sessions.sql`), koju smije izvršiti samo `ductus_retention`.
+Ništa izravno. Red poslova kroz port (`enqueue`, `runOnce`), sesije samo kroz `app.purge_ended_sessions` (migracija `20261207100000`, pgTAP `181-purge-ended-sessions.sql`), a podatke nestalih radova samo kroz `collaboration.purge_orphan_work_data` (migracija `20261217120000`, pgTAP `239-retention-orphan-work-data.sql`); obje smije izvršiti samo `ductus_retention`.
 
 ## Što izvozi
 
-`createJobSchedule`, `effectiveMode`, `EXECUTE_ALLOWED`, `SLOT_FIELD`, `SLOT_MIN_MS`, `SLOT_MAX_MS`, `ScheduleError`, `ScheduledJobError`, `createEndedSessionsPurge`, `slotId`, `slotOf`, `slotStart` i tipove. `server/database/index.ts` ovu mapu ne izvozi i nijedna produkcijska datoteka izvan `server/database/queue/` je ne imenuje (`server/database/registry-boundary.test.ts`): uvozi je samo ulazna točka workera. Poslovi drugih područja zato pišu oblik definicije i porta kod sebe (strukturni tipovi).
+`createJobSchedule`, `effectiveMode`, `EXECUTE_ALLOWED`, `SLOT_FIELD`, `SLOT_MIN_MS`, `SLOT_MAX_MS`, `ScheduleError`, `ScheduledJobError`, `createEndedSessionsPurge`, `createOrphanWorkDataPurge`, `slotId`, `slotOf`, `slotStart` i tipove. `server/database/index.ts` ovu mapu ne izvozi i nijedna produkcijska datoteka izvan `server/database/queue/` je ne imenuje (`server/database/registry-boundary.test.ts`): uvozi je samo ulazna točka workera. Poslovi drugih područja zato pišu oblik definicije i porta kod sebe (strukturni tipovi).
 
 ## Što ne smije uvoziti
 
