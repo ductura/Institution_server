@@ -586,7 +586,7 @@ export default defineConfig(
     // The fake server from the contracts (U8) answers with made-up vectors and
     // never reaches production code. Its own rule, so the database exception
     // to no-restricted-imports below or above cannot switch it off.
-    // server/contracts/fake-server.test.ts also walks the import graph of the
+    // server/contracts/fake-server-production.test.ts also walks the import graph of the
     // production entry point.
     files: ["**/*.ts"],
     ignores: TEST_ONLY_FILES,
