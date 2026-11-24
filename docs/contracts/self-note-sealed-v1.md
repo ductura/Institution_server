@@ -1,6 +1,6 @@
 # Šifrirana poruka sebi v1: kako student dolazi do ključa na drugom uređaju
 
-**Status: varijanta B2 IZABRANA (Daniel, 24. 11. 2026., odgovor u sesiji pisca: „B2”); točke 2 i 3 iz §5 su pretpostavke pisca dok vlasnik ne kaže drukčije.** Zadatak NF6-SIFRA-PRIJEDLOG (`poruka-sebi-sifriranje-prijedlog`, `Risk: critical`), nalog orkestratora na Ductus#2055 (c.7119635156). Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
+**Status: ODLUČENO (Daniel, 24. 11. 2026.: „1. B2 2. Da 3B”; zapis orkestratora na ductura/Institution_server#676, c.7120209253).** Gradnju vode zadaci SRV-NF6-SIFRA, zatim WEB-NF6-SIFRA. Zadatak NF6-SIFRA-PRIJEDLOG (`poruka-sebi-sifriranje-prijedlog`, `Risk: critical`), nalog orkestratora na Ductus#2055 (c.7119635156). Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
 
 Ovaj dokument ne mijenja kod ni postojeći ugovor `docs/contracts/mentorship-follow-v1.md` §1. On opisuje tri varijante, njihove posljedice i promjenu ugovora koja vrijedi za svaku od njih. Gradi se tek nakon vlasnikova izbora (ovo je odluka sa statusom PRIJEDLOG čija bi promjena nakon gradnje bila skupa).
 
@@ -116,14 +116,14 @@ Kratkotrajni prijenos: `POST /api/v1/me/self-note-key/pairing` (novi uređaj obj
 
 ### 4.4 Kompatibilnost i postojeći podaci
 
-- Uklanjanje polja `text` lomi ugovor 1.105.0 i `pnpm contracts:breaking` će ga odbiti. Dvije mogućnosti, izbor vlasnika: (a) lomljiva promjena istih ruta uz vlasnikovo izuzeće (WEB još ne koristi te rute u izvatku ugovora); (b) nove operacije (npr. `work.sealed-self-note.*`) uz stare, pa uklanjanje starih zasebnim zadatkom. Preporuka pisca: (b), jer ne traži izuzeće provjere.
+- Uklanjanje polja `text` lomi ugovor 1.105.0 i `pnpm contracts:breaking` će ga odbiti. Dvije mogućnosti: (a) lomljiva promjena istih ruta uz vlasnikovo izuzeće (WEB još ne koristi te rute u izvatku ugovora); (b) nove operacije (npr. `work.sealed-self-note.*`) uz stare, pa uklanjanje starih zasebnim zadatkom. **Odluka vlasnika: (b).**
 - Postojeći nešifrirani retci (samo izmišljeni podaci, nijedan stvarni student) brišu se migracijom koja uvodi šifrat; ne prepisuju se jer poslužitelj nema ključ.
 - Izvoz podataka studentu (D-12) sadrži šifrat i zapis omotanog ključa; čitljivu kopiju može napraviti samo studentov uređaj. Referada i administrator ne mogu dati čitljivu poruku.
 
-## 5. Odluke i otvorena pitanja
+## 5. Odluke vlasnika
 
 1. **Varijanta: B2 (odluka vlasnika, 24. 11. 2026.).** Ključ poruka je slučajan i omotan dvaput: generiranom frazom i generiranim kodom za oporavak (PBKDF2-SHA-256 iz WebCrypto, bez nove ovisnosti). Varijanta C nije dio ove odluke; ako zatreba, dodaje se kasnije novom odlukom.
-2. Položaj poruke (`place`) ide u šifrat. **Pretpostavka pisca**, vlasnik je nije potvrdio ni odbio; gradnja je slijedi dok vlasnik ne kaže drukčije.
-3. Kompatibilnost: nove operacije uz stare, pa uklanjanje starih zasebnim zadatkom (§4.4 (b)). **Pretpostavka pisca**, kao u točki 2.
+2. **Položaj poruke (`place`) ide u šifrat (odluka vlasnika, 24. 11. 2026.).** „Dokle sam stao” ostaje nešifriran.
+3. **Kompatibilnost: nove operacije uz stare, pa uklanjanje starih zasebnim zadatkom (§4.4 (b); odluka vlasnika, 24. 11. 2026.).** Postojeći nešifrirani retci (izmišljeni podaci) brišu se migracijom.
 
 Gradnja (migracija, tablica ključa s RLS-om i pgTAP retcima, rute, lažni dev server, WEB) ide kroz zadatak orkestratora; ovaj PR ostaje samo dokument. Dotad postojeći ugovor `mentorship-follow-v1.md` vrijedi nepromijenjen.
