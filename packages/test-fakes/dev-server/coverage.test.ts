@@ -1880,6 +1880,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/overview`, as: "nastavnik" },
   },
+  "teacher.assignment-follow-up.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/follow-up`, as: "nastavnik" },
+  },
   "teacher.submission-receipt.get": {
     before: SUBMIT_STEPS,
     request: {

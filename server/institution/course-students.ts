@@ -31,7 +31,8 @@ type Row = Record<string, unknown>;
 type ReadFailure =
   | "course students read failed"
   | "assignment names read failed"
-  | "assignment overview read failed";
+  | "assignment overview read failed"
+  | "assignment follow-up read failed";
 
 function codeOf(error: unknown): string | undefined {
   const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
@@ -262,5 +263,88 @@ export function readAssignmentOverview(token: string, withActor: WithActor, assi
     OVERVIEW_SQL,
     "assignment overview read failed",
     (rows) => uniqueStudents(rows, overviewStudentOf),
+  );
+}
+
+type FollowUpStudent = {
+  studentId: string;
+  noticeReadAt: string | null;
+  noticeAcknowledgedAt: string | null;
+  noticeVersionNo: number | null;
+  revisionState: "open" | "responded" | "closed" | "withdrawn" | null;
+  revisionChangedAt: string | null;
+  openRevisionCount: number;
+};
+
+const FOLLOW_UP_SQL = `SELECT student_id::text AS student_id, notice_read_minute, notice_acknowledged_minute,
+       notice_version_no, revision_state, revision_changed_window, open_revision_count
+  FROM app.assignment_follow_up($1::uuid)
+ ORDER BY student_id`;
+
+const REVISION_STATES = new Set(["open", "responded", "closed", "withdrawn"]);
+
+/** A Date on a whole step of `ms` from the epoch, as ISO text; null for null, undefined otherwise. */
+function stepOf(value: unknown, ms: number): string | null | undefined {
+  if (value === null) return null;
+  if (!(value instanceof Date) || value.getTime() % ms !== 0) return undefined;
+  const text = value.toISOString();
+  return text.length === 24 ? text : undefined;
+}
+
+function isCount(value: unknown, minimum: number): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= minimum;
+}
+
+function followUpStudentOf(row: Row): FollowUpStudent | null {
+  const studentId = row["student_id"];
+  const versionNo = row["notice_version_no"];
+  const state = row["revision_state"];
+  const openCount = row["open_revision_count"];
+  const readAt = stepOf(row["notice_read_minute"], 60_000);
+  const acknowledgedAt = stepOf(row["notice_acknowledged_minute"], 60_000);
+  const changedAt = stepOf(row["revision_changed_window"], 300_000);
+  if (
+    typeof studentId !== "string" ||
+    !UUID.test(studentId) ||
+    readAt === undefined ||
+    acknowledgedAt === undefined ||
+    changedAt === undefined ||
+    (acknowledgedAt === null) !== (versionNo === null) ||
+    (versionNo !== null && !isCount(versionNo, 1)) ||
+    (changedAt === null) !== (state === null) ||
+    (state !== null && (typeof state !== "string" || !REVISION_STATES.has(state))) ||
+    !isCount(openCount, 0)
+  )
+    return null;
+  return {
+    studentId,
+    noticeReadAt: readAt,
+    noticeAcknowledgedAt: acknowledgedAt,
+    noticeVersionNo: versionNo as number | null,
+    revisionState: state as FollowUpStudent["revisionState"],
+    revisionChangedAt: changedAt,
+    openRevisionCount: openCount,
+  };
+}
+
+/** SRV-NF4-POTVRDE-DORADE: notice and revision follow-up of the overview's students. */
+export function readAssignmentFollowUp(token: string, withActor: WithActor, assignmentId: string) {
+  return readStudents(
+    token,
+    withActor,
+    assignmentId,
+    FOLLOW_UP_SQL,
+    "assignment follow-up read failed",
+    (rows) => {
+      const ids = new Set<string>();
+      const students: FollowUpStudent[] = [];
+      for (const row of rows) {
+        const student = followUpStudentOf(row);
+        if (student === null || ids.has(student.studentId)) return null;
+        ids.add(student.studentId);
+        students.push(student);
+      }
+      return students;
+    },
   );
 }

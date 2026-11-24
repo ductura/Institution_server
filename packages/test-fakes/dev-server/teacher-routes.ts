@@ -100,6 +100,14 @@ function groupName(state: State, courseId: string, studentId: string): string | 
 // SRV-1107: the teacher's private working criteria (B-9), kept per fake state,
 // author and work. Only a teacher of the work reads or writes them; the student's
 // routes never see them.
+const FOLLOW_UP_STATES = {
+  open: "open",
+  reopened: "open",
+  responded: "responded",
+  accepted: "closed",
+  withdrawn: "withdrawn",
+} as const;
+
 const CRITERIA = [
   ["topic", "workingCriteria.topic"],
   ["structure", "workingCriteria.structure"],
@@ -434,6 +442,62 @@ export const TEACHER_HANDLERS: Handlers = {
         evidenceRecord: work?.submissionReceipt?.payload.evidenceRecord ?? null,
       } as const;
     });
+    return { status: 200, body: { students } };
+  },
+  // SRV-NF4-POTVRDE-DORADE: the overview's students; first read and latest
+  // acknowledgment in UTC minutes, the request with the latest change in a
+  // five-minute window (P-03). No text of a request, no access log.
+  "teacher.assignment-follow-up.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    const floor = (at: string, ms: number) =>
+      new Date(Math.floor(Date.parse(at) / ms) * ms).toISOString();
+    const students = submissions(state, account, assignment)
+      .map((s) => s.studentId)
+      .sort()
+      .map((studentId) => {
+        const reads = [...(assignment?.read ?? new Map<string, string>())]
+          .filter(([key]) => key.startsWith(`${studentId}:`))
+          .map(([, at]) => at)
+          .sort();
+        const ack = assignment?.acknowledged.get(studentId);
+        const documents = new Set(
+          state.works
+            .filter((w) => w.assignmentId === assignment?.id && w.studentId === studentId)
+            .map((w) => w.documentId),
+        );
+        const requests = state.revisionRequests
+          .filter((r) => documents.has(r.documentId))
+          .map((r) => {
+            const times = [r.openedAt, r.response?.at, r.closing?.at].filter(
+              (t): t is string => t !== undefined,
+            );
+            return { request: r, changedAt: times.sort().at(-1) ?? r.openedAt };
+          })
+          .sort((a, b) =>
+            a.changedAt === b.changedAt
+              ? b.request.seq - a.request.seq
+              : a.changedAt < b.changedAt
+                ? 1
+                : -1,
+          );
+        const latest = requests[0];
+        return {
+          studentId,
+          noticeReadAt: reads[0] === undefined ? null : floor(reads[0], 60_000),
+          ...(ack === undefined
+            ? { noticeAcknowledgedAt: null, noticeVersionNo: null }
+            : { noticeAcknowledgedAt: floor(ack.at, 60_000), noticeVersionNo: ack.version }),
+          ...(latest === undefined
+            ? { revisionState: null, revisionChangedAt: null }
+            : {
+                revisionState: FOLLOW_UP_STATES[latest.request.state],
+                revisionChangedAt: floor(latest.changedAt, 300_000),
+              }),
+          openRevisionCount: requests.filter(
+            (r) => r.request.state === "open" || r.request.state === "reopened",
+          ).length,
+        };
+      });
     return { status: 200, body: { students } };
   },
   // P-5 (c.7010418731): no work content, so this read writes no access log.
