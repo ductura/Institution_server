@@ -30197,7 +30197,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.113.0",
+        "apiVersion": "1.114.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -30213,7 +30213,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.113.0",
+        "apiVersion": "1.114.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -36436,6 +36436,157 @@
     }
   },
   {
+    "route": "student.assistant-conversations.get",
+    "name": "two-conversations",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60",
+        "conversations": [
+          {
+            "conversationId": "7d000000-0000-4000-8000-000000000002",
+            "purposeKey": "literature_search",
+            "createdAt": "2026-11-21T09:00:00.000Z",
+            "requestCount": 1,
+            "lastActivityAt": "2026-11-21T09:00:04.000Z"
+          },
+          {
+            "conversationId": "7d000000-0000-4000-8000-000000000001",
+            "purposeKey": "proofreading",
+            "createdAt": "2026-11-20T10:00:00.000Z",
+            "requestCount": 3,
+            "lastActivityAt": "2026-11-20T10:42:11.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.assistant-conversations.get",
+    "name": "none-yet",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60",
+        "conversations": []
+      }
+    }
+  },
+  {
+    "route": "student.assistant-conversations.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002001"
+      }
+    }
+  },
+  {
+    "route": "student.assistant-conversations.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002004"
+      }
+    }
+  },
+  {
+    "route": "student.assistant-conversations.get",
+    "name": "not-found-or-not-enrolled",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002002"
+      }
+    }
+  },
+  {
+    "route": "student.assistant-conversations.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002003"
+      }
+    }
+  },
+  {
     "route": "student.assistant-request.post",
     "name": "completed",
     "request": {
@@ -40569,7 +40720,8 @@
         "wordMin": 1500,
         "wordMax": 3000,
         "readAt": null,
-        "acknowledgedAt": null
+        "acknowledgedAt": null,
+        "purposeCatalogVersion": 1
       }
     }
   },
@@ -40602,7 +40754,8 @@
         "wordMin": null,
         "wordMax": null,
         "readAt": "2026-11-03T09:14:00.000Z",
-        "acknowledgedAt": "2026-11-03T09:20:00.000Z"
+        "acknowledgedAt": "2026-11-03T09:20:00.000Z",
+        "purposeCatalogVersion": 1
       }
     }
   },

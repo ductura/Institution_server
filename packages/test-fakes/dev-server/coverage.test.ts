@@ -1017,6 +1017,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.notice.get": {
     request: { path: `${A.replace("/institution/", "/student/")}/notice`, as: "student" },
   },
+  "student.assistant-conversations.get": {
+    request: {
+      path: `${A.replace("/institution/", "/student/")}/assistant-conversations`,
+      as: "student",
+    },
+  },
   "student.notice-read.post": {
     request: {
       path: `${A.replace("/institution/", "/student/")}/notice-read`,

@@ -406,6 +406,10 @@ export {
 } from "./student-submission.ts";
 export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
 export {
+  createStudentConversationsRoute,
+  createStudentConversationsRouteFor,
+} from "./student-assistant-conversations.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,

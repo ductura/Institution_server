@@ -133,7 +133,47 @@ export const studentAssistantConversationGet = defineRoute({
   errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
 });
 
+// SRV-ASIST-CITANJE (Ductus#2055 c.7142266537): the student's own assistant
+// conversations of one assignment, for the editor's assistant tab. Only what
+// the list shows; the messages stay with student.assistant-conversation.get.
+const ConversationSummary = closed({
+  conversationId: Uuid,
+  /** The purpose of the conversation's first request; a later request may name another. */
+  purposeKey: Type.String({ pattern: "^[a-z][a-z0-9_]{0,63}$" }),
+  createdAt: Instant,
+  /** Every request of the conversation, whatever its state. */
+  requestCount: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+  /** The latest of the creation and of each request's last change of state. */
+  lastActivityAt: Instant,
+});
+
+export const studentAssistantConversationsGet = defineRoute({
+  id: "student.assistant-conversations.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/assistant-conversations",
+  inventory: "app/api/student/assignments/[assignmentId]/assistant-conversations/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The caller's own AI assistant conversations of an assignment of which they are a student (of its course or its mentorship), newest activity first, then id: no message text, which student.assistant-conversation.get reads. Nobody else's conversation is ever listed, the teacher's view included. The identity comes from the session only. Sec-Fetch-Site, when sent, other than same-origin is 403. Another's assignment, an unknown one and a malformed id are the same 404 (C-23); an assignment without a conversation is an empty list. A row the read cannot vouch for makes the whole answer 503.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the conversations (an empty list when there is none)",
+      body: closed({ assignmentId: Uuid, conversations: Type.Array(ConversationSummary) }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(403, "forbidden"),
+    error(404, "not_found"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const assistantRoutes = [
   studentAssistantRequestPost,
   studentAssistantConversationGet,
+  studentAssistantConversationsGet,
 ] as const;

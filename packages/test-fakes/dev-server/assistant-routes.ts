@@ -16,4 +16,14 @@ export const ASSISTANT_HANDLERS: Handlers = {
     }
     return { status: 200, body: { conversationId: id, messages: [] } };
   },
+  // SRV-ASIST-CITANJE: nothing is stored, so a student of the assignment's
+  // course reads an empty list; anyone else's or an unknown one is not_found.
+  "student.assistant-conversations.get": ({ state, account, params }) => {
+    const id = params.assignmentId.toLowerCase();
+    const assignment = state.assignments.find((a) => a.id === id);
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course?.studentIds.includes(account.id))
+      return { error: "not_found" };
+    return { status: 200, body: { assignmentId: assignment.id, conversations: [] } };
+  },
 };

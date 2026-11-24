@@ -188,6 +188,7 @@ export const INSTITUTION_HANDLERS: Handlers = {
         ...{ evidenceProfile: c.evidenceProfile, wordMin: c.wordMin, wordMax: c.wordMax },
         readAt: assignment.read.get(`${account.id}:${assignment.version}`) ?? null,
         acknowledgedAt: acknowledged?.version === assignment.version ? acknowledged.at : null,
+        purposeCatalogVersion: 1,
       },
     };
   },

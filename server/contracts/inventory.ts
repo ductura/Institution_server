@@ -579,6 +579,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7019668458",
   },
+  // SRV-ASIST-CITANJE (Ductus#2055 c.7142266537): Ductus has no list of the
+  // student's assistant conversations.
+  "app/api/student/assignments/[assignmentId]/assistant-conversations/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7142266537",
+  },
   // UGOVORI-API (Ductus#2028 c.7020597404, SRV-AV): Ductus reads the current
   // version in its teacher page, not in a route.
   "app/api/institution/assignments/[assignmentId]/route.ts": {

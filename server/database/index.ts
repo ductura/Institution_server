@@ -484,6 +484,15 @@ export type {
   StudentAssignmentsReader,
 } from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
+export {
+  type ConversationSummary,
+  createStudentConversationsReader,
+  STUDENT_CONVERSATIONS_DATABASE_ERROR,
+  STUDENT_CONVERSATIONS_NOT_FOUND,
+  STUDENT_CONVERSATIONS_ROW_MALFORMED,
+  STUDENT_CONVERSATIONS_UNAUTHENTICATED,
+  type StudentConversationsReader,
+} from "./student-assistant-conversations.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export {
   createTeacherWork,
