@@ -33,9 +33,10 @@ CREATE TABLE institution.assignment_template_pin (
   template_version integer NOT NULL CHECK (template_version >= 1),
   pinned_by uuid NOT NULL,
   pinned_at timestamptz NOT NULL DEFAULT statement_timestamp(),
-  -- Only a version that exists, of the assignment's own institution.
-  FOREIGN KEY (institution_id, work_type, template_version)
-    REFERENCES institution.work_template_version (institution_id, work_type, version),
+  -- No foreign key to institution.work_template_version: a key would make PostgreSQL refuse a
+  -- TRUNCATE of it before its own append-only trigger answers (ZD409), which the tests of
+  -- SRV-V17-TEMPLATE-ADMIN pin. The version named here exists because the function reads it
+  -- from that chain in the same transaction, and no version is ever removed.
   FOREIGN KEY (pinned_by, institution_id) REFERENCES identity.user_account (id, institution_id)
 );
 

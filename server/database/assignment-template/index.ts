@@ -16,7 +16,7 @@ export type AssignmentTemplateRefusal = {
 };
 
 export type AssignmentTemplateSetResult =
-  { readonly status: "set"; readonly version: number | null } | AssignmentTemplateRefusal;
+  { readonly status: "saved"; readonly version: number | null } | AssignmentTemplateRefusal;
 
 export type FrozenAssignmentTemplate = {
   readonly version: number;
@@ -83,7 +83,7 @@ export function createAssignmentTemplate(withActor: WithActor) {
           ) {
             throw new Error("unconfirmed assignment template");
           }
-          return { status: "set", version: version === 0 ? null : version };
+          return { status: "saved", version: version === 0 ? null : version };
         });
       } catch (error) {
         const refusal = REFUSALS.get(codeOf(error));

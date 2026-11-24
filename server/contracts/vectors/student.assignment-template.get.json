@@ -109,7 +109,8 @@
     },
     {
       "name": "not-found",
-      "kind": "success",
+      "kind": "error",
+      "code": "not_found",
       "request": {
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000001"
@@ -128,8 +129,7 @@
           "status": 404,
           "requestId": "00000000-0000-4000-8000-000001720019"
         }
-      },
-      "code": "not_found"
+      }
     }
   ]
 }

@@ -114,7 +114,7 @@ export function createAssignmentTemplateRoutesFor(main: { withActor: WithActor }
           const use = json.value.useInstitutionTemplate;
           const result = await store.set(sessionToken, assignmentId.toLowerCase(), use);
           switch (result.status) {
-            case "set":
+            case "saved":
               return { body: { useInstitutionTemplate: use, version: result.version } };
             case "unauthorized":
               sendProblem(response, 401, "unauthorized");

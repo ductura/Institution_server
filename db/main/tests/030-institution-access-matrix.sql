@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3921);
+SELECT plan(3985);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -190,7 +190,7 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'mentor_note', 'submission_withdrawal_setting',
+        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
@@ -324,6 +324,7 @@ SELECT bag_eq(
     'work_milestone_event: work_milestone_event_owner ALL to ductus_identity',
     'milestone_template_version: milestone_template_version_owner ALL to ductus_identity',
     'work_template_version: work_template_version_owner ALL to ductus_identity',
+    'assignment_template_pin: assignment_template_pin_owner ALL to ductus_identity',
     'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity',
     'work_interview: work_interview_owner ALL to ductus_identity',
     'work_interview_question: work_interview_question_owner ALL to ductus_identity',
@@ -364,6 +365,7 @@ SELECT bag_eq(
         'work_mentor_consent_event: work_mentor_consent_event_append_only 27 O', 'work_mentor_consent_event: work_mentor_consent_event_no_truncate 34 O',
         'work_thesis_stage_event: work_thesis_stage_event_append_only 27 O', 'work_thesis_stage_event: work_thesis_stage_event_no_truncate 34 O',
         'work_template_version: work_template_version_immutable 27 O', 'work_template_version: work_template_version_no_truncate 34 O',
+        'assignment_template_pin: assignment_template_pin_frozen 19 O', 'assignment_template_pin: assignment_template_pin_no_truncate 34 O',
         'milestone_template_version: milestone_template_version_immutable 27 O', 'milestone_template_version: milestone_template_version_no_truncate 34 O',
         'assignment: assignment_apply_milestone_template 5 O',
         'faculty_rule_version: faculty_rule_version_immutable 27 O', 'faculty_rule_version: faculty_rule_version_no_truncate 34 O',
@@ -580,6 +582,7 @@ SELECT bag_eq(
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
     'reject_work_template_change()',
+    'reject_assignment_template_pin_update()',
     'is_work_template_text(p_text text, p_min integer, p_max integer)',
     'is_work_template_title_page(p_list jsonb)',
     'is_work_template_sections(p_list jsonb)',
@@ -1680,7 +1683,8 @@ SELECT is_empty(
        'app.read_milestone_template()', 'app.publish_milestone_template(integer,boolean,jsonb)',
        'app.read_work_milestone_plan(text)', 'app.add_work_milestone(text,text,timestamptz,text)',
        'app.apply_milestone_template_to_work(text)',
-       'app.read_work_template(text)', 'app.publish_work_template(text,integer,jsonb,jsonb,text)']) f
+       'app.read_work_template(text)', 'app.publish_work_template(text,integer,jsonb,jsonb,text)',
+       'app.set_assignment_template(uuid,boolean)', 'app.read_assignment_template(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-1103: only ductus_app and the owner execute the milestone RPCs'
 );
@@ -1740,7 +1744,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'mentor_note', 'submission_withdrawal_setting',
+                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening'])
@@ -1749,7 +1753,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
