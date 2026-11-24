@@ -21,6 +21,10 @@ export {
   type FacultyAssistantSwitch,
 } from "./assistant-setting.ts";
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
+export {
+  type EnrollmentCodeStateRead,
+  readEnrollmentCodeState,
+} from "./enrollment-code-state/index.ts";
 export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
 export {
   type AiPolicy,

@@ -97,6 +97,7 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createAssignmentGradeRouteFor,
   excludePracticeAssignment,
   createInstitutionGroupRoutesFor,
@@ -309,6 +310,8 @@ async function main(): Promise<void> {
       createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
+      // Whether the course has a current enrolment code (Ductus#2028 c.7019844365).
+      createEnrollmentCodeStateRouteFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
       createAssignmentCurrentVersionRouteFor(databases.main),

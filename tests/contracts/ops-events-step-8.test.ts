@@ -26,6 +26,7 @@ import {
   createAdminCourseRouteFor,
   createAssignmentCopyRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createAssignmentGradeRouteFor,
   createAssistantMatchRoutesFor,
   createAssistantRoutesFor,
@@ -532,6 +533,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createProblemReportRouteFor", () => [createProblemReportRouteFor(STAND_IN)]],
   ["createProblemReportsRouteFor", () => [createProblemReportsRouteFor(STAND_IN)]],
   ["createInstitutionCourseRoutesFor", () => createInstitutionCourseRoutesFor(STAND_IN)],
+  ["createEnrollmentCodeStateRouteFor", () => [createEnrollmentCodeStateRouteFor(STAND_IN)]],
   ["createInstitutionAssignmentRoutesFor", () => createInstitutionAssignmentRoutesFor(STAND_IN)],
   [
     "createAssignmentCurrentVersionRouteFor",
