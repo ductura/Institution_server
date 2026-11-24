@@ -1773,6 +1773,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
+  "ops.events.get": {
+    request: {
+      path: "/api/v1/ops/events?from=2026-11-18T00:00:00Z&to=2026-11-18T12:00:00Z",
+      as: "administrator",
+    },
+  },
   "institution.retention.get": {
     request: { path: "/api/v1/institution/retention", as: "administrator" },
   },

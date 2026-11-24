@@ -331,6 +331,7 @@ describe("route inventory", () => {
       "work.mentor-consent.put: app/api/works/[documentId]/mentor-consent/route.ts is not in the inventory",
       "work.thesis-stage.get: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
       "work.thesis-stage.put: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
+      "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

@@ -136,6 +136,10 @@ const ENV_NAMES = [
   "DUCTURA_MODE",
   // The staging deployment (STG-PRIJAVA, Ductus#2055, server/settings).
   "DUCTURA_DEPLOYMENT",
+  // The KMS signer's configuration (DAN-963, server/settings/kms.ts).
+  "DUCTUS_KMS_PROVIDER",
+  "DUCTUS_KMS_KEY_ID",
+  "DUCTUS_KMS_REGION",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",

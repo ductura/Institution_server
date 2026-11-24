@@ -18,6 +18,13 @@ import { SERVER_VERSION } from "./config/index.ts";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CANARY = "invented-canary-7f3a";
 const DATABASE_URL = `postgres://app:${CANARY}@db.invalid:5432/ductura`;
+// DAN-963: an invented key ARN; account 000000000000 is no real account.
+const KMS = {
+  DUCTUS_KMS_PROVIDER: "aws",
+  DUCTUS_KMS_KEY_ID:
+    "arn:aws:kms:eu-central-1:000000000000:key/0f1e2d3c-4b5a-4978-8a6b-5c4d3e2f1a0b",
+  DUCTUS_KMS_REGION: "eu-central-1",
+};
 const VECTOR = JSON.parse(
   readFileSync(join(ROOT, "server/contracts/vectors/platform.health.get.json"), "utf8"),
 ) as {
@@ -215,6 +222,28 @@ describe("dist/server.js", () => {
       { NODE_ENV: "test", DUCTURA_MODE: `test${CANARY}` },
       "DUCTURA_MODE is not a known mode",
     ],
+    // DAN-963: an incomplete KMS configuration never starts, in production
+    // (NODE_ENV production or unset) as anywhere.
+    [
+      "only a KMS key under NODE_ENV production",
+      { NODE_ENV: "production", DUCTUS_KMS_KEY_ID: `${KMS.DUCTUS_KMS_KEY_ID}${CANARY}` },
+      "DUCTUS_KMS_PROVIDER is not set",
+    ],
+    [
+      "only a KMS provider, NODE_ENV unset",
+      { DUCTUS_KMS_PROVIDER: "aws" },
+      "DUCTUS_KMS_KEY_ID is not set",
+    ],
+    [
+      "a KMS key of another region under NODE_ENV production",
+      { NODE_ENV: "production", ...KMS, DUCTUS_KMS_REGION: "eu-west-1" },
+      "DUCTUS_KMS_KEY_ID is not in DUCTUS_KMS_REGION",
+    ],
+    [
+      "a KMS provider aws with CRLF under NODE_ENV production",
+      { NODE_ENV: "production", ...KMS, DUCTUS_KMS_PROVIDER: `aws\r\n${CANARY}` },
+      "DUCTUS_KMS_PROVIDER is not a known provider",
+    ],
   ])(
     "does not start with %s and names the variable, never the value",
     async (_, env, problem) => {
@@ -228,6 +257,13 @@ describe("dist/server.js", () => {
     },
     20_000,
   );
+
+  // DAN-963: the control of the KMS cases above. A complete configuration
+  // starts in production: the startup check passes it (the signer is DAN-963-1b).
+  it("starts with a complete KMS configuration under NODE_ENV production", async () => {
+    const [, port] = await start({ NODE_ENV: "production", ...KMS });
+    expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
+  });
 
   // S-1H.7 (DAN-938-1): the control of the cases above. The same mode under
   // NODE_ENV test starts and answers, so a refusal there is the guard's.

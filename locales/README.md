@@ -16,6 +16,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `myAccessLog.*`: greške porta studentovog zapisa pristupa (`server/database/my-access-log.ts`, DAN-859-1). Test `server/database/my-access-log.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `mySubmissionState.*`: greške porta studentovog stanja predaje i raspona riječi zadatka (`server/database/my-submission-state.ts`, SRV-22). Test `server/database/my-submission-state.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `adminSettings.*` (u `hr.ts` i `en.ts`): razlozi koje poslužitelj šalje uz kod na zaslonima administratora (SRV-ADMIN-3, `docs/contracts/admin-settings-v1.md`): `exportAlreadyOpen` uz 409 zahtjeva za izvoz podataka studenta i `retentionPeriod.*` uz stanje roka čuvanja. Ključeve vraćaju `server/contracts/routes/student-data-export.ts` i `server/database/retention-dry-run/index.ts`; sekcija je u `SOURCE_ADDITIONS`.
+- `labels.*`: greške zapisa labela repoa (`scripts/engineering/bot-labels.ts`, DAN-724-2a2). Test `scripts/engineering/bot-labels.test.ts` provjerava da svaki kod ima tekst i da sekcija nema drugih ključeva.
 - `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
 ## Katalog sučelja (S-1L.1, DAN-768)

@@ -114,6 +114,7 @@ export { projectionRoutes } from "./projection.ts";
 export { liveRoutes } from "./live.ts";
 export { enrollmentRoutes } from "./enrollment.ts";
 export { institutionRoutes } from "./institution.ts";
+export { opsRoutes } from "./ops.ts";
 export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
