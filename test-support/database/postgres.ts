@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +15,12 @@ import type { TestDatabase } from "./create-test-database.ts";
 // transaction that reset() and close() roll back, so nothing a test does,
 // SET ROLE included, outlives it. A test that needs a commit or a second login
 // stays in tests/db (project `database`).
+//
+// One connection serves the whole handle, so its calls take turns, as on a
+// pool of one connection (ZEL-SRV-PG-TESTNA-VEZA): every query() and exec()
+// is SAVEPOINT, the call and RELEASE as one unit, and a test that sets a
+// token or a role around several calls (a withActor) runs them as one turn
+// with exclusive(). Production takes a connection per call.
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -86,6 +93,85 @@ const baselines = new Map<string, { sequences: Sequence[]; handles: number }>();
 // The savepoint around every call: rolling back to it proves the call left
 // the test's own transaction in place (Codex review c.4579724002).
 const CALL = "ductura_test_call";
+
+// The turns of every open handle (exclusive, settled).
+const turns = new WeakMap<TestDatabase, Turns>();
+
+type Turns = {
+  /** `work` as one turn; inside a turn of the same handle, part of it. */
+  exclusive<T>(work: () => Promise<T>): Promise<T>;
+  /** One call: after the earlier calls of the turn that holds it, else a turn of its own. */
+  call<T>(work: () => Promise<T>): Promise<T>;
+  settled(): Promise<void>;
+};
+
+// The turn the running code holds, and whether that turn is still on.
+const holding = new AsyncLocalStorage<{ readonly turns: Turns; on: boolean }>();
+
+function turnsOf(db: TestDatabase): Turns {
+  const found = turns.get(db);
+  if (found === undefined) throw new Error(`${db.name}: not an open PostgreSQL test database`);
+  return found;
+}
+
+/**
+ * Runs `work` as one turn on the one connection of `db`: every other call of
+ * the handle waits until it ends, and the calls inside it go in order. A turn
+ * inside a turn of the same handle is part of it. Something `work` leaves
+ * running after it ends waits for a turn of its own.
+ */
+export function exclusive<T>(db: TestDatabase, work: () => Promise<T>): Promise<T> {
+  return turnsOf(db).exclusive(work);
+}
+
+/**
+ * Resolves once no turn of `db` waits or runs, turns queued meanwhile
+ * included. Not from inside a turn of `db`: it would wait for itself.
+ */
+export function settled(db: TestDatabase): Promise<void> {
+  return turnsOf(db).settled();
+}
+
+const ignore = (): void => undefined;
+
+function createTurns(): Turns {
+  let turn: Promise<unknown> = Promise.resolve();
+  let calls: Promise<unknown> = Promise.resolve();
+  const holds = (): boolean => {
+    const held = holding.getStore();
+    return held?.turns === self && held.on;
+  };
+  const self: Turns = {
+    exclusive: (work) => {
+      if (holds()) return work();
+      // A call an earlier turn left running ends first.
+      const mine = turn.then(async () => {
+        await calls;
+        const store = { turns: self, on: true };
+        try {
+          return await holding.run(store, work);
+        } finally {
+          store.on = false;
+        }
+      });
+      turn = mine.then(ignore, ignore);
+      return mine;
+    },
+    call: (work) => {
+      if (!holds()) return self.exclusive(work);
+      const mine = calls.then(work);
+      calls = mine.then(ignore, ignore);
+      return mine;
+    },
+    settled: async () => {
+      for (let last = turn; ; last = turn) {
+        await last;
+        if (last === turn) return;
+      }
+    },
+  };
+  return self;
+}
 
 /** The migrated database of `target`, one transaction per test. */
 export async function openPostgresDatabase(target: Database): Promise<TestDatabase> {
@@ -192,27 +278,32 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
     throw error;
   }
   const opened = baseline;
-  return {
+  const queue = createTurns();
+  const handle: TestDatabase = {
     name: target.name,
     engine: "postgres",
     query: async <T>(sql: string, params?: unknown[]) => ({
-      rows: (await run<T>(sql, params)).rows as T[],
+      rows: (await queue.call(() => run<T>(sql, params))).rows as T[],
     }),
     exec: async (sql) => {
-      await run(sql);
+      await queue.call(() => run(sql));
     },
-    reset: async () => {
-      await rollback();
-      await begin();
-    },
-    close: async () => {
-      try {
+    reset: () =>
+      queue.call(async () => {
         await rollback();
-      } finally {
-        await client.end();
-        opened.handles -= 1;
-        if (opened.handles === 0) baselines.delete(target.name);
-      }
-    },
+        await begin();
+      }),
+    close: () =>
+      queue.call(async () => {
+        try {
+          await rollback();
+        } finally {
+          await client.end();
+          opened.handles -= 1;
+          if (opened.handles === 0) baselines.delete(target.name);
+        }
+      }),
   };
+  turns.set(handle, queue);
+  return handle;
 }

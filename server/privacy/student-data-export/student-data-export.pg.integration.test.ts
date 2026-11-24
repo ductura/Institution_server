@@ -15,7 +15,7 @@ import { join } from "node:path";
 
 import { expect, it } from "vitest";
 
-import { createTestDatabase } from "../../../test-support/database/index.ts";
+import { createTestDatabase, exclusive } from "../../../test-support/database/index.ts";
 import {
   LABELS,
   ORIGIN as RECEIPT_ORIGIN,
@@ -76,20 +76,22 @@ it("requests, approves, prepares and hands out a student's package once", async 
     const ids = new Map(rows.map(({ name, val }) => [name, val]));
     const as =
       (role: string): WithActor =>
-      async (token, run) => {
-        await db.query("SELECT set_config('app.session_token', $1, true)", [token ?? ""]);
-        await db.exec(`SET LOCAL ROLE ${role}`);
-        try {
-          return await run({
-            async query<Row>(text: string, values?: readonly unknown[]) {
-              const { rows: found } = await db.query<Row>(text, [...(values ?? [])]);
-              return { rows: found, rowCount: found.length };
-            },
-          });
-        } finally {
-          await db.exec("RESET ROLE");
-        }
-      };
+      (token, run) =>
+        // One turn on the test's one connection: token, role and calls together.
+        exclusive(db, async () => {
+          await db.query("SELECT set_config('app.session_token', $1, true)", [token ?? ""]);
+          await db.exec(`SET LOCAL ROLE ${role}`);
+          try {
+            return await run({
+              async query<Row>(text: string, values?: readonly unknown[]) {
+                const { rows: found } = await db.query<Row>(text, [...(values ?? [])]);
+                return { rows: found, rowCount: found.length };
+              },
+            });
+          } finally {
+            await db.exec("RESET ROLE");
+          }
+        });
     const withActor = as("ductus_app");
     const storage = studentDataExportStorage(directory);
     const server = await startServer({
@@ -100,8 +102,8 @@ it("requests, approves, prepares and hands out a student's package once", async 
       routes: createStudentDataExportRoutes({
         exports: createStudentDataExports(withActor),
         storage,
-        // Fire-and-forget activity would run beside the next call on this one
-        // test connection and tangle its savepoints; it is not under test here.
+        // Session activity is not under test here (the problem-report inbox
+        // and legal-hold tests count it).
         recordActivity: async () => undefined,
       }),
     });
@@ -159,14 +161,17 @@ it("requests, approves, prepares and hands out a student's package once", async 
       // The worker prepares the package and hands the token over.
       const links: { token: string }[] = [];
       const worker = createStudentDataExportWorker({
-        query: async (text: string, values?: unknown[]) => {
-          await db.exec("SET LOCAL ROLE ductus_worker");
-          try {
-            return await db.query(text, values ?? []);
-          } finally {
-            await db.exec("RESET ROLE");
-          }
-        },
+        // The worker reads side by side (Promise.all); each read is one turn,
+        // so no RESET ROLE of one lands before another's query.
+        query: (text: string, values?: unknown[]) =>
+          exclusive(db, async () => {
+            await db.exec("SET LOCAL ROLE ductus_worker");
+            try {
+              return await db.query(text, values ?? []);
+            } finally {
+              await db.exec("RESET ROLE");
+            }
+          }),
       } as never);
       const contents = await worker.contents(exportId);
       const pass = await runStudentDataExportPass({
