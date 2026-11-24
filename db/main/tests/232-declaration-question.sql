@@ -216,7 +216,9 @@ SELECT is(pg_temp.answer('ana', 0, true, 'null'::jsonb) #>> '{statement,state}',
 SELECT is((pg_temp.answer('ana', 1, false, jsonb_build_object('questionId', pg_temp.question_id(),
   'text', 'a')))::text, '{"status": "invalid_input"}', 'a removal is no question to answer');
 SELECT is(pg_temp.submit(), 'requested', 'and submitted');
-ROLLBACK TO SAVEPOINT plain;
+-- No ROLLBACK TO SAVEPOINT plain here: pgTAP keeps its test counter in a table,
+-- so rolling back the last section would reset it before finish() and report
+-- "planned 74 ran 70" although all 74 assertions ran. The final ROLLBACK undoes it.
 
 SELECT * FROM finish();
 ROLLBACK;
