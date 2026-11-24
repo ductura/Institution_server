@@ -1178,6 +1178,50 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "profile.self-note-key.put:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\s\S])/;
+  const local2 = /^[A-Za-z0-9_-]{16}(?![\s\S])/;
+  const local3 = /^[A-Za-z0-9_-]{64}(?![\s\S])/;
+  const local4 = /^[A-Za-z0-9_-]{20}[A-Za-z0-9_-][AQgw](?![\s\S])/;
+  const local5 = /^[A-Za-z0-9_-]{16}(?![\s\S])/;
+  const local6 = /^[A-Za-z0-9_-]{64}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedKdf = (typeof value === 'object' && value !== null ? value['kdf'] : undefined) as Record<string, unknown>;
+      const nestedPhrase = (typeof value === 'object' && value !== null ? value['phrase'] : undefined) as Record<string, unknown>;
+      const nestedRecovery = (typeof value === 'object' && value !== null ? value['recovery'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['v'] === 1) &&
+      (typeof value['keyId'] === 'string') &&
+      local0.test(value['keyId']) &&
+      (typeof value['kdf'] === 'object' && value['kdf'] !== null && !Array.isArray(value['kdf'])) &&
+      (nestedKdf['alg'] === 'PBKDF2-SHA-256') &&
+      (typeof nestedKdf['iterations'] === 'number' && Number.isInteger(nestedKdf['iterations'])) &&
+      nestedKdf['iterations'] <= 10000000 &&
+      nestedKdf['iterations'] >= 600000 &&
+      Object.getOwnPropertyNames(value['kdf']).length === 2 &&
+      (typeof value['phrase'] === 'object' && value['phrase'] !== null && !Array.isArray(value['phrase'])) &&
+      (typeof nestedPhrase['salt'] === 'string') &&
+      local1.test(nestedPhrase['salt']) &&
+      (typeof nestedPhrase['iv'] === 'string') &&
+      local2.test(nestedPhrase['iv']) &&
+      (typeof nestedPhrase['ct'] === 'string') &&
+      local3.test(nestedPhrase['ct']) &&
+      Object.getOwnPropertyNames(value['phrase']).length === 3 &&
+      (typeof value['recovery'] === 'object' && value['recovery'] !== null && !Array.isArray(value['recovery'])) &&
+      (typeof nestedRecovery['salt'] === 'string') &&
+      local4.test(nestedRecovery['salt']) &&
+      (typeof nestedRecovery['iv'] === 'string') &&
+      local5.test(nestedRecovery['iv']) &&
+      (typeof nestedRecovery['ct'] === 'string') &&
+      local6.test(nestedRecovery['ct']) &&
+      Object.getOwnPropertyNames(value['recovery']).length === 3 &&
+      (((typeof value['ifVersion'] === 'number' && Number.isInteger(value['ifVersion'])) && value['ifVersion'] >= 1) || ((value['ifVersion'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 6
+    )
+  }
+  })(),
   "projection.process-summary-details.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -3620,6 +3664,60 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['documentId'] === 'string') &&
       local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.sealed-self-note.delete:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.sealed-self-note.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.sealed-self-note.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.sealed-self-note.put:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^[A-Za-z0-9_-]{16}(?![\s\S])/;
+  const local2 = /^[A-Za-z0-9_-]{1728}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedSealed = (typeof value === 'object' && value !== null ? value['sealed'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['sealed'] === 'object' && value['sealed'] !== null && !Array.isArray(value['sealed'])) &&
+      (nestedSealed['v'] === 1) &&
+      (typeof nestedSealed['keyId'] === 'string') &&
+      local0.test(nestedSealed['keyId']) &&
+      (typeof nestedSealed['iv'] === 'string') &&
+      local1.test(nestedSealed['iv']) &&
+      (typeof nestedSealed['ct'] === 'string') &&
+      local2.test(nestedSealed['ct']) &&
+      Object.getOwnPropertyNames(value['sealed']).length === 4 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }

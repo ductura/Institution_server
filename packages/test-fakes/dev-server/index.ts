@@ -28,6 +28,7 @@ import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { COMMENTS_HANDLERS } from "./comments-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
 import { MENTORSHIP_FOLLOW_HANDLERS } from "./mentorship-follow-routes.ts";
+import { SELF_NOTE_SEALED_HANDLERS } from "./self-note-sealed-routes.ts";
 import { NOTIFICATION_HANDLERS } from "./notification-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { IMPORT_HANDLERS } from "./import-routes.ts";
@@ -129,6 +130,7 @@ export const DEV_HANDLERS: Handlers = {
   ...SUBMISSIONS_BULK_HANDLERS,
   ...MESSAGES_HANDLERS,
   ...MENTORSHIP_FOLLOW_HANDLERS,
+  ...SELF_NOTE_SEALED_HANDLERS,
   ...NOTIFICATION_HANDLERS,
   ...COMMENTS_HANDLERS,
   ...DIRECT_EDIT_HANDLERS,

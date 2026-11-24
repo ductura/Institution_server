@@ -80,6 +80,7 @@ import {
   workVersionGet,
   workMessagesRoutes,
   mentorshipFollowRoutes,
+  selfNoteSealedRoutes,
   notificationsRoutes,
   commentsRoutes,
   workCompareRoutes,
@@ -107,6 +108,15 @@ export {
   SelfNoteInput,
   SelfNoteState,
   WorkPlace,
+} from "./routes/index.ts";
+export {
+  KDF_ITERATIONS,
+  SEALED_LENGTHS,
+  SealedSelfNoteInput,
+  SealedSelfNoteState,
+  SelfNoteKeyInput,
+  SelfNoteKeyState,
+  selfNoteSealedRoutes,
 } from "./routes/index.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
@@ -298,6 +308,7 @@ export const ROUTES: readonly RouteContract[] = [
   workVersionGet,
   ...workMessagesRoutes,
   ...mentorshipFollowRoutes,
+  ...selfNoteSealedRoutes,
   ...notificationsRoutes,
   ...commentsRoutes,
   ...workCompareRoutes,

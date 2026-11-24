@@ -659,6 +659,27 @@ export type Operations = {
     success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null; "journalScope": string; "sessionTag": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "profile.self-note-key.delete": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "key": { "v": 1; "keyId": string; "kdf": { "alg": "PBKDF2-SHA-256"; "iterations": number }; "phrase": { "salt": string; "iv": string; "ct": string }; "recovery": { "salt": string; "iv": string; "ct": string }; "version": number; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable";
+  };
+  "profile.self-note-key.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "key": { "v": 1; "keyId": string; "kdf": { "alg": "PBKDF2-SHA-256"; "iterations": number }; "phrase": { "salt": string; "iv": string; "ct": string }; "recovery": { "salt": string; "iv": string; "ct": string }; "version": number; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "profile.self-note-key.put": {
+    params: undefined;
+    query: undefined;
+    body: { "v": 1; "keyId": string; "kdf": { "alg": "PBKDF2-SHA-256"; "iterations": number }; "phrase": { "salt": string; "iv": string; "ct": string }; "recovery": { "salt": string; "iv": string; "ct": string }; "ifVersion": number | null };
+    success: { status: 200; body: { "key": { "v": 1; "keyId": string; "kdf": { "alg": "PBKDF2-SHA-256"; "iterations": number }; "phrase": { "salt": string; "iv": string; "ct": string }; "recovery": { "salt": string; "iv": string; "ct": string }; "version": number; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict" | "unavailable";
+  };
   "profile.staff-affiliation.get": {
     params: undefined;
     query: undefined;
@@ -1862,6 +1883,27 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.sealed-self-note.delete": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "note": { "sealed": { "v": 1; "keyId": string; "iv": string; "ct": string }; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.sealed-self-note.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "note": { "sealed": { "v": 1; "keyId": string; "iv": string; "ct": string }; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.sealed-self-note.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "sealed": { "v": 1; "keyId": string; "iv": string; "ct": string } };
+    success: { status: 200; body: { "note": { "sealed": { "v": 1; "keyId": string; "iv": string; "ct": string }; "updatedAt": string } | null; "readingPlace": { "place": { "nodeId": string; "offset": number }; "updatedAt": string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
   };
   "work.seen-by-student.get": {
     params: { "documentId": string };

@@ -385,6 +385,10 @@ export {
   createMentorshipFollowRoutes,
   createMentorshipFollowRoutesFor,
 } from "./mentorship-follow/index.ts";
+export {
+  createSelfNoteSealedRoutes,
+  createSelfNoteSealedRoutesFor,
+} from "./self-note-sealed/index.ts";
 export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,

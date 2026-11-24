@@ -51,22 +51,22 @@ it("keeps the note to self for its owner alone and records what the student has 
       status: "ok",
       state: { note: null, readingPlace: null },
     });
-    const written = await follow.writeSelfNote(STUDENT, WORK, "Izmišljena bilješka.", {
-      nodeId: NODE,
-      offset: 3,
-    });
-    expect(written).toMatchObject({
-      status: "ok",
-      state: { note: { text: "Izmišljena bilješka.", place: { nodeId: NODE, offset: 3 } } },
-    });
+    // Since 20261217150000 no note is kept in the clear: a write is only a read.
+    expect(
+      await follow.writeSelfNote(STUDENT, WORK, "Izmišljena bilješka.", {
+        nodeId: NODE,
+        offset: 3,
+      }),
+    ).toEqual({ status: "ok", state: { note: null, readingPlace: null } });
+    const kept = await db.query<{ n: string }>(
+      "SELECT count(*)::text AS n FROM collaboration.work_self_note",
+    );
+    expect(kept.rows[0]!.n).toBe("0");
     const placed = await follow.writeReadingPlace(STUDENT, WORK, { nodeId: NODE, offset: 9 });
     expect(placed).toMatchObject({
-      state: { note: { text: "Izmišljena bilješka." }, readingPlace: { place: { offset: 9 } } },
+      state: { note: null, readingPlace: { place: { offset: 9 } } },
     });
     expect(await follow.readSelfNote(STUDENT, WORK)).toEqual(placed);
-    expect(await follow.writeSelfNote(STUDENT, WORK, "a".repeat(281), null)).toEqual({
-      status: "invalid",
-    });
 
     // The teacher of the work, another student and no session read nothing.
     expect(await follow.readSelfNote(TEACHER, WORK)).toEqual({ status: "not_found" });

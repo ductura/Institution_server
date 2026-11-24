@@ -70,8 +70,14 @@ function entryOf(row: Record<string, unknown>): AdminActionRow | undefined {
   };
 }
 
+// SRV-ADMIN-2B: the database log also holds the confirmed roster imports
+// (migration 20261217130000), but the published contract of this route is
+// closed against a new kind of action (contracts:breaking), so they are left
+// out here until the owner decides how they are published (docs/contracts/
+// operator-admin-v1.md section 2).
 const SQL = `SELECT occurred_at AS "at", actor_role AS "actorRole", action, subject_role AS "subjectRole", outcome
-  FROM app.admin_action_log() LIMIT $1`;
+  FROM app.admin_action_log()
+ WHERE action <> 'roster_import_confirmed' LIMIT $1`;
 
 export function createAdminActionLog(withActor: WithActor): AdminActionLog {
   return {

@@ -39,6 +39,15 @@ export {
   WorkPlace,
 } from "./mentorship-follow.ts";
 export {
+  KDF_ITERATIONS,
+  SEALED_LENGTHS,
+  SealedSelfNoteInput,
+  SealedSelfNoteState,
+  SelfNoteKeyInput,
+  SelfNoteKeyState,
+  selfNoteSealedRoutes,
+} from "./self-note-sealed.ts";
+export {
   NotificationId,
   NotificationsPage,
   RevisionNotificationsPage,

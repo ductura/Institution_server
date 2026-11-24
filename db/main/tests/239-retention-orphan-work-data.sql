@@ -4,7 +4,9 @@
 -- note to self (20261217120000). Personas of institution.inc and
 -- evidence-acceptance.inc, all invented: Ana writes doc-a in Vesna's course
 -- K1; Dora is another student of K1; Tomo belongs to the other institution.
--- "doc-nestao" is a work whose document is gone.
+-- "doc-nestao" is a work whose document is gone. Since 20261217150000 the
+-- note is sealed (SRV-NF6-SIFRA): the notes here are invented bytes under
+-- each owner's wrapped key, never text.
 BEGIN;
 SET LOCAL lc_messages TO 'C';
 \ir fixtures/evidence-acceptance.inc
@@ -32,17 +34,34 @@ SELECT ok(NOT has_schema_privilege('ductus_identity', 'collaboration', 'CREATE')
   'after the migration the identity role keeps no CREATE on the schema');
 
 -- 2. Rows of a work that exists, written through the RPCs.
-SELECT is(pg_temp.ask('ana', $$ SELECT note_text FROM collaboration.set_work_self_note('doc-a', 'Provjeriti uvod.', NULL) $$),
-  'Provjeriti uvod.', 'Ana writes a note on her existing work');
+INSERT INTO ref VALUES ('key_ana', '00000000-0000-4000-8000-0000000007a1'), ('key_tomo', '00000000-0000-4000-8000-0000000007b1');
+CREATE FUNCTION pg_temp.sealed(p_hex text, p_length integer) RETURNS bytea LANGUAGE sql IMMUTABLE AS $$
+  SELECT decode(repeat(p_hex, p_length), 'hex')
+$$;
+SELECT is(pg_temp.ask('ana', format($$ SELECT version FROM collaboration.put_self_note_key(%L::uuid, NULL, 600000, %L, %L, %L, %L, %L, %L) $$,
+    pg_temp.id('key_ana'), pg_temp.sealed('01', 16), pg_temp.sealed('02', 12), pg_temp.sealed('03', 48),
+    pg_temp.sealed('04', 16), pg_temp.sealed('05', 12), pg_temp.sealed('06', 48))),
+  '1', 'Ana keeps her wrapped note key');
+-- Tomo's key in the other institution, written directly as its owner would.
+INSERT INTO collaboration.self_note_key (institution_id, owner_id, key_id, version, kdf_iterations, phrase_salt, phrase_iv, phrase_ct,
+  recovery_salt, recovery_iv, recovery_ct)
+VALUES (pg_temp.id('fak_b'), pg_temp.id('tomo'), pg_temp.id('key_tomo'), 1, 600000, pg_temp.sealed('11', 16), pg_temp.sealed('12', 12),
+        pg_temp.sealed('13', 48), pg_temp.sealed('14', 16), pg_temp.sealed('15', 12), pg_temp.sealed('16', 48));
+CREATE FUNCTION pg_temp.seal(p_actor text, p_doc text) RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format($q$ SELECT (note_ct = %L::bytea)::text FROM collaboration.set_work_sealed_self_note(%L, %L::uuid, %L, %L) $q$,
+    pg_temp.sealed('a2', 1296), p_doc, pg_temp.id('key_ana'), pg_temp.sealed('a1', 12), pg_temp.sealed('a2', 1296)))
+$$;
+SELECT is(pg_temp.seal('ana', 'doc-a'), 'true', 'Ana seals a note on her existing work');
 SELECT ok(pg_temp.ask('ana', $$ SELECT message_id::text FROM collaboration.create_work_message('doc-a', 'Pitanje o izvoru.') $$) ~ '^[0-9a-f-]{36}$',
   'Ana sends a message on it');
 
 -- Rows left behind by works whose document is gone (written directly: no RPC
 -- writes on a work that does not exist), and a row under the id of an
 -- existing document but in another institution, where no such document is.
-INSERT INTO collaboration.work_self_note (institution_id, document_id, owner_id, note_text, note_updated_at, reading_place, reading_updated_at)
-VALUES (pg_temp.id('fak_a'), 'doc-nestao', pg_temp.id('ana'), 'Stara bilješka.', now(), '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 3}', now()),
-       (pg_temp.id('fak_b'), 'doc-a', pg_temp.id('tomo'), 'Bilješka druge ustanove.', now(), NULL, NULL);
+INSERT INTO collaboration.work_self_note (institution_id, document_id, owner_id, note_key_id, note_iv, note_ct, note_updated_at, reading_place, reading_updated_at)
+VALUES (pg_temp.id('fak_a'), 'doc-nestao', pg_temp.id('ana'), pg_temp.id('key_ana'), pg_temp.sealed('c1', 12), pg_temp.sealed('c2', 1296), now(),
+        '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 3}', now()),
+       (pg_temp.id('fak_b'), 'doc-a', pg_temp.id('tomo'), pg_temp.id('key_tomo'), pg_temp.sealed('b1', 12), pg_temp.sealed('b2', 1296), now(), NULL, NULL);
 INSERT INTO collaboration.work_item_seen (institution_id, document_id, item_kind, item_id, viewer_id)
 VALUES (pg_temp.id('fak_a'), 'doc-nestao', 'message', '00000000-0000-4000-8000-000000000391', pg_temp.id('ana'));
 INSERT INTO collaboration.work_message (institution_id, document_id, assignment_id, owner_id, author_id, sender_role, body)
@@ -61,16 +80,15 @@ SELECT is(pg_temp.rows('doc-nestao'), '1|1|1|1', 'the gone work has a note, a ma
 SELECT is(pg_temp.rows('doc-a'), '2|0|1|0', 'doc-a has Ana''s note and message, and the other institution''s note');
 
 -- 3. The owner reads and deletes the own note of a work that is gone; nobody else does.
-SELECT is(pg_temp.ask('ana', $$ SELECT note_text || '|' || (reading_place->>'offset') FROM collaboration.get_work_self_note('doc-nestao') $$),
-  'Stara bilješka.|3', 'Ana still reads her note of a work that is gone');
+SELECT is(pg_temp.ask('ana', format($$ SELECT (note_ct = %L::bytea) || '|' || (reading_place->>'offset') FROM collaboration.get_work_self_note('doc-nestao') $$, pg_temp.sealed('c2', 1296))),
+  'true|3', 'Ana still reads her note of a work that is gone');
 SELECT is(pg_temp.ask(a, $$ SELECT count(*) FROM collaboration.get_work_self_note('doc-nestao') $$), 'ZD403: forbidden',
   a || ' reads nothing of it')
   FROM (VALUES ('vesna'), ('dora'), ('marko'), ('tomo')) AS t (a);
-SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.set_work_self_note('doc-nestao', 'Nova.', NULL) $$), 'ZD403: forbidden',
-  'but cannot write on a work that is gone');
+SELECT is(pg_temp.seal('ana', 'doc-nestao'), 'ZD403: forbidden', 'but cannot write on a work that is gone');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.get_work_self_note('doc-drugi') $$), 'ZD403: forbidden',
   'a work without her note reads as another''s');
-SELECT is(pg_temp.ask('tomo', $$ SELECT note_text FROM collaboration.get_work_self_note('doc-a') $$), 'Bilješka druge ustanove.',
+SELECT is(pg_temp.ask('tomo', format($$ SELECT (note_ct = %L::bytea)::text FROM collaboration.get_work_self_note('doc-a') $$, pg_temp.sealed('b2', 1296))), 'true',
   'in his own institution Tomo reads only his own kept note under that id, never Ana''s');
 SELECT matches(pg_temp.ask('anon', $$ SELECT count(*) FROM collaboration.get_work_self_note('doc-nestao') $$), '^ZD401',
   'reading still needs a session');
@@ -112,10 +130,9 @@ SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT collaboration.pur
 
 -- 6. A student who left the course keeps the right to read and delete the own note.
 UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('ana') AND course_id = pg_temp.id('k1');
-SELECT is(pg_temp.ask('ana', $$ SELECT note_text FROM collaboration.get_work_self_note('doc-a') $$), 'Provjeriti uvod.',
+SELECT is(pg_temp.ask('ana', format($$ SELECT (note_ct = %L::bytea)::text FROM collaboration.get_work_self_note('doc-a') $$, pg_temp.sealed('a2', 1296))), 'true',
   'Ana, no longer a student of K1, reads her note');
-SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.set_work_self_note('doc-a', 'Nova.', NULL) $$), 'ZD403: forbidden',
-  'but cannot write it any more');
+SELECT is(pg_temp.seal('ana', 'doc-a'), 'ZD403: forbidden', 'but cannot write it any more');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.set_work_reading_place('doc-a', '{"nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110", "offset": 1}') $$), 'ZD403: forbidden',
   'nor the reading place');
 SELECT is(pg_temp.ask(a, $$ SELECT count(*) FROM collaboration.get_work_self_note('doc-a') $$), 'ZD403: forbidden',
