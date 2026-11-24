@@ -178,3 +178,11 @@ export async function serverReady(
 ): Promise<boolean> {
   return (await waitHealthy(url, timeoutMs)) && listensOn(pid, port);
 }
+
+/** The last `count` non-empty lines of a log text, for a failed start. */
+export const tailLines = (text: string, count: number): string =>
+  text
+    .split("\n")
+    .filter((line) => line !== "")
+    .slice(-count)
+    .join("\n");
