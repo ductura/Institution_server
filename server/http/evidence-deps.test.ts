@@ -3,14 +3,16 @@
 // development or test (F-020), storage exists only from
 // EVIDENCE_STORAGE_DOMAINS, and plain http to loopback never in production.
 // Every key, id and secret below is invented for this test.
-import { randomBytes } from "node:crypto";
+import { createPublicKey, randomBytes, verify as nodeVerify } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
+import { FakeKmsClient } from "../../test-support/fake-kms/index.ts";
 import {
+  AwsKmsEd25519SigningKeyProvider,
   DEV_SIGNING_KEY_FILE,
   PersistentDevelopmentEd25519SigningKeyProvider,
 } from "../external/keys/index.ts";
@@ -23,6 +25,7 @@ import {
 import {
   ASYNC_SIGNING_FLAG,
   evidenceIngestDependencies,
+  type KmsClientFactory,
   REFUSING_SIGNER,
   STORAGE_NOT_CONFIGURED,
 } from "./evidence-deps.ts";
@@ -115,6 +118,150 @@ describe("evidenceIngestDependencies: the signer", () => {
       ok: false,
       error: { code: "SIGNING_KEY_IN_REPOSITORY" },
     });
+  });
+});
+
+// DAN-963: a complete DUCTUS_KMS_* configuration selects the AWS KMS signer,
+// here over the fake KMS (test-support/fake-kms); an incomplete one never
+// signs and never falls back to the development signer. The fake's account
+// 000000000000 and every key are invented.
+describe("evidenceIngestDependencies: the KMS signer (DAN-963)", () => {
+  const INVENTED_KEY_UUID = "0f1e2d3c-4b5a-4978-8a6b-5c4d3e2f1a0b";
+  const RECEIPT = new TextEncoder().encode('{"izmisljeni":"potvrda-963"}');
+  const kmsEnv = (keyId: string) => ({
+    DUCTUS_KMS_PROVIDER: "aws",
+    DUCTUS_KMS_KEY_ID: keyId,
+    DUCTUS_KMS_REGION: "eu-central-1",
+  });
+  function fakeKms(): { kms: FakeKmsClient; keyArn: string; factory: KmsClientFactory } {
+    const kms = new FakeKmsClient();
+    const keyArn = kms.createKey();
+    return { kms, keyArn, factory: vi.fn(() => kms) };
+  }
+
+  it.each([undefined, "", "production", "staging", "development", "test"])(
+    "a complete configuration signs with the KMS key under NODE_ENV %s",
+    async (nodeEnv) => {
+      const { keyArn, factory } = fakeKms();
+      const { signer } = evidenceIngestDependencies(
+        { NODE_ENV: nodeEnv, [DEV_SIGNING_KEY_FILE]: SEED, ...kmsEnv(keyArn) },
+        ROOT,
+        { kmsClient: factory },
+      );
+      // Never the development signer, even with a seed under development or test.
+      expect(signer).toBeInstanceOf(AwsKmsEd25519SigningKeyProvider);
+      expect(factory).toHaveBeenCalledExactlyOnceWith({
+        provider: "aws",
+        keyId: keyArn,
+        region: "eu-central-1",
+      });
+      const signed = await signer.sign(RECEIPT);
+      expect(signed).toMatchObject({
+        ok: true,
+        value: { algorithm: "Ed25519", keyId: keyArn, keyVersion: keyArn },
+      });
+      if (!signed.ok) throw new Error("unreachable");
+      const key = await signer.publicVerificationKey();
+      if (!key.ok) throw new Error("no public key");
+      expect(key.value).toMatchObject({ keyId: keyArn, keyVersion: keyArn, encoding: "spki-der" });
+      // The signature is the KMS key's, checked outside the adapter.
+      const spki = createPublicKey({
+        key: Buffer.from(key.value.keyBase64Url, "base64url"),
+        format: "der",
+        type: "spki",
+      });
+      expect(
+        nodeVerify(null, RECEIPT, spki, Buffer.from(signed.value.signatureBase64Url, "base64url")),
+      ).toBe(true);
+      expect(await signer.verify(RECEIPT, signed.value)).toEqual({ ok: true, value: true });
+    },
+  );
+
+  it.each([undefined, "", "production", "staging", "development", "test"])(
+    "an incomplete configuration never signs and makes no KMS client under NODE_ENV %s",
+    async (nodeEnv) => {
+      const { keyArn, factory } = fakeKms();
+      const full = kmsEnv(keyArn);
+      const incomplete: Record<string, string>[] = [
+        { DUCTUS_KMS_KEY_ID: full.DUCTUS_KMS_KEY_ID },
+        { DUCTUS_KMS_PROVIDER: "aws" },
+        { DUCTUS_KMS_REGION: "eu-central-1" },
+        { ...full, DUCTUS_KMS_REGION: "" },
+        { ...full, DUCTUS_KMS_REGION: "eu-west-1" },
+        { ...full, DUCTUS_KMS_PROVIDER: "fake-kms" },
+        { ...full, DUCTUS_KMS_KEY_ID: "alias/izmisljeni-kljuc" },
+      ];
+      for (const kms of incomplete) {
+        const { signer } = evidenceIngestDependencies(
+          { NODE_ENV: nodeEnv, [DEV_SIGNING_KEY_FILE]: SEED, ...kms },
+          ROOT,
+          { kmsClient: factory },
+        );
+        expect(signer).toBe(REFUSING_SIGNER);
+        await expect(signer.sign(RECEIPT)).rejects.toThrow("signing_key_unavailable");
+      }
+      expect(factory).not.toHaveBeenCalled();
+    },
+  );
+
+  it("a KMS client that cannot be made never signs", () => {
+    const { keyArn } = fakeKms();
+    const { signer } = evidenceIngestDependencies(
+      { NODE_ENV: "production", ...kmsEnv(keyArn) },
+      ROOT,
+      {
+        kmsClient: () => {
+          throw new Error("izmisljeni-kvar");
+        },
+      },
+    );
+    expect(signer).toBe(REFUSING_SIGNER);
+  });
+
+  it("a KMS fault is a signing failure (503 signing), never a signature", async () => {
+    const { kms, keyArn, factory } = fakeKms();
+    const { signer } = evidenceIngestDependencies(
+      { NODE_ENV: "production", ...kmsEnv(keyArn) },
+      ROOT,
+      { kmsClient: factory },
+    );
+    kms.fault = "network";
+    expect(await signer.sign(RECEIPT)).toMatchObject({ ok: false });
+    kms.fault = null;
+    kms.deny(keyArn);
+    expect(await signer.sign(RECEIPT)).toMatchObject({ ok: false });
+  });
+
+  it("an answer for another key than the configured ARN is no signature", async () => {
+    // The fake resolves the configured ARN to another key, as a rotated alias would.
+    const kms = new FakeKmsClient();
+    const configured = `arn:aws:kms:eu-central-1:000000000000:key/${INVENTED_KEY_UUID}`;
+    kms.createKey(configured);
+    const { signer } = evidenceIngestDependencies(
+      { NODE_ENV: "production", ...kmsEnv(configured) },
+      ROOT,
+      { kmsClient: () => kms },
+    );
+    expect(await signer.sign(RECEIPT)).toMatchObject({ ok: false });
+    expect(await signer.publicVerificationKey()).toMatchObject({ ok: false });
+  });
+
+  it("without a client handed in, production makes the SDK's own client and calls nothing", () => {
+    const fetch = vi.spyOn(globalThis, "fetch");
+    const { signer } = evidenceIngestDependencies(
+      {
+        NODE_ENV: "production",
+        ...kmsEnv(`arn:aws:kms:eu-central-1:000000000000:key/${INVENTED_KEY_UUID}`),
+      },
+      ROOT,
+    );
+    expect(signer).toBeInstanceOf(AwsKmsEd25519SigningKeyProvider);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("the production module never imports the fake KMS", () => {
+    const source = readFileSync(resolve(ROOT, "server/http/evidence-deps.ts"), "utf8");
+    expect(source).not.toMatch(/test-support|fake-kms|FakeKmsClient/u);
   });
 });
 
