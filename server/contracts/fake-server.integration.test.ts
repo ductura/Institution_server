@@ -163,8 +163,11 @@ describe("fake server over HTTP", () => {
     // SRV-IZJAVA-PITANJE: teacher.declaration-question.put five.
     // SRV-ADMIN-1: support.problem-report-status.post five.
     // SRV-ADMIN-2: institution.roster-imports.post and institution.roster-import-confirm.post five each.
+    // SRV-MENTOR-1: mentorship.open.post, work.consultation-slot-requests.post,
+    // work.consultation-slot-close.post, work.consultation-tasks.post and
+    // work.consultation-task-mark.post five each.
     // SRV-MENTOR-3: work.self-note.put/.delete, work.reading-place.put/.delete and work.seen.post five each.
-    expect(VECTORS.length - overHttp.length).toBe(646);
+    expect(VECTORS.length - overHttp.length).toBe(671);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

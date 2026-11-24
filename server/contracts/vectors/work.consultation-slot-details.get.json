@@ -1,0 +1,170 @@
+{
+  "route": "work.consultation-slot-details.get",
+  "vectors": [
+    {
+      "name": "listed",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-mentorstvo"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "slots": [
+            {
+              "id": "00000000-0000-4000-8000-00000000a7a1",
+              "startsAt": "2026-12-04T12:00:00.000Z",
+              "proposedAt": "2026-11-23T10:00:00.000Z",
+              "state": "requested",
+              "topic": "Metoda istraživanja",
+              "closing": null,
+              "preparation": {
+                "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+                "changedParagraphs": 4,
+                "resolvedComments": 2
+              }
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000000a7a2",
+              "startsAt": "2026-12-01T09:00:00.000Z",
+              "proposedAt": "2026-11-23T10:00:00.000Z",
+              "state": "cancelled",
+              "topic": null,
+              "closing": {
+                "by": "student",
+                "reason": "Izmišljeni razlog: bolest.",
+                "at": "2026-11-23T11:00:00.000Z"
+              },
+              "preparation": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-mentorstvo"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "slots": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-mentorstvo"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002a17"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-mentorstvo"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002a18"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": " neispravan-id"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002a19"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-mentorstvo"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002a1a"
+        }
+      }
+    }
+  ]
+}

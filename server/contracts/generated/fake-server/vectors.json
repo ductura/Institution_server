@@ -26474,6 +26474,491 @@
     }
   },
   {
+    "route": "mentorship.open.post",
+    "name": "opened-with-topic",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mentorshipId": "00000000-0000-4000-8000-00000000a701"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "opened-without-topic",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000A703",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mentorshipId": "00000000-0000-4000-8000-00000000a701"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a00"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a01"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a02"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "4097"
+      },
+      "rawBody": "{\"studentId\":\"00000000-0000-4000-8000-00000000a703\",\"workType\":\"master_thesis\",\"topic\":\"Izmi\\u0161ljena tema: lokalne zajednice i voda\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002a03"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "156"
+      },
+      "rawBody": "{\"studentId\":\"00000000-0000-4000-8000-00000000a703\",\"workType\":\"master_thesis\",\"topic\":\"Izmi\\u0161ljena tema: lokalne zajednice i voda\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002a04"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a05"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a06"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "156"
+      },
+      "rawBody": "{\"s"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a07"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a08"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"studentId\":\"00000000-0000-4000-8000-00000000a703\",\"workType\":\"master_thesis\",\"topic\":\"Izmi\\u0161ljena tema: lokalne zajednice i voda\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000002a09"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"studentId\":\"00000000-0000-4000-8000-00000000a703\",\"workType\":\"master_thesis\",\"topic\":\"Izmi\\u0161ljena tema: lokalne zajednice i voda\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a0a"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda",
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a0b"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a0c"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000002a0d"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "Izmišljena tema: lokalne zajednice i voda"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a0e"
+      }
+    }
+  },
+  {
+    "route": "mentorship.open.post",
+    "name": "blank-topic",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "studentId": "00000000-0000-4000-8000-00000000a703",
+        "workType": "master_thesis",
+        "topic": "   "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a0f"
+      }
+    }
+  },
+  {
     "route": "mentorship.overview.get",
     "name": "nobody",
     "request": {
@@ -28345,6 +28830,126 @@
     }
   },
   {
+    "route": "mentorship.student-mentorships.get",
+    "name": "own-mentorships",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mentorships": [
+          {
+            "mentorshipId": "00000000-0000-4000-8000-00000000a701",
+            "assignmentId": "00000000-0000-4000-8000-00000000a702",
+            "workType": "master_thesis",
+            "topic": "Izmišljena tema: lokalne zajednice i voda",
+            "mentorId": "00000000-0000-4000-8000-00000000a704",
+            "mentorName": {
+              "givenName": "Izmišljena",
+              "familyName": "Mentorica"
+            },
+            "startedAt": "2026-11-23T09:00:00.000Z",
+            "openedBy": "teacher"
+          },
+          {
+            "mentorshipId": "00000000-0000-4000-8000-00000000a711",
+            "assignmentId": "00000000-0000-4000-8000-00000000a712",
+            "workType": "bachelor_thesis",
+            "topic": null,
+            "mentorId": "00000000-0000-4000-8000-00000000a704",
+            "mentorName": null,
+            "startedAt": "2026-10-01T08:00:00.000Z",
+            "openedBy": "request"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "mentorship.student-mentorships.get",
+    "name": "none",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mentorships": []
+      }
+    }
+  },
+  {
+    "route": "mentorship.student-mentorships.get",
+    "name": "unauthorized",
+    "request": {
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a10"
+      }
+    }
+  },
+  {
+    "route": "mentorship.student-mentorships.get",
+    "name": "teacher-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a11"
+      }
+    }
+  },
+  {
+    "route": "mentorship.student-mentorships.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a12"
+      }
+    }
+  },
+  {
     "route": "mentorship.student-requests.get",
     "name": "own-requests",
     "request": {
@@ -28594,6 +29199,146 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "inbox",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notifications": [
+          {
+            "id": "00000000-0000-4000-8000-00000000a705",
+            "targetId": "00000000-0000-4000-8000-00000000a701",
+            "workType": "master_thesis",
+            "topic": "Izmišljena tema: lokalne zajednice i voda",
+            "mentorName": {
+              "givenName": "Izmišljena",
+              "familyName": "Mentorica"
+            },
+            "createdAt": "2026-11-23T09:00:00.000Z",
+            "readAt": null
+          }
+        ],
+        "nextBefore": null
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "read-and-empty-page",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      },
+      "query": {
+        "before": "00000000-0000-4000-8000-00000000a705"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notifications": [],
+        "nextBefore": null
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "unauthorized",
+    "request": {
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a13"
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      },
+      "query": {
+        "before": "00000000-0000-4000-8000-00000000a706"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a14"
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      },
+      "query": {
+        "before": "neispravno"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a15"
+      }
+    }
+  },
+  {
+    "route": "notifications.mentorship-opened.list.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a16"
       }
     }
   },
@@ -29229,7 +29974,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.104.0",
+        "apiVersion": "1.105.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -29245,7 +29990,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.104.0",
+        "apiVersion": "1.105.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -66669,6 +67414,1412 @@
     }
   },
   {
+    "route": "work.consultation-slot-close.post",
+    "name": "declined",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7a1",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-23T10:00:00.000Z",
+        "state": "declined",
+        "topic": "Metoda istraživanja",
+        "closing": {
+          "by": "teacher",
+          "reason": "Izmišljeni razlog: termin je zauzet.",
+          "at": "2026-11-23T12:00:00.000Z"
+        },
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "withdrawn",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "withdraw"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7a1",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-23T10:00:00.000Z",
+        "state": "withdrawn",
+        "topic": "Metoda istraživanja",
+        "closing": {
+          "by": "student",
+          "reason": null,
+          "at": "2026-11-23T12:00:00.000Z"
+        },
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "cancelled",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "cancel",
+        "reason": "Izmišljeni razlog: putovanje."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7a1",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-23T10:00:00.000Z",
+        "state": "cancelled",
+        "topic": "Metoda istraživanja",
+        "closing": {
+          "by": "teacher",
+          "reason": "Izmišljeni razlog: putovanje.",
+          "at": "2026-11-23T12:00:00.000Z"
+        },
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a2b"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a2c"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a2d"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "8193"
+      },
+      "rawBody": "{\"action\":\"decline\",\"reason\":\"Izmi\\u0161ljeni razlog: termin je zauzet.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002a2e"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "93"
+      },
+      "rawBody": "{\"action\":\"decline\",\"reason\":\"Izmi\\u0161ljeni razlog: termin je zauzet.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002a2f"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a30"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a31"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "93"
+      },
+      "rawBody": "{\"a"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a32"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a33"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"action\":\"decline\",\"reason\":\"Izmi\\u0161ljeni razlog: termin je zauzet.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000002a34"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"action\":\"decline\",\"reason\":\"Izmi\\u0161ljeni razlog: termin je zauzet.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a35"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet.",
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a36"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "wrong-side",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a37"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "neispravan"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a38"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a39"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "already-closed",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "decline",
+        "reason": "Izmišljeni razlog: termin je zauzet."
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000002a3a"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-close.post",
+    "name": "unknown-action",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "slotId": "00000000-0000-4000-8000-00000000a7a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "action": "delete"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a3b"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "listed",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "slots": [
+          {
+            "id": "00000000-0000-4000-8000-00000000a7a1",
+            "startsAt": "2026-12-04T12:00:00.000Z",
+            "proposedAt": "2026-11-23T10:00:00.000Z",
+            "state": "requested",
+            "topic": "Metoda istraživanja",
+            "closing": null,
+            "preparation": {
+              "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+              "changedParagraphs": 4,
+              "resolvedComments": 2
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000000a7a2",
+            "startsAt": "2026-12-01T09:00:00.000Z",
+            "proposedAt": "2026-11-23T10:00:00.000Z",
+            "state": "cancelled",
+            "topic": null,
+            "closing": {
+              "by": "student",
+              "reason": "Izmišljeni razlog: bolest.",
+              "at": "2026-11-23T11:00:00.000Z"
+            },
+            "preparation": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "slots": []
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a17"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a18"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": " neispravan-id"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a19"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-details.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a1a"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "requested-with-preparation",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7a1",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-23T10:00:00.000Z",
+        "state": "requested",
+        "topic": "Metoda istraživanja",
+        "closing": null,
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "requested-plain",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T12:00:00Z"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7a1",
+        "startsAt": "2026-12-04T12:00:00.000Z",
+        "proposedAt": "2026-11-23T10:00:00.000Z",
+        "state": "requested",
+        "topic": null,
+        "closing": null,
+        "preparation": null
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a1b"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a1c"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a1d"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "32769"
+      },
+      "rawBody": "{\"startsAt\":\"2026-12-04T13:00:00+01:00\",\"topic\":\"Metoda istra\\u017eivanja\",\"preparation\":{\"text\":\"Izmi\\u0161ljena priprema: dovr\\u0161en pregled literature, pitanje o metodi.\",\"changedParagraphs\":4,\"resolvedComments\":2}}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002a1e"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "240"
+      },
+      "rawBody": "{\"startsAt\":\"2026-12-04T13:00:00+01:00\",\"topic\":\"Metoda istra\\u017eivanja\",\"preparation\":{\"text\":\"Izmi\\u0161ljena priprema: dovr\\u0161en pregled literature, pitanje o metodi.\",\"changedParagraphs\":4,\"resolvedComments\":2}}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002a1f"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a20"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a21"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "240"
+      },
+      "rawBody": "{\"s"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a22"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a23"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"startsAt\":\"2026-12-04T13:00:00+01:00\",\"topic\":\"Metoda istra\\u017eivanja\",\"preparation\":{\"text\":\"Izmi\\u0161ljena priprema: dovr\\u0161en pregled literature, pitanje o metodi.\",\"changedParagraphs\":4,\"resolvedComments\":2}}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000002a24"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"startsAt\":\"2026-12-04T13:00:00+01:00\",\"topic\":\"Metoda istra\\u017eivanja\",\"preparation\":{\"text\":\"Izmi\\u0161ljena priprema: dovr\\u0161en pregled literature, pitanje o metodi.\",\"changedParagraphs\":4,\"resolvedComments\":2}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a25"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        },
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a26"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a27"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": " neispravan-id"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a28"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T13:00:00+01:00",
+        "topic": "Metoda istraživanja",
+        "preparation": {
+          "text": "Izmišljena priprema: dovršen pregled literature, pitanje o metodi.",
+          "changedParagraphs": 4,
+          "resolvedComments": 2
+        }
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a29"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-slot-requests.post",
+    "name": "partial-preparation",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "startsAt": "2026-12-04T12:00:00Z",
+        "preparation": {
+          "text": "Samo tekst."
+        }
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a2a"
+      }
+    }
+  },
+  {
     "route": "work.consultation-slots.get",
     "name": "listed",
     "request": {
@@ -67841,6 +69992,1129 @@
         "messageKey": "errors.invalidInput",
         "status": 422,
         "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "marked-done",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7c1",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1",
+        "position": 1,
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom.",
+        "done": true,
+        "markedAt": "2026-11-24T08:15:00.000Z",
+        "createdAt": "2026-11-23T12:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "marked-not-done",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": false
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7c1",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1",
+        "position": 1,
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom.",
+        "done": false,
+        "markedAt": "2026-11-24T09:00:00.000Z",
+        "createdAt": "2026-11-23T12:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a4e"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a4f"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a50"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1025"
+      },
+      "rawBody": "{\"done\":true}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002a51"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "33"
+      },
+      "rawBody": "{\"done\":true}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002a52"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a53"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a54"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "33"
+      },
+      "rawBody": "{\"d"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a55"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a56"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"done\":true}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000002a57"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"done\":true"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a58"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true,
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a59"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a5a"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": true
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a5b"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-task-mark.post",
+    "name": "not-boolean",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "taskId": "00000000-0000-4000-8000-00000000a7c1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "done": "da"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a5c"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.get",
+    "name": "listed",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "tasks": [
+          {
+            "id": "00000000-0000-4000-8000-00000000a7c1",
+            "recordId": "00000000-0000-4000-8000-00000000a7b1",
+            "position": 1,
+            "text": "Dopuniti poglavlje o metodi izmišljenim primjerom.",
+            "done": false,
+            "markedAt": null,
+            "createdAt": "2026-11-23T12:00:00.000Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000000a7c2",
+            "recordId": "00000000-0000-4000-8000-00000000a7b1",
+            "position": 2,
+            "text": "Poslati novu verziju sažetka.",
+            "done": true,
+            "markedAt": "2026-11-24T08:15:00.000Z",
+            "createdAt": "2026-11-23T12:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "tasks": []
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a3c"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a3d"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a3e"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "added",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000a7c1",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1",
+        "position": 1,
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom.",
+        "done": false,
+        "markedAt": null,
+        "createdAt": "2026-11-23T12:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a3f"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a40"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002a41"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "4097"
+      },
+      "rawBody": "{\"text\":\"Dopuniti poglavlje o metodi izmi\\u0161ljenim primjerom.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002a42"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "86"
+      },
+      "rawBody": "{\"text\":\"Dopuniti poglavlje o metodi izmi\\u0161ljenim primjerom.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002a43"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a44"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a45"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "86"
+      },
+      "rawBody": "{\"t"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a46"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002a47"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"text\":\"Dopuniti poglavlje o metodi izmi\\u0161ljenim primjerom.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000002a48"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"text\":\"Dopuniti poglavlje o metodi izmi\\u0161ljenim primjerom.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002a49"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom.",
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a4a"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002a4b"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": "Dopuniti poglavlje o metodi izmišljenim primjerom."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002a4c"
+      }
+    }
+  },
+  {
+    "route": "work.consultation-tasks.post",
+    "name": "blank-text",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-mentorstvo",
+        "recordId": "00000000-0000-4000-8000-00000000a7b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "text": " "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002a4d"
       }
     }
   },

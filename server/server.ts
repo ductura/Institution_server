@@ -60,6 +60,7 @@ import {
   createWorkInterviewPdfRouteFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createMentorshipConsultationRoutesFor,
   createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
@@ -370,6 +371,8 @@ async function main(): Promise<void> {
       ...createMentorshipRequestRoutesFor(databases.main),
       // SRV-1414: the student's own requests and the teachers they may ask.
       ...createMentorshipStudentRoutesFor(databases.main),
+      // SRV-MENTOR-1: opening a mentorship, slot details and moves, agreed tasks (NF-6).
+      ...createMentorshipConsultationRoutesFor(databases.main),
       // SRV-1412: the student starts the own work and reads the own works.
       ...createStudentWorkRoutesFor(databases.main),
       ...createKeyDatesRoutesFor(databases.main),

@@ -155,6 +155,10 @@ export {
 export { workInterviewPdfRoutes } from "./work-interview-pdf.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
+export {
+  MentorshipNotificationsPage,
+  mentorshipConsultationRoutes,
+} from "./mentorship-consultations.ts";
 export { StudentWork, studentWorkRoutes } from "./student-work.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";

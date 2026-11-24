@@ -1,0 +1,128 @@
+{
+  "route": "mentorship.student-mentorships.get",
+  "vectors": [
+    {
+      "name": "own-mentorships",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "mentorships": [
+            {
+              "mentorshipId": "00000000-0000-4000-8000-00000000a701",
+              "assignmentId": "00000000-0000-4000-8000-00000000a702",
+              "workType": "master_thesis",
+              "topic": "Izmišljena tema: lokalne zajednice i voda",
+              "mentorId": "00000000-0000-4000-8000-00000000a704",
+              "mentorName": {
+                "givenName": "Izmišljena",
+                "familyName": "Mentorica"
+              },
+              "startedAt": "2026-11-23T09:00:00.000Z",
+              "openedBy": "teacher"
+            },
+            {
+              "mentorshipId": "00000000-0000-4000-8000-00000000a711",
+              "assignmentId": "00000000-0000-4000-8000-00000000a712",
+              "workType": "bachelor_thesis",
+              "topic": null,
+              "mentorId": "00000000-0000-4000-8000-00000000a704",
+              "mentorName": null,
+              "startedAt": "2026-10-01T08:00:00.000Z",
+              "openedBy": "request"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "mentorships": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002a10"
+        }
+      }
+    },
+    {
+      "name": "teacher-forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-nastavnik-0000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002a11"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentor-1-student-000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002a12"
+        }
+      }
+    }
+  ]
+}
