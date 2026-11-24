@@ -13,6 +13,9 @@ describe("server/institution public interface", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
       "NOTICE_TEMPLATE_VERSION",
+      // SRV-ADMIN-2: the limits of the roster import (roster-import.ts).
+      "ROSTER_IMPORT_MAX_CSV_LENGTH",
+      "ROSTER_IMPORT_MAX_ROWS",
       "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
@@ -21,6 +24,8 @@ describe("server/institution public interface", () => {
       "facultyRuleRefusal",
       // SRV-14: the content of an assignment version (assignment-input.ts).
       "isAssignmentVersion",
+      // SRV-ADMIN-2: the reading of an uploaded roster (roster-import.ts).
+      "isPlainName",
       "parseAcknowledgmentBody",
       "parseAssignmentInput",
       "parseAssignmentVersionBody",
@@ -29,6 +34,7 @@ describe("server/institution public interface", () => {
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
       "parseNoticeReadBody",
+      "parseRosterCsv",
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
       "publishFacultyRule",

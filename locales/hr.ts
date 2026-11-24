@@ -2070,6 +2070,11 @@ export const hr = {
     mandatoryAttachmentMissing:
       "Nedostaje obavezni prilog razgovora. Priložite ga pa pokušajte ponovno.",
     tooManyAttachments: "Izjava već ima najveći dopušteni broj priloga.",
+    // SRV-ADMIN-2 (NF-7 OA-10): uvoz popisa studenata.
+    rosterColumnsMissing:
+      "U prvom retku datoteke nedostaju stupci identifikator, ime i prezime. Provjerite izvoz pa ga učitajte ponovno.",
+    rosterTooManyRows: "Popis ima previše redaka. Podijelite ga na manje datoteke.",
+    rosterMalformed: "Datoteka nije ispravan CSV: navodnik je ostao otvoren.",
   },
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.

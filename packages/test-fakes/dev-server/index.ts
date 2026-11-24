@@ -17,6 +17,7 @@ import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
+import { ROSTER_IMPORT_HANDLERS } from "./roster-import-routes.ts";
 import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
 import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
@@ -101,6 +102,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ACCOUNT_HANDLERS,
   ...INSTITUTION_HANDLERS,
   ...COURSE_SETUP_HANDLERS,
+  ...ROSTER_IMPORT_HANDLERS,
   ...STUDENT_HANDLERS,
   ...STUDENT_WORK_HANDLERS,
   ...SOURCE_NOTE_HANDLERS,

@@ -337,6 +337,20 @@ export type Operations = {
     success: { status: 200; body: { "revoked": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable";
   };
+  "institution.roster-import-confirm.post": {
+    params: { "importId": string };
+    query: undefined;
+    body: { [key: string]: unknown };
+    success: { status: 200; body: { "enrolled": number; "alreadyEnrolled": number; "skipped": number; "alreadyConfirmed": boolean }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "not_found" | "unavailable" | "import_expired";
+  };
+  "institution.roster-imports.post": {
+    params: { "courseId": string };
+    query: undefined;
+    body: { "source": "merlin" | "isvu"; "csv": string };
+    success: { status: 200; body: { "importId": string; "source": "merlin" | "isvu"; "expiresAt": string; "counts": { "new": number; "alreadyEnrolled": number; "unsuitable": number }; "rows": ({ "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "new"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "already_enrolled"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "unsuitable"; "reason": "invalid_identifier" | "missing_name" | "duplicate" | "unknown_account" | "ineligible_account" | "name_mismatch" | "removed" | "course_teacher" })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "not_found" | "unavailable" | "roster_columns_missing" | "roster_too_many_rows" | "roster_malformed";
+  };
   "institution.student-data-exports-approve.post": {
     params: { "exportId": string };
     query: undefined;

@@ -133,6 +133,7 @@ SELECT is_empty(
 -- functions of DAN-809 that appoint and revoke one (133), and
 -- identity.session_state (DAN-827, 135), settings.read_values (DAN-826-3,
 -- 139), app.my_account (Ductus#2028 c.6993786629 §3.3, 142) and
+-- institution.roster_import_ineligible (SRV-ADMIN-2) and
 -- identity.problem_report_reader (SRV-ADMIN-1, 232), which read it
 -- like set_value; no SECURITY
 -- DEFINER function runs dynamic SQL, which could name a table without
@@ -165,8 +166,9 @@ SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
         'identity.session_state(uuid) network_engineer_appointment reads',
         'settings.read_values(text,uuid) network_engineer_appointment reads',
         'app.my_account() network_engineer_appointment reads',
+        'institution.roster_import_ineligible(uuid,uuid) network_engineer_appointment reads',
         'identity.problem_report_reader() network_engineer_appointment reads'],
-  'only settings.set_value, since DAN-809 (133) the appointment and revocation, since DAN-827 (135) session_state, since DAN-826-3 (139) read_values and since 142 my_account and since SRV-ADMIN-1 problem_report_reader, which only read it, name a new table, and none names app_admin');
+  'only settings.set_value, since DAN-809 (133) the appointment and revocation, since DAN-827 (135) session_state, since DAN-826-3 (139) read_values, since 142 my_account, since SRV-ADMIN-1 problem_report_reader and since SRV-ADMIN-2 roster_import_ineligible, which only read it, name a new table, and none names app_admin');
 SELECT is_empty('SELECT found FROM pg_temp.dynamic_definer',
   'no SECURITY DEFINER function runs dynamic SQL');
 CREATE FUNCTION identity.test_atomic_write(p_institution uuid, p_user uuid, p_by uuid) RETURNS void
@@ -189,6 +191,7 @@ SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
         'identity.session_state(uuid) network_engineer_appointment reads',
         'settings.read_values(text,uuid) network_engineer_appointment reads',
         'app.my_account() network_engineer_appointment reads',
+        'institution.roster_import_ineligible(uuid,uuid) network_engineer_appointment reads',
         'identity.problem_report_reader() network_engineer_appointment reads',
         'identity.test_atomic_write(uuid,uuid,uuid) network_engineer_appointment writes',
         'identity.test_plain_read() app_admin reads',

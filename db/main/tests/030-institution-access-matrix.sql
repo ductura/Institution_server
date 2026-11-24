@@ -193,7 +193,9 @@ SELECT bag_eq(
         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'mentor_note', 'submission_withdrawal_setting',
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
-        'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event'],
+        'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
+        -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
+        'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -329,7 +331,9 @@ SELECT bag_eq(
     'thesis_setting: thesis_setting_owner ALL to ductus_identity',
     'work_thesis_form_event: work_thesis_form_event_owner ALL to ductus_identity',
     'work_mentor_consent_event: work_mentor_consent_event_owner ALL to ductus_identity',
-    'work_thesis_stage_event: work_thesis_stage_event_owner ALL to ductus_identity'
+    'work_thesis_stage_event: work_thesis_stage_event_owner ALL to ductus_identity',
+    'roster_import: roster_import_owner ALL to ductus_identity',
+    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -375,7 +379,9 @@ SELECT bag_eq(
         'merlin_package_download: merlin_package_download_immutable 27 O',
         'merlin_package_download: merlin_package_download_no_truncate 34 O',
         'submission_withdrawal_setting: submission_withdrawal_setting_immutable 27 O',
-        'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O'],
+        'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O',
+        'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
+        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -587,7 +593,15 @@ SELECT bag_eq(
     'work_interview_note_max_bytes()',
     'work_interview_note_max_count()',
     'is_work_interview_note(p_media_type text, p_content bytea)',
-    'add_work_interview_note(p_document_id text, p_file_name text, p_media_type text, p_content bytea) definer app'
+    'add_work_interview_note(p_document_id text, p_file_name text, p_media_type text, p_content bytea) definer app',
+    'refuse_roster_import_change()',
+    'roster_import_max_rows()',
+    'roster_import_valid_for()',
+    'roster_name_key(p_name text)',
+    'roster_import_admin(OUT user_id uuid, OUT institution_id uuid)',
+    'roster_import_ineligible(p_user uuid, p_actor uuid)',
+    'preview_roster_import(p_course_id uuid, p_source text, p_rows jsonb) definer app',
+    'confirm_roster_import(p_import_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

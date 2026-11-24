@@ -98,6 +98,7 @@ import {
   excludePracticeAssignment,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
+  createRosterImportRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createProblemReportsRouteFor,
@@ -308,6 +309,8 @@ async function main(): Promise<void> {
       ...createInstitutionGroupRoutesFor(databases.main),
       // The administrator creates a course with its holder (SRV-12 over SRV-07, Ductus#2028).
       createAdminCourseRouteFor(databases.main),
+      // The administrator imports a course's students from Merlin or ISVU in two steps (SRV-ADMIN-2, NF-7 OA-10).
+      ...createRosterImportRoutesFor(databases.main),
       // The live view (B-LIVE): the owner publishes the last state of a work
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
