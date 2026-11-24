@@ -1,6 +1,6 @@
 # Šifrirana poruka sebi v1: kako student dolazi do ključa na drugom uređaju
 
-**Status: ODLUČENO** (Daniel, 24. 11. 2026., odgovor u chatu orkestratora na PITANJE c.7119843989: „1. B2 2. Da 3B”; zapis orkestratora Ductus#2055 c.7120208960 i ductura/Institution_server#676 c.7120209253). Izgrađeno zadatkom SRV-NF6-SIFRA (`poruka-sebi-sifrirana-b2`, `Risk: critical`), API 1.110.0; odjeljak 6 navodi kod. Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
+**Status: ODLUČENO** (Daniel, 24. 11. 2026., odgovor u chatu orkestratora na PITANJE c.7119843989: „1. B2 2. Da 3B”; zapis orkestratora Ductus#2055 c.7120208960 i ductura/Institution_server#676 c.7120209253). Izgrađeno zadatkom SRV-NF6-SIFRA (`poruka-sebi-sifrirana-b2`, `Risk: critical`), API 1.110.0, i doradama SRV-NF6-SIFRA-2 (`pecacena-poruka-dorade`, neovisni pregled SRV #676), API 1.111.0; odjeljak 6 navodi kod. Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
 
 Dokument je nastao kao prijedlog s tri varijante (§3); vlasnik je izabrao B2, pa §4 opisuje ugovor kako je izgrađen, a §3 ostaje kao obrazloženje izbora. Mijenja `docs/contracts/mentorship-follow-v1.md` §1 kako je opisano u §4.4.
 
@@ -108,11 +108,12 @@ SealedNote = {v: 1, keyId, iv, ct}
 
 Tablica `collaboration.self_note_key` (jedan redak po korisniku i ustanovi, prisilni RLS, bez izravnih prava ijedne uloge; pristup samo kroz RPC-ove) i rute:
 
-| Ruta                              | Operacija                      | Svrha                                                                                                                      |
-| --------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/me/self-note-key`    | `profile.self-note-key.get`    | `{key}`: omotani zapis ili `null`                                                                                          |
-| `PUT /api/v1/me/self-note-key`    | `profile.self-note-key.put`    | postavljanje (`ifVersion: null`, samo kad ključa nema) i ponovno omatanje (`ifVersion` = trenutačna verzija, isti `keyId`) |
-| `DELETE /api/v1/me/self-note-key` | `profile.self-note-key.delete` | „počni ispočetka”: u istoj transakciji briše ključ i sve šifrirane poruke studenta (ne i položaje čitanja)                 |
+| Ruta                                                 | Operacija                              | Svrha                                                                                                                      |
+| ---------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/self-note-key`                       | `profile.self-note-key.get`            | `{key}`: omotani zapis ili `null`                                                                                          |
+| `PUT /api/v1/me/self-note-key`                       | `profile.self-note-key.put`            | postavljanje (`ifVersion: null`, samo kad ključa nema) i ponovno omatanje (`ifVersion` = trenutačna verzija, isti `keyId`) |
+| `DELETE /api/v1/me/self-note-key`                    | `profile.self-note-key.delete`         | „počni ispočetka”: u istoj transakciji briše ključ i sve šifrirane poruke studenta (ne i položaje čitanja)                 |
+| `DELETE /api/v1/me/self-note-key/{keyId}?ifVersion=` | `profile.self-note-key-checked.delete` | isto, ali samo pod ključem (i, kad je `ifVersion` naveden, verzijom) koji uređaj imenuje; inače 409 (od 1.111.0)           |
 
 ```text
 PUT tijelo = {v: 1, keyId, kdf: {alg: "PBKDF2-SHA-256", iterations}, phrase: Wrap, recovery: Wrap, ifVersion}
@@ -123,6 +124,7 @@ Odgovor    = {key: {v, keyId, kdf, phrase, recovery, version, updatedAt} | null}
 - `iterations` od 600 000 do 10 000 000; svaki omot ima svoju sol, a dvije soli ne smiju biti iste.
 - Svaki drugi slučaj (ključ već postoji, ključa nema, drugi `keyId`, druga verzija) je **409** i ništa se ne mijenja, pa dva uređaja ne prepisuju jedan drugoga. Verzija raste za jedan pri svakom ponovnom omatanju; `keyId` se nikad ne mijenja.
 - Ključ je osobni zapis pozivatelja (`access: signed_in`): nijedan parametar ne imenuje korisnika, pa nitko ne čita ni ne mijenja tuđi ključ.
+- **Brisanje pod imenovanim ključem (od 1.111.0, SRV-NF6-SIFRA-2):** uređaj šalje `keyId` koji drži i, po želji, verziju (`?ifVersion=`, decimalno od 1 do 999 999 999). Brisanje se provodi samo ako je to ključ koji student sada drži i, kad je verzija navedena, ako je to njegova trenutačna verzija. Inače je **409** i ništa se ne briše: uređaj koji je ključ pročitao prije nego što ga je drugi uređaj ponovno omotao ili obrisao ne briše ono što nije vidio. `keyId` koji nije UUID malim slovima, druga verzija ili drugi parametar upita je 422. `keyId` i verzija nisu tajni (ključ je i dalje omotan) i ne imenuju korisnika: tuđi `keyId` je 409 kao i svaki koji pozivatelj ne drži. Klijent treba koristiti ovu rutu; `profile.self-note-key.delete` bez imena ostaje u ugovoru jer bi dodavanje parametra ili odgovora 409 postojećoj ruti bila lomljiva promjena (`contracts:breaking`).
 - Fraza, kod za oporavak i ključ nikad ne idu poslužitelju; zapis ne ide u logove ni u revizijski trag sa sadržajem.
 
 ### 4.3 Varijanta C
@@ -132,10 +134,21 @@ Nije dio odluke; ne gradi se.
 ### 4.4 Kompatibilnost i postojeći podaci (odluka vlasnika, točka 3: varijanta (b))
 
 - Nove operacije (§4.1, §4.2) dolaze **uz** stare `work.self-note.*`. Provjera lomljive promjene (`pnpm contracts:breaking`) ostaje bez izuzeća, pa se oblik starih ruta (1.105.0) ne mijenja.
-- **Stare rute od 1.110.0 ne čuvaju tekst:** `work.self-note.get` i odgovori `work.reading-place.*` uvijek imaju `note: null`; `work.self-note.put` provjerava vlasništvo i oblik kao prije, ali tekst ne sprema i odgovara `note: null`; `work.self-note.delete` briše šifriranu poruku. „Dokle sam stao” (`work.reading-place.*`) radi kao prije.
-- **Uklanjanje starih ruta iz ugovora** je lomljiva promjena koju `contracts:breaking` odbija bez izuzeća; zato je otvoreno za vlasnika (nova glavna verzija API-ja ili izuzeće), a dotad stare rute ne čuvaju ništa čitljivo.
+- **Stare rute od 1.110.0 ne čuvaju tekst:** `work.self-note.get` i odgovori `work.reading-place.*` uvijek imaju `note: null`; `work.self-note.delete` briše šifriranu poruku. „Dokle sam stao” (`work.reading-place.*`) radi kao prije.
+- **`work.self-note.put` od 1.111.0 odbija poruku u čistom obliku (SRV-NF6-SIFRA-2):** poslužitelj tijelo pročita do granice od 4 KiB i odbaci ga nepročitano, provjeri vlasništvo kao za čitanje (svakome drugome i za nepostojeći rad 404, bez sesije 401) i vlasniku odgovori **422** `invalid_input`; tekst ne dolazi do baze ni do priključka baze, koji više nema operaciju pisanja poruke u čistom obliku. Uspješan odgovor (200) iz ugovora 1.105.0 i njegov vektor ostaju samo kao zapis oblika jer je njihovo uklanjanje lomljiva promjena; nijedan zahtjev ga više ne dobiva. Poslužitelj ne može spriječiti klijenta da tekst pošalje, ali takav klijent sada uvijek dobiva grešku umjesto prividnog uspjeha.
+- **Uklanjanje starih ruta iz ugovora** je lomljiva promjena koju `contracts:breaking` odbija bez izuzeća; zato je otvoreno za vlasnika (nova glavna verzija API-ja ili izuzeće), a dotad stare rute ne čuvaju ništa čitljivo, a `PUT` odbija tekst (gore).
 - Postojeći nešifrirani retci (samo izmišljeni podaci, nijedan stvarni student) brišu se migracijom `20261217150000`: redak samo s porukom nestaje, redak s položajem čitanja ostaje bez poruke. Ne prepisuju se jer poslužitelj nema ključ.
-- Izvoz podataka studentu (D-12) sadrži šifrat i zapis omotanog ključa; čitljivu kopiju može napraviti samo studentov uređaj. Referada i administrator ne mogu dati čitljivu poruku.
+- **Izvoz podataka studentu (D-12) ne sadrži šifrat ni zapis omotanog ključa** (ispravak SRV-NF6-SIFRA-2, N1: raniji tekst tvrdio je suprotno, a koda za to nema). Ni izvoz podataka studenta (`server/database/student-data-export`) ni izvoz rada (`server/database/work-export`) ne čitaju `collaboration.work_self_note` ni `collaboration.self_note_key`. Dodavanje šifrata i omotanog ključa u izvoz je zaseban zadatak, ovdje se ne gradi. Čitljivu kopiju u svakom slučaju može napraviti samo studentov uređaj; referada i administrator ne mogu dati čitljivu poruku.
+
+### 4.5 Rok čuvanja ključa (otvoreno za vlasnika)
+
+**Otvoreno, ne gradi se (SRV-NF6-SIFRA-2, S3).** Za `collaboration.self_note_key` nije određen rok čuvanja. Danas redak ostaje dok ga student ne obriše (`profile.self-note-key*.delete`) ili dok postoji korisnički račun (strani ključ na `identity.user_account`); čišćenje podataka rada (`collaboration.purge_orphan_work_data`, 20261217120000) briše šifrirane poruke radova bez vlasnika, ali ne i ključ. Omotani ključ bez ijedne poruke nije čitljiv ni koristan nikome osim studentu, ali je i dalje osobni zapis. Pitanja za vlasnika:
+
+1. Briše li se ključ kad student nema nijednu šifriranu poruku dulje od nekog razdoblja (i kojeg), ili tek s računom?
+2. Što se s ključem događa kad student napusti ustanovu (završetak studija, ispis), u odnosu na rok čuvanja radova?
+3. Ulazi li ključ u revizijski trag brisanja (bez sadržaja), kao ostali zapisi koje čisti zadržavanje?
+
+Dok vlasnik ne odluči, ništa se ne mijenja: ključ se ne briše automatski.
 
 ## 5. Odluke
 
@@ -150,5 +163,11 @@ Nije dio odluke; ne gradi se.
 - rute `server/contracts/routes/self-note-sealed.ts`, vektori `server/contracts/vectors/work.sealed-self-note.*`, `profile.self-note-key.*`;
 - priključak baze `server/database/self-note-sealed/`, HTTP rub `server/http/self-note-sealed/` (montiran u `server/server.ts`);
 - lažni dev server `packages/test-fakes/dev-server/self-note-sealed-routes.ts`.
+
+Dorade SRV-NF6-SIFRA-2 (API 1.111.0):
+
+- migracija `db/main/migrations/20261217160000_self_note_key_delete_checked.sql` (`collaboration.delete_self_note_key_checked`), pgTAP `db/main/tests/243-self-note-key-delete-checked.sql`; `242` provjerava i da Anino brisanje ključa ne dira Dorinu šifriranu poruku;
+- ruta `profile.self-note-key-checked.delete` i vektori `server/contracts/vectors/profile.self-note-key-checked.delete.json`;
+- `work.self-note.put` odbijen u `server/http/mentorship-follow/index.ts`; priključak `server/database/mentorship-follow/` nema pisanje poruke u čistom obliku.
 
 Klijent (WebCrypto, generiranje fraze i koda, sučelje) je zadatak WEB-NF6-SIFRA.
