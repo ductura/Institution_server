@@ -56,9 +56,11 @@ SELECT bag_eq(
                  'app.place_legal_hold(text,text,text)', 'app.release_legal_hold(uuid,text)', 'app.legal_holds()')) $$,
   ARRAY['ductus_app app.place_legal_hold(text,text,text)', 'ductus_app app.release_legal_hold(uuid,text)',
         'ductus_app app.legal_holds()', 'ductus_retention app.is_on_legal_hold(text,text)',
+        -- SRV-MENTOR-3C (20261217170000): the owner of the orphan purge asks before it deletes.
+        'ductus_identity app.is_on_legal_hold(text,text)',
         'ductus_identity app.legal_hold_append(text,text,text)',
         'ductus_identity app.legal_hold_release(uuid,text)', 'ductus_identity app.legal_holds_of()'],
-  'the app runs the three RPCs, retention only asks, identity calls the private steps; nobody runs the operator''s');
+  'the app runs the three RPCs, retention and identity only ask, identity calls the private steps; nobody runs the operator''s');
 SELECT is(pg_get_function_arguments('app.place_legal_hold(text,text,text)'::regprocedure),
   'p_subject_type text, p_subject_id text, p_case_reference text', 'placing names no institution or administrator');
 

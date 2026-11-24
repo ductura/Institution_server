@@ -1,12 +1,19 @@
 // SRV-MENTOR-3B: the retention adapter of the orphan work data over a
 // scripted connection: the SQL each call sends, the dry run's rollback, the
-// bigint count and the closed codes for errors. The function itself is tested
+// bigint count and the closed codes for errors, and (SRV-MENTOR-3C) that the
+// schedule now executes it. The function itself is tested
 // on PostgreSQL in db/main/tests/239-retention-orphan-work-data.sql.
 import { describe, expect, it } from "vitest";
 
 import type { RetentionClient } from "./ended-sessions.ts";
 import { createOrphanWorkDataPurge } from "./orphan-work-data.ts";
-import { effectiveMode, ScheduledJobError } from "./schedule.ts";
+import {
+  createJobSchedule,
+  effectiveMode,
+  ScheduledJobError,
+  type ScheduledRun,
+  type ScheduleQueue,
+} from "./schedule.ts";
 
 const PURGE = "SELECT collaboration.purge_orphan_work_data() AS deleted";
 
@@ -21,6 +28,24 @@ function scripted(
       const result = answer(text);
       if (result instanceof Error) throw result;
       return result;
+    },
+  };
+}
+
+/** A queue that takes each slot once and runs the handler on it. */
+function scheduleQueue(): ScheduleQueue {
+  const waiting: Array<{ name: string; body: Record<string, string> }> = [];
+  return {
+    async enqueue(name, input) {
+      waiting.push({ name, body: input as Record<string, string> });
+      return "queued";
+    },
+    async runOnce(name, handler) {
+      const index = waiting.findIndex((j) => j.name === name);
+      if (index < 0) return { status: "idle" };
+      const [job] = waiting.splice(index, 1);
+      const result = await handler(job!.body, new AbortController().signal);
+      return result.ok ? { status: "completed" } : { status: "failed", code: result.code };
     },
   };
 }
@@ -82,7 +107,55 @@ describe("createOrphanWorkDataPurge", () => {
     expect(client.calls).toEqual(["BEGIN"]);
   });
 
-  it("is a dry run on the schedule until purge_orphan_work_data is allowed to execute", () => {
-    expect(effectiveMode({ name: "purge_orphan_work_data", mode: "execute" })).toBe("dry-run");
+  it("executes on the schedule (owner decision of 24 Nov 2026), and only when it asks to", () => {
+    expect(effectiveMode({ name: "purge_orphan_work_data", mode: "execute" })).toBe("execute");
+    expect(effectiveMode({ name: "purge_orphan_work_data", mode: "dry-run" })).toBe("dry-run");
+  });
+
+  it("on the schedule, execute purges through the retention function and records its count", async () => {
+    const client = scripted(() => ({ rows: [{ deleted: "7" }] }));
+    const port = createOrphanWorkDataPurge(client);
+    const runs: ScheduledRun[] = [];
+    const schedule = createJobSchedule({ onRun: (run) => runs.push(run) });
+    schedule.registerScheduledJob({
+      name: "purge_orphan_work_data",
+      mode: "execute",
+      everyMs: 86_400_000,
+      candidates: () => port.count(),
+      execute: () => port.purge(),
+    });
+
+    const ticks = await schedule.run(scheduleQueue(), new Date("2026-12-07T10:15:00.000Z"));
+
+    expect(client.calls).toEqual([PURGE]);
+    expect(ticks).toEqual([
+      { name: "purge_orphan_work_data", enqueued: "queued", outcome: { status: "completed" } },
+    ]);
+    expect(runs).toEqual([
+      {
+        name: "purge_orphan_work_data",
+        mode: "execute",
+        slot: "2026-12-07T00:00:00.000Z",
+        count: 7,
+      },
+    ]);
+  });
+
+  it("on the schedule, a failed purge is the job's closed code, never database text", async () => {
+    const client = scripted(() => new Error("synthetic database text"));
+    const port = createOrphanWorkDataPurge(client);
+    const schedule = createJobSchedule();
+    schedule.registerScheduledJob({
+      name: "purge_orphan_work_data",
+      mode: "execute",
+      everyMs: 86_400_000,
+      candidates: () => port.count(),
+      execute: () => port.purge(),
+    });
+
+    const ticks = await schedule.run(scheduleQueue(), new Date("2026-12-07T10:15:00.000Z"));
+
+    expect(client.calls).toEqual([PURGE]);
+    expect(ticks[0]?.outcome).toEqual({ status: "failed", code: "purge_unavailable" });
   });
 });

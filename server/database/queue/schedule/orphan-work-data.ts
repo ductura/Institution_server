@@ -2,8 +2,11 @@
 // collaboration.purge_orphan_work_data (migration 20261217120000), the port
 // of the scheduled job purge_orphan_work_data in server/institution. The
 // function removes the note to self, the seen marks, the messages and the
-// teachers' notes of works whose document no longer exists, through the
-// per-work deletions of the retention role, and returns how many rows went.
+// teachers' notes, and since SRV-MENTOR-3C (migration 20261217170000) also
+// the live state, the revision requests, the working criteria, the direct
+// edits and the review marks, of works whose document no longer exists,
+// through the per-work deletions of the retention role, and returns how many
+// rows went. The schedule executes it (EXECUTE_ALLOWED, SRV-MENTOR-3C).
 // The client is one connection of a login that is a member of
 // ductus_retention, opened by the worker's composition root; the web role
 // has no EXECUTE on the function.
