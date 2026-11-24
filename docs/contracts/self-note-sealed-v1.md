@@ -1,6 +1,6 @@
 # Šifrirana poruka sebi v1: kako student dolazi do ključa na drugom uređaju
 
-**Status: PRIJEDLOG, čeka izbor vlasnika.** Zadatak NF6-SIFRA-PRIJEDLOG (`poruka-sebi-sifriranje-prijedlog`, `Risk: critical`), nalog orkestratora na Ductus#2055 (c.7119635156). Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
+**Status: varijanta B2 IZABRANA (Daniel, 24. 11. 2026., odgovor u sesiji pisca: „B2”); točke 2 i 3 iz §5 su pretpostavke pisca dok vlasnik ne kaže drukčije.** Zadatak NF6-SIFRA-PRIJEDLOG (`poruka-sebi-sifriranje-prijedlog`, `Risk: critical`), nalog orkestratora na Ductus#2055 (c.7119635156). Polazište je odluka vlasnika od 24. 11. 2026. („2. Treba šifrirati da”): tekst „Poruke sebi” šifrira se na studentovu uređaju, a poslužitelj i baza čuvaju samo šifrirani tekst. Ne čita ga operater, ni netko s izravnim pristupom bazi, ni netko s kopijom (backup). Poruka mora biti dostupna i na drugom računalu. „Dokle sam stao” (položaj čitanja) ostaje nešifriran.
 
 Ovaj dokument ne mijenja kod ni postojeći ugovor `docs/contracts/mentorship-follow-v1.md` §1. On opisuje tri varijante, njihove posljedice i promjenu ugovora koja vrijedi za svaku od njih. Gradi se tek nakon vlasnikova izbora (ovo je odluka sa statusom PRIJEDLOG čija bi promjena nakon gradnje bila skupa).
 
@@ -76,7 +76,7 @@ Ključ poruka postoji samo na studentovim uređajima. Novi uređaj (nakon prijav
 | Nova ovisnost                      | samo ako Argon2id        | samo ako Argon2id (B1)       | ne                          |
 | Opseg gradnje                      | mali                     | srednji                      | velik (i treba B)           |
 
-**Preporuka pisca (ne odluka):** B2 za pilot, C kasnije kao dodatak ako se pokaže potreba. Razlog: jedina varijanta koja ispunjava oba uvjeta (drugo računalo i brisanje ključa pri odjavi) s oporavkom i bez nove ovisnosti, a pri napadu na kopiju baze otporna je bez obzira na to koliko je student pažljiv s izborom fraze.
+**Odluka vlasnika (24. 11. 2026.): B2.** Preporuka pisca bila je ista: B2 za pilot, C kasnije kao dodatak ako se pokaže potreba. Razlog: jedina varijanta koja ispunjava oba uvjeta (drugo računalo i brisanje ključa pri odjavi) s oporavkom i bez nove ovisnosti, a pri napadu na kopiju baze otporna je bez obzira na to koliko je student pažljiv s izborom fraze.
 
 ## 4. Promjena ugovora (vrijedi za A i B; C dodaje rute iz §4.3)
 
@@ -120,10 +120,10 @@ Kratkotrajni prijenos: `POST /api/v1/me/self-note-key/pairing` (novi uređaj obj
 - Postojeći nešifrirani retci (samo izmišljeni podaci, nijedan stvarni student) brišu se migracijom koja uvodi šifrat; ne prepisuju se jer poslužitelj nema ključ.
 - Izvoz podataka studentu (D-12) sadrži šifrat i zapis omotanog ključa; čitljivu kopiju može napraviti samo studentov uređaj. Referada i administrator ne mogu dati čitljivu poruku.
 
-## 5. Pitanja za vlasnika
+## 5. Odluke i otvorena pitanja
 
-1. Varijanta: A, B1, B2 ili B + C (preporuka B2, C kasnije).
-2. Šifrira li se i položaj poruke (`place`) ili ostaje nešifriran kao „Dokle sam stao” (preporuka: šifrira se).
-3. Kompatibilnost: lomljiva promjena istih ruta ili nove operacije (preporuka: nove operacije).
+1. **Varijanta: B2 (odluka vlasnika, 24. 11. 2026.).** Ključ poruka je slučajan i omotan dvaput: generiranom frazom i generiranim kodom za oporavak (PBKDF2-SHA-256 iz WebCrypto, bez nove ovisnosti). Varijanta C nije dio ove odluke; ako zatreba, dodaje se kasnije novom odlukom.
+2. Položaj poruke (`place`) ide u šifrat. **Pretpostavka pisca**, vlasnik je nije potvrdio ni odbio; gradnja je slijedi dok vlasnik ne kaže drukčije.
+3. Kompatibilnost: nove operacije uz stare, pa uklanjanje starih zasebnim zadatkom (§4.4 (b)). **Pretpostavka pisca**, kao u točki 2.
 
-Do odgovora se ništa od ovoga ne gradi i postojeći ugovor `mentorship-follow-v1.md` vrijedi nepromijenjen.
+Gradnja (migracija, tablica ključa s RLS-om i pgTAP retcima, rute, lažni dev server, WEB) ide kroz zadatak orkestratora; ovaj PR ostaje samo dokument. Dotad postojeći ugovor `mentorship-follow-v1.md` vrijedi nepromijenjen.
