@@ -20,7 +20,7 @@ Upis kodom (`institution.enrollments.post`, `student.enrollments.post`) ostaje n
 | `institution.roster-imports.post`        | `POST /api/v1/institution/admin/courses/{courseId}/roster-imports` | `{source, csv}`, 256 KiB |
 | `institution.roster-import-confirm.post` | `POST /api/v1/institution/admin/roster-imports/{importId}/confirm` | `{}`                     |
 
-Obje su `access: institution_admin`. API 1.98.0. Sheme su u `server/contracts/routes/roster-import.ts`, vektori u `server/contracts/vectors/institution.roster-import*.json`.
+Obje su `access: institution_admin`. API 1.103.0. Sheme su u `server/contracts/routes/roster-import.ts`, vektori u `server/contracts/vectors/institution.roster-import*.json`.
 
 ### Odgovor pregleda
 
@@ -112,5 +112,5 @@ Migracija `20261215120000_roster_import.sql`:
 - **Format datoteke** čeka primjer stvarnog izvoza iz Merlina i ISVU-a (vlasnik).
 - **Student bez računa** (`unknown_account`): račun nastaje tek prvom prijavom kroz AAI@EduHr. Predupis (čuvanje identifikatora osobe koja još nije korisnik) nije građen jer je to odluka o osobnim podacima (vlasnik, DPIA).
 - **Rokovi čuvanja** uvoza: čeka odluku (NF-7 točka 5); ništa ga još ne briše.
-- **Dnevnik radnji administratora** (SRV-ADMIN-1, OA-3) još ne postoji na bazi; do tada je zapis uvoza (tko, kada, kolegij, brojevi) jedini trag. Ovisnost: kad SRV-ADMIN-1 sleti, pregled i potvrda upisuju se i u dnevnik radnji.
+- **Dnevnik radnji administratora** (SRV-ADMIN-1, OA-3, `app.admin_action_log`) je na bazi, ali uvoz popisa još nije među vrstama radnji koje čita; do tada je zapis uvoza (tko, kada, kolegij, brojevi) jedini trag. Dodavanje vrste radnje za potvrđeni uvoz je zaseban zadatak.
 - **Nositelj kolegija** ne može uvoziti: ugovor ne daje nastavniku izravan upis studenata, samo kod za upis.

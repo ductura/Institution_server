@@ -69,7 +69,7 @@ export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
   "app/api/problem-reports/route.ts": {
-    methods: ["POST"],
+    methods: ["POST", "GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064518328",
   },
   "app/api/teacher/assignments/[assignmentId]/grade/route.ts": {
@@ -447,6 +447,16 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/retention/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7069035579",
+  },
+  // SRV-ADMIN-1 (NF-7 OA-7, OA-3; owner decision 23. 11. 2026.): the state of a
+  // routed problem report and the action log; no Ductus route.
+  "app/api/problem-reports/[reference]/status/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133441",
+  },
+  "app/api/institution/admin-actions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133441",
   },
   // SRV-1906 (plan P-D6): the operator's pilot numbers; no Ductus route.
   "app/api/ops/pilot-metrics/route.ts": {

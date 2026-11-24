@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
 import type { Handlers } from "./server.ts";
-import { teachesCourse, type Account, type State } from "./state.ts";
+import { teachesCourse, type Account, type FakeProblemReport, type State } from "./state.ts";
 
 type Catalogue = Operations["settings.catalogue.get"]["success"]["body"];
 type Level = Operations["settings.values.get"]["success"]["body"]["level"];
@@ -70,15 +70,56 @@ function validBound(key: string, level: Level, value: unknown, bound: Bound): bo
   );
 }
 
-function submitReport({ state, account }: { state: State; account: Account | null }) {
+type SentReport = {
+  readonly category: "technical" | "account" | "course";
+  readonly description: string;
+  readonly appVersion: string;
+  readonly courseId?: string;
+  readonly route?: string | null;
+  readonly browser?: { family: "chromium" | "firefox" | "safari" | "other"; major: number | null };
+  readonly syncState?: FakeProblemReport["syncState"];
+};
+
+function submitReport({
+  state,
+  account,
+  body,
+  now,
+}: {
+  state: State;
+  account: Account | null;
+  body: SentReport;
+  now: Date;
+}) {
   if (account === null) return { error: "unauthorized" } as const;
+  // SRV-ADMIN-1 (OA-7): only a course report names a course, one the fake holds.
+  if (
+    body.courseId !== undefined &&
+    (body.category !== "course" || !state.courses.some((course) => course.id === body.courseId))
+  ) {
+    return { error: "invalid_input" } as const;
+  }
   const sent = state.reports.get(account.id) ?? 0;
   if (sent >= MAX_REPORTS) return { error: "too_many_reports" } as const;
   state.reports.set(account.id, sent + 1);
-  return {
-    status: 201,
-    body: { reference: `PR-${randomBytes(5).toString("hex").toUpperCase()}` },
-  } as const;
+  const reference = `PR-${randomBytes(5).toString("hex").toUpperCase()}`;
+  state.problemReports.push({
+    reference,
+    category: body.category,
+    courseId: body.courseId ?? null,
+    description: body.description,
+    route: body.route ?? null,
+    appVersion: body.appVersion,
+    browser: body.browser ?? { family: "other", major: null },
+    syncState: body.syncState ?? null,
+    createdAt: now.toISOString(),
+    status: "received",
+    statusChangedAt: null,
+    statusChangedByRole: null,
+    statusChangedById: null,
+    reporterId: account.id,
+  });
+  return { status: 201, body: { reference } } as const;
 }
 
 export const SETTINGS_HANDLERS: Handlers = {

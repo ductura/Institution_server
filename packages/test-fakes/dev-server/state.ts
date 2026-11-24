@@ -73,7 +73,11 @@ export type AssignmentContent = {
   dueAt: string;
   aiPolicy: AiPolicy;
   aiPurposes: (
-    "formatting" | "proofreading" | "literature_search" | "transcription" | "translation"
+    | "formatting"
+    | "proofreading"
+    | "literature_search"
+    | "transcription"
+    | "translation"
   )[];
   evidenceProfile: "basic" | "extended";
   importAllowed: boolean;
@@ -310,7 +314,12 @@ export type AccessEntry = {
   readonly at: string;
   readonly role: "teacher" | "mentor" | "seminar_teacher" | "unknown";
   readonly surface:
-    "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
+    | "live_view"
+    | "process_summary"
+    | "fast_path"
+    | "replay"
+    | "submitted_text"
+    | "unknown";
 };
 
 export type SettingValue = {
@@ -398,6 +407,13 @@ export type State = {
   settings: Map<string, SettingValue>;
   /** Problem reports sent, by account id. */
   reports: Map<string, number>;
+  /**
+   * SRV-ADMIN-1 (OA-7): the problem reports kept for the people they reach,
+   * newest last, with the reporter's account (never shown) and the state trail.
+   */
+  problemReports: FakeProblemReport[];
+  /** SRV-ADMIN-1 (OA-3): the administrator's log of actions, newest last. */
+  adminActions: Operations["institution.admin-actions.get"]["success"]["body"]["entries"];
   comments: Comment[];
   /** Thread id -> its state. */
   threads: Map<string, "open" | "answered" | "resolved">;
@@ -635,6 +651,8 @@ export function createState(
     ],
     settings: new Map(),
     reports: new Map(),
+    problemReports: seedProblemReports(),
+    adminActions: seedAdminActions(),
     comments: [],
     threads: new Map(),
     revisionRequests: [],
@@ -657,6 +675,91 @@ export function createState(
       ],
     ]),
   };
+}
+
+/** SRV-ADMIN-1: a problem report as the fake keeps it; `reporterId` never leaves the fake. */
+export type FakeProblemReport = Omit<
+  Operations["support.problem-reports.get"]["success"]["body"]["reports"][number],
+  "routedTo" | "statusChangedByMe"
+> & {
+  readonly reporterId: string;
+  statusChangedById: string | null;
+};
+
+/** Three invented reports, one of each kind, so the screens have rows to show. */
+function seedProblemReports(): FakeProblemReport[] {
+  const report = (
+    reference: string,
+    category: "technical" | "account" | "course",
+    description: string,
+    createdAt: string,
+    courseId: string | null,
+  ): FakeProblemReport => ({
+    reference,
+    category,
+    courseId,
+    description,
+    route: null,
+    appVersion: "1.4.0",
+    browser: { family: "other", major: null },
+    syncState: null,
+    createdAt,
+    status: "received",
+    statusChangedAt: null,
+    statusChangedByRole: null,
+    statusChangedById: null,
+    reporterId: IDS.student,
+  });
+  return [
+    report(
+      "PR-0A1B2C3D4E",
+      "technical",
+      "Izmišljeni opis: stranica se sporo otvara.",
+      "2026-11-20T08:00:00.000Z",
+      null,
+    ),
+    report(
+      "PR-3B4C5D6E7F",
+      "account",
+      "Izmišljeni opis: ne vidim svoj kolegij.",
+      "2026-11-21T08:00:00.000Z",
+      null,
+    ),
+    report(
+      "PR-2A3B4C5D6E",
+      "course",
+      "Izmišljeni opis: ne vidim rok zadatka.",
+      "2026-11-22T08:00:00.000Z",
+      IDS.course,
+    ),
+  ];
+}
+
+/** An invented log: the operator appointed the administrator, who then acted. */
+function seedAdminActions(): State["adminActions"] {
+  return [
+    {
+      at: "2026-10-01T08:00:00.000Z",
+      actorRole: "operator",
+      action: "role_confirmed",
+      subjectRole: "institution_admin",
+      outcome: "completed",
+    },
+    {
+      at: "2026-10-02T09:00:00.000Z",
+      actorRole: "institution_admin",
+      action: "role_confirmed",
+      subjectRole: "teacher",
+      outcome: "completed",
+    },
+    {
+      at: "2026-10-05T10:00:00.000Z",
+      actorRole: "institution_admin",
+      action: "rule_published",
+      subjectRole: null,
+      outcome: "completed",
+    },
+  ];
 }
 
 export function accountByKey(state: State, key: AccountKey): Account {
