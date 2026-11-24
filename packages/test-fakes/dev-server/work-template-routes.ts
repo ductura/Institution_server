@@ -13,7 +13,10 @@ type Version = {
   citationStyle: "fpzg";
 };
 
-const versions = new WeakMap<State, Map<string, Version[]>>();
+// Keyed by a map that createState makes anew, so the reset (POST /__lazni/ponovno, which keeps the
+// State object itself) starts the history again.
+type Key = State["milestoneProgress"];
+const versions = new WeakMap<Key, Map<string, Version[]>>();
 const isAdmin = (account: Account | null): boolean =>
   account?.roles.includes("institution_admin") ?? false;
 const TYPES = new Set([
@@ -34,7 +37,7 @@ export const WORK_TEMPLATE_HANDLERS: Handlers = {
     if (!TYPES.has(params.workType) || Object.keys(query).length > 0) {
       return { error: "invalid_input" };
     }
-    const all = versions.get(state)?.get(params.workType) ?? [];
+    const all = versions.get(state.milestoneProgress)?.get(params.workType) ?? [];
     return { status: 200, body: { current: all.at(-1) ?? null, versions: all } };
   },
   "institution.work-template.put": ({ state, account, params, body, now }) => {
@@ -47,7 +50,7 @@ export const WORK_TEMPLATE_HANDLERS: Handlers = {
     ) {
       return { error: "invalid_input" };
     }
-    const byType = versions.get(state) ?? new Map<string, Version[]>();
+    const byType = versions.get(state.milestoneProgress) ?? new Map<string, Version[]>();
     const all = byType.get(params.workType) ?? [];
     if (body.expectedVersion !== all.length) return { error: "conflict" };
     const made: Version = {
@@ -58,7 +61,7 @@ export const WORK_TEMPLATE_HANDLERS: Handlers = {
       citationStyle: body.citationStyle,
     };
     byType.set(params.workType, [...all, made]);
-    versions.set(state, byType);
+    versions.set(state.milestoneProgress, byType);
     return { status: 200, body: made };
   },
 };

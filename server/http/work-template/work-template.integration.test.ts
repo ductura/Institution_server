@@ -133,6 +133,7 @@ it.each([
   ["a stranger", failure("ZD403"), 403],
   ["no session in the database", failure("ZD401"), 401],
   ["content the database refuses", failure("ZD422"), 422],
+  ["a NUL character that jsonb cannot hold", failure("22P05"), 422],
 ])("maps %s on publish", async (_name, error, status) => {
   const { send } = await serve(() => error);
   expect((await send(PATH, "PUT", PUT_BODY)).status).toBe(status);

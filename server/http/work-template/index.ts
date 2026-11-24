@@ -26,6 +26,8 @@ const ERRORS = new Map<unknown, readonly [number, string]>([
   ["ZD403", [403, "forbidden"]],
   ["ZD409", [409, "conflict"]],
   ["ZD422", [422, "invalid_input"]],
+  // An escaped NUL (\u0000) in a title or hint: PostgreSQL refuses it in jsonb.
+  ["22P05", [422, "invalid_input"]],
 ]);
 
 export function createWorkTemplateRoutesFor(main: { withActor: WithActor }): Route[] {
