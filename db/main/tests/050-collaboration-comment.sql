@@ -125,8 +125,9 @@ SELECT bag_eq(
             ('collaboration.mentor_student_overview()'),
             ('collaboration.get_self_note_key()'),
             ('collaboration.put_self_note_key(uuid,integer,integer,bytea,bytea,bytea,bytea,bytea,bytea)'),
-            ('collaboration.delete_self_note_key()') $$,
-  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242');
+            ('collaboration.delete_self_note_key()'),
+            ('collaboration.delete_self_note_key_checked(uuid,integer)') $$,
+  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,

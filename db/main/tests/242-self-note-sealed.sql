@@ -183,6 +183,20 @@ SELECT is(pg_temp.as_identity(format($$ UPDATE collaboration.work_self_note SET 
 SELECT is(pg_temp.as_identity($$ UPDATE collaboration.work_self_note SET note_iv = NULL WHERE document_id = 'doc-a' $$),
   '23514', 'a sealed note is whole or absent');
 
+-- Dora's own work: a sealed note under her own key, which Ana's starting over
+-- must leave as it is (SRV-NF6-SIFRA-2, N5).
+CREATE FUNCTION pg_temp.ddoc() RETURNS text LANGUAGE sql STABLE AS $$
+  SELECT d.id FROM evidence.document d JOIN evidence.project p ON p.id = d.project_id
+   WHERE p.principal_id = pg_temp.id('dora') AND p.assignment_id = pg_temp.id('z1')
+$$;
+-- Dora acknowledged only version 1 of z1; the current version is 2.
+INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
+VALUES (pg_temp.id('z1'), 2, pg_temp.id('dora'), pg_temp.id('fak_a'));
+SELECT is(substr(pg_temp.ask('dora', format('SELECT outcome FROM app.open_student_work(%L::uuid)', pg_temp.id('z1'))), 1, 6),
+  'opened', 'Dora opens her work in K1');
+SELECT is(pg_temp.seal('dora', pg_temp.ddoc(), pg_temp.id('key_d'), 100), 'true|true|' || pg_temp.id('key_d'),
+  'Dora seals a note on her work under her own key');
+
 -- 5. Starting over: the key and every sealed note go, the reading place stays.
 SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.delete_self_note_key()::text $$), 'true', 'Ana deletes her key');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.get_self_note_key() $$), '0', 'no key of hers is left');
@@ -192,6 +206,12 @@ SELECT is(pg_temp.ask('ana', format($$ SELECT coalesce(octet_length(note_ct)::te
 SELECT is(pg_temp.seal('ana', 'doc-a', pg_temp.id('key_a'), 80), 'ZD409: conflict', 'the old key seals nothing any more');
 SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.delete_self_note_key()::text $$), 'false', 'deleting no key changes nothing');
 SELECT is(pg_temp.ask('dora', $$ SELECT version FROM collaboration.get_self_note_key() $$), '1', 'Dora''s key stays');
+SELECT is(pg_temp.ask('dora', format($$ SELECT (note_iv = %L::bytea) || '|' || (note_ct = %L::bytea) || '|' || note_key_id FROM collaboration.get_work_self_note(%L) $$,
+    pg_temp.bytes(100, 12), pg_temp.bytes(101, 1296), pg_temp.ddoc())),
+  'true|true|' || pg_temp.id('key_d'), 'Dora''s sealed note stays byte for byte under her key');
+SELECT is((SELECT count(*)::integer FROM collaboration.work_self_note
+            WHERE owner_id = pg_temp.id('dora') AND note_ct = pg_temp.bytes(101, 1296)), 1,
+  'the table still keeps exactly Dora''s ciphertext');
 SELECT matches(pg_temp.ask('anon', $$ SELECT collaboration.delete_self_note_key()::text $$), '^ZD401', 'deleting a key needs a session');
 SELECT is(pg_temp.put_key('ana', pg_temp.id('key_d'), NULL, 90), '1|true|true', 'Ana starts over with a new key');
 
