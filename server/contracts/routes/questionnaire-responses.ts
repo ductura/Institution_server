@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { MUTATION_GUARD } from "./shared.ts";
+import { CODE_POINT, END } from "./teacher.ts";
 
 // SRV-V18-UPITNIK-ISPUNJAVANJE (Ductus#2055 / Ductus#2058; val 18, docs/nalazi/
 // val18-razlika.md V18-1, V18-2): a student of the course reads the open
@@ -22,10 +23,14 @@ const Uuid = Type.String({
 });
 const IdParams = closed({ id: Uuid });
 
+/** 1 to `max` Unicode code points (the domain and the database count code points, not UTF-16 units). */
+const codePoints = (max: number) =>
+  Type.String({ pattern: `^(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,${max}}${END}` });
+
 // The limits are those of server/domain/questionnaire (definition.ts, answers.ts).
 const Option = closed({
   code: Type.String({ pattern: "^[a-z0-9][a-z0-9-]{0,39}$" }),
-  label: Type.String({ minLength: 1, maxLength: 120 }),
+  label: codePoints(120),
 });
 const Question = closed({
   id: Uuid,
@@ -37,7 +42,7 @@ const Question = closed({
     Type.Literal("number"),
     Type.Literal("text"),
   ]),
-  text: Type.String({ minLength: 1, maxLength: 500 }),
+  text: codePoints(500),
   options: Type.Union([Type.Array(Option, { minItems: 2, maxItems: 20 }), Type.Null()]),
   scale: Type.Union([
     closed({
@@ -50,20 +55,20 @@ const Question = closed({
 const Form = closed({
   id: Uuid,
   courseId: Uuid,
-  title: Type.String({ minLength: 1, maxLength: 200 }),
+  title: codePoints(200),
   participated: Type.Boolean(),
   questions: Type.Array(Question, { minItems: 1, maxItems: 40 }),
 });
 const ListItem = closed({
   id: Uuid,
   courseId: Uuid,
-  title: Type.String({ minLength: 1, maxLength: 200 }),
+  title: codePoints(200),
   participated: Type.Boolean(),
 });
 const Answer = closed({
   questionId: Uuid,
   value: Type.Union([
-    Type.String({ minLength: 1, maxLength: 2000 }),
+    codePoints(2000),
     // The magnitude (at most 10^9) is checked by the database, which answers 422.
     Type.Number(),
     Type.Array(Type.String({ minLength: 1, maxLength: 40 }), { minItems: 1, maxItems: 20 }),

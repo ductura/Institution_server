@@ -171,11 +171,11 @@ describe.each([
     expect(calls).toEqual([]);
   });
 
-  it("a malformed id is 404 even with a bad body, and reaches no store", async () => {
+  it("a malformed id is 404 even with a bad body, never 422", async () => {
     const base = await start();
     const bad = path.replace(ID, "nije-uuid");
     expect((await post(base, bad, '{"answers":[]}')).status).toBe(404);
-    expect((await post(base, bad, '{"answers":')).status).toBe(404);
+    expect((await post(base, bad, "{")).status).toBe(404);
     expect(calls).toEqual([]);
   });
 
@@ -193,6 +193,16 @@ describe.each([
     });
     expect(response.status).toBe(415);
     expect(calls).toEqual([]);
+  });
+
+  it("a text of 2000 code points with an emoji at the end is accepted", async () => {
+    const base = await start();
+    const text = `${"a".repeat(1999)}😀`;
+    const body = { answers: [{ questionId: Q1, value: text }] };
+    expect((await post(base, path, JSON.stringify(body))).status).toBe(204);
+    const tooLong = { answers: [{ questionId: Q1, value: `${text}b` }] };
+    expect((await post(base, path, JSON.stringify(tooLong))).status).toBe(422);
+    expect(calls).toHaveLength(1);
   });
 
   it("no session is 401 and reaches no store", async () => {

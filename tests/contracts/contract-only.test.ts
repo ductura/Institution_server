@@ -78,6 +78,7 @@ import {
   createAssignmentCodeTestsRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,

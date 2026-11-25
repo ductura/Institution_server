@@ -119,7 +119,7 @@ function writeRoute(
     async handle(request, response, params) {
       const token = liveSessionTokenFromCookie(request.headers.cookie);
       if (token === undefined) return refuse(response, 401, "unauthorized");
-      // A malformed id is 404 whatever the body is, so it is checked before it.
+      // A malformed id is 404 whatever the body is (C-23), so it is read first.
       const id = idOf(params?.id);
       if (id === null) return sendProblem(response, 404, "not_found");
       const types = request.headersDistinct["content-type"];
