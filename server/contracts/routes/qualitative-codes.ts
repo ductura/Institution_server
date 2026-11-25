@@ -114,11 +114,15 @@ export const studentQualCodePatch = defineRoute({
     "Renames, re-describes or moves a code of the caller's codebook: any of name, description and order (the place, 1 = first; the others keep their order), at least one. A place outside 1 to the number of codes is 422 invalid_input; a name another code has, the case aside, is 409 conflict. Another's, an unknown and a malformed code read 404. The answer is the code as it now is.",
   request: {
     params: CodeParams,
-    body: closed({
-      name: Type.Optional(CodeName),
-      description: Type.Optional(CodeDescription),
-      order: Type.Optional(Type.Integer({ minimum: 1, maximum: QUAL_CODES_MAX })),
-    }),
+    // At least one of the three: an empty change is a malformed one on the wire, not a silent success.
+    body: Type.Object(
+      {
+        name: Type.Optional(CodeName),
+        description: Type.Optional(CodeDescription),
+        order: Type.Optional(Type.Integer({ minimum: 1, maximum: QUAL_CODES_MAX })),
+      },
+      { additionalProperties: false, minProperties: 1 },
+    ),
     contentType: "application/json",
     maxBodyBytes: 4096,
   },

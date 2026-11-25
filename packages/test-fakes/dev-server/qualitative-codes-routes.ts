@@ -16,6 +16,14 @@ type Code = { id: string; name: string; description: string; order: number };
 export const fakeQualCodeId = (accountId: string, name: string): string =>
   `7c000001-0000-4000-8000-${createHash("sha256").update(`${accountId}:${name.toLowerCase()}`).digest("hex").slice(0, 12)}`;
 
+/** The id for a new code: the invented one of its name, or the next free one when a renamed code still holds it. */
+function freshId(book: Code[], accountId: string, name: string): string {
+  for (let n = 0; ; n++) {
+    const id = fakeQualCodeId(accountId, n === 0 ? name : `${name}#${n}`);
+    if (!book.some((code) => code.id === id)) return id;
+  }
+}
+
 const CODEBOOKS = new WeakMap<object, Map<string, Code[]>>();
 const FAKE_CODES_MAX = 200;
 
@@ -48,7 +56,7 @@ export const QUALITATIVE_CODES_HANDLERS: Handlers = {
       return { error: "conflict" };
     }
     const code = {
-      id: fakeQualCodeId(account.id, body.name),
+      id: freshId(book, account.id, body.name),
       name: body.name,
       description: body.description ?? "",
       order: book.length + 1,

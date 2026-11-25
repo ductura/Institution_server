@@ -1979,6 +1979,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length >= 1 &&
       (value['name'] !== undefined ? ((typeof value['name'] === 'string') && local0.test(value['name'])) : true) &&
       (value['description'] !== undefined ? ((typeof value['description'] === 'string') && local1.test(value['description'])) : true) &&
       (value['order'] !== undefined ? ((typeof value['order'] === 'number' && Number.isInteger(value['order'])) && value['order'] <= 200 && value['order'] >= 1) : true) &&

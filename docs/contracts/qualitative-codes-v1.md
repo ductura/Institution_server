@@ -35,7 +35,7 @@ Tijelo `{name, description?}` (do 4 KiB). Kod se dodaje na kraj; odgovor `201` j
 
 Tijelo bilo koje od `{name, description, order}`, barem jedno (prazno tijelo je 422). `order` je novo mjesto (1 = prvi); ostali kodovi zadržavaju svoj redoslijed i brojevi se ponovno poredaju bez rupa. Mjesto izvan 1 do broja kodova je 422 i ništa se ne mijenja. Ime koje ima drugi kod je 409 `conflict`. Odgovor `200` je kod kakav je sada.
 
-Napomena o izvedbi: preimenovanje i premještanje su dva poziva baze (`app.update_qual_code`, `app.move_qual_code`), svaki u vlastitoj transakciji. Mjesto se provjerava prije prvog upisa, pa odbijeno mjesto ne ostavlja polovičnu promjenu; kvar baze između dva poziva ostavlja novo ime na starom mjestu, što klijent vidi iz odgovora i ponovnog čitanja.
+Napomena o izvedbi: preimenovanje i premještanje su dva poziva baze (`app.update_qual_code`, `app.move_qual_code`), svaki u vlastitoj transakciji. Mjesto se provjerava prije prvog upisa, što zatvara uobičajeni slučaj, ali ne i istodobno brisanje drugog koda između dva poziva: tada novo ime može ostati na starom mjestu uz 422. Jedna transakcija traži novi RPC ili metodu adaptera (izvan traka ovog zadatka; otvoreno).
 
 ### `student.qual-code.delete`
 

@@ -76130,6 +76130,7 @@
             "application/json": {
               "schema": {
                 "additionalProperties": false,
+                "minProperties": 1,
                 "type": "object",
                 "properties": {
                   "name": {
