@@ -167,6 +167,11 @@ describe("ciProfile on real commits", () => {
     expect(pr(base, docs)).toBe("docs");
   });
 
+  it("a documents-only pull request into the migration base is docs", () => {
+    expect(pr(base, docs, "migracija/kopija-ductus-backend")).toBe("docs");
+    expect(pr(base, code, "migracija/kopija-ductus-backend")).toBe("full");
+  });
+
   it("a pull request with code is full", () => {
     expect(pr(base, code)).toBe("full");
     expect(pr(docs, code)).toBe("full");
@@ -182,6 +187,18 @@ describe("ciProfile on real commits", () => {
     }
     expect(pr(base, docs, "feature")).toBe("full");
     expect(pr(base, docs, "Main")).toBe("full");
+    expect(pr(base, docs, "migracija/kopija-ductus-front")).toBe("full");
+    expect(pr(base, docs, "migracija/kopija-ductus-backend/x")).toBe("full");
+    for (const eventName of ["push", "schedule"]) {
+      expect(
+        ciProfile({
+          eventName,
+          baseRef: "migracija/kopija-ductus-backend",
+          baseSha: base,
+          headSha: docs,
+        }),
+      ).toBe("full");
+    }
   });
 
   it.each([
