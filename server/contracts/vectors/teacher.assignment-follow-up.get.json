@@ -1,0 +1,165 @@
+{
+  "route": "teacher.assignment-follow-up.get",
+  "vectors": [
+    {
+      "name": "assignment-follow-up",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": [
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e1",
+              "noticeReadAt": "2026-12-01T08:02:00.000Z",
+              "noticeAcknowledgedAt": "2026-12-01T08:03:00.000Z",
+              "noticeVersionNo": 2,
+              "revisionState": "open",
+              "revisionChangedAt": "2026-12-10T09:15:00.000Z",
+              "openRevisionCount": 2
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e2",
+              "noticeReadAt": "2026-12-01T10:41:00.000Z",
+              "noticeAcknowledgedAt": "2026-12-01T10:41:00.000Z",
+              "noticeVersionNo": 1,
+              "revisionState": "responded",
+              "revisionChangedAt": "2026-12-11T14:30:00.000Z",
+              "openRevisionCount": 0
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e3",
+              "noticeReadAt": "2026-12-02T07:00:00.000Z",
+              "noticeAcknowledgedAt": null,
+              "noticeVersionNo": null,
+              "revisionState": "closed",
+              "revisionChangedAt": "2026-12-12T16:05:00.000Z",
+              "openRevisionCount": 0
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e4",
+              "noticeReadAt": null,
+              "noticeAcknowledgedAt": null,
+              "noticeVersionNo": null,
+              "revisionState": null,
+              "revisionChangedAt": null,
+              "openRevisionCount": 0
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e5",
+              "noticeReadAt": null,
+              "noticeAcknowledgedAt": "2026-12-03T12:20:00.000Z",
+              "noticeVersionNo": 1,
+              "revisionState": "withdrawn",
+              "revisionChangedAt": "2026-12-13T08:55:00.000Z",
+              "openRevisionCount": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty-follow-up",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+          "sec-fetch-site": "cross-site"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    }
+  ]
+}
