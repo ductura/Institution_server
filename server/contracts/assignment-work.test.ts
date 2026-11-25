@@ -95,6 +95,7 @@ describe("student.assignment-work.get", () => {
     const own = VECTORS.filter((v) => v.route === ID);
     expect(own.map((v) => `${v.name} ${v.response.status}`)).toEqual([
       "ready 200",
+      "ready-late-exception 200",
       "ready-empty 200",
       "signed-out 401",
       "unavailable 503",
@@ -109,5 +110,34 @@ describe("student.assignment-work.get", () => {
     // One row per assignment, by assignmentId: the order the read promises.
     const ids = ready?.assignments.map((r) => r.assignmentId) ?? [];
     expect(ids).toEqual([...new Set(ids)].sort());
+  });
+
+  // SRV-NF4-IZNIMKA-PREDAJA: the caller's own late-submission exception, optional.
+  it("accepts a row with or without the own late-submission exception", () => {
+    expect(check(list(row))).toBe(true);
+    expect(check(list({ ...row, lateException: { untilAt: "2026-12-03T13:00:00.000Z" } }))).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    null,
+    "2026-12-03T13:00:00.000Z",
+    {},
+    { untilAt: null },
+    { untilAt: "2026-12-03T13:00:00Z" },
+    { untilAt: "2026-12-03 13:00:00.000Z" },
+    { untilAt: "2026-12-03T13:00:00.000+01:00" },
+    { untilAt: "2026-12-03T13:00:00.000Z", reasonId: "technical" },
+    { untilAt: "2026-12-03T13:00:00.000Z", studentId: A },
+  ])("refuses the late exception %j", (lateException) => {
+    expect(check(list({ ...row, lateException }))).toBe(false);
+  });
+
+  it("is optional and not a change of the summary (server/contracts/breaking.ts)", () => {
+    type Shape = { properties: { assignments: { items: { required?: string[] } } } };
+    const shape = JSON.parse(JSON.stringify(body)) as Shape;
+    expect(shape.properties.assignments.items.required).toEqual(["assignmentId", "workState"]);
+    expect(route?.summary).not.toContain("lateException");
   });
 });
