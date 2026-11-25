@@ -18,11 +18,11 @@ const load = (name: string) => new Uint8Array(readFileSync(new URL(`${name}.docx
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 const PINNED = {
-  "strict-format": "86d90f50d8fd3310c4079291c6622878d8f4d8864d665d1e34841f407e7b7662",
-  comments: "adc9f524d176f562db830c346c1e9e21c6a6aa6768d9c09892a423f1257fe17c",
-  footnotes: "a3d786ba3ad53833dd3d5e01bd55e93b628c1287d8f9210eb94cb7533f270306",
+  "strict-format": "1e8b855d57ebfc4210ccb68261be28726a44a480916cdfe5d75e517e87896f78",
+  comments: "a94b72df9a354fa1e24a87d540583c47f8d28e5166de13a2d6de4558059e07fd",
+  footnotes: "220f80c437b26c5633ad1561ec22421d9d52e1a22da40d935a7d8a170d029565",
   endnotes: "8b0275a08427605e57e0ca7596bc89fb4c00e4b9a5cdae2b1941c619c2496014",
-  tables: "9f75a82d36530d91989a43fcb8940f2e753051787714cecbf6a1f49a22e58ded",
+  tables: "87ec522686fb1461d12f8b13a73c9659a6a5c34abb133190f68da8960312c655",
   "external-picture": "2f5dbcf27f3dcec02e81535de21b81a2719e0acfd73158750cb7f91249e628f5",
 } as const;
 
@@ -97,5 +97,18 @@ describe("mammoth.js DOCX fixtures (ISTR-6)", () => {
 
   it("every outcome is the same on a second read of the same bytes", () => {
     for (const name of Object.keys(PINNED)) expect(read(name)).toEqual(read(name));
+  });
+});
+
+describe("mammoth.js DOCX fixtures: no personal data (ISTR-6)", () => {
+  it("name only the invented test author in metadata and comments", async () => {
+    const { unzipSync, strFromU8 } = await import("fflate");
+    for (const name of Object.keys(PINNED)) {
+      const files = unzipSync(load(name));
+      for (const [part, data] of Object.entries(files)) {
+        if (!/\.xml$/u.test(part)) continue;
+        expect(strFromU8(data), `${name}:${part}`).not.toMatch(/williamson|chantry/iu);
+      }
+    }
   });
 });
