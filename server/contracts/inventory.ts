@@ -843,6 +843,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-V17-TEMPLATE-ADMIN (val 17): the work template of the institution per work type; Ductus has no such route.
+  "app/api/institution/work-templates/[workType]/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146993897",
+  },
   // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
   "app/api/works/[documentId]/return-for-revision/route.ts": {
     methods: ["POST"],
