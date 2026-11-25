@@ -13,8 +13,7 @@ import type { ServerResponse } from "node:http";
 
 import { isWorkId, ROUTES, workIdFromPath } from "../../contracts/index.ts";
 import { createWorkExportReader, type WorkExportReader } from "../../database/index.ts";
-import { validateSheetDocument, type SheetDocument } from "../../domain/index.ts";
-import { renderSheetCsv } from "../../downloads/index.ts";
+import { renderSheetCsvOfText } from "../../downloads/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import {
@@ -61,18 +60,6 @@ function askedOf(url: string | undefined): Asked {
   return SHEET_ID.test(sheet) ? { sheet } : "invalid";
 }
 
-/** The stored text as a valid spreadsheet document, or null for anything else. */
-function sheetDocumentOf(body: string): SheetDocument | null {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(body);
-  } catch {
-    return null;
-  }
-  const checked = validateSheetDocument(raw);
-  return checked.ok ? checked.doc : null;
-}
-
 export function createSheetCsvRoute(read: WorkExportReader): Route {
   return {
     contract: CONTRACT,
@@ -95,9 +82,7 @@ export function createSheetCsvRoute(read: WorkExportReader): Route {
           unavailable(response, source.reason);
           return sendProblem(response, 503, "unavailable");
         }
-        const doc = sheetDocumentOf(source.body);
-        if (doc === null) return sendProblem(response, 404, "not_found");
-        const csv = renderSheetCsv(doc, asked.sheet);
+        const csv = renderSheetCsvOfText(source.body, asked.sheet);
         if (csv.status !== "ok") return sendProblem(response, 404, "not_found");
         response.writeHead(200, {
           "content-type": "text/csv; charset=utf-8",

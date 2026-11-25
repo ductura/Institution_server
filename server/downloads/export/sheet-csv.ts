@@ -11,10 +11,12 @@
 // negative one, is not such a text and is written as it is.
 import {
   computeSheet,
+  formatCellRef,
   parseCellRef,
   type ComputedCell,
   type Sheet,
   type SheetDocument,
+  validateSheetDocument,
 } from "../../domain/index.ts";
 
 const BOM = "﻿";
@@ -71,7 +73,7 @@ function sheetRows(sheet: Sheet): string {
   for (let row = 1; row <= lastRow; row += 1) {
     const cells: string[] = [];
     for (let column = 1; column <= lastColumn; column += 1) {
-      cells.push(cellText(sheet, `${String.fromCharCode(64 + column)}${row}`, computed));
+      cells.push(cellText(sheet, formatCellRef(column, row) ?? "", computed));
     }
     lines.push(cells.join(SEPARATOR));
   }
@@ -90,4 +92,22 @@ export function renderSheetCsv(doc: SheetDocument, sheetId: string | null): Shee
   const sheet = sheetId === null ? doc.sheets[0] : doc.sheets.find((item) => item.id === sheetId);
   if (sheet === undefined) return { status: "no_sheet" };
   return { status: "ok", bytes: new TextEncoder().encode(BOM + sheetRows(sheet)) };
+}
+
+/**
+ * The CSV of a stored text: the text must be a valid spreadsheet document
+ * (`not_a_sheet` for a text work or a broken body), then as renderSheetCsv.
+ */
+export function renderSheetCsvOfText(
+  body: string,
+  sheetId: string | null,
+): SheetCsv | { readonly status: "not_a_sheet" } {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(body);
+  } catch {
+    return { status: "not_a_sheet" };
+  }
+  const checked = validateSheetDocument(raw);
+  return checked.ok ? renderSheetCsv(checked.doc, sheetId) : { status: "not_a_sheet" };
 }

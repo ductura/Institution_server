@@ -1875,6 +1875,33 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
   },
+  // SRV-V14-SHEET-CSV: the work holds an invented spreadsheet, so the CSV is an answer, not a 404.
+  "work.export-sheet-csv.get": {
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      if (work === undefined) throw new Error("missing work fixture");
+      work.document = Buffer.from(
+        JSON.stringify({
+          schemaVersion: 1,
+          kind: "spreadsheet",
+          sheets: [
+            {
+              id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              name: "Demo",
+              rows: 10,
+              columns: 3,
+              cells: {
+                ["A1"]: { value: 2 },
+                ["B1"]: { value: 3 },
+                ["C1"]: { value: null, formula: "=A1+B1" },
+              },
+            },
+          ],
+        }),
+      ).toString("base64");
+    },
+    request: { path: `/api/v1/works/${IDS.document}/export/csv`, as: "nastavnik" },
+  },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {

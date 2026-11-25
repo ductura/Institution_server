@@ -9,4 +9,4 @@ export {
 } from "./model.ts";
 export { renderWorkDocx, type WorkDocx, type WorkDocxInput } from "./work-docx.ts";
 export { writeZip, type ZipEntry } from "./zip.ts";
-export { plainDecimal, renderSheetCsv, type SheetCsv } from "./sheet-csv.ts";
+export { plainDecimal, renderSheetCsv, renderSheetCsvOfText, type SheetCsv } from "./sheet-csv.ts";

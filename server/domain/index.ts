@@ -43,6 +43,7 @@ export type { SourceId as EvidenceSourceId } from "./evidence/index.ts";
 // SRV-V14-SHEET-CSV: the spreadsheet document and its formula computer, for the CSV export.
 export {
   computeSheet,
+  formatCellRef,
   parseCellRef,
   validateSheetDocument,
   type ComputedCell,

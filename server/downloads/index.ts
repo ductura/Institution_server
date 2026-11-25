@@ -14,6 +14,7 @@ export {
   buildExportModel,
   renderDocx,
   renderSheetCsv,
+  renderSheetCsvOfText,
   renderWorkDocx,
   type ExportLabels,
   type SheetCsv,
