@@ -186,7 +186,7 @@ export const STUDENT_HANDLERS: Handlers = {
     state.submissionNotes.push({ ...note, assignmentId: assignment.id, studentId: account.id });
     return { status: 201, body: note };
   },
-  // SRV-1101: the dev fake knows no institution profile, so it answers as an
+  // SRV-1101: the dev fake knows no institution profile or style, so it answers as an
   // institution that has set none (the real route reads the institution's setting).
   "student.text-check-config.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -194,7 +194,11 @@ export const STUDENT_HANDLERS: Handlers = {
       return { error: "not_found" };
     return {
       status: 200,
-      body: { enabledCheckIds: enabledCheckIdsFor(null), lektaProfileId: null },
+      body: {
+        enabledCheckIds: enabledCheckIdsFor(null),
+        lektaProfileId: null,
+        citationStyle: "fpzg",
+      },
     };
   },
   "student.work-sources.get": ({ state, account, params }) => {
