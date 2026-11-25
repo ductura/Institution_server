@@ -92,3 +92,96 @@ export function createStudentAssignmentsReader(withActor: WithActor): StudentAss
     return { status: "ok", rows: read };
   };
 }
+
+// INT-31 (Ductus#2055): the port of institution.student_mentored_assignments(),
+// the assignments of the caller's open mentorships (no course), under the same
+// predicate as app.lock_student_assignment. Same rules as above: one STABLE
+// statement in one withActor transaction, every row checked whole, never a
+// partial list. The mentor's name may be missing (no person_name row); then the
+// row carries no mentor, never half a name.
+
+export type StudentMentoredAssignmentRow = {
+  readonly assignmentId: string;
+  readonly mentorshipId: string;
+  readonly title: string;
+  readonly workType: string;
+  readonly dueAt: string;
+  readonly extendedDueAt: string | null;
+  readonly acknowledged: boolean;
+  readonly mentor: {
+    readonly id: string;
+    readonly givenName: string;
+    readonly familyName: string;
+  } | null;
+};
+
+export type StudentMentoredAssignmentsRead =
+  | { readonly status: "ok"; readonly rows: readonly StudentMentoredAssignmentRow[] }
+  | { readonly status: "unauthenticated" | "unavailable" };
+
+export type StudentMentoredAssignmentsReader = (
+  token: string,
+) => Promise<StudentMentoredAssignmentsRead>;
+
+const MENTORED_SQL = `SELECT assignment_id AS "assignmentId", mentorship_id AS "mentorshipId", title,
+  work_type AS "workType", due_at AS "dueAt", extended_due_at AS "extendedDueAt", acknowledged,
+  mentor_id AS "mentorId", mentor_given_name AS "mentorGivenName", mentor_family_name AS "mentorFamilyName"
+  FROM institution.student_mentored_assignments()
+  ORDER BY due_at, assignment_id`;
+
+/** One mentored row as the route reads it, or null when it is not what the function returns. */
+function mentoredRowOf(row: Record<string, unknown>): StudentMentoredAssignmentRow | null {
+  const { assignmentId, mentorshipId, title, workType, mentorId } = row;
+  const { mentorGivenName, mentorFamilyName } = row;
+  const dueAt = instant(row.dueAt);
+  const extendedDueAt = row.extendedDueAt === null ? null : instant(row.extendedDueAt);
+  const named = text(mentorGivenName) && text(mentorFamilyName);
+  const unnamed = mentorGivenName === null && mentorFamilyName === null;
+  if (
+    !text(assignmentId) ||
+    !UUID.test(assignmentId) ||
+    !text(mentorshipId) ||
+    !UUID.test(mentorshipId) ||
+    !text(mentorId) ||
+    !UUID.test(mentorId) ||
+    !text(title) ||
+    !text(workType) ||
+    dueAt === null ||
+    (row.extendedDueAt !== null && extendedDueAt === null) ||
+    typeof row.acknowledged !== "boolean" ||
+    !(named || unnamed)
+  ) {
+    return null;
+  }
+  return {
+    ...{ assignmentId, mentorshipId, title, workType, dueAt, extendedDueAt },
+    acknowledged: row.acknowledged,
+    mentor: named
+      ? {
+          id: mentorId,
+          givenName: mentorGivenName as string,
+          familyName: mentorFamilyName as string,
+        }
+      : null,
+  };
+}
+
+export function createStudentMentoredAssignmentsReader(
+  withActor: WithActor,
+): StudentMentoredAssignmentsReader {
+  return async (token) => {
+    let rows: Record<string, unknown>[];
+    try {
+      rows = await withActor(token, async (tx) => (await tx.query(MENTORED_SQL)).rows);
+    } catch (thrown) {
+      return { status: codeOf(thrown) === "ZD401" ? "unauthenticated" : "unavailable" };
+    }
+    const read: StudentMentoredAssignmentRow[] = [];
+    for (const row of rows) {
+      const checked = mentoredRowOf(row);
+      if (checked === null) return { status: "unavailable" };
+      read.push(checked);
+    }
+    return { status: "ok", rows: read };
+  };
+}
