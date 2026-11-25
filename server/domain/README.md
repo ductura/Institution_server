@@ -23,6 +23,7 @@ Područje iz [karte servera](../../docs/server-map.md).
 | [declaration](declaration/README.md)           | — (novo, SRV-1210)                | Izjava o radu v1: payload, hash, privici, razlozi, tijelo spremanja, obrazac (ugovor #499) |
 | [provenance-share](provenance-share/README.md) | — (novo, SRV-1221)                | Udio predanog teksta iz zabilježenih događaja i zapis `ductura-provenance-share-v1`        |
 | [practice-journal](practice-journal/README.md) | — (novo, SRV-V19-DNEVNIK-RUTE)    | Sažetak zapisa dnevnika prakse (JCS SHA-256) i provjera ulaza                              |
+| [peer-review](peer-review/README.md)           | — (novo, SRV-V19-RECENZIJA-RUTE)  | Anonimni odgovori recenzije: polja po polje, bez osobe, rada i zadatka                     |
 | [work-team](work-team/README.md)               | — (novo, SRV-V19-GRUPA-RUTE)      | Redoslijed članova tima po imenu i sastavljanje doprinosa (bez udjela i ranga)             |
 | [slides](slides/README.md)                     | — (novo, SRV-V13-UGOVOR-SLAJD)    | Kanonski dokument slajdova v1: tipovi, validator, snimka (JCS), revizija nula              |
 

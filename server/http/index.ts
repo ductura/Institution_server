@@ -19,6 +19,7 @@ export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
+export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export {
   createConsultationRecordRoutes,

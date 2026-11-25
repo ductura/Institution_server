@@ -63,6 +63,7 @@ import {
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
+  createPeerReviewRoutesFor,
   createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -274,6 +275,18 @@ const SRV_V19_GRUPA = [
   "teacher.work-team-member.post",
   "student.work-team-contribution.get",
   "teacher.work-team-contribution.get",
+];
+// SRV-V19-RECENZIJA-RUTE: the nine routes of the anonymous peer review.
+const SRV_V19_RECENZIJA = [
+  "peer-review.round.put",
+  "peer-review.round.get",
+  "peer-review.allocate.post",
+  "peer-review.teacher-overview.get",
+  "peer-review.review-withdrawal.post",
+  "student.peer-review-tasks.get",
+  "student.peer-review-work.get",
+  "student.peer-review.post",
+  "student.peer-reviews-received.get",
 ];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
@@ -643,6 +656,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createWorkTeamRoutesFor(databases.main)",
     ids: SRV_V19_GRUPA,
     routes: () => createWorkTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createPeerReviewRoutesFor(databases.main)",
+    ids: SRV_V19_RECENZIJA,
+    routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createThesisRoutesFor(databases.main)",
@@ -1097,6 +1115,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_1413,
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
+      ...SRV_V19_RECENZIJA,
       ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",
