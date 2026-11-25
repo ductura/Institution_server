@@ -85,7 +85,7 @@ describe("receipt PDF", () => {
       await renderReceiptPdf(await receipt("ef".repeat(32)), ORIGIN, receiptPdfHr),
     ).not.toEqual(bytes);
     expect(createHash("sha256").update(bytes).digest("hex")).toMatchInlineSnapshot(
-      `"b9b5e09af5b48a570b10c0da74f6726e506b852f5567add2af2fdca4df5eece7"`,
+      `"15e2b2e6e6e39cf8dd20b043a443e20ae128fe4a8b0181a3a407747d40ba54fc"`,
     );
   });
 });
