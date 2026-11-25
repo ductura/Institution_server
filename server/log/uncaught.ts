@@ -7,8 +7,10 @@ import { logEvent, type LogEvent } from "./logger.ts";
  * so that print may carry text of a work or a person. Here the error becomes
  * one line of two closed codes, and the process still exits 1.
  *
- * Nothing of the error itself is kept: no message, no stack, no property.
- * The same origin and class within `windowMs` is one group: one line and one
+ * Of the error itself only its class and the place it was thrown are kept:
+ * a file of this repository and a line number (owner decision of 25 Nov
+ * 2026). No message, no other part of the stack, no property. The same
+ * origin, class and place within `windowMs` is one group: one line and one
  * alarm for the first, a count for the rest.
  */
 
@@ -52,7 +54,51 @@ export function errorClassOf(error: unknown): UncaughtErrorClass {
   }
 }
 
-export type UncaughtGroup = { origin: UncaughtOrigin; errorClass: UncaughtErrorClass };
+/** The engine's own getter of `stack`, the same function on every error. */
+const NATIVE_STACK = Object.getOwnPropertyDescriptor(new Error("probe"), "stack")?.get;
+
+// A frame of this repository's own code: a relative path of plain characters
+// under one of its folders, then the line. Function names, absolute paths,
+// node: and node_modules frames never match.
+const OWN_FRAME =
+  /(?:^|[\/(\s])((?:server|scripts|packages|dist)\/[A-Za-z0-9_.\/-]{1,160}\.(?:ts|js|mjs)):(\d{1,7}):\d{1,7}\)?$/;
+
+/** Where nothing of our own code is on the stack, or the stack cannot be read safely. */
+export const UNKNOWN_SITE = "unknown";
+
+/**
+ * The first frame of this repository's code on the stack of `error`, as
+ * `server/area/file.ts:12`. The stack is read only as an own string or
+ * through the engine's own getter, so no code of the value runs; the message
+ * line and every other frame are dropped. Never throws.
+ */
+export function errorSiteOf(error: unknown): string {
+  try {
+    if (!(error instanceof Error)) return UNKNOWN_SITE;
+    const property = Object.getOwnPropertyDescriptor(error, "stack");
+    let stack: unknown;
+    if (property !== undefined && "value" in property) stack = property.value;
+    else if (property?.get !== undefined && property.get === NATIVE_STACK) {
+      stack = Reflect.apply(property.get, error, []);
+    }
+    if (typeof stack !== "string") return UNKNOWN_SITE;
+    for (const line of stack.split("\n").slice(0, 50)) {
+      if (!line.startsWith("    at ") || line.includes("node_modules")) continue;
+      const frame = OWN_FRAME.exec(line);
+      if (frame !== null) return `${frame[1]}:${frame[2]}`;
+    }
+    return UNKNOWN_SITE;
+  } catch {
+    return UNKNOWN_SITE;
+  }
+}
+
+export type UncaughtGroup = {
+  origin: UncaughtOrigin;
+  errorClass: UncaughtErrorClass;
+  /** `server/area/file.ts:12`, or `unknown`. */
+  site: string;
+};
 
 export type UncaughtCaptureOptions = {
   log?: LogEvent;
@@ -86,25 +132,26 @@ export function createUncaughtCapture(options: UncaughtCaptureOptions = {}): Unc
     const group = groups.get(key);
     groups.delete(key);
     if (group !== undefined && group.repeats > 0) {
-      const { origin, errorClass, repeats } = group;
-      log("error", "error.uncaught_repeated", { origin, errorClass, repeats });
+      const { origin, errorClass, site, repeats } = group;
+      log("error", "error.uncaught_repeated", { origin, errorClass, site, repeats });
     }
   };
 
   return {
     capture(origin, error) {
       const errorClass = errorClassOf(error);
-      const key = `${origin}:${errorClass}`;
+      const site = errorSiteOf(error);
+      const key = `${origin}:${errorClass}:${site}`;
       const open = groups.get(key);
       if (open !== undefined && now() - open.openedAt < windowMs) {
         open.repeats += 1;
         return false;
       }
       close(key);
-      groups.set(key, { origin, errorClass, openedAt: now(), repeats: 0 });
-      log("error", "error.uncaught", { origin, errorClass });
+      groups.set(key, { origin, errorClass, site, openedAt: now(), repeats: 0 });
+      log("error", "error.uncaught", { origin, errorClass, site });
       try {
-        options.raise?.({ origin, errorClass });
+        options.raise?.({ origin, errorClass, site });
       } catch {
         // An alarm that cannot be raised must not hide the line above.
       }

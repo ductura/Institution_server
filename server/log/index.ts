@@ -29,10 +29,12 @@ export {
 export {
   createUncaughtCapture,
   errorClassOf,
+  errorSiteOf,
   installUncaughtCapture,
   UNCAUGHT_ERROR_CLASSES,
   UNCAUGHT_ORIGINS,
   UNCAUGHT_WINDOW_MS,
+  UNKNOWN_SITE,
   type UncaughtCapture,
   type UncaughtCaptureOptions,
   type UncaughtErrorClass,

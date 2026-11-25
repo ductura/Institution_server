@@ -43,7 +43,7 @@ describe("an error nobody caught, in a real process", () => {
     expect(JSON.parse(lines[0]!)).toMatchObject({
       level: "error",
       event: "error.uncaught",
-      fields: { origin: "uncaught_exception", errorClass: "type_error" },
+      fields: { origin: "uncaught_exception", errorClass: "type_error", site: "unknown" },
     });
     expect(output).not.toContain(CANARY);
     expect(output).not.toContain("at ");
@@ -55,7 +55,7 @@ describe("an error nobody caught, in a real process", () => {
     expect(output.trim().split("\n")).toHaveLength(1);
     expect(JSON.parse(output)).toMatchObject({
       event: "error.uncaught",
-      fields: { origin: "unhandled_rejection", errorClass: "other" },
+      fields: { origin: "unhandled_rejection", errorClass: "other", site: "unknown" },
     });
     expect(output).not.toContain(CANARY);
   });
