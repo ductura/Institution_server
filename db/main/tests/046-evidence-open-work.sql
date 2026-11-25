@@ -219,6 +219,28 @@ SELECT is(pg_temp.open(p.name, pg_temp.id('z1')), 'unauthenticated|||||||', p.wh
 FROM (VALUES ('anon', 'no session'), ('expired', 'an expired session'), ('closed', 'a closed session')) AS p (name, why);
 SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_after_ana), 'the refused calls wrote nothing');
 
+-- SRV-V13-MIG-VRSTA: the kind of the work is the kind of its assignment,
+-- fixed when the work starts. Dora acknowledges Z1 now; a slides assignment
+-- has no revision 0 here yet, so nothing is made for her; once Z1 is a text
+-- assignment again her work starts and carries kind text.
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('ana', 'z1')), 'text',
+  'SRV-V13-MIG-VRSTA: the work of a text assignment carries kind text');
+INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
+VALUES (pg_temp.id('z1'), 2, pg_temp.id('dora'), pg_temp.id('fak_a'));
+UPDATE institution.assignment SET document_kind = 'slides' WHERE id = pg_temp.id('z1');
+CREATE TEMP TABLE print_slides AS SELECT pg_temp.evidence_print() AS v;
+SELECT is(pg_temp.open('dora', pg_temp.id('z1')), 'not_configured|||||||',
+  'SRV-V13-MIG-VRSTA: a slides assignment is not started before its revision 0 exists');
+SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_slides), 'and nothing is written');
+SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
+  'SRV-V13-MIG-VRSTA: a work that exists opens as before, whatever the assignment says now');
+UPDATE institution.assignment SET document_kind = 'text' WHERE id = pg_temp.id('z1');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
+  'SRV-V13-MIG-VRSTA: a text assignment starts the work');
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'text',
+  'SRV-V13-MIG-VRSTA: and writes kind text into the work');
+
+
 -- The unique key holds also against the evidence role itself.
 SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', format(
   $q$ INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id) VALUES ('second', %L, %L, %L) $q$,
