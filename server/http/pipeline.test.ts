@@ -18,6 +18,7 @@ import {
   type Layers,
   PIPELINE_STEPS,
   type Step,
+  trafficLogFor,
   trafficRouteOf,
 } from "./pipeline.ts";
 import { SECURITY_HEADERS } from "./security-headers.ts";
@@ -359,6 +360,32 @@ describe("step 5, the traffic record", () => {
     expect(written[0]?.fields.status).toBe(429);
   });
 
+  it("records the 500 answer of a layer that throws after step 5", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    const layers = {
+      ...createLayers({ expectedOrigin: null, trafficLog: write }),
+      operatorPolicy: async (): Promise<"next"> => {
+        throw new Error(CANARY);
+      },
+    };
+    let app = 0;
+    await createPipeline(
+      layers,
+      async () => void (app += 1),
+      () => undefined,
+    )(request, response);
+    response.emit("close");
+    expect([response.statusCode, app]).toEqual([500, 0]);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(500);
+    expect(JSON.stringify(written)).not.toContain(CANARY);
+  });
+
   it("records nothing, and still answers, without a writer", async () => {
     expect((await runWith(undefined)).statusCode).toBe(204);
   });
@@ -371,5 +398,66 @@ describe("step 5, the traffic record", () => {
     expect(at("/api/v1/nope")).toBeNull();
     expect(at("/api/v1/../health")).toBeNull();
     expect(at(undefined as unknown as string)).toBeNull();
+  });
+});
+
+describe("trafficLogFor", () => {
+  const ISO = "2026-11-25T10:00:00.000Z";
+  const record = (extra: Record<string, unknown> = {}) => ({
+    time: ISO,
+    event: "traffic.request",
+    requestId: "11111111-1111-4111-8111-111111111111",
+    accountKind: "anonymous",
+    fields: {
+      method: "GET",
+      route: "/api/v1/health",
+      ip: "203.0.113.7",
+      status: 200,
+      durationMs: 3,
+      ipRule: "not_checked",
+      rateLimit: "not_checked",
+    },
+    ...extra,
+  });
+
+  it("inserts one log_entry row: the event as kind and the checked record as JSON", async () => {
+    const calls: [string, unknown[]][] = [];
+    const write = trafficLogFor({
+      query: (text, values) => {
+        calls.push([text, values]);
+        return Promise.resolve();
+      },
+    });
+    const result = await write(record());
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[0]).toBe(
+      "INSERT INTO public.log_entry (kind, payload) VALUES ($1, $2::jsonb)",
+    );
+    expect(calls[0]?.[1]?.[0]).toBe("traffic.request");
+    const payload = JSON.parse(String(calls[0]?.[1]?.[1])) as Record<string, unknown>;
+    expect(Object.keys(payload.fields as object).sort()).toEqual(
+      ["durationMs", "ip", "ipRule", "method", "rateLimit", "route", "status"].sort(),
+    );
+  });
+
+  it("refuses a route outside the contract, a body field and a cookie without writing", async () => {
+    let calls = 0;
+    const write = trafficLogFor({ query: () => void (calls += 1) });
+    const bad = record();
+    for (const fields of [
+      { ...bad.fields, route: "/api/v1/not-a-route" },
+      { ...bad.fields, body: "made-up-body" },
+      { ...bad.fields, cookie: "session=made-up" },
+    ]) {
+      expect((await write({ ...bad, fields })).ok).toBe(false);
+    }
+    expect(calls).toBe(0);
+  });
+
+  it("does not throw when the logs database rejects", async () => {
+    const write = trafficLogFor({ query: () => Promise.reject(new Error("made-up-db-down")) });
+    const result = await write(record());
+    expect(result.ok).toBe(false);
   });
 });
