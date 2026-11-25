@@ -22,13 +22,20 @@ pnpm test:unit
 pnpm test:property
 pnpm test:integration  # integracijski testovi; testne baze na PGliteu (test-support/database)
 pnpm test:integration:pg # testovi ovlasti (*.pg.integration.test.ts) na pravom PostgreSQL-u; traže migrirane baze
+pnpm test:equality      # test jednakosti (server/tests/equality)
 pnpm test:database      # testovi migracija, zatim test:integration:pg; traže migrirane baze na 127.0.0.1:54329 i :54330 (posao database u CI-ju);
                         # klaster :54330 radi s wal_level=logical (compose postgres-logs; stari kontejner: docker compose up -d --force-recreate postgres-logs)
 pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/v1.json iz ugovora
 pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
+pnpm db:up              # lokalni PostgreSQL u Dockeru (compose.yaml) i sve migracije; db:up:native bez Dockera; db:seed učitava izmišljene podatke
+pnpm db:sum             # ponovno računa db/main/migrations.sum (knjiga migracija; ručno se ne uređuje)
+pnpm test:db:main       # pgTAP matrica glavne baze (db/main/tests); test:db:native podiže nativni stog i pokreće je
+pnpm stog:gore          # cijeli lokalni stog (docs/lokalno/STOG.md); stog:dolje gasi, stog:zdravlje provjerava
+pnpm dev:lazni-server   # lažni dev server iz @ductura/test-fakes (samo lokalni razvoj)
+pnpm release:check      # provjera izdanja (release:stage, release:tag i release:tarball su dijelovi tog tijeka)
 ```
 
-Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 1 i retkom koji imenuje varijablu, nikad vrijednost. Baza se pri pokretanju ne otvara.
+Pregled okoline za produkciju je u [docs/OPERATIONS.md](docs/OPERATIONS.md), postavljanje u [docs/DEPLOY.md](docs/DEPLOY.md) i [docs/STAGING.md](docs/STAGING.md). Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 78 (`EXIT_CONFIGURATION`) i retkom `startup.refused` koji imenuje varijablu, nikad vrijednost (`server/config`). Server pri pokretanju otvara glavnu bazu kroz `server/database` (prijava `APP_DATABASE_URL`).
 
 ### Lokalni računi
 
@@ -53,18 +60,22 @@ Za taj prolaz stog treba montirane studentske rute za upis, zadatke, obavijest i
 
 ## Struktura
 
-| Mapa                | Sadržaj                                                                                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/`           | Kod poslužitelja i testovi uz njega                                                                                                                   |
-| `openapi/`          | Objavljeni OpenAPI dokument `v1.json`, generiran iz ugovora                                                                                           |
-| `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
-| `locales/`          | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`)                                                                       |
-| `db/`               | Migracije i pgTAP testovi (dimni test okruženja CI-ja `db/tests/`, matrica glavne baze `db/main/tests/`)                                              |
-| `packages/`         | `@ductura/test-fakes`: lažne zamjene za testove (lažni OIDC, lažni server, sat, usluge, FIDO2); samo devDependency                                    |
-| `test-support/`     | Ostala pomagala za testove (`test-idp/`, `fake-kms/`, `malformed-signatures/`)                                                                        |
-| `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
-| `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
-| `tests/`            | Testovi alata repoa (lint, formatiranje)                                                                                                              |
+| Mapa                | Sadržaj                                                                                                                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/`           | Kod poslužitelja i testovi uz njega                                                                                                                                                                                     |
+| `openapi/`          | Objavljeni OpenAPI dokument `v1.json`, generiran iz ugovora                                                                                                                                                             |
+| `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                                                                                      |
+| `locales/`          | Tekstovi sučelja i poruka na hrvatskom i engleskom (`hr.json`, `hr.ts`, `en.ts`), paritet i provjere kataloga                                                                                                           |
+| `db/`               | Tri baze: `db/main` (glavna), `db/logs` (zapisi), `db/legal` (pravni tekstovi); svaka ima `migrations/`, `migrations.sum` i pgTAP `tests/`; dimni test okruženja `db/tests/`                                            |
+| `packages/`         | `@ductura/contracts` (zajednički vektori i katalog grešaka) i `@ductura/test-fakes` (lažni OIDC, lažni server i dev server, sat, usluge, FIDO2); test-fakes je samo devDependency                                       |
+| `test-support/`     | Ostala pomagala za testove (`test-idp/`, `fake-kms/`, `malformed-signatures/`)                                                                                                                                          |
+| `config/`           | Konfiguracija po fakultetima (`config/faculties`)                                                                                                                                                                       |
+| `infra/`            | Dockerfile slike lažnog OIDC-a, PostgreSQL-a i weba (lokalni stog i CI)                                                                                                                                                 |
+| `docs/`             | Dokumentacija na hrvatskom (`plan/` je snimka kanonskog plana, `contracts/` ugovori, `adr/`); vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
+| `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`, `db/`, `lokalno/`, `stack/`, `release/`, skener zabranjenih izraza)                                                                                        |
+| `tests/`            | Testovi alata repoa (lint, formatiranje), ugovora (`tests/contracts`) i sloja baze (`tests/db`)                                                                                                                         |
+
+Kanonski plan razvoja je u repozitoriju `ductura/.github` (`docs/plan/PLAN-MIGRACIJE.md`); ovdje je samo snimka [docs/plan/PLAN-MIGRACIJE.md](docs/plan/PLAN-MIGRACIJE.md) koja se ne uređuje. Pravila za agente su u [CLAUDE.md](CLAUDE.md) i [AGENTS.md](AGENTS.md).
 
 ## Lint
 
@@ -91,42 +102,43 @@ Testovi su u `tests/format/format.test.ts`.
 
 ## Testovi
 
-Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
+Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `packages/`, `test-support/`, `scripts/`, `infra/`, `db/` i `locales/` (te `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt          | Datoteke                                                              | Što provjerava                                                                                                   |
-| ---------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `unit`           | `{server,test-support,tests,scripts}/**/*.test.ts`                    | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                       |
-| `property`       | `{server,test-support,tests,scripts}/**/*.property.test.ts`           | Svojstva pravila pristupa (fast-check)                                                                           |
-| `integration`    | `{server,test-support,tests,scripts}/**/*.integration.test.ts`        | HTTP poslužitelj od zahtjeva do odgovora                                                                         |
-| `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)        | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
-| `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`) | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
+| Projekt          | Datoteke                                                                                 | Što provjerava                                                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `unit`           | `{server,packages,test-support,tests,scripts,infra,db,locales}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                       |
+| `property`       | `{server,packages,test-support,tests,scripts,infra,db,locales}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                                                           |
+| `integration`    | `{server,packages,test-support,tests,scripts,infra,db,locales}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                                                         |
+| `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)                           | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
+| `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`)                    | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
-Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
-Pokriva je `server/app.integration.test.ts`.
+Pristup sadržaju proizlazi iz odnosa, ne iz uloge: svaka ruta ima test da tuđi sadržaj daje odbijanje, a pravila na razini baze provjerava pgTAP matrica (`db/main/tests`). Stari kostur `server/app.ts` još ima dimni test `server/app.integration.test.ts`.
 
 Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## CI
 
-`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP okruženja (`db/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a nakon nativnog stoga (`pnpm db:up:native`) i pgTAP matricu glavne baze (`pnpm test:db:native`, `db/main/tests`). Posao `checks` ima tri grane (matrica `shard: [1, 2, 3]`), a `database` dvije (`shard: [1, 2]`). Vitest projekti unit, integracijski i migracijski dijele se po datotekama (`vitest --shard`). U `database` ostali koraci rade na obje grane. U `checks` statičke provjere (tipovi, knjiga migracija, lint, formatiranje) rade na 1. grani, a svojstveni testovi na 2. i 3. grani, dakle dvaput po runu kao i prije. Test jednakosti, probna objava, zaštita ugovora i slike rade na svim granama. `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
+`.github/workflows/ci.yml` (okidači: PR i push u `main` i `migracija/kopija-ductus-backend`) ima tri posla uz zbirni `ci-ok`:
 
-## Stanje kostura
+- `scope` razvrstava promjene (`scripts/ci/scope.ts`, pravila u [scripts/ci/README.md](scripts/ci/README.md)).
+- `checks` („Provjere i testovi”) ima pet grana (`provjere`, `1/4` do `4/4`). Grana `provjere` pokreće statičke provjere (tipovi, knjiga migracija, lint, formatiranje, test jednakosti, probno izdanje, zaštita ugovora, slike), a četiri grane dijele vitest projekte unit i integration po datotekama (`vitest --shard`); svojstveni testovi rade na granama 3/4 i 4/4.
+- `database` („PostgreSQL i pgTAP”) ima tri grane (`shard: [1, 2, 3]`). Podiže PostgreSQL 17 nativno iz PGDG repoa, bez Dockera, primjenjuje migracije kroz `scripts/db/migrate-locked.ts` i dijeli po datotekama projekte `database` i `integration-pg` te pgTAP matricu (`pnpm test:db:native`).
+- `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`.
 
-- Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
-- Lažni OIDC pružatelj (`packages/test-fakes/oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx packages/test-fakes/oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
-- Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
-- Pozadinski poslovi: još nisu dodani.
+Akcije su prikvačene na puni SHA. Uz `ci.yml` postoje `engineering-gate.yml`, `release.yml`, `publish.yml`, `sbom.yml`, `verapdf.yml` i `docx-provenance-spike.yml`.
+
+## Stanje servera
+
+- Prijava: studenti i nastavnici se prijavljuju isključivo preko AAI@EduHr (D-09); tok i sesije su u `server/http/auth.ts` i `auth-flow.ts`, a `server/server.ts` ih montira kroz `createAuthRoutes`. Sesija je kolačić, a pristup sadržaju određuje baza iz odnosa (student u kolegiju, nastavnik zadatka, mentor rada). Zaglavlje `Authorization: Bearer <korisnik>` iz starog kostura `server/app.ts` nije način prijave i ne koristi se u pravom serveru.
+- Lažni OIDC pružatelj (`packages/test-fakes/oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokreće ga `pnpm lokalno` (port 8090) ili ručno `pnpm exec tsx packages/test-fakes/oidc/server.ts`. `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
+- Baza: PostgreSQL 17, tri baze (`db/main`, `db/logs`, `db/legal`) s migracijama i RLS-om; web proces radi pod prijavom `ductus_app` kroz `withActor` (`server/database`). Memorijski `server/store.ts` ostao je samo za stari kostur.
+- Pozadinski poslovi: prvi radnik (potpis potvrda na čekanju, `server/worker/signing`) postoji kao modul, a ulazna točka procesa radnika je još planirana ([server/worker/README.md](server/worker/README.md)).
 
 ## API
 
-Ulaz `server/server.ts` danas montira samo `GET /api/v1/health`. Ostale rute u tablici ima samo stari kostur `server/app.ts`, koji ostaje kao dimni test do S-1H.3 i više se ne pokreće kao server.
+Ulaz `server/server.ts` montira rute ugovora `/api/v1` (health, ready, prijava, student, nastavnik, ustanova, evidencija, predaje, zapisi i druge). Ugovor ima 351 operaciju (`openapi/v1.json`). Samo četiri su ugovorene, a nemontirane (`CONTRACT_ONLY` u `server/contracts/inventory.ts`): `institution.enrollments.post`, `institution.role-confirmation.post`, `institution.role-revocation.post` i `ops.events.get`; `tests/contracts/contract-only.test.ts` čuva da popis odgovara montiranim rutama. Popis ruta s pojedinostima je u ugovoru (`server/contracts/routes/`) i u [server/http/README.md](server/http/README.md), a ranija zbirka u [docs/vs1-rute.md](docs/vs1-rute.md).
 
-| Metoda | Putanja              | Opis                                  |
-| ------ | -------------------- | ------------------------------------- |
-| GET    | `/api/v1/health`     | Provjera rada (`dist/server.js`)      |
-| GET    | `/api/documents`     | Dokumenti prijavljenog korisnika      |
-| GET    | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
-| PUT    | `/api/documents/:id` | Izmjena (samo vlasnik)                |
+Stari kostur `server/app.ts` ima `GET /api/documents`, `GET` i `PUT /api/documents/:id`; ostaje samo kao dimni test i ne pokreće se kao server.
 
 Unutarnje rute poslužitelj–poslužitelj (Aplication_server → Institution_server, ugovor Ductus#2028 c.6993786629 §2) montira `server/server.ts`: `POST /internal/v1/institutions` i `GET /internal/v1/institutions/{slug}` (`server/http/internal-institutions.ts`). Traže `Authorization: Bearer` jednak varijabli `DUCTURA_PROVISIONING_TOKEN` (najmanje 32 znaka, samo iz okoline); bez nje obje vraćaju 404. Nisu dio javnog ugovora `/api/v1`. Prijavljeni račun čita `GET /api/v1/me` (§3.3).
 
@@ -142,4 +154,4 @@ Ugovor je izvor koda (DAN-736, Ductura U4). Svaka ruta ima shemu u `server/contr
 
 Promjena koja lomi postojeće klijente nije dopuštena unutar iste glavne verzije. CI na svakom PR-u pokreće `pnpm contracts:breaking` prema ciljnoj grani. Zaštita je zatvorena prema zadanome (Ductus#87, c.6880838648): sheme se normaliziraju (sortirani ključevi, bez `description`, `example`, `examples` i `title`), a svaka preostala razlika postojeće rute, parametra, polja, statusa (i statusa greške), zaglavlja ili `x-*` ključa ruši CI, bez zaključivanja o tome sužava li ili proširuje (`anyOf`, `format`, ograničenja). Sigurne su samo: nova ruta ili metoda; novo neobavezno polje u odgovoru; novo neobavezno polje u zahtjevu kad je objekt i prije i poslije zatvoren (`additionalProperties: false`), jer ga nijedan stari zahtjev nije mogao poslati; promjena `description`, `example`, `examples` ili `title`. Nalaz je oblika `GET /api/v1/x <JSON pointer>: field removed`. Lomljiva promjena je nova glavna verzija, novi dokument i nova putanja.
 
-Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Ovaj korak pokriva 10 od 38 datoteka (platforma, prijava, jezik sučelja); ostalih 28 je u popisu `PENDING` i dobiva sheme u sljedećem PR-u. Popis se smije samo smanjivati.
+Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Svaka datoteka inventara ima shemu; popis `PENDING` je prazan i smije se samo smanjivati. Trenutačna verzija ugovora je 1.142.0 (`server/contracts/version.ts`).
