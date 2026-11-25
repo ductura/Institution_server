@@ -30,7 +30,7 @@ const REFUSALS = new Map<string, readonly [number, string]>([
   ["22009", [422, "invalid_input"]],
 ]);
 
-type Input = { action?: "confirm" | "counter" | "accept"; startsAt?: string };
+type Input = { action?: "confirm" | "counter" | "accept"; startsAt?: string; topic?: string };
 
 export function createConsultationSlotRoutesFor({ withActor }: { withActor: WithActor }): Route[] {
   const store = createConsultationSlotStore(withActor);
@@ -80,7 +80,7 @@ export function createConsultationSlotRoutesFor({ withActor }: { withActor: With
           } else {
             const rows =
               contract === REQUEST
-                ? await store.request(token, documentId, input.startsAt!)
+                ? await store.request(token, documentId, input.startsAt!, input.topic ?? null)
                 : await store.transition(
                     token,
                     documentId,

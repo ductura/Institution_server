@@ -77,6 +77,7 @@ describe("server/domain imports nothing outside itself", () => {
       "json",
       "notice",
       "ops",
+      "practice-journal",
       "privacy",
       "profile",
       "projection",
@@ -87,6 +88,7 @@ describe("server/domain imports nothing outside itself", () => {
       "sync",
       "text",
       "time",
+      "work-team",
     ]);
   });
 

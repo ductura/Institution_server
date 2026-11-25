@@ -32,6 +32,7 @@ const BASE: readonly (readonly [string, unknown])[] = [
   ["word_max", 3000],
   ["read_at", null],
   ["acknowledged_at", new Date("2026-11-03T09:20:00.000Z")],
+  ["purpose_catalog_version", 1],
 ];
 const row = (...over: (readonly [string, unknown])[]): object =>
   Object.fromEntries([...BASE, ...over]);
@@ -76,6 +77,7 @@ describe("student notice", () => {
         wordMax: 3000,
         readAt: null,
         acknowledgedAt: "2026-11-03T09:20:00.000Z",
+        purposeCatalogVersion: 1,
       },
     });
     expect(seen[1]!.values).toEqual([A]);
@@ -127,6 +129,9 @@ describe("student notice", () => {
       ["word_min", 0],
       ["ai_purposes", [1]],
       ["title", ""],
+      ["purpose_catalog_version", 0],
+      ["purpose_catalog_version", "1"],
+      ["purpose_catalog_version", null],
     ];
     for (const bad of bads) {
       expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
@@ -134,5 +139,12 @@ describe("student notice", () => {
       );
     }
     expect(noticeOf([row(), row()])).toBeNull();
+  });
+
+  it("reads the purpose catalog of the version, as the assistant request sends it back", async () => {
+    const { port, seen } = reader([actorRow(USER)], [row(["purpose_catalog_version", 2])]);
+    const read = await port.read(TOKEN, A);
+    expect(read.ok && read.value.purposeCatalogVersion).toBe(2);
+    expect(seen[1]!.text).toContain("v.purpose_catalog_version");
   });
 });

@@ -60,6 +60,8 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
+  createWorkTeamRoutesFor,
   createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -70,6 +72,11 @@ import {
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
+  createWorkRubricRoutesFor,
+  createWorkTemplateRoutesFor,
+  createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createReturnForRevisionRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
@@ -79,6 +86,7 @@ import {
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
   createStaffAffiliationRouteFor,
   createStudentNotesRoutesFor,
@@ -126,7 +134,11 @@ const TEACHER_READ_ROUTES = [
   "teacher.assignment-submissions.post",
 ] as const;
 
-const TEACHER_ROSTER_ROUTES = ["teacher.course-students.get", "teacher.assignment-overview.get"];
+const TEACHER_ROSTER_ROUTES = [
+  "teacher.course-students.get",
+  "teacher.assignment-overview.get",
+  "teacher.assignment-follow-up.get",
+];
 
 export const DAN_803: readonly string[] = [
   "student.assignments.get",
@@ -241,6 +253,27 @@ const SRV_1408 = [
   "institution.teaching-group-members.put",
 ];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
+// SRV-V19-DNEVNIK-RUTE: the six routes of the practice journal.
+const SRV_V19_DNEVNIK = [
+  "practice.placements.post",
+  "practice.placements.get",
+  "practice.entries.get",
+  "practice.entries.post",
+  "practice.signoffs.post",
+  "practice.signoffs.get",
+];
+// SRV-V19-GRUPA-RUTE: the nine routes of the work teams.
+const SRV_V19_GRUPA = [
+  "institution.assignment-team-setting.put",
+  "institution.assignment-team-setting.get",
+  "student.work-team.get",
+  "student.work-team.post",
+  "teacher.work-teams.get",
+  "teacher.work-teams.post",
+  "teacher.work-team-member.post",
+  "student.work-team-contribution.get",
+  "teacher.work-team-contribution.get",
+];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -258,6 +291,7 @@ const SRV_MENTOR_2 = [
 const SRV_27 = [
   "teacher.course-students.get",
   "teacher.assignment-overview.get",
+  "teacher.assignment-follow-up.get",
   "teacher.submission-receipt.get",
   ...SRV_31,
 ] as const;
@@ -432,7 +466,14 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-1108: the deadline extensions of an assignment over the main database.
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
-    ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
+    ids: [
+      "teacher.deadline-extensions.get",
+      "teacher.deadline-extension.post",
+      // SRV-NF4-IZNIMKA-ZAPIS: the late-submission exceptions share the port.
+      "teacher.late-exceptions.get",
+      "teacher.late-exception.post",
+      "student.late-exceptions.get",
+    ],
     routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -450,6 +491,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createStudentDataExportRoutesFor(databases.main, process.env, process.cwd())",
     ids: [
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",
@@ -587,6 +629,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createPracticeJournalRoutesFor(databases.main)",
+    ids: SRV_V19_DNEVNIK,
+    routes: () => createPracticeJournalRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createWorkTeamRoutesFor(databases.main)",
+    ids: SRV_V19_GRUPA,
+    routes: () => createWorkTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -665,6 +717,35 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMilestoneTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createAssignmentRubricRoutesFor(databases.main)",
+    ids: [
+      "teacher.assignment-rubric.get",
+      "teacher.assignment-rubric.put",
+      "student.assignment-rubric.get",
+    ],
+    routes: () => createAssignmentRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createWorkRubricRoutesFor(databases.main)",
+    ids: ["teacher.work-rubric.get", "teacher.work-rubric-mark.put"],
+    routes: () => createWorkRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createWorkTemplateRoutesFor(databases.main)",
+    ids: ["institution.work-template.get", "institution.work-template.put"],
+    routes: () => createWorkTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createAssignmentTemplateRoutesFor(databases.main)",
+    ids: ["teacher.assignment-template.put", "student.assignment-template.get"],
+    routes: () => createAssignmentTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createFormatRulesRoutesFor(databases.main)",
+    ids: ["student.assignment-format-rules.get"],
+    routes: () => createFormatRulesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createReturnForRevisionRoutesFor(databases.main)",
     ids: ["work.return-for-revision.post"],
     routes: () => createReturnForRevisionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -724,8 +805,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      // SRV-NF1-PREDANO: the same states for every own assignment at once.
+      "student.assignment-submissions.get",
     ],
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-9C, INT-31: the receipt PDF over the main database and the pipeline's origin.
+    call: "...createReceiptPdfRoutesFor(databases.main, APP_ORIGIN)",
+    ids: [...SRV_9C],
+    routes: () => createReceiptPdfRoutesFor(NO_ACTOR, null).map((route) => route.contract.id),
   },
   {
     // SRV-NG: the notice of the current version over the main database.
@@ -891,6 +980,7 @@ describe("CONTRACT_ONLY", () => {
         "collaboration.revision-requests.post",
         "institution.acknowledgment.post",
         "public.verification.post",
+        ...SRV_9C,
         ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
         ...SRV_02,
       ]
@@ -948,10 +1038,14 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
+      "teacher.late-exceptions.get",
+      "teacher.late-exception.post",
+      "student.late-exceptions.get",
       "institution.legal-holds.get",
       "institution.legal-holds.post",
       "institution.legal-hold-release.post",
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",
@@ -993,6 +1087,8 @@ describe("routes the entry point mounts itself", () => {
       "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
+      ...SRV_V19_DNEVNIK,
+      ...SRV_V19_GRUPA,
       ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",
@@ -1021,6 +1117,16 @@ describe("routes the entry point mounts itself", () => {
       "work.milestone-plan.get",
       "work.milestone-plan.add.post",
       "work.milestone-plan.apply-template.post",
+      "teacher.assignment-rubric.get",
+      "teacher.assignment-rubric.put",
+      "student.assignment-rubric.get",
+      "teacher.work-rubric.get",
+      "teacher.work-rubric-mark.put",
+      "institution.work-template.get",
+      "institution.work-template.put",
+      "teacher.assignment-template.put",
+      "student.assignment-template.get",
+      "student.assignment-format-rules.get",
       "work.return-for-revision.post",
       "work.source-notes.get",
       "work.source-notes.post",
@@ -1034,6 +1140,9 @@ describe("routes the entry point mounts itself", () => {
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      "student.assignment-submissions.get",
+      "student.receipt-pdf.get",
+      "teacher.receipt-pdf.get",
       "student.notice.get",
       "profile.staff-affiliation.get",
       "public.verification.post",

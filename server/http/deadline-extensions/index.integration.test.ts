@@ -169,3 +169,154 @@ describe("teacher.deadline-extension.post", () => {
     expect(got.status).toBe(503);
   });
 });
+
+// SRV-NF4-IZNIMKA-ZAPIS: the late-submission exception routes over a fake port.
+describe("late-submission exception routes", () => {
+  const LATE_LIST = vectorsOf("teacher.late-exceptions.get");
+  const LATE_ADD = vectorsOf("teacher.late-exception.post");
+  const OWN = vectorsOf("student.late-exceptions.get");
+  let answer: () => Promise<unknown> = async () => ({ status: "not_found" });
+
+  async function startLate(): Promise<string> {
+    const port = {
+      listLateExceptions: (...args: unknown[]) => (calls.push(["list", ...args]), answer()),
+      grantLateException: (...args: unknown[]) => (calls.push(["grant", ...args]), answer()),
+      listOwnLateExceptions: (...args: unknown[]) => (calls.push(["own", ...args]), answer()),
+    } as unknown as DeadlineExtensions;
+    running = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      databases: createDatabases(),
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      routes: createDeadlineExtensionRoutes(port),
+    });
+    return `http://127.0.0.1:${running.port}/api/v1`;
+  }
+  afterEach(() => {
+    answer = async () => ({ status: "not_found" });
+  });
+
+  const refusalOf = (v: Vector) => () =>
+    v.response.status === 503
+      ? Promise.reject(new Error("izmisljena greska"))
+      : Promise.resolve(
+          v.response.status === 401
+            ? { status: "unauthorized" }
+            : v.code === "invalid_input"
+              ? { status: "invalid_input" }
+              : { status: "not_found" },
+        );
+
+  it.each(LATE_LIST.map((v) => [v.name, v] as const))("teacher list vector %s", async (_n, v) => {
+    answer = async () =>
+      v.response.status === 200
+        ? { status: "read", exceptions: v.response.body.exceptions }
+        : refusalOf(v)();
+    const base = await startLate();
+    const got = await fetch(
+      `${base}/teacher/assignments/${v.request.params.assignmentId}/late-submission-exceptions`,
+      v.request.headers === undefined ? {} : { headers: v.request.headers },
+    );
+    await expectAnswer(got, v);
+  });
+
+  it.each(OWN.map((v) => [v.name, v] as const))("student own vector %s", async (_n, v) => {
+    answer = async () =>
+      v.response.status === 200
+        ? { status: "read", exceptions: v.response.body.exceptions }
+        : refusalOf(v)();
+    const base = await startLate();
+    const got = await fetch(
+      `${base}/student/assignments/${v.request.params.assignmentId}/late-submission-exceptions`,
+      v.request.headers === undefined ? {} : { headers: v.request.headers },
+    );
+    await expectAnswer(got, v);
+  });
+
+  const SHAPED = LATE_ADD.filter((v) =>
+    [
+      "grant",
+      "reason-all-refused",
+      "one-without-student",
+      "unknown-reason",
+      "unknown-field",
+      "not-found",
+      "not-later",
+      "unauthorized",
+      "unavailable",
+      "invalid-json",
+      "unsupported-media-type",
+    ].includes(v.name),
+  );
+  it.each(SHAPED.map((v) => [v.name, v] as const))("grant vector %s", async (_n, v) => {
+    answer = async () =>
+      v.response.status === 201
+        ? { status: "granted", exception: v.response.body.exception }
+        : refusalOf(v)();
+    const base = await startLate();
+    const got = await fetch(
+      `${base}/teacher/assignments/${v.request.params.assignmentId}/late-submission-exceptions`,
+      {
+        method: "POST",
+        headers: v.request.headers ?? {},
+        body: v.request.rawBody ?? JSON.stringify(v.request.body),
+      },
+    );
+    await expectAnswer(got, v);
+  });
+
+  it("a malformed assignment id is 404 before the port, on all three routes", async () => {
+    const base = await startLate();
+    const headers = LATE_LIST[0]!.request.headers!;
+    for (const role of ["teacher", "student"]) {
+      const got = await fetch(`${base}/${role}/assignments/nije-uuid/late-submission-exceptions`, {
+        headers,
+      });
+      expect(got.status).toBe(404);
+    }
+    const post = LATE_ADD.find((v) => v.name === "grant")!;
+    const got = await fetch(`${base}/teacher/assignments/nije-uuid/late-submission-exceptions`, {
+      method: "POST",
+      headers: post.request.headers ?? {},
+      body: JSON.stringify(post.request.body),
+    });
+    expect(got.status).toBe(404);
+    expect(calls).toEqual([]);
+  });
+
+  it("sends the ids in lower case and nothing but what the contract names", async () => {
+    const base = await startLate();
+    const grant = LATE_ADD.find((v) => v.name === "grant")!;
+    const studentId = String(grant.request.body!.studentId).toUpperCase();
+    await fetch(`${base}/teacher/assignments/${A.toUpperCase()}/late-submission-exceptions`, {
+      method: "POST",
+      headers: grant.request.headers ?? {},
+      body: JSON.stringify({ ...grant.request.body, studentId }),
+    });
+    const body = grant.request.body!;
+    expect(calls).toEqual([
+      [
+        "grant",
+        expect.any(String),
+        {
+          assignmentId: A,
+          studentId: studentId.toLowerCase(),
+          untilAt: body.untilAt,
+          reasonId: body.reasonId,
+        },
+      ],
+    ]);
+  });
+
+  it("an answer outside the contract is 503", async () => {
+    answer = async () => ({ status: "granted", exception: { id: "nije-uuid" } });
+    const base = await startLate();
+    const grant = LATE_ADD.find((v) => v.name === "grant")!;
+    const got = await fetch(`${base}/teacher/assignments/${A}/late-submission-exceptions`, {
+      method: "POST",
+      headers: grant.request.headers ?? {},
+      body: JSON.stringify(grant.request.body),
+    });
+    expect(got.status).toBe(503);
+  });
+});

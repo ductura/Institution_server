@@ -28,11 +28,20 @@ type Fake = { assignments: string[]; settings: { key: string | null; value: unkn
 const INSTITUTIONS: Record<string, Fake> = {
   [COOKIE.split("=")[1]!]: {
     assignments: [ID_A],
-    settings: [{ key: "lekta.profile", value: "agr-diplomski" }],
+    settings: [
+      { key: "lekta.profile", value: "agr-diplomski" },
+      { key: "citation.style", value: "apa" },
+    ],
   },
 };
 const SECOND = "izmisljeni-token-druge-ustanove-00000000000";
 INSTITUTIONS[SECOND] = { assignments: [ID_B], settings: [{ key: null, value: null }] };
+// A third institution whose stored style is outside the catalogue (a stale row).
+const THIRD = "izmisljeni-token-trece-ustanove-00000000000";
+INSTITUTIONS[THIRD] = {
+  assignments: [ID_B],
+  settings: [{ key: "citation.style", value: "mla" }],
+};
 
 const withActor = (async (token: string, fn: (tx: unknown) => Promise<unknown>) => {
   const fake = INSTITUTIONS[token];
@@ -115,6 +124,7 @@ describe("student.text-check-config.get", () => {
           "hole",
         ],
         lektaProfileId: "agr-diplomski",
+        citationStyle: "apa",
       },
     });
     expect(b).toEqual({
@@ -122,9 +132,19 @@ describe("student.text-check-config.get", () => {
       body: {
         enabledCheckIds: ["paste", "claim", "long", "term", "abbr", "hole"],
         lektaProfileId: null,
+        citationStyle: "fpzg",
       },
     });
-    expect(Object.keys(a.body).sort()).toEqual(["enabledCheckIds", "lektaProfileId"]);
+    expect(Object.keys(a.body).sort()).toEqual([
+      "citationStyle",
+      "enabledCheckIds",
+      "lektaProfileId",
+    ]);
+  });
+
+  it("answers the default style for an unset or unknown stored style, never the stored text", async () => {
+    expect((await get(url(ID_B), THIRD)).body.citationStyle).toBe("fpzg");
+    expect((await get(url(ID_B), SECOND)).body.citationStyle).toBe("fpzg");
   });
 
   it("answers 404 for an assignment outside the caller's workspace, and for a malformed id", async () => {

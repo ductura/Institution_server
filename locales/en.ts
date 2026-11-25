@@ -2076,6 +2076,13 @@ const en = {
     versionConflict:
       "The assignment has changed in the meantime. Load the latest version and try again.",
     practiceAssignment: "Practice assignments are ungraded.",
+    placementClosed: "The date of the entry is outside the period of the placement.",
+    nothingToSign: "There are no entries to sign up to the chosen date.",
+    alreadyAllocated: "The reviews are already allocated, so the round can no longer be changed.",
+    alreadyReviewed: "This work has already been reviewed.",
+    closed: "The time for this action has passed.",
+    tooFewSubmissions:
+      "Too few works are submitted for the review to stay anonymous. Wait for more submissions.",
     alreadySubmitted:
       "The work has already been submitted, so the declaration can no longer be changed.",
     attachmentStale: "An attached conversation has changed in the meantime. Attach it again.",

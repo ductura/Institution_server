@@ -52,16 +52,29 @@ function call(method: string, path: string, token?: string, body?: string, origi
   });
 }
 
-function dbSlot(state: string, startsAt = START) {
-  return [{ id: ID, startsAt: new Date(startsAt), proposedAt: new Date(PROPOSED), state }];
+const TOPIC = "Izmišljena tema: struktura uvoda";
+
+function dbSlot(state: string, startsAt = START, topic: string | null = null) {
+  return [{ id: ID, startsAt: new Date(startsAt), proposedAt: new Date(PROPOSED), state, topic }];
 }
 
 describe("work consultation slots", () => {
   it("returns an empty list and creates a student's request", async () => {
-    query.mockReturnValueOnce([]).mockReturnValueOnce(dbSlot("requested"));
+    query
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([{ id: ID }])
+      .mockReturnValueOnce(dbSlot("requested"));
     const empty = await call("GET", PATH, STUDENT);
     expect(empty.status).toBe(200);
     expect(await empty.json()).toEqual({ slots: [] });
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      STUDENT,
+      expect.stringMatching(
+        /institution\.consultation_slot_details\(\$1\) WHERE state IN \('requested', 'countered', 'confirmed'\)/u,
+      ),
+      ["doc-izmisljeni"],
+    );
 
     const created = await call("POST", PATH, STUDENT, JSON.stringify({ startsAt: START }));
     expect(created.status).toBe(201);
@@ -71,13 +84,54 @@ describe("work consultation slots", () => {
       startsAt: START,
       proposedAt: PROPOSED,
       state: "requested",
+      topic: null,
     });
     expect(query).toHaveBeenNthCalledWith(
       2,
       STUDENT,
-      expect.stringContaining("institution.request_consultation_slot($1, $2::timestamptz)"),
-      ["doc-izmisljeni", START],
+      expect.stringContaining(
+        "institution.request_consultation_slot_detail($1, $2::timestamptz, $3::text,",
+      ),
+      ["doc-izmisljeni", START, null],
     );
+    expect(query).toHaveBeenNthCalledWith(
+      3,
+      STUDENT,
+      expect.stringContaining(
+        "institution.consultation_slot_details($1) WHERE id = $2::uuid AND state IN",
+      ),
+      ["doc-izmisljeni", ID],
+    );
+  });
+
+  it("passes a topic to the database and returns it in the list", async () => {
+    query
+      .mockReturnValueOnce([{ id: ID }])
+      .mockReturnValueOnce(dbSlot("requested", START, TOPIC))
+      .mockReturnValueOnce(dbSlot("requested", START, TOPIC));
+    const created = await call(
+      "POST",
+      PATH,
+      STUDENT,
+      JSON.stringify({ startsAt: START, topic: TOPIC }),
+    );
+    expect(created.status).toBe(201);
+    expect(await created.json()).toMatchObject({ state: "requested", topic: TOPIC });
+    expect(query).toHaveBeenNthCalledWith(1, STUDENT, expect.any(String), [
+      "doc-izmisljeni",
+      START,
+      TOPIC,
+    ]);
+    const listed = await call("GET", PATH, TEACHER);
+    expect(await listed.json()).toEqual({
+      slots: [{ id: ID, startsAt: START, proposedAt: PROPOSED, state: "requested", topic: TOPIC }],
+    });
+  });
+
+  it("answers 503, not a closed state, when the written slot is no longer open", async () => {
+    query.mockReturnValueOnce([{ id: ID }]).mockReturnValueOnce([]);
+    const response = await call("PATCH", ITEM, TEACHER, '{"action":"confirm"}');
+    expect(response.status).toBe(503);
   });
 
   it.each([
@@ -87,10 +141,16 @@ describe("work consultation slots", () => {
   ] as const)(
     "passes the transition to the database for %s %j",
     async (token, input, state, startsAt, time) => {
-      query.mockReturnValueOnce(dbSlot(state, startsAt));
+      query.mockReturnValueOnce([{ id: ID }]).mockReturnValueOnce(dbSlot(state, startsAt, TOPIC));
       const updated = await call("PATCH", ITEM, token, JSON.stringify(input));
       expect(updated.status).toBe(200);
-      expect(await updated.json()).toEqual({ id: ID, startsAt, proposedAt: PROPOSED, state });
+      expect(await updated.json()).toEqual({
+        id: ID,
+        startsAt,
+        proposedAt: PROPOSED,
+        state,
+        topic: TOPIC,
+      });
       expect(query).toHaveBeenCalledWith(
         token,
         expect.stringContaining(
@@ -111,6 +171,13 @@ describe("work consultation slots", () => {
     ["PATCH", ITEM, TEACHER, '{"action":"counter"}', 422],
     ["PATCH", ITEM, TEACHER, JSON.stringify({ action: "confirm", startsAt: START }), 422],
     ["PATCH", ITEM, STUDENT, '{"action":"request"}', 422],
+    ["PATCH", ITEM, STUDENT, '{"action":"withdraw"}', 422],
+    ["PATCH", ITEM, TEACHER, '{"action":"decline"}', 422],
+    ["PATCH", ITEM, TEACHER, '{"action":"cancel"}', 422],
+    ["POST", PATH, STUDENT, JSON.stringify({ startsAt: START, topic: "   " }), 422],
+    ["POST", PATH, STUDENT, JSON.stringify({ startsAt: START, topic: "" }), 422],
+    ["POST", PATH, STUDENT, JSON.stringify({ startsAt: START, topic: "a".repeat(201) }), 422],
+    ["POST", PATH, STUDENT, JSON.stringify({ startsAt: START, topic: null }), 422],
   ] as const)(
     "refuses an invalid %s %s before querying the database",
     async (method, path, token, body, status) => {

@@ -21,8 +21,15 @@ import { slotId, slotOf, slotStart } from "./slot.ts";
 
 export type ScheduledJobMode = "execute" | "dry-run";
 
-/** Before D-30, the only jobs that may change data. Everything else is a dry run. */
-export const EXECUTE_ALLOWED: readonly string[] = Object.freeze(["purge_ended_sessions"]);
+/**
+ * Before D-30, the only jobs that may change data. Everything else is a dry run.
+ * purge_orphan_work_data by the owner's decision of 24 Nov 2026 (SRV-MENTOR-3C):
+ * it removes only rows of works whose document no longer exists.
+ */
+export const EXECUTE_ALLOWED: readonly string[] = Object.freeze([
+  "purge_ended_sessions",
+  "purge_orphan_work_data",
+]);
 
 /** The one field of a scheduled job's body: the id of its slot (slot.ts). */
 export const SLOT_FIELD = "slotId";

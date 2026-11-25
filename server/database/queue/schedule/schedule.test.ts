@@ -85,11 +85,31 @@ const OLD = MIDNIGHT - 31 * DAY;
 const RECENT = MIDNIGHT - 29 * DAY;
 
 describe("the execute gate (acceptance 3)", () => {
-  it("before D-30 only purge_ended_sessions may execute", () => {
-    expect(EXECUTE_ALLOWED).toEqual(["purge_ended_sessions"]);
+  it("before D-30 only purge_ended_sessions and purge_orphan_work_data may execute", () => {
+    // Exactly these two (owner decision of 24 Nov 2026 for the second); any
+    // other name added here is a new decision and must fail this test.
+    expect(EXECUTE_ALLOWED).toEqual(["purge_ended_sessions", "purge_orphan_work_data"]);
     expect(Object.isFrozen(EXECUTE_ALLOWED)).toBe(true);
-    expect(effectiveMode({ name: "purge_ended_sessions", mode: "execute" })).toBe("execute");
-    expect(effectiveMode({ name: "purge_ended_sessions", mode: "dry-run" })).toBe("dry-run");
+    for (const name of EXECUTE_ALLOWED) {
+      expect(effectiveMode({ name, mode: "execute" })).toBe("execute");
+      expect(effectiveMode({ name, mode: "dry-run" })).toBe("dry-run");
+    }
+  });
+
+  it.each([
+    "daily_root",
+    "input_rhythm_purge",
+    "stale_drafts",
+    "purge_orphan_work_data_all",
+    "PURGE_ORPHAN_WORK_DATA",
+    "purge_orphan_work_data ",
+    "",
+  ])("every other job, %j, stays a dry run even when it asks to execute", (name) => {
+    expect(effectiveMode({ name, mode: "execute" })).toBe("dry-run");
+  });
+
+  it("the list cannot be changed at run time", () => {
+    expect(() => (EXECUTE_ALLOWED as string[]).push("daily_root")).toThrow(TypeError);
     expect(effectiveMode({ name: "daily_root", mode: "execute" })).toBe("dry-run");
   });
 

@@ -12,6 +12,12 @@
 // row_malformed; the list is never partial. Unlike my-access-log.ts, a row is
 // read only through its own keys, so an inherited or a `__proto__` column is
 // none, and a row that throws is row_malformed, never a rejected promise.
+//
+// SRV-NF4-IZNIMKA-PREDAJA (NF-4, NZ-5 B): the same statement reads the
+// caller's own latest late-submission exception per assignment through
+// app.student_late_exception_until (20261219320000), the bridge the
+// submission request honours; null for none. Only the caller's own record is
+// ever read, so no other student's exception can reach the answer.
 
 import type { AppError, Result } from "../domain/index.ts";
 
@@ -41,7 +47,13 @@ export const MY_ASSIGNMENT_WORK_ERRORS: readonly AppError[] = [
 ];
 
 export type WorkState = "not_started" | "in_progress" | "submitted";
-export type AssignmentWork = { assignmentId: string; workState: WorkState };
+export type LateException = { untilAt: string };
+export type AssignmentWork = {
+  assignmentId: string;
+  workState: WorkState;
+  /** The caller's own latest late-submission exception; absent when there is none. */
+  lateException?: LateException;
+};
 
 export type MyAssignmentWorkReader = {
   /** One row per assignment of the caller's open student courses, by assignmentId. */
@@ -52,7 +64,8 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // Keep the workspace row if the submission function returns no row, so the
 // parser refuses an incomplete result instead of silently hiding an assignment.
-const SQL = `SELECT w.assignment_id, w.document_id, s.state
+const SQL = `SELECT w.assignment_id, w.document_id, s.state,
+       app.student_late_exception_until(w.assignment_id) AS late_until
   FROM app.student_workspace() w
   LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`;
 
@@ -79,19 +92,37 @@ function isDocumentId(value: unknown): value is string {
 
 type SubmissionState = "none" | "ceka" | "potvrdeno";
 
+const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+/**
+ * The exception time as Date.toISOString writes it: null for none, undefined
+ * for a value the port cannot vouch for (not a Date, not finite, or outside
+ * the years 1000 to 9999 the contract's Instant pattern admits).
+ */
+function lateUntilOf(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (!(value instanceof Date) || !Number.isFinite(value.getTime())) return undefined;
+  const iso = value.toISOString();
+  return INSTANT.test(iso) && iso >= "1000" ? iso : undefined;
+}
+
+type Work = [string, WorkState, SubmissionState, string | null];
+
 /** One validated row, including the submission state for duplicate checks. */
-function workOf(row: unknown): [string, WorkState, SubmissionState] | null {
+function workOf(row: unknown): Work | null {
   if (typeof row !== "object" || row === null) return null;
   const id = own(row, "assignment_id");
   const document = own(row, "document_id");
   const submission = own(row, "state");
+  const until = lateUntilOf(own(row, "late_until"));
   if (typeof id !== "string" || !UUID.test(id)) return null;
   if (document !== null && !isDocumentId(document)) return null;
+  if (until === undefined) return null;
   if (submission === "none") {
-    return [id, document === null ? "not_started" : "in_progress", submission];
+    return [id, document === null ? "not_started" : "in_progress", submission, until];
   }
   return document !== null && (submission === "ceka" || submission === "potvrdeno")
-    ? [id, "submitted", submission]
+    ? [id, "submitted", submission, until]
     : null;
 }
 
@@ -107,18 +138,30 @@ function codeOf(thrown: unknown): string | undefined {
 /** The state per assignment; repeated rows (several documents) must agree, else null. */
 function statesOf(rows: unknown): AssignmentWork[] | null {
   if (!Array.isArray(rows)) return null;
-  const states = new Map<string, { state: WorkState; submission: SubmissionState }>();
+  const states = new Map<
+    string,
+    { state: WorkState; submission: SubmissionState; until: string | null }
+  >();
   for (const row of rows) {
     const work = workOf(row);
     if (work === null) return null;
-    const [id, state, submission] = work;
+    const [id, state, submission, until] = work;
     const seen = states.get(id);
-    if (seen !== undefined && (seen.state !== state || seen.submission !== submission)) return null;
-    states.set(id, { state, submission });
+    if (
+      seen !== undefined &&
+      (seen.state !== state || seen.submission !== submission || seen.until !== until)
+    ) {
+      return null;
+    }
+    states.set(id, { state, submission, until });
   }
   return [...states]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([assignmentId, { state }]) => ({ assignmentId, workState: state }));
+    .map(([assignmentId, { state, until }]) =>
+      until === null
+        ? { assignmentId, workState: state }
+        : { assignmentId, workState: state, lateException: { untilAt: until } },
+    );
 }
 
 export function createMyAssignmentWorkReader(withActor: WithActor): MyAssignmentWorkReader {

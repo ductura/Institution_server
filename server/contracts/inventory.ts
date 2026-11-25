@@ -117,6 +117,31 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
   },
+  // SRV-V19-GRUPA-UGOVOR (Ductus#2055, val 19): work teams on an assignment; Ductus has no such route.
+  "app/api/institution/assignments/[assignmentId]/team-setting/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/student/assignments/[assignmentId]/team/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/student/assignments/[assignmentId]/team/contribution/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/[teamId]/members/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/[teamId]/contribution/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
   "app/api/courses/[id]/team/view/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7076689558",
@@ -290,6 +315,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
   },
+  // SRV-NF1-PREDANO (Ductus#2055 c.7145546227, NF-1 P-6): when each own submission was
+  // confirmed, for the same set of assignments; Ductus has no such route.
+  "app/api/student/assignment-submissions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7145546227",
+  },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],
@@ -415,6 +446,52 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
   // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV (Ductus#2052 c.7092390512, P-1, rule 13): the student's explanation of a finding; Ductus has no such route.
+  // SRV-V19-DNEVNIK-UGOVOR (Ductus#2055 c.7146962118, val 19): the practice journal beside a mentorship; Ductus has no such route.
+  "app/api/practice/placements/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
+  },
+  "app/api/practice/placements/[placementId]/entries/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
+  },
+  "app/api/practice/placements/[placementId]/signoffs/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
+  },
+  // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055 c.7149250861, val 19): anonymous peer review among students; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/teacher/assignments/[assignmentId]/peer-review/allocations/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/teacher/assignments/[assignmentId]/peer-review/overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/teacher/assignments/[assignmentId]/peer-review/reviews/[reviewId]/withdrawal/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/student/assignments/[assignmentId]/peer-review/tasks/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/student/peer-review/tasks/[taskId]/work/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/student/peer-review/tasks/[taskId]/review/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  "app/api/student/assignments/[assignmentId]/peer-review/received/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
   // SRV-MENTOR-2 (NF-6, MK-12 and MK-14): thesis forms, mentor consent, stage after submission.
   "app/api/institution/thesis-forms/route.ts": {
     methods: ["GET", "POST"],
@@ -481,6 +558,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
   },
+  // SRV-NF4-KASNA-POLJE (Ductus#2055, orchestrator decision A): the teacher sets whether a
+  // submission after the deadline is allowed, a student of the course reads it.
+  "app/api/institution/assignments/[assignmentId]/late-submission/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
+  "app/api/student/assignments/[assignmentId]/late-submission/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   // SRV-IZJAVA-PITANJE (Ductus#2055 c.7114546002, owner decision of 23. 11. 2026): the
   // teacher's optional question with the declaration.
   "app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts": {
@@ -495,6 +582,12 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/origin-composition/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  // SRV-KARTA-RASPON (Ductus#2055 c.7140935386, NF-5 PG-2): the ranges of origin of a revision of a work; Ductus has no such route.
+  // SRV-KARTA-RASPON-RUTA (Ductus#2055, variant A): POST, the owner records the ranges of a revision once.
+  "app/api/works/[documentId]/origin-segments/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7140935386",
   },
   // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
   "app/api/teacher/works/[documentId]/working-criteria/route.ts": {
@@ -573,6 +666,12 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/notice/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7019668458",
+  },
+  // SRV-ASIST-CITANJE (Ductus#2055 c.7142266537): Ductus has no list of the
+  // student's assistant conversations.
+  "app/api/student/assignments/[assignmentId]/assistant-conversations/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7142266537",
   },
   // UGOVORI-API (Ductus#2028 c.7020597404, SRV-AV): Ductus reads the current
   // version in its teacher page, not in a route.
@@ -702,7 +801,7 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/teacher/comment-bank/[entryId]/route.ts": {
-    methods: ["DELETE"],
+    methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/works/[documentId]/review/route.ts": {
@@ -770,6 +869,24 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-V17-RUBRIC-DEF (Ductus#2055, val 17): the rubric of an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
+  "app/api/student/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
+  // SRV-V17-RUBRIC-LEVEL (Ductus#2055, val 17): the teacher's mark of a level per rubric criterion on a work; Ductus has no such route.
+  "app/api/teacher/works/[documentId]/rubric/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153958168",
+  },
+  "app/api/teacher/works/[documentId]/rubric/[criterionId]/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153958168",
+  },
   // SRV-1521 (Ductus#2052, N-15 etape): the template of milestones and the plan of one work; Ductus has no such route.
   "app/api/institution/milestone-template/route.ts": {
     methods: ["GET", "PUT"],
@@ -786,6 +903,25 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/milestone-plan/apply-template/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
+  },
+  // SRV-V17-TEMPLATE-ADMIN (val 17): the work template of the institution per work type; Ductus has no such route.
+  "app/api/institution/work-templates/[workType]/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146993897",
+  },
+  // SRV-V17-TEMPLATE-ASSIGN (val 17): the work template frozen on an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/template/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
+  },
+  "app/api/student/assignments/[assignmentId]/template/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
+  },
+  // SRV-V17-FORMAT-RULES (val 17): the format rules of an assignment for the check before submission; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/format-rules/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149374472",
   },
   // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
   "app/api/works/[documentId]/return-for-revision/route.ts": {
@@ -824,6 +960,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  // SRV-NF4-POTVRDE-DORADE (Ductus#2055): notice and revision follow-up beside the overview; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/follow-up/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
@@ -849,6 +990,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-NF4-IZNIMKA-ZAPIS (Ductus#2055, plan NF-4, NZ-5 B): the late-submission exception of one student; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/late-submission-exceptions/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153957738",
+  },
+  "app/api/student/assignments/[assignmentId]/late-submission-exceptions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153957738",
+  },
   // SRV-1306 (plan M10.3): legal holds of the institution; Ductus has no such route.
   "app/api/institution/legal-holds/route.ts": {
     methods: ["GET", "POST"],
@@ -862,6 +1012,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/student-data-exports/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052",
+  },
+  // SRV-NF7-IZVOZ-STUDENT (Ductus#2055): the person and state of each export beside the list; Ductus has no such route.
+  "app/api/institution/student-data-export-students/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
   },
   "app/api/institution/student-data-exports/[exportId]/approve/route.ts": {
     methods: ["POST"],
@@ -951,8 +1106,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
   "institution.enrollment-code-state.get",
-  "student.receipt-pdf.get",
-  "teacher.receipt-pdf.get",
   "ops.events.get",
 ];
 

@@ -28,6 +28,8 @@ export {
 } from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export { createPracticeJournalStore } from "./practice-journal/index.ts";
+export { createWorkTeamStore, type ContributionSource } from "./work-team/index.ts";
 export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
 export {
   createInstitutionConfigStore,
@@ -208,6 +210,7 @@ export type {
   AssignmentContent,
   AssignmentCreateOutcome,
   AssignmentPublishOutcome,
+  AssignmentSetup,
   InstitutionAssignments,
 } from "./institution-assignments.ts";
 export {
@@ -266,6 +269,11 @@ export type {
   StoredSubmissionState,
   StoredWordRange,
 } from "./my-submission-state.ts";
+export { createMyAssignmentSubmissionsReader } from "./my-assignment-submissions.ts";
+export type {
+  MyAssignmentSubmissionsReader,
+  StoredAssignmentSubmission,
+} from "./my-assignment-submissions.ts";
 export {
   createStudentNoticeReader,
   STUDENT_NOTICE_DATABASE_ERROR,
@@ -433,6 +441,36 @@ export {
   type MilestoneTemplateItem,
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
+export {
+  createAssignmentRubric,
+  defaultRubricCriteria,
+  type AssignmentRubric,
+  type AssignmentRubricStore,
+  type RubricCriterion,
+} from "./assignment-rubric/index.ts";
+export {
+  createWorkRubric,
+  type WorkRubricLevel,
+  type WorkRubricMark,
+  type WorkRubricMarks,
+  type WorkRubricRefusal,
+  type WorkRubricStore,
+} from "./work-rubric/index.ts";
+export {
+  createWorkTemplate,
+  type WorkTemplate,
+  type WorkTemplateContent,
+  type WorkTemplateSection,
+  type WorkTemplateTitleField,
+  type WorkTemplateVersion,
+} from "./work-template/index.ts";
+export {
+  createAssignmentTemplate,
+  type AssignmentTemplate,
+  type AssignmentTemplateReadResult,
+  type AssignmentTemplateSetResult,
+  type FrozenAssignmentTemplate,
+} from "./assignment-template/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
@@ -484,6 +522,15 @@ export type {
   StudentAssignmentsReader,
 } from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
+export {
+  type ConversationSummary,
+  createStudentConversationsReader,
+  STUDENT_CONVERSATIONS_DATABASE_ERROR,
+  STUDENT_CONVERSATIONS_NOT_FOUND,
+  STUDENT_CONVERSATIONS_ROW_MALFORMED,
+  STUDENT_CONVERSATIONS_UNAUTHENTICATED,
+  type StudentConversationsReader,
+} from "./student-assistant-conversations.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export {
   createTeacherWork,
@@ -500,6 +547,10 @@ export {
   type OriginKindName,
   type OriginPart,
   type OriginRecordOutcome,
+  type OriginSegment,
+  type OriginSegmentInput,
+  type OriginSegmentsOutcome,
+  type OriginSegmentsRecordOutcome,
 } from "./origin-kind/index.ts";
 export {
   createDeclarationQuestionPort,
@@ -512,6 +563,11 @@ export {
   type SubmissionDeclarationGate,
   type SubmissionDeclarationGateAnswer,
 } from "./declaration/index.ts";
+export {
+  createLateSubmissionPort,
+  type LateSubmissionPort,
+  type LateSubmissionSetting,
+} from "./late-submission.ts";
 export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,

@@ -197,6 +197,17 @@ it("requests, approves, prepares and hands out a student's package once", async 
       expect((await call(ANA, "GET", BASE)).body.exports).toHaveLength(1);
       expect((await call(LEA, "GET", BASE)).body).toEqual({ exports: [] });
 
+      // SRV-NF7-IZVOZ-STUDENT: who each export is for, with the list's reach.
+      // Someone else's request is absent: a teacher of Ana and the
+      // administrator of another institution see none.
+      const STUDENTS = "/api/v1/institution/student-data-export-students";
+      const forAna = { exports: [{ exportId, studentId: ids.get("ana"), state: "ready" }] };
+      expect(await call(BORIS, "GET", STUDENTS)).toEqual({ status: 200, body: forAna });
+      expect(await call(IVA, "GET", STUDENTS)).toEqual({ status: 200, body: forAna });
+      expect(await call(ANA, "GET", STUDENTS)).toEqual({ status: 200, body: forAna });
+      for (const actor of [VESNA, LEA])
+        expect(await call(actor, "GET", STUDENTS)).toEqual({ status: 200, body: { exports: [] } });
+
       // The link without a session: the ZIP once, then 410.
       const link = `http://127.0.0.1:${server.port}/api/v1/student/data-export/${links[0]!.token}`;
       const first = await fetch(link);

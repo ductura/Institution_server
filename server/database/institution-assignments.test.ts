@@ -55,7 +55,19 @@ describe("createAssignment", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0]!.token).toBe(TOKEN);
     expect(seen[0]!.text).toContain("institution.create_assignment(");
-    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false]);
+    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false, false, false]);
+  });
+
+  it("passes practice and both setup rules after the content, in the RPC's order", async () => {
+    seen.length = 0;
+    const port = createInstitutionAssignments(answering([{ id: ID }]));
+    const setup = { externalToolsAllowed: true, aiSummaryOnly: false };
+    expect(await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, true, setup)).toEqual({
+      status: "created",
+      id: ID,
+    });
+    expect(seen[0]!.text).toMatch(/\$14::boolean,\s+\$15::boolean, \$16::boolean\s+\) AS id/);
+    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, true, true, false]);
   });
 
   it.each([

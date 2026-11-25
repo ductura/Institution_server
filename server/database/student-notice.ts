@@ -53,6 +53,8 @@ export type StoredNotice = {
   wordMax: number | null;
   readAt: string | null;
   acknowledgedAt: string | null;
+  /** The purpose catalog of the version (SRV-ASIST-CITANJE); not in the fingerprint. */
+  purposeCatalogVersion: number;
 };
 
 export type StudentNoticeReader = {
@@ -70,6 +72,7 @@ const ACTOR_SQL = "SELECT app.current_user_id() AS user_id";
 // teacher or mentor.
 const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instructions, v.work_type,
     v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.word_min, v.word_max,
+    v.purpose_catalog_version,
     (SELECT r.read_at FROM institution.notice_read r
       WHERE r.assignment_id = a.id AND r.student_id = (SELECT app.current_user_id())) AS read_at,
     (SELECT k.acknowledged_at FROM institution.notice_acknowledgment k
@@ -138,6 +141,7 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     "acknowledged_at",
   ].map((key) => instant(own(row, key)));
   const [wordMin, wordMax] = [bound(own(row, "word_min")), bound(own(row, "word_max"))];
+  const catalog = own(row, "purpose_catalog_version");
   if (
     typeof assignmentId !== "string" ||
     !UUID.test(assignmentId) ||
@@ -156,7 +160,10 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     readAt === undefined ||
     acknowledgedAt === undefined ||
     wordMin === undefined ||
-    wordMax === undefined
+    wordMax === undefined ||
+    !Number.isInteger(catalog) ||
+    (catalog as number) < 1 ||
+    (catalog as number) > 2_147_483_647
   ) {
     return null;
   }
@@ -175,6 +182,7 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     wordMax,
     readAt,
     acknowledgedAt,
+    purposeCatalogVersion: catalog as number,
   };
 }
 

@@ -21,11 +21,17 @@ const A = "00000000-0000-4000-8000-0000000000a1";
 const B = "00000000-0000-4000-8000-0000000000b2";
 const C = "00000000-0000-4000-8000-0000000000c3";
 // The columns as the driver names them; built from entries, as they are no camelCase names.
-const row = (id: unknown, document: unknown = null, state: unknown = "none"): object =>
+const row = (
+  id: unknown,
+  document: unknown = null,
+  state: unknown = "none",
+  lateUntil: unknown = null,
+): object =>
   Object.fromEntries([
     ["assignment_id", id],
     ["document_id", document],
     ["state", state],
+    ["late_until", lateUntil],
   ]);
 
 function reader(answer: unknown) {
@@ -198,7 +204,8 @@ describe("my assignment work: the state per assignment", () => {
     expect(r.seen).toEqual([
       {
         token: TOKEN,
-        text: `SELECT w.assignment_id, w.document_id, s.state
+        text: `SELECT w.assignment_id, w.document_id, s.state,
+       app.student_late_exception_until(w.assignment_id) AS late_until
   FROM app.student_workspace() w
   LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`,
         values: [],
@@ -228,5 +235,62 @@ describe("my assignment work: the state per assignment", () => {
         { assignmentId: C, workState: "submitted" },
       ],
     });
+  });
+
+  // SRV-NF4-IZNIMKA-PREDAJA: the caller's own latest late-submission exception.
+  it("carries the own exception's time only on its assignment, absent elsewhere", async () => {
+    const until = new Date("2026-12-03T13:00:00.000Z");
+    const r = reader([row(A, "d", "none", until), row(B), row(C, "c", "potvrdeno", until)]);
+    expect(await r.work.read(TOKEN)).toEqual({
+      ok: true,
+      value: [
+        {
+          assignmentId: A,
+          workState: "in_progress",
+          lateException: { untilAt: "2026-12-03T13:00:00.000Z" },
+        },
+        { assignmentId: B, workState: "not_started" },
+        {
+          assignmentId: C,
+          workState: "submitted",
+          lateException: { untilAt: "2026-12-03T13:00:00.000Z" },
+        },
+      ],
+    });
+    const absent = await reader([row(B)]).work.read(TOKEN);
+    expect(absent.ok && Object.hasOwn(absent.value[0] ?? {}, "lateException")).toBe(false);
+  });
+
+  it.each([
+    ["a string", "2026-12-03T13:00:00.000Z"],
+    ["a number", 1_796_302_800_000],
+    ["an invalid date", new Date(Number.NaN)],
+    ["a date before year 1000", new Date("0999-12-31T00:00:00.000Z")],
+    ["a date after year 9999", new Date("+010000-01-01T00:00:00.000Z")],
+    ["a missing column", undefined],
+    ["an object", { untilAt: "2026-12-03T13:00:00.000Z" }],
+  ])("refuses the whole answer for an exception time that is %s", async (_name, value) => {
+    const bad =
+      value === undefined
+        ? Object.fromEntries([
+            ["assignment_id", A],
+            ["document_id", null],
+            ["state", "none"],
+          ])
+        : row(A, null, "none", value);
+    expect(await reader([row(B), bad]).work.read(TOKEN)).toEqual(MALFORMED);
+  });
+
+  it("refuses rows of one assignment that disagree on the exception", async () => {
+    const until = new Date("2026-12-03T13:00:00.000Z");
+    expect(
+      await reader([row(A, "d", "none", until), row(A, "e", "none", null)]).work.read(TOKEN),
+    ).toEqual(MALFORMED);
+    expect(
+      await reader([
+        row(A, "d", "none", until),
+        row(A, "e", "none", new Date("2026-12-04T13:00:00.000Z")),
+      ]).work.read(TOKEN),
+    ).toEqual(MALFORMED);
   });
 });
