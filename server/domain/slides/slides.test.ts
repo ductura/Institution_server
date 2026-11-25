@@ -119,6 +119,20 @@ describe("the validator refuses, never repairs", () => {
     expect(errorsOf(forged)).toEqual([["", "UNKNOWN_FIELD"]]);
   });
 
+  it("refuses sparse arrays instead of silently dropping the holes", () => {
+    const sparseSlides = { documentKind: "slides", schemaVersion: 1, slides: new Array(1) };
+    expect(errorsOf(sparseSlides)).toEqual([["slides", "SLIDES_INVALID"]]);
+    expect(errorsOf(oneSlide(new Array(1)))).toEqual([["slides[0].blocks", "BLOCKS_INVALID"]]);
+    expect(
+      errorsOf(oneSlide([{ type: "list", id: id(2), slot: "body", items: new Array(1) }])),
+    ).toEqual([["slides[0].blocks[0].items", "LIST_INVALID"]]);
+    const holey = ["Prva", "Druga"];
+    delete holey[0];
+    expect(errorsOf(oneSlide([{ type: "list", id: id(2), slot: "body", items: holey }]))).toEqual([
+      ["slides[0].blocks[0].items", "LIST_INVALID"],
+    ]);
+  });
+
   it("takes only whole, exact numbers for schemaVersion", () => {
     for (const version of [1.5, 2, 0, -0, "1", null, true, 1 + 1e-12]) {
       const value = { documentKind: "slides", schemaVersion: version, slides: [] };

@@ -75,6 +75,15 @@ export function isSlideText(value: unknown, max: number, multiline: boolean): va
   return !isWhiteSpaceCodePoint(first) && !isWhiteSpaceCodePoint(last);
 }
 
+/** An array with a value at every index: `new Array(1)` has length 1 and no element, and `forEach` skips the hole. */
+function isDenseArray(value: unknown): value is unknown[] {
+  if (!Array.isArray(value)) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) return false;
+  }
+  return true;
+}
+
 class Collector {
   readonly errors: SlidesValidationError[] = [];
   add(path: string, code: SlidesValidationErrorCode): void {
@@ -132,7 +141,7 @@ function validateBlock(
   } else if (type === "list") {
     const items = ownProperty(raw, "items");
     const checked: string[] = [];
-    if (!Array.isArray(items) || items.length < 1 || items.length > MAX_LIST_ITEMS) {
+    if (!isDenseArray(items) || items.length < 1 || items.length > MAX_LIST_ITEMS) {
       out.add(`${path}.items`, "LIST_INVALID");
     } else {
       items.forEach((item, index) => {
@@ -179,9 +188,9 @@ function validateSlide(
   const layout = ownProperty(raw, "layout");
   const rawBlocks = ownProperty(raw, "blocks");
   if (!includes(SLIDE_LAYOUTS, layout)) out.add(`${path}.layout`, "LAYOUT_INVALID");
-  if (!Array.isArray(rawBlocks)) out.add(`${path}.blocks`, "BLOCKS_INVALID");
+  if (!isDenseArray(rawBlocks)) out.add(`${path}.blocks`, "BLOCKS_INVALID");
   const blocks: SlideBlock[] = [];
-  if (includes(SLIDE_LAYOUTS, layout) && Array.isArray(rawBlocks)) {
+  if (includes(SLIDE_LAYOUTS, layout) && isDenseArray(rawBlocks)) {
     const perSlot = new Map<SlideSlot, number>();
     let lastRank = -1;
     rawBlocks.forEach((rawBlock, index) => {
@@ -228,7 +237,7 @@ export function validateSlidesDocument(raw: unknown): SlidesValidation {
   }
   const rawSlides = ownProperty(raw, "slides");
   const slides: Slide[] = [];
-  if (!Array.isArray(rawSlides) || rawSlides.length < 1 || rawSlides.length > MAX_SLIDES) {
+  if (!isDenseArray(rawSlides) || rawSlides.length < 1 || rawSlides.length > MAX_SLIDES) {
     out.add("slides", "SLIDES_INVALID");
   } else {
     const ids = new Set<string>();
