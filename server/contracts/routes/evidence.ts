@@ -173,6 +173,9 @@ export const open = defineRoute({
         // slides schema is slidesSchemaVersion and schemaVersion is absent.
         documentKind: Type.Optional(DocumentKind),
         slidesSchemaVersion: Type.Optional(Type.Literal(1)),
+        // SRV-V14-KIND: for "spreadsheet" the version of the sheet model is sheetSchemaVersion
+        // (1) and schemaVersion is absent; sent only together with documentKind "spreadsheet".
+        sheetSchemaVersion: Type.Optional(Type.Literal(1)),
         /** Exact JCS bytes of the snapshot of currentRevision. */
         document: Base64,
         // The receipt keys of the work's evidence domain; the route sends [] when the domain

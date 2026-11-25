@@ -440,7 +440,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const type = res.headers.get("content-type") ?? "";
     // A binary answer (image/jpeg, DOCX) is read as a Blob; it is never a problem body.
-    const body: unknown = type.startsWith("application/json") ? await res.json() : (type.startsWith("image/") || type.startsWith("application/vnd.openxmlformats-officedocument.")) && res.status < 400 ? await res.blob() : undefined;
+    const body: unknown = type.startsWith("application/json") ? await res.json() : (type.startsWith("image/") || type.startsWith("text/csv") || type.startsWith("application/vnd.openxmlformats-officedocument.")) && res.status < 400 ? await res.blob() : undefined;
     // A status the contract lists as an answer is one even at 400 or above
     // (live.document.put 409 {outcome, token}), unless its body is a problem
     // body: the same status can also be an error (revision-requests 409).

@@ -23,6 +23,8 @@ import {
 } from "../domain/index.ts";
 import type { EvidencePayloadLocator, EvidencePayloadStore } from "../external/storage/index.ts";
 
+import { verifySlidesCommit, workKindOfContext } from "./slides/index.ts";
+
 export type EvidenceCommitRequest = {
   documentId: string;
   clientTransactionId: string;
@@ -103,23 +105,40 @@ async function prepareAndCommit(
     return { status: "invalid" };
   }
   if (verified.byteLength > context.maxPayloadBytes) return { status: "too_large" };
-  // SRV-7F, SRV-10E (contract v3 §5 t. 7, §7; v4 §9 t. 9): the step format is
-  // the work's, judged against its revision 0: ductus-edit-steps-v1 on a v1 or
-  // v2 work, -v3 only on a v3 work and -v4 only on a v4 work; none takes another.
-  const stepFormat = evidenceTransactionFormatOfWork(context.documentSchemaVersion);
-  if (stepFormat === null || s.captureContext.transactionFormat !== stepFormat) {
-    return { status: "invalid" };
-  }
+  // SRV-V13-EVIDENCE-SLAJD: the kind of the work decides the validator. A
+  // slides work is judged by the slides validator and step format; a text work
+  // takes the checks below, unchanged.
+  const kind = workKindOfContext(context);
+  if (kind === null) return { status: "invalid" };
+  let snapshotText: string;
+  if (kind === "slides") {
+    const verdict = verifySlidesCommit({
+      transactionFormat: s.captureContext.transactionFormat,
+      document,
+      finalDocumentHash: s.finalDocumentHash,
+    });
+    if (verdict.status !== "ok") return { status: verdict.status };
+    snapshotText = verdict.text;
+  } else {
+    // SRV-7F, SRV-10E (contract v3 §5 t. 7, §7; v4 §9 t. 9): the step format is
+    // the work's, judged against its revision 0: ductus-edit-steps-v1 on a v1 or
+    // v2 work, -v3 only on a v3 work and -v4 only on a v4 work; none takes another.
+    const stepFormat = evidenceTransactionFormatOfWork(context.documentSchemaVersion);
+    if (stepFormat === null || s.captureContext.transactionFormat !== stepFormat) {
+      return { status: "invalid" };
+    }
 
-  // t. 3.4: the snapshot is the document the segment ends in, of schema 1 to
-  // 4, and of the work's own version (SRV-7F, SRV-10E): refused here, before
-  // storage, as the database would refuse it at the end (document v2 §7 t. 4).
-  const snapshot = await verifyVersionedDocumentSnapshot(document);
-  if (!snapshot.ok) return { status: snapshot.reason };
-  if (snapshot.document.schemaVersion !== context.documentSchemaVersion) {
-    return { status: "invalid" };
+    // t. 3.4: the snapshot is the document the segment ends in, of schema 1 to
+    // 4, and of the work's own version (SRV-7F, SRV-10E): refused here, before
+    // storage, as the database would refuse it at the end (document v2 §7 t. 4).
+    const snapshot = await verifyVersionedDocumentSnapshot(document);
+    if (!snapshot.ok) return { status: snapshot.reason };
+    if (snapshot.document.schemaVersion !== context.documentSchemaVersion) {
+      return { status: "invalid" };
+    }
+    if (snapshot.sha256 !== s.finalDocumentHash) return { status: "document_mismatch" };
+    snapshotText = snapshot.text;
   }
-  if (snapshot.sha256 !== s.finalDocumentHash) return { status: "document_mismatch" };
 
   const descriptor: EvidenceSegmentDescriptorV2 = {
     evidencePackageId: context.evidencePackageId,
@@ -206,7 +225,7 @@ async function prepareAndCommit(
       finalDocumentHash: s.finalDocumentHash,
       descriptor,
       storageRef,
-      snapshot: snapshot.text,
+      snapshot: snapshotText,
     },
     signing,
   );

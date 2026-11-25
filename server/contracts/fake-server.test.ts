@@ -91,6 +91,7 @@ function parsed(answer: ReturnType<typeof answerFake>) {
   // A JPEG or DOCX answer is compared in Base64, as the vector writes it.
   if (
     type === "image/jpeg" ||
+    type === "text/csv" ||
     String(type).startsWith("application/vnd.openxmlformats-officedocument.")
   )
     return { ...answer, body: Buffer.from(body).toString("base64") };

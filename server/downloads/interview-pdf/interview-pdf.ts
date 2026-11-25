@@ -1,5 +1,5 @@
-import fontkit from "@pdf-lib/fontkit";
-import { PageSizes, PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import fontkit from "@cantoo/fontkit";
+import { PageSizes, PDFDocument, rgb, type PDFFont, type PDFPage } from "@cantoo/pdf-lib";
 
 import { RECEIPT_FONT_BASE64 } from "../receipt-pdf/index.ts";
 

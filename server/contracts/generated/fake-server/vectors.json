@@ -36597,7 +36597,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.143.0",
+        "apiVersion": "1.144.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -36613,7 +36613,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.143.0",
+        "apiVersion": "1.144.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -95566,6 +95566,149 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "first-sheet",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {},
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "text/csv",
+      "headers": {
+        "cache-control": "private, no-store",
+        "content-disposition": "attachment; filename=\"rad.csv\""
+      },
+      "body": "77u/U3RhdmthO0l6bm9zDQpEZW1vIGplZGFuOzEyLjUNCkRlbW8gZHZhOzcuNQ0KVWt1cG5vOzIwDQo="
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "named-sheet",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "sheet": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "text/csv",
+      "headers": {
+        "cache-control": "private, no-store",
+        "content-disposition": "attachment; filename=\"rad.csv\""
+      },
+      "body": "77u/U3RhdmthO0l6bm9zDQpEZW1vIGplZGFuOzEyLjUNCkRlbW8gZHZhOzcuNQ0KVWt1cG5vOzIwDQo="
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002100"
+      }
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "sheet": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002101"
+      }
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "invalid-query",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "sheet": "nije-id"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002102"
+      }
+    }
+  },
+  {
+    "route": "work.export-sheet-csv.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {},
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002103"
       }
     }
   },
