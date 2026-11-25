@@ -270,7 +270,7 @@ export const PEER_REVIEW_HANDLERS: Handlers = {
         status: 200,
         body: {
           rubrics: round.rubrics,
-          document: { revision: 1, blocks: blocksOf(task.authorId) },
+          document: { blocks: blocksOf(task.authorId) },
         },
       };
     }

@@ -324,7 +324,6 @@ export const studentPeerReviewWorkGet = defineRoute({
       body: closed({
         rubrics: Rubrics,
         document: closed({
-          revision: Type.Integer({ minimum: 1 }),
           blocks: Type.Array(Block, { maxItems: PEER_REVIEW_BLOCKS_MAX }),
         }),
       }),

@@ -1,6 +1,6 @@
 # Anonimna recenzija među studentima v1
 
-Zadatak: SRV-V19-RECENZIJA-UGOVOR `v19-recenzija-ugovor` (Ductus#2055, nalog c.7149250861; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 10, nalazi V19-9 do V19-11). Status: **aditivno, unatrag kompatibilno** (API 1.118.0). Ovo je samo ugovor: baza (`SRV-V19-RECENZIJA-BAZA`, `20261219120000_peer_review.sql`) i rute (`SRV-V19-RECENZIJA-RUTE`) dolaze kasnije, pa rute još nisu montirane. Lažni dev server ih već odgovara izmišljenim podacima.
+Zadatak: SRV-V19-RECENZIJA-UGOVOR `v19-recenzija-ugovor` (Ductus#2055, nalog c.7149250861; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 10, nalazi V19-9 do V19-11). Status: **aditivno, unatrag kompatibilno** (API 1.128.0). Ovo je samo ugovor: baza (`SRV-V19-RECENZIJA-BAZA`, `20261219200000_peer_review.sql`) i rute (`SRV-V19-RECENZIJA-RUTE`) dolaze kasnije, pa rute još nisu montirane. Lažni dev server ih već odgovara izmišljenim podacima.
 
 ## Zašto
 
@@ -47,7 +47,7 @@ Pristup u ugovoru je deklaracija; odlučuje baza (RLS i RPC, kasniji zadatak).
 ### Recenzent i autor (student)
 
 - `student.peer-review-tasks.get`: `{state, tasks:[{taskId, state, dueAt}]}`; `state` je `disabled` (fakultet je isključio), `none` (nema kruga ili student nema dodjelu: rad koji nije predan se ne dodjeljuje), `open` ili `closed`. Zadaci kruga koji se još nije otvorio ne navode se. `state` zadatka je `pending` ili `submitted`.
-- `student.peer-review-work.get`: `{rubrics, document:{revision, blocks:[{kind, text}]}}`; samo dok krug traje i samo dodijeljenom recenzentu; prije otvaranja, poslije roka i svima ostalima (autoru također) 404.
+- `student.peer-review-work.get`: `{rubrics, document:{blocks:[{kind, text}]}}`; samo dok krug traje i samo dodijeljenom recenzentu; prije otvaranja, poslije roka i svima ostalima (autoru također) 404.
 - `student.peer-review.post`: `{byRubric:[{key, text}], general?}`; po jedan tekst (1 do 4000 točaka koda) za svaku rubriku kruga, točno tim ključevima, svaki jednom (inače 422); `general` do 4000 točaka koda. `201 {reviewId}`. Poslije roka **409 `closed`**; druga recenzija istog zadatka **409 `already_reviewed`**.
 - `student.peer-reviews-received.get`: `{reviews:[{reviewId, byRubric:[{key, label, text}], general|null, submittedAt}]}`; najstarija prva; bez povučenih; bez kruga ili bez recenzija je prazan popis. Naziv rubrike (`label`) nosi odgovor da student ne treba drugi poziv.
 
@@ -82,6 +82,6 @@ Ugovor ne može sam spriječiti da poslužitelj u dopuštenom polju napiše iden
 
 ## Otvoreno
 
-- **Nastavnik ne može pročitati tekst recenzije**: prema opisu zadatka 14 nastavnik čita recenziju prije povlačenja, a nijedna od ovih ruta ne vraća tekst (pregled bi bio prevelik: do 3000 recenzija). Potrebna je deveta ruta `GET …/peer-review/reviews/{reviewId}`; izvan je ovog zadatka i ide kao zaseban zadatak orkestratora.
+- **Nastavnik ne može pročitati tekst recenzije**: prema opisu zadatka 14 nastavnik čita recenziju prije povlačenja, a nijedna od ovih ruta ne vraća tekst (pregled bi bio prevelik: do 3000 recenzija). Potrebna je deseta ruta `GET …/peer-review/reviews/{reviewId}`; izvan je ovog zadatka i ide kao zaseban zadatak orkestratora.
 - Pravno mišljenje i DPIA prije čitanja tuđeg rada sa stvarnim studentima (OP-V19-5); do tada samo demo s izmišljenim podacima. Tko vidi recenzenta (OP-V19-6): pretpostavka je nastavnik, ne studenti.
 - Obavijest o recenziji nije u valu (OP-V19-7).

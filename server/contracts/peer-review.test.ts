@@ -136,7 +136,7 @@ describe("peer review contract", () => {
     const doc = (blocks: unknown) =>
       Value.Check(body, {
         rubrics: [{ key: "a", label: "A" }],
-        document: { revision: 1, blocks },
+        document: { blocks },
       });
     expect(doc([{ kind: "paragraph", text: "Izmisljen tekst." }])).toBe(true);
     expect(doc([])).toBe(true);
@@ -154,17 +154,17 @@ describe("peer review contract", () => {
     for (const kind of ["title_page", "cover", "signature", "metadata", "author"]) {
       expect(doc([{ kind, text: "x" }]), kind).toBe(false);
     }
-    // And the answer holds nothing about the document beyond its revision and blocks.
+    // And the answer holds nothing about the document beyond its blocks.
     expect(
       Value.Check(body, {
         rubrics: [{ key: "a", label: "A" }],
-        document: { revision: 1, blocks: [], title: "Izmisljen naslov" },
+        document: { blocks: [], title: "Izmisljen naslov" },
       }),
     ).toBe(false);
     expect(
       Value.Check(body, {
         rubrics: [{ key: "a", label: "A" }],
-        document: { revision: 1, blocks: [] },
+        document: { blocks: [] },
         authorId: "x",
       }),
     ).toBe(false);
