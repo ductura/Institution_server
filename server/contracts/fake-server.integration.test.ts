@@ -186,7 +186,8 @@ describe("fake server over HTTP", () => {
     // SRV-V21-KOD-TESTOVI-RUTA: teacher.assignment-code-tests.put five.
     // SRV-ASIST-LIMIT-ADMIN: institution.assistant-request-limit.put five.
     // SRV-V18-UPITNIK-ISPUNJAVANJE: student.questionnaire-responses.post and teacher.questionnaire-manual-responses.post five each.
-    expect(VECTORS.length - overHttp.length).toBe(821);
+    // SRV-V18-UPITNIK-AUTOR: teacher.questionnaires.post, teacher.questionnaire.patch and teacher.questionnaire-state.post five each.
+    expect(VECTORS.length - overHttp.length).toBe(836);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

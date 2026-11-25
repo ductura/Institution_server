@@ -8,7 +8,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { MUTATION_GUARD } from "./shared.ts";
+import { DocumentKind, MUTATION_GUARD } from "./shared.ts";
 import { END } from "./teacher.ts";
 
 /** Lowercase UUID, as the database returns it. */
@@ -45,6 +45,8 @@ export const StudentWork = closed({
   /** When the submission was asked for; null while in progress. */
   submittedAt: Type.Union([Instant, Type.Null()]),
   language: WorkLanguage,
+  /** The kind of the work (SRV-V13-UGOVOR-VRSTA); absent means text. */
+  documentKind: Type.Optional(DocumentKind),
 });
 
 export const studentWorkRoutes = [
@@ -61,7 +63,12 @@ export const studentWorkRoutes = [
       {
         status: 200,
         description: "the caller's work, started now or before",
-        body: closed({ workId: WorkId, rulesVersion: RulesVersion, language: WorkLanguage }),
+        body: closed({
+          workId: WorkId,
+          rulesVersion: RulesVersion,
+          language: WorkLanguage,
+          documentKind: Type.Optional(DocumentKind),
+        }),
         headers: ["cache-control"],
       },
     ],

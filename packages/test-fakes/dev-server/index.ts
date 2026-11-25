@@ -47,6 +47,7 @@ import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { ASSIGNMENT_CODE_TESTS_HANDLERS } from "./assignment-code-tests-routes.ts";
+import { QUESTIONNAIRE_FILL_HANDLERS } from "./questionnaire-fill-routes.ts";
 import { WORK_RUBRIC_HANDLERS } from "./work-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
@@ -164,6 +165,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...ASSIGNMENT_CODE_TESTS_HANDLERS,
+  ...QUESTIONNAIRE_FILL_HANDLERS,
   ...WORK_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,
