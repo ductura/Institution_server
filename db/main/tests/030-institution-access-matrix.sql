@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(5432);
+SELECT plan(5780);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -204,6 +204,8 @@ SELECT bag_eq(
         -- SRV-V18-UPITNIK-BAZA: questionnaires without a person on the sheet; cells in 247-questionnaire.sql.
         'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer',
         'questionnaire_participation',
+        -- SRV-V18-KODIRANJE-BAZA: the student's own coding material; cells in 248-qualitative-coding.sql.
+        'qual_material', 'qual_code', 'qual_segment',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
         'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
@@ -362,6 +364,9 @@ SELECT bag_eq(
     'questionnaire_response: questionnaire_response_owner ALL to ductus_identity',
     'questionnaire_answer: questionnaire_answer_owner ALL to ductus_identity',
     'questionnaire_participation: questionnaire_participation_owner ALL to ductus_identity',
+    'qual_material: qual_material_owner ALL to ductus_identity',
+    'qual_code: qual_code_owner ALL to ductus_identity',
+    'qual_segment: qual_segment_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
     'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
@@ -431,6 +436,9 @@ SELECT bag_eq(
         'questionnaire_response: questionnaire_response_append_only 27 O', 'questionnaire_response: questionnaire_response_no_truncate 34 O',
         'questionnaire_answer: questionnaire_answer_append_only 27 O', 'questionnaire_answer: questionnaire_answer_no_truncate 34 O',
         'questionnaire_participation: questionnaire_participation_append_only 27 O', 'questionnaire_participation: questionnaire_participation_no_truncate 34 O',
+        'qual_material: qual_material_fixed 19 O', 'qual_material: qual_material_no_truncate 34 O',
+        'qual_code: qual_code_guard 19 O', 'qual_code: qual_code_no_truncate 34 O',
+        'qual_segment: qual_segment_fixed 19 O', 'qual_segment: qual_segment_no_truncate 34 O',
         'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
         'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
@@ -662,6 +670,15 @@ SELECT bag_eq(
     'questionnaire_add_questions(p_id uuid, p_questions jsonb)',
     'questionnaire_answers_valid(p_id uuid, p_answers jsonb)',
     'questionnaire_add_response(p_id uuid, p_answers jsonb)',
+    'qual_text_valid(p_value text, p_max integer, p_multiline boolean)',
+    'qual_body_valid(p_body text)',
+    'qual_normalize_body(p_body text)',
+    'qual_anchor_valid(p_body text, p_paragraph integer, p_start integer, p_end integer, p_quote text)',
+    'reject_qual_change()',
+    'guard_qual_code()',
+    'qual_material_context(p_id uuid, OUT o_user_id uuid, OUT o_institution_id uuid)',
+    'qual_code_context(p_id uuid, OUT o_user_id uuid, OUT o_institution_id uuid)',
+    'qual_renumber_codes(p_owner uuid)',
     'thesis_setting_now()',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
@@ -1838,6 +1855,96 @@ SELECT is(
 FROM (VALUES ('vesna', '0'), ('marko', '0'), ('iva', '0'), ('ana', '0'), ('dora', '0'), ('boris', '0'), ('nina', '0'),
              ('tomo', '0'), ('lea', '0'), ('petra', '0'), ('anon', 'ZD401')) AS c (actor, result);
 
+-- 1i3d. SRV-V18-KODIRANJE-BAZA: the coding material, the codebook and the marked passages of a
+-- person (institution.qual_material, qual_code, qual_segment) only through the app.* RPCs, and
+-- only the owner's: nobody has anything of another's, so the lists are empty, an unknown id is the
+-- same refusal (ZD404) and refused input is told only to a person with a session. The rest
+-- (the owner's own cells, the order of the codebook, the anchor) is in 248-qualitative-coding.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.qual_materials()'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s lists their coding materials: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '0'), ('marko', '0'), ('iva', '0'), ('ana', '0'), ('dora', '0'),
+             ('boris', '0'), ('nina', '0'), ('tomo', '0'), ('lea', '0'), ('petra', '0'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.qual_codes()'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s lists their codebook: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '0'), ('marko', '0'), ('iva', '0'), ('ana', '0'), ('dora', '0'),
+             ('boris', '0'), ('nina', '0'), ('tomo', '0'), ('lea', '0'), ('petra', '0'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.qual_export_segments(NULL)'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s exports their marked passages: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '0'), ('marko', '0'), ('iva', '0'), ('ana', '0'), ('dora', '0'),
+             ('boris', '0'), ('nina', '0'), ('tomo', '0'), ('lea', '0'), ('petra', '0'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.create_qual_material('''', ''note'', ''Tekst'')'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s keeps a material with no title (refused input, the session first): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD422'), ('marko', 'ZD422'), ('iva', 'ZD422'), ('ana', 'ZD422'), ('dora', 'ZD422'),
+             ('boris', 'ZD422'), ('nina', 'ZD422'), ('tomo', 'ZD422'), ('lea', 'ZD422'), ('petra', 'ZD422'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.create_qual_code('''', '''')'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s makes a code with no name (refused input, the session first): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD422'), ('marko', 'ZD422'), ('iva', 'ZD422'), ('ana', 'ZD422'), ('dora', 'ZD422'),
+             ('boris', 'ZD422'), ('nina', 'ZD422'), ('tomo', 'ZD422'), ('lea', 'ZD422'), ('petra', 'ZD422'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.qual_material(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s reads an unknown coding material: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.delete_qual_material(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s deletes an unknown coding material: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.update_qual_code(gen_random_uuid(), ''Naziv'', '''')'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s renames an unknown code: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.move_qual_code(gen_random_uuid(), 1)'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s moves an unknown code: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.delete_qual_code(gen_random_uuid(), true)'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s deletes an unknown code: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.create_qual_segment(gen_random_uuid(), gen_random_uuid(), 0, 0, 1, ''x'', NULL)'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s marks a passage of an unknown material: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.qual_segments(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s reads the passages of an unknown material: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.delete_qual_segment(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s removes an unknown passage: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.qual_export_segments(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V18-KODIRANJE-BAZA: %s exports an unknown material: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was
 -- extended in 1h); null for everyone else. The rest is in
@@ -2145,6 +2252,19 @@ SELECT ok((SELECT bool_and(has_function_privilege('ductus_app', f, 'EXECUTE') AN
              FROM unnest(ARRAY['app.create_questionnaire(uuid,text,jsonb)', 'app.update_questionnaire(uuid,text,jsonb)', 'app.set_questionnaire_state(uuid,text)', 'app.teacher_questionnaires(uuid)', 'app.teacher_questionnaire(uuid)', 'app.student_questionnaires()', 'app.student_questionnaire(uuid)', 'app.submit_questionnaire_response(uuid,jsonb)', 'app.manual_questionnaire_response(uuid,jsonb)', 'app.questionnaire_answer_rows(uuid)', 'app.questionnaire_response_ids(uuid)']) f
              JOIN pg_proc p ON p.oid = f::regprocedure),
   'SRV-V18-UPITNIK-BAZA: the web role calls the questionnaire RPCs, all SECURITY DEFINER');
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.create_qual_material(text,text,text)', 'app.qual_materials()', 'app.qual_material(uuid)', 'app.delete_qual_material(uuid)', 'app.create_qual_code(text,text)', 'app.qual_codes()', 'app.update_qual_code(uuid,text,text)', 'app.move_qual_code(uuid,integer)', 'app.delete_qual_code(uuid,boolean)', 'app.create_qual_segment(uuid,uuid,integer,integer,integer,text,text)', 'app.qual_segments(uuid)', 'app.delete_qual_segment(uuid)', 'app.qual_export_segments(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V18-KODIRANJE-BAZA: only ductus_app and the owner execute the coding RPCs'
+);
+SELECT ok((SELECT bool_and(has_function_privilege('ductus_app', f, 'EXECUTE') AND p.prosecdef)
+             FROM unnest(ARRAY['app.create_qual_material(text,text,text)', 'app.qual_materials()', 'app.qual_material(uuid)', 'app.delete_qual_material(uuid)', 'app.create_qual_code(text,text)', 'app.qual_codes()', 'app.update_qual_code(uuid,text,text)', 'app.move_qual_code(uuid,integer)', 'app.delete_qual_code(uuid,boolean)', 'app.create_qual_segment(uuid,uuid,integer,integer,integer,text,text)', 'app.qual_segments(uuid)', 'app.delete_qual_segment(uuid)', 'app.qual_export_segments(uuid)']) f
+             JOIN pg_proc p ON p.oid = f::regprocedure),
+  'SRV-V18-KODIRANJE-BAZA: the web role calls the coding RPCs, all SECURITY DEFINER');
 -- The helpers that read the submissions and the text from the evidence are the identity role's alone.
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -2201,13 +2321,13 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff',
-                        'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation'])
+                        'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
