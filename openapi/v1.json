@@ -62840,6 +62840,20 @@
                                 "type": "string"
                               }
                             ]
+                          },
+                          "lateException": {
+                            "additionalProperties": false,
+                            "description": "The caller's own latest late-submission exception on the assignment: the teacher's record that this student may still submit until untilAt although the deadline has passed, even when late submission is not allowed (a submission then is still after the deadline). Absent when the caller has none; sent also after untilAt, so a client compares untilAt with the time. Another student's exception is never in the answer.",
+                            "type": "object",
+                            "required": [
+                              "untilAt"
+                            ],
+                            "properties": {
+                              "untilAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                "type": "string"
+                              }
+                            }
                           }
                         }
                       }

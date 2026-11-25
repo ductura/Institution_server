@@ -32,6 +32,47 @@ describe("dev fake server: student routes", () => {
     expect(work.json).toMatchObject({ assignments: [{ workState: "not_started" }] });
   });
 
+  // SRV-NF4-IZNIMKA-PREDAJA: the own late-submission exception, never another student's.
+  it("shows the student the own late-submission exception in the work list", async () => {
+    const state = createState();
+    const teacher = await signIn(state, "nastavnik");
+    const granted = await send(
+      state,
+      `/api/v1/teacher/assignments/${IDS.assignment}/late-submission-exceptions`,
+      {
+        body: {
+          studentId: IDS.student,
+          untilAt: "2030-01-01T12:00:00.000Z",
+          reasonId: "agreement",
+        },
+        headers: teacher,
+      },
+    );
+    expect(granted.status).toBe(201);
+    const work = await send(state, "/api/v1/student/assignment-work", {
+      headers: await signIn(state, "student"),
+    });
+    expect(contractProblems("student.assignment-work.get", work)).toEqual([]);
+    expect(work.json).toEqual({
+      assignments: [
+        {
+          assignmentId: IDS.assignment,
+          workState: "in_progress",
+          lateException: { untilAt: "2030-01-01T12:00:00.000Z" },
+        },
+      ],
+    });
+    const other = await signIn(state, "student-2");
+    await send(state, "/api/v1/institution/enrollments", {
+      body: { code: CODES.valid },
+      headers: other,
+    });
+    const otherWork = await send(state, "/api/v1/student/assignment-work", { headers: other });
+    expect(otherWork.json).toEqual({
+      assignments: [{ assignmentId: IDS.assignment, workState: "not_started" }],
+    });
+  });
+
   it("shows who opened the student's own work, and nobody else's", async () => {
     const state = createState();
     const url = `/api/v1/student/works/${IDS.document}/access-log`;

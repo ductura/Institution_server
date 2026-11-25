@@ -82,7 +82,17 @@ export const STUDENT_HANDLERS: Handlers = {
             : work.state === "submitted"
               ? "submitted"
               : "in_progress";
-        return { assignmentId: a.id, workState } as const;
+        // SRV-NF4-IZNIMKA-PREDAJA: the caller's own latest exception (the last record holds).
+        const exception = state.lateExceptions.findLast(
+          (e) => e.assignmentId === a.id && e.studentId === account.id,
+        );
+        return exception === undefined
+          ? ({ assignmentId: a.id, workState } as const)
+          : ({
+              assignmentId: a.id,
+              workState,
+              lateException: { untilAt: exception.untilAt },
+            } as const);
       })
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
