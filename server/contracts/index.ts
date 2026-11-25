@@ -92,6 +92,7 @@ import {
   assignmentTemplateRoutes,
   returnForRevisionRoutes,
   thesisRoutes,
+  practiceJournalRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -170,6 +171,7 @@ export {
   ThesisStageInput,
   WorkThesisFormInput,
   thesisRoutes,
+  practiceJournalRoutes,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
@@ -334,6 +336,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...assignmentTemplateRoutes,
   ...returnForRevisionRoutes,
   ...thesisRoutes,
+  ...practiceJournalRoutes,
   ...opsRoutes,
 ];
 

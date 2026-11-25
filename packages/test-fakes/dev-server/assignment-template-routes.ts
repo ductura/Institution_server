@@ -5,7 +5,7 @@ import { latestWorkTemplate } from "./work-template-routes.ts";
 // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment, on the dev fake server.
 // The teacher of the course switches it on (the latest version of the institution's template for
 // the assignment's work type is frozen; a version already frozen stays) or off; a student of the
-// course reads the frozen version. The real rules are 20261218120000_assignment_template_pin.sql.
+// course reads the frozen version. The real rules are 20261220100000_assignment_template_pin.sql.
 type Frozen = NonNullable<ReturnType<typeof latestWorkTemplate>>;
 
 // Keyed by the State object, which the reset (POST /__lazni/ponovno) keeps, so the pins are
