@@ -390,6 +390,10 @@ describe("route inventory", () => {
       "student.peer-review-work.get: app/api/student/peer-review/tasks/[taskId]/work/route.ts is not in the inventory",
       "student.peer-review.post: app/api/student/peer-review/tasks/[taskId]/review/route.ts is not in the inventory",
       "student.peer-reviews-received.get: app/api/student/assignments/[assignmentId]/peer-review/received/route.ts is not in the inventory",
+      "student.qual-codes.get: app/api/student/qual/codes/route.ts is not in the inventory",
+      "student.qual-codes.post: app/api/student/qual/codes/route.ts is not in the inventory",
+      "student.qual-code.patch: app/api/student/qual/codes/[id]/route.ts is not in the inventory",
+      "student.qual-code.delete: app/api/student/qual/codes/[id]/route.ts is not in the inventory",
       "analysis.catalogue.get: app/api/analysis/catalogue/route.ts is not in the inventory",
       "analysis.runs.post: app/api/analysis/runs/route.ts is not in the inventory",
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
@@ -401,6 +405,10 @@ describe("route inventory", () => {
       "student.assignment-assistant-requests.get: app/api/student/assignments/[assignmentId]/assistant/requests/route.ts is not in the inventory",
       "institution.assistant-request-limit.get: app/api/institution/assistant/request-limit/route.ts is not in the inventory",
       "institution.assistant-request-limit.put: app/api/institution/assistant/request-limit/route.ts is not in the inventory",
+      "student.qual-materials.get: app/api/student/qual/materials/route.ts is not in the inventory",
+      "student.qual-materials.post: app/api/student/qual/materials/route.ts is not in the inventory",
+      "student.qual-material.get: app/api/student/qual/materials/[id]/route.ts is not in the inventory",
+      "student.qual-material.delete: app/api/student/qual/materials/[id]/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

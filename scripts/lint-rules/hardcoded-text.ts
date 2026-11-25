@@ -61,9 +61,10 @@ export const TEXT_EXEMPT: readonly string[] = [
   "server/log/invented.fixture.ts",
 ];
 /**
- * Files that may still hold interface text for a while, closed: server/app.ts
- * moved its text to locales/ in DAN-782 (orchestrator decision Ductus#87
- * c.6896054840), and server/index.ts was removed in DAN-775. A new entry needs
+ * Files that may still hold interface text for a while, closed: the old
+ * transitional server moved its text to locales/ in DAN-782 (orchestrator
+ * decision Ductus#87 c.6896054840) and was removed in DAN-1537, and
+ * server/index.ts was removed in DAN-775. A new entry needs
  * an orchestrator decision and a change of the lint test. Today two files of
  * the Ductus backend copy, until a task moves them (Ductus#2028 c.7030643662):
  * the Croatian alphabet of the collation and the editor's default placeholder.

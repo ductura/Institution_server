@@ -40,6 +40,7 @@ import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { PRACTICE_HANDLERS } from "./practice-routes.ts";
 import { ANALYSIS_HANDLERS } from "./analysis-routes.ts";
 import { PEER_REVIEW_HANDLERS } from "./peer-review-routes.ts";
+import { QUALITATIVE_CODES_HANDLERS } from "./qualitative-codes-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
@@ -59,6 +60,7 @@ import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts"
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
+import { QUALITATIVE_MATERIALS_HANDLERS } from "./qualitative-materials-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -137,6 +139,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...PEER_REVIEW_HANDLERS,
+  ...QUALITATIVE_CODES_HANDLERS,
   ...ANALYSIS_HANDLERS,
   ...THESIS_HANDLERS,
   ...THESIS_TOPIC_HANDLERS,
@@ -177,6 +180,7 @@ export const DEV_HANDLERS: Handlers = {
   ...DECLARATION_QUESTION_HANDLERS,
   ...LATE_SUBMISSION_HANDLERS,
   ...COURSE_ASSISTANT_HANDLERS,
+  ...QUALITATIVE_MATERIALS_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,

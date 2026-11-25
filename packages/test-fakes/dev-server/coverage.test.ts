@@ -18,12 +18,14 @@ import {
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
+import { fakeQualCodeId } from "./qualitative-codes-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { FAKE_QUESTIONNAIRE_ID } from "./questionnaire-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
+import { seedQualMaterial } from "./qualitative-materials-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -316,6 +318,17 @@ const ADD_NOTE: Step = {
   headers: ORIGIN,
   body: { note: "Izmišljena bilješka." },
 };
+const QUAL_MATERIAL_ID = "00000000-0000-4000-8000-00000018a001";
+const seedQualMaterialOfStudent = (state: State) => {
+  seedQualMaterial(state, IDS.student, {
+    id: QUAL_MATERIAL_ID,
+    title: "Bilješka A",
+    kind: "note",
+    text: "Izmišljena bilješka.",
+    createdOn: "2026-11-25",
+    segmentCount: 0,
+  });
+};
 const seedNote = (state: State) => {
   state.sourceNotes.set(`${IDS.assignment}:${IDS.student}:${WORK_SOURCE.id}`, [
     { id: NOTE_ID, quote: null, page: null, note: "Izmišljena bilješka." },
@@ -457,6 +470,16 @@ const PEER_ALLOCATE: Step = {
   headers: ORIGIN,
 };
 const PEER_TASK = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+const QUAL_CODE_NAME = "Izmišljeni kod odnosa";
+const QUAL_CODES = "/api/v1/student/qual/codes";
+const QUAL_CODE = `${QUAL_CODES}/${fakeQualCodeId(IDS.student, QUAL_CODE_NAME)}`;
+const QUAL_CREATE: Step = {
+  path: QUAL_CODES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { name: QUAL_CODE_NAME, description: "Izmišljeni opis." },
+};
 const PEER_REVIEW: Step = {
   path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/review`,
   as: "student",
@@ -564,6 +587,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/received`,
       as: "student",
     },
+  },
+  // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own coding.
+  "student.qual-codes.get": { before: [QUAL_CREATE], request: { path: QUAL_CODES, as: "student" } },
+  "student.qual-codes.post": { request: QUAL_CREATE },
+  "student.qual-code.patch": {
+    before: [QUAL_CREATE],
+    request: {
+      path: QUAL_CODE,
+      as: "student",
+      method: "PATCH",
+      headers: ORIGIN,
+      body: { description: "Izmišljeni novi opis." },
+    },
+  },
+  "student.qual-code.delete": {
+    before: [QUAL_CREATE],
+    request: { path: QUAL_CODE, as: "student", method: "DELETE", headers: ORIGIN },
   },
   // SRV-V15-UGOVOR: the stateless analysis.
   "analysis.catalogue.get": { request: { path: "/api/v1/analysis/catalogue", as: "student" } },
@@ -2233,6 +2273,36 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         workLanguages: ["hr", "en"],
         defaultWorkLanguage: "hr",
       },
+    },
+  },
+  "student.qual-materials.get": {
+    prepare: seedQualMaterialOfStudent,
+    request: { path: "/api/v1/student/qual/materials", as: "student", method: "GET" },
+  },
+  "student.qual-materials.post": {
+    request: {
+      path: "/api/v1/student/qual/materials",
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: { title: "Intervju B", kind: "interview", text: "Izmišljeni tekst.\nDrugi red." },
+    },
+  },
+  "student.qual-material.get": {
+    prepare: seedQualMaterialOfStudent,
+    request: {
+      path: `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "student.qual-material.delete": {
+    prepare: seedQualMaterialOfStudent,
+    request: {
+      path: `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
     },
   },
   "institution.assistant-request-limit.get": {
