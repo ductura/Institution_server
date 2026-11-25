@@ -52,15 +52,37 @@ const REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
 const contractOf = (id: string) => ROUTES.find((route) => route.id === id)!;
 
 /** {requestKey, ...content}: the key as a lower-case UUID and the rest as the content, or null. */
+/** An optional boolean of the body: absent is false, anything but a boolean is null. */
+const optionalFlag = (body: object, key: string, value: unknown): boolean | null =>
+  !Object.hasOwn(body, key) ? false : typeof value === "boolean" ? value : null;
+
 function parseCreateBody(value: unknown) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { requestKey, isPractice, ...fields } = value as Record<string, unknown>;
+  const { requestKey, isPractice, externalToolsAllowed, aiSummaryOnly, groupIds, ...fields } =
+    value as Record<string, unknown>;
   if (typeof requestKey !== "string" || !UUID.test(requestKey)) return null;
-  if (Object.hasOwn(value, "isPractice") && typeof isPractice !== "boolean") return null;
+  const practice = optionalFlag(value, "isPractice", isPractice);
+  const tools = optionalFlag(value, "externalToolsAllowed", externalToolsAllowed);
+  const summaryOnly = optionalFlag(value, "aiSummaryOnly", aiSummaryOnly);
+  if (practice === null || tools === null || summaryOnly === null) return null;
+  // Groups are not stored yet (their own SRV task): absent or empty is the
+  // whole course, as the contract says; any group stays 422 rather than an
+  // assignment published to the whole course in silence.
+  if (Object.hasOwn(value, "groupIds") && !(Array.isArray(groupIds) && groupIds.length === 0)) {
+    return null;
+  }
   const content = parseAssignmentInput(fields);
-  return content === null
-    ? null
-    : { key: requestKey.toLowerCase(), content, isPractice: isPractice === true };
+  if (content === null) return null;
+  // The contract's 422: summary only under a prohibited policy or with any purpose.
+  if (summaryOnly && (content.aiPolicy === "prohibited" || content.aiPurposes.length > 0)) {
+    return null;
+  }
+  return {
+    key: requestKey.toLowerCase(),
+    content,
+    isPractice: practice,
+    setup: { externalToolsAllowed: tools, aiSummaryOnly: summaryOnly },
+  };
 }
 
 export function createInstitutionAssignmentRoutes(
@@ -114,6 +136,7 @@ export function createInstitutionAssignmentRoutes(
           body.key,
           body.content,
           body.isPractice,
+          body.setup,
         );
       },
       (outcome) => (outcome.status === "created" ? { id: outcome.id } : null),

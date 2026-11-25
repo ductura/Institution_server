@@ -17,8 +17,11 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
+import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
+import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
@@ -226,6 +229,23 @@ const SET_TEAM: Step = {
   headers: ORIGIN,
   body: { assistantIds: [IDS.teacher2] },
 };
+const WORK_TEAM_BASE = `/api/v1/student/assignments/${IDS.assignment}/team`;
+const TEACHER_TEAMS = `/api/v1/teacher/assignments/${IDS.assignment}/teams`;
+const TEAM_SETTING_PATH = `/api/v1/institution/assignments/${IDS.assignment}/team-setting`;
+const TEAMS_ON = { enabled: true, minSize: 2, maxSize: 4, formation: "student_choice" } as const;
+const TEAMS_ON_STEP: Step = {
+  path: TEAM_SETTING_PATH,
+  method: "PUT",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: TEAMS_ON,
+};
+const TEAM_CREATE_STEP: Step = {
+  path: WORK_TEAM_BASE,
+  as: "student",
+  headers: ORIGIN,
+  body: { action: "create" },
+};
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
 const REQUEST_SLOT: Step = {
@@ -406,6 +426,43 @@ const BANK_STEP: Step = {
 
 const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
 const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
+const PRACTICE_PLACEMENT = `/api/v1/practice/placements/${FAKE_PLACEMENT_ID}`;
+const PRACTICE_ENTRIES = `${PRACTICE_PLACEMENT}/entries`;
+const PRACTICE_ENTRY: Step = {
+  path: PRACTICE_ENTRIES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { date: "2026-03-09", hours: 4, text: "Izmisljen opis rada u izmisljenoj organizaciji." },
+};
+// SRV-V19-RECENZIJA-UGOVOR: an open round of one review and one rubric, allocated.
+const PEER = `/api/v1/teacher/assignments/${IDS.assignment}/peer-review`;
+const PEER_ROUND: Step = {
+  path: PEER,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: {
+    opensAt: new Date(Date.now() - 3_600_000).toISOString(),
+    dueAt: new Date(Date.now() + 86_400_000).toISOString(),
+    reviewsPerStudent: 1,
+    rubrics: [{ key: "argument", label: "Jasnoca argumenta" }],
+  },
+};
+const PEER_ALLOCATE: Step = {
+  path: `${PEER}/allocations`,
+  as: "nastavnik",
+  method: "POST",
+  headers: ORIGIN,
+};
+const PEER_TASK = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+const PEER_REVIEW: Step = {
+  path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/review`,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { byRubric: [{ key: "argument", text: "Izmisljena recenzija." }] },
+};
 const REQUEST_MENTORSHIP: Step = {
   path: MENTORSHIP_REQUESTS,
   as: "student",
@@ -434,6 +491,77 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "POST",
       headers: ORIGIN,
       body: { body: "Izmisljena privatna biljeska." },
+    },
+  },
+  // SRV-V19-DNEVNIK-UGOVOR: the practice journal; the invented placement exists from the start.
+  "practice.placements.post": {
+    request: {
+      path: "/api/v1/practice/placements",
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: {
+        mentorshipId: IDS.mentorship,
+        organisationName: "Organizacija B",
+        startsOn: "2026-03-02",
+        endsOn: "2026-06-30",
+      },
+    },
+  },
+  "practice.placements.get": { request: { path: "/api/v1/practice/placements", as: "student" } },
+  "practice.entries.get": {
+    before: [PRACTICE_ENTRY],
+    request: { path: PRACTICE_ENTRIES, as: "nastavnik" },
+  },
+  "practice.entries.post": { request: PRACTICE_ENTRY },
+  "practice.signoffs.post": {
+    before: [PRACTICE_ENTRY],
+    request: {
+      path: `${PRACTICE_PLACEMENT}/signoffs`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { throughDate: "2026-03-10", comment: "Potvrdujem zapise." },
+    },
+  },
+  "practice.signoffs.get": {
+    request: { path: `${PRACTICE_PLACEMENT}/signoffs`, as: "nastavnik" },
+  },
+  // SRV-V19-RECENZIJA-UGOVOR: the anonymous peer review; the demo students count as submitted.
+  "peer-review.round.put": { request: PEER_ROUND },
+  "peer-review.round.get": { before: [PEER_ROUND], request: { path: PEER, as: "nastavnik" } },
+  "peer-review.allocate.post": { before: [PEER_ROUND], request: PEER_ALLOCATE },
+  "peer-review.teacher-overview.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: { path: `${PEER}/overview`, as: "nastavnik" },
+  },
+  "peer-review.review-withdrawal.post": {
+    before: [PEER_ROUND, PEER_ALLOCATE, PEER_REVIEW],
+    request: {
+      path: `${PEER}/reviews/${fakePeerReviewId(PEER_TASK)}/withdrawal`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { reason: "Izmisljen razlog povlacenja." },
+    },
+  },
+  "student.peer-review-tasks.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/tasks`,
+      as: "student",
+    },
+  },
+  "student.peer-review-work.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: { path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/work`, as: "student" },
+  },
+  "student.peer-review.post": { before: [PEER_ROUND, PEER_ALLOCATE], request: PEER_REVIEW },
+  "student.peer-reviews-received.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/received`,
+      as: "student",
     },
   },
   // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
@@ -847,6 +975,45 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  // SRV-V19-GRUPA-UGOVOR: work teams; the first team of a fake state has FAKE_TEAM_ID.
+  "institution.assignment-team-setting.put": { request: TEAMS_ON_STEP },
+  "institution.assignment-team-setting.get": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEAM_SETTING_PATH, as: "nastavnik" },
+  },
+  "student.work-team.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: WORK_TEAM_BASE, as: "student" },
+  },
+  "student.work-team.post": { before: [TEAMS_ON_STEP], request: TEAM_CREATE_STEP },
+  "teacher.work-teams.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik" },
+  },
+  "teacher.work-teams.post": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik", headers: ORIGIN, body: {} },
+  },
+  "teacher.work-team-member.post": {
+    prepare: (state) => {
+      state.courses.find((course) => course.id === IDS.course)?.studentIds.push(IDS.student2);
+    },
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: {
+      path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/members`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { studentId: IDS.student2, action: "add" },
+    },
+  },
+  "student.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${WORK_TEAM_BASE}/contribution`, as: "student" },
+  },
+  "teacher.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/contribution`, as: "nastavnik" },
+  },
   "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
   "institution.teaching-team-view.get": { request: { path: `${TEAM}/view`, as: "nastavnik" } },
   "institution.teaching-team.post": { request: SET_TEAM },
@@ -993,6 +1160,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "student.assignment-requirements.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/requirements`, as: "student" },
+  },
+  "student.assignment-format-rules.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/format-rules`, as: "student" },
   },
   "student.assignment-work.get": {
     request: { path: "/api/v1/student/assignment-work", as: "student" },
@@ -1245,6 +1415,34 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
   },
+  "teacher.assignment-rubric.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`, as: "nastavnik" },
+  },
+  "teacher.assignment-rubric.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        criteria: [
+          {
+            id: "tema",
+            title: "Izmišljena tema rada",
+            levels: [
+              { label: "Treba doraditi", descriptor: "Izmišljeni opis." },
+              { label: "Dobro", descriptor: "" },
+              { label: "Vrlo dobro", descriptor: "" },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  "student.assignment-rubric.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/rubric`, as: "student" },
+  },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
   },
@@ -1296,6 +1494,59 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       headers: ORIGIN,
     },
+  },
+  "institution.work-template.get": {
+    request: { path: "/api/v1/institution/work-templates/seminar_paper", as: "administrator" },
+  },
+  "institution.work-template.put": {
+    request: {
+      method: "PUT",
+      path: "/api/v1/institution/work-templates/seminar_paper",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        titlePage: ["title", "author", "mentor"],
+        sections: [
+          { title: "Uvod", hint: "Predstavite temu i pitanje rada." },
+          { title: "Zaključak", hint: "" },
+        ],
+        citationStyle: "fpzg",
+      },
+    },
+  },
+  "teacher.assignment-template.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { useInstitutionTemplate: false },
+    },
+  },
+  "student.assignment-template.get": {
+    before: [
+      {
+        method: "PUT",
+        path: "/api/v1/institution/work-templates/seminar_paper",
+        as: "administrator",
+        headers: ORIGIN,
+        body: {
+          expectedVersion: 0,
+          titlePage: ["title", "author"],
+          sections: [{ title: "Uvod", hint: "" }],
+          citationStyle: "fpzg",
+        },
+      },
+      {
+        method: "PUT",
+        path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+        as: "nastavnik",
+        headers: ORIGIN,
+        body: { useInstitutionTemplate: true },
+      },
+    ],
+    request: { path: `/api/v1/student/assignments/${IDS.assignment}/template`, as: "student" },
   },
   "work.milestone-states.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
@@ -1751,6 +2002,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
   },
   "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank-entry.put": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" },
+    },
+  },
   "teacher.comment-bank.delete": {
     before: [BANK_STEP],
     request: {
@@ -1851,6 +2112,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assessment: 1, note: "Izmišljena napomena." },
     },
   },
+  "teacher.work-rubric.get": {
+    request: { path: `/api/v1/teacher/works/${IDS.document}/rubric`, as: "nastavnik" },
+  },
+  "teacher.work-rubric-mark.put": {
+    request: {
+      path: `/api/v1/teacher/works/${IDS.document}/rubric/sources`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { level: 1, note: "Izmišljena napomena." },
+    },
+  },
   "teacher.mentorship.get": {
     request: { path: `/api/v1/teacher/mentorships/${IDS.mentorship}`, as: "nastavnik" },
   },
@@ -1880,6 +2153,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/overview`, as: "nastavnik" },
   },
+  "teacher.assignment-follow-up.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/follow-up`, as: "nastavnik" },
+  },
   "teacher.submission-receipt.get": {
     before: SUBMIT_STEPS,
     request: {
@@ -1903,6 +2179,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "institution.student-data-exports.get": {
     request: { path: "/api/v1/institution/student-data-exports", as: "bez-uloge" },
+  },
+  "institution.student-data-export-students.get": {
+    request: { path: "/api/v1/institution/student-data-export-students", as: "bez-uloge" },
   },
   "institution.student-data-exports.post": {
     request: {
@@ -2007,6 +2286,27 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.late-exceptions.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.late-exception.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "nastavnik",
+      body: { studentId: IDS.student, untilAt: "2030-01-01T12:00:00.000Z", reasonId: "agreement" },
+    },
+  },
+  "student.late-exceptions.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "student",
+      method: "GET",
+    },
+  },
   // SRV-1903: the student submits, then withdraws before the deadline.
   "student.submission-withdrawal.post": {
     before: [commit("izmisljena-transakcija-1", 0), SUBMIT],
@@ -2051,6 +2351,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "institution.assignment-late-submission.put": {
+    request: {
+      path: `/api/v1/institution/assignments/${IDS.assignment}/late-submission`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { lateSubmissionAllowed: false },
+    },
+  },
+  "student.assignment-late-submission.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission`,
+      as: "student",
+      method: "GET",
     },
   },
   "teacher.declaration-question.get": {

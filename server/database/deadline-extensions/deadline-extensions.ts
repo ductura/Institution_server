@@ -11,6 +11,8 @@
 // than the one in force). Anything else is thrown.
 import type { WithActor } from "../index.ts";
 
+import { createLateExceptions } from "./late-exceptions.ts";
+
 const REASONS = ["justified", "technical", "agreement", "all"] as const;
 type Reason = (typeof REASONS)[number];
 
@@ -126,6 +128,8 @@ function refusalOf(code: unknown): Refusal | undefined {
 
 export function createDeadlineExtensions(withActor: WithActor) {
   return {
+    // The late-submission exceptions (SRV-NF4-IZNIMKA-ZAPIS) share this port.
+    ...createLateExceptions(withActor),
     /** The teacher of the assignment records an extension for one student or for all. */
     async add(token: string, input: DeadlineExtensionInput): Promise<DeadlineExtensionAdd> {
       const dueAt = instantInput(input.dueAt);

@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   commandLine,
   isStackPostmaster,
+  tailLines,
   listensOn,
   portFree,
   postgresOptions,
@@ -255,5 +256,13 @@ describe("portFree", () => {
     expect(await portFree(port)).toBe(false);
     await new Promise<void>((resolve) => server.close(() => resolve()));
     expect(await portFree(port)).toBe(true);
+  });
+});
+
+describe("tailLines", () => {
+  it("keeps only the last lines and drops empty ones", () => {
+    expect(tailLines("a\nb\n\nc\nd\n", 2)).toBe("c\nd");
+    expect(tailLines("a\nb\n", 100)).toBe("a\nb");
+    expect(tailLines("", 5)).toBe("");
   });
 });

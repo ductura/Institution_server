@@ -17,6 +17,8 @@ export { createStudentWorkRoutesFor } from "./student-work/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
+export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
+export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export {
   createConsultationRecordRoutes,
@@ -31,6 +33,11 @@ export {
 } from "./student-data-export/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createMilestoneTemplateRoutesFor } from "./milestone-template/index.ts";
+export { createAssignmentRubricRoutesFor } from "./assignment-rubric/index.ts";
+export { createWorkRubricRoutesFor } from "./work-rubric/index.ts";
+export { createWorkTemplateRoutesFor } from "./work-template/index.ts";
+export { createAssignmentTemplateRoutesFor } from "./assignment-template/index.ts";
+export { createFormatRulesRoutesFor } from "./format-rules/index.ts";
 export { createReturnForRevisionRoutesFor } from "./return-for-revision/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkRoutesFor } from "./teacher-work/index.ts";
@@ -196,6 +203,7 @@ export {
   createDeclarationRequiredRoutes,
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
+export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,

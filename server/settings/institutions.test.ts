@@ -14,11 +14,19 @@ import { describe, expect, it } from "vitest";
 
 import { INSTITUTIONS_FILE } from "./institutions-file.ts";
 import {
+  CITATION_STYLES,
   INSTITUTIONS_ERROR_CODES,
   institutionsProblems,
   loadInstitutions,
   type InstitutionsErrorCode,
 } from "./institutions.ts";
+
+/** The `citation.style` values of the settings catalogue, read from its source: areas may not import each other. */
+const catalogueStyles = (): string[] => {
+  const source = readFileSync(new URL("../domain/settings/catalogue.ts", import.meta.url), "utf8");
+  const block = /key: "citation\.style"[\s\S]*?values: \[([^\]]*)\]/u.exec(source);
+  return [...(block?.[1] ?? "").matchAll(/"([^"]+)"/gu)].map((m) => m[1] as string);
+};
 
 const CANARY = "kanarinac-0911";
 const FORMAT = "ductus-institutions-v1";
@@ -96,6 +104,29 @@ describe("institutions file schema: refused", () => {
     expect(loadInstitutions(input)).toEqual({ ok: false, error: { code, messageKey } });
     expect(institutionsProblems(input)).toEqual([`institutions file is refused: ${code}`]);
     expect(JSON.stringify(loadInstitutions(input))).not.toContain(CANARY);
+  });
+
+  it("lists exactly the styles of the settings catalogue", () => {
+    expect(catalogueStyles().length).toBeGreaterThan(1);
+    expect([...CITATION_STYLES]).toEqual(catalogueStyles());
+  });
+
+  it.each(["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"])(
+    "accepts the catalogue style %s",
+    (style) => {
+      expect(institutionsProblems(file(entry("demo-fakultet", style)))).toEqual([]);
+      expect(loadInstitutions(file(entry("demo-fakultet", style)))).toEqual({
+        ok: true,
+        value: [{ slug: "demo-fakultet", citationStyle: style }],
+      });
+    },
+  );
+
+  it.each(["mla", "APA", "", "apa ", "harvard"])("refuses the unknown style %j", (style) => {
+    expect(loadInstitutions(file(entry("demo-fakultet", style)))).toMatchObject({
+      ok: false,
+      error: { code: UNKNOWN_STYLE },
+    });
   });
 
   it("refuses an accessor in the root without calling it", () => {

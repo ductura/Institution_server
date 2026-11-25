@@ -204,7 +204,23 @@ export const workCommentsPublishSelectedPost = defineRoute({
 });
 
 const TEMPLATE_KIND = literals(["must", "sugg", "q", "praise"]);
-const BankEntry = closed({ id: Id, kind: TEMPLATE_KIND, text: Type.String(), createdAt: Instant });
+/**
+ * SRV-V17-BANK-EDIT: a short label of the teacher's on an entry, 1 to 40 code
+ * points with a non-space and no control character (null = none). NFC and
+ * the like stay as for a comment.
+ */
+const Label = Type.String({
+  description: "A short label of the teacher's, 1 to 40 characters, NFC; null or missing is none.",
+  pattern: `^(?=[^\\u0000-\\u001f\\u007f-\\u009f]*\\S)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,40}${END}`,
+});
+const BankEntry = closed({
+  id: Id,
+  kind: TEMPLATE_KIND,
+  text: Type.String(),
+  // Optional in the schema so that adding it does not break a client (scripts/check-breaking.ts); the server always sends it.
+  label: Type.Optional(Type.Union([Label, Type.Null()])),
+  createdAt: Instant,
+});
 
 export const teacherCommentBankGet = defineRoute({
   id: "teacher.comment-bank.get",
@@ -236,7 +252,11 @@ export const teacherCommentBankPost = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 4 * 1024,
-    body: closed({ text: CommentText, kind: TEMPLATE_KIND }),
+    body: closed({
+      text: CommentText,
+      kind: TEMPLATE_KIND,
+      label: Type.Optional(Type.Union([Label, Type.Null()])),
+    }),
   },
   responses: [
     {
@@ -245,6 +265,36 @@ export const teacherCommentBankPost = defineRoute({
       body: closed({ id: Id, createdAt: Instant }),
     },
   ],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
+    error(503, "unavailable"),
+  ],
+});
+
+export const teacherCommentBankPut = defineRoute({
+  id: "teacher.comment-bank-entry.put",
+  method: "PUT",
+  path: "/api/v1/teacher/comment-bank/{entryId}",
+  inventory: "app/api/teacher/comment-bank/[entryId]/route.ts",
+  access: "teacher",
+  summary:
+    "Replaces text, kind and label of an entry of the caller's bank: {text, kind, label?} as when saving; a missing label or null leaves the entry without one. The creation time stays. Another teacher's entry and one that is not there answer 404 (an invalid body is refused first, as when saving); at most 4 KiB, sent as application/json.",
+  request: {
+    params: closed({ entryId: Id }),
+    contentType: "application/json",
+    maxBodyBytes: 4 * 1024,
+    body: closed({
+      text: CommentText,
+      kind: TEMPLATE_KIND,
+      label: Type.Optional(Type.Union([Label, Type.Null()])),
+    }),
+  },
+  responses: [{ status: 204, description: "replaced" }],
   errors: [
     ...MUTATION_GUARD,
     error(401, "unauthorized"),
@@ -345,6 +395,7 @@ export const commentsRoutes = [
   workCommentsPublishSelectedPost,
   teacherCommentBankGet,
   teacherCommentBankPost,
+  teacherCommentBankPut,
   teacherCommentBankDelete,
   workReviewPost,
   workChangesSinceReviewGet,

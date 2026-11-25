@@ -82,7 +82,17 @@ export const STUDENT_HANDLERS: Handlers = {
             : work.state === "submitted"
               ? "submitted"
               : "in_progress";
-        return { assignmentId: a.id, workState } as const;
+        // SRV-NF4-IZNIMKA-PREDAJA: the caller's own latest exception (the last record holds).
+        const exception = state.lateExceptions.findLast(
+          (e) => e.assignmentId === a.id && e.studentId === account.id,
+        );
+        return exception === undefined
+          ? ({ assignmentId: a.id, workState } as const)
+          : ({
+              assignmentId: a.id,
+              workState,
+              lateException: { untilAt: exception.untilAt },
+            } as const);
       })
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
@@ -120,6 +130,26 @@ export const STUDENT_HANDLERS: Handlers = {
         : [];
     });
     return { status: 200, body: { extensions } };
+  },
+  // SRV-NF4-IZNIMKA-ZAPIS: only the caller's own exceptions, marked as such.
+  "student.late-exceptions.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const exceptions = state.lateExceptions.flatMap((exception) =>
+      exception.assignmentId === assignment.id && exception.studentId === account.id
+        ? [
+            {
+              id: exception.id,
+              kind: "exception" as const,
+              untilAt: exception.untilAt,
+              reasonId: exception.reasonId as NonNullable<typeof exception.reasonId>,
+              createdAt: exception.createdAt,
+            },
+          ]
+        : [],
+    );
+    return { status: 200, body: { exceptions } };
   },
   "student.submission.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -186,7 +216,7 @@ export const STUDENT_HANDLERS: Handlers = {
     state.submissionNotes.push({ ...note, assignmentId: assignment.id, studentId: account.id });
     return { status: 201, body: note };
   },
-  // SRV-1101: the dev fake knows no institution profile, so it answers as an
+  // SRV-1101: the dev fake knows no institution profile or style, so it answers as an
   // institution that has set none (the real route reads the institution's setting).
   "student.text-check-config.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -194,7 +224,11 @@ export const STUDENT_HANDLERS: Handlers = {
       return { error: "not_found" };
     return {
       status: 200,
-      body: { enabledCheckIds: enabledCheckIdsFor(null), lektaProfileId: null },
+      body: {
+        enabledCheckIds: enabledCheckIdsFor(null),
+        lektaProfileId: null,
+        citationStyle: "fpzg",
+      },
     };
   },
   "student.work-sources.get": ({ state, account, params }) => {

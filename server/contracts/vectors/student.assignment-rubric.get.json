@@ -1,0 +1,206 @@
+{
+  "route": "student.assignment-rubric.get",
+  "vectors": [
+    {
+      "name": "default-criteria",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "version": 0,
+          "criteria": [
+            {
+              "id": "topic",
+              "title": "workingCriteria.topic",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            },
+            {
+              "id": "structure",
+              "title": "workingCriteria.structure",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            },
+            {
+              "id": "sources",
+              "title": "workingCriteria.sources",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            },
+            {
+              "id": "method",
+              "title": "workingCriteria.method",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            },
+            {
+              "id": "language",
+              "title": "workingCriteria.language",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            },
+            {
+              "id": "formatting",
+              "title": "workingCriteria.formatting",
+              "levels": [
+                {
+                  "label": "assignmentRubric.levelLow",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelMid",
+                  "descriptor": ""
+                },
+                {
+                  "label": "assignmentRubric.levelHigh",
+                  "descriptor": ""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000001710019"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000001710020"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000001710021"
+        }
+      }
+    }
+  ]
+}

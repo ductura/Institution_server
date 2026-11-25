@@ -25,7 +25,11 @@ export {
   type EnrollmentCodeStateRead,
   readEnrollmentCodeState,
 } from "./enrollment-code-state/index.ts";
-export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
+export {
+  readAssignmentFollowUp,
+  readAssignmentOverview,
+  readTeacherRoster,
+} from "./course-students.ts";
 export {
   type AiPolicy,
   type CourseBody,
