@@ -75857,6 +75857,2374 @@
     }
   },
   {
+    "route": "teacher.questionnaire-state.post",
+    "name": "opened",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000b1801",
+        "state": "open"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211837"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugi.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211838"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211839"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "257"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000211840"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000211841"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211842"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "1"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211843"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211844"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000211845"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000211846"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211847"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000211848"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000211849"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000211850"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-state.post",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "state": "open"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000211852"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.get",
+    "name": "one",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000b1801",
+        "courseId": "00000000-0000-4000-8000-0000000a1801",
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "state": "open",
+        "questions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000c1801",
+            "order": 1,
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ],
+            "scale": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1802",
+            "order": 2,
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "options": null,
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1803",
+            "order": 3,
+            "kind": "text",
+            "text": "Što vas sprječava?",
+            "options": null,
+            "scale": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000211818"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000211819"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000211820"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "changed",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000b1801",
+        "courseId": "00000000-0000-4000-8000-0000000a1801",
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "state": "draft",
+        "questions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000c1801",
+            "order": 1,
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ],
+            "scale": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1802",
+            "order": 2,
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "options": null,
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1803",
+            "order": 3,
+            "kind": "text",
+            "text": "Što vas sprječava?",
+            "options": null,
+            "scale": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211821"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugi.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211822"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211823"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "262145"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000211824"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000211825"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211826"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "1"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211827"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211828"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000211829"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000211830"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211831"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000211832"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000211833"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000211834"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire.patch",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000b1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000211836"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.get",
+    "name": "list",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "questionnaires": [
+          {
+            "id": "00000000-0000-4000-8000-0000000b1801",
+            "title": "Izmišljeno istraživanje: navike kompostiranja",
+            "state": "open",
+            "createdOn": "2026-11-02",
+            "questionCount": 3,
+            "responseCount": 12
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000b1802",
+            "title": "Izmišljeni nacrt upitnika",
+            "state": "draft",
+            "createdOn": "2026-11-20",
+            "questionCount": 1,
+            "responseCount": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000211801"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000211802"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000211803"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "made",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000b1801",
+        "courseId": "00000000-0000-4000-8000-0000000a1801",
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "state": "draft",
+        "questions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000c1801",
+            "order": 1,
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ],
+            "scale": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1802",
+            "order": 2,
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "options": null,
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000c1803",
+            "order": 3,
+            "kind": "text",
+            "text": "Što vas sprječava?",
+            "options": null,
+            "scale": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211804"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugi.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211805"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000211806"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "262145"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000211807"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000211808"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211809"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "1"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211810"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211811"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000211812"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000211813"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000211814"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000211815"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000211816"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaires.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "courseId": "00000000-0000-4000-8000-0000000a1801"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "questions": [
+          {
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          },
+          {
+            "kind": "text",
+            "text": "Što vas sprječava?"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000211817"
+      }
+    }
+  },
+  {
     "route": "teacher.receipt-pdf.get",
     "name": "receipt",
     "request": {

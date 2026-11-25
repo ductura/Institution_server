@@ -19,6 +19,7 @@ import {
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
+import { FAKE_QUESTIONNAIRE_ID } from "./questionnaire-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { FAKE_TEAM_ID } from "./work-team-routes.ts";
@@ -1480,6 +1481,39 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "student.assignment-code-tests.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/code-tests`, as: "student" },
+  },
+  "teacher.questionnaires.get": {
+    request: { path: `/api/v1/teacher/courses/${IDS.course}/questionnaires`, as: "nastavnik" },
+  },
+  "teacher.questionnaires.post": {
+    request: {
+      method: "POST",
+      path: `/api/v1/teacher/courses/${IDS.course}/questionnaires`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { title: "Izmišljeni upitnik", questions: [{ kind: "text", text: "Primjedba?" }] },
+    },
+  },
+  "teacher.questionnaire.get": {
+    request: { path: `/api/v1/teacher/questionnaires/${FAKE_QUESTIONNAIRE_ID}`, as: "nastavnik" },
+  },
+  "teacher.questionnaire.patch": {
+    request: {
+      method: "PATCH",
+      path: `/api/v1/teacher/questionnaires/${FAKE_QUESTIONNAIRE_ID}`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { title: "Izmišljeni upitnik", questions: [{ kind: "text", text: "Primjedba?" }] },
+    },
+  },
+  "teacher.questionnaire-state.post": {
+    request: {
+      method: "POST",
+      path: `/api/v1/teacher/questionnaires/${FAKE_QUESTIONNAIRE_ID}/state`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { state: "open" },
+    },
   },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
