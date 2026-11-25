@@ -71,9 +71,10 @@ CREATE POLICY assistant_course_switch_event_owner ON audit.assistant_course_swit
 -- (b): the latest service version has a cap, and the latest version of the
 -- institution has every limit and the reservation. Exactly the condition under
 -- which assistant.begin_request does not answer ai_disabled; 254 checks both
--- agree. Called only by the functions below, never by a role. The
--- institution is the session's (U1), never the caller's.
-CREATE FUNCTION app.assistant_cost_published() RETURNS boolean
+-- agree. Called only by the functions below, never by a role, with a course
+-- the caller already found in the actor's institution; the institution is the
+-- course's, never a parameter (U1).
+CREATE FUNCTION app.assistant_cost_published(p_course_id uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT coalesce((SELECT v.cap_micro IS NOT NULL
@@ -83,7 +84,7 @@ AS $$
      AND coalesce((SELECT v.cap_micro IS NOT NULL AND v.student_day_micro IS NOT NULL
                           AND v.student_assignment_day_micro IS NOT NULL AND v.reserve_micro IS NOT NULL
                      FROM assistant.cost_config_version v
-                    WHERE v.institution_id = app.current_institution_id()
+                    WHERE v.institution_id = (SELECT c.institution_id FROM institution.course c WHERE c.id = p_course_id)
                     ORDER BY v.version_no DESC LIMIT 1), false)
 $$;
 
@@ -92,7 +93,7 @@ CREATE FUNCTION app.course_assistant_on(p_course_id uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT coalesce((SELECT s.enabled FROM institution.course_assistant_setting s
-                    WHERE s.institution_id = app.current_institution_id() AND s.course_id = p_course_id), true)
+                    WHERE s.course_id = p_course_id), true)
 $$;
 
 -- Only a teacher of the course (institution.require_course_teacher) sets it.
@@ -154,12 +155,12 @@ BEGIN
     RETURN;
   END IF;
   RETURN QUERY SELECT 'found'::text,
-    app.assistant_cost_published()
+    app.assistant_cost_published(v_course)
     AND app.course_assistant_on(v_course);
 END
 $$;
 
-REVOKE ALL ON FUNCTION app.assistant_cost_published() FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.assistant_cost_published(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.course_assistant_on(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.course_assistant_switch(uuid, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.course_assistant_switch_read(uuid) FROM PUBLIC;
@@ -178,6 +179,6 @@ DROP FUNCTION app.my_assistant_available(uuid);
 DROP FUNCTION app.course_assistant_switch_read(uuid);
 DROP FUNCTION app.course_assistant_switch(uuid, boolean);
 DROP FUNCTION app.course_assistant_on(uuid);
-DROP FUNCTION app.assistant_cost_published();
+DROP FUNCTION app.assistant_cost_published(uuid);
 DROP TABLE audit.assistant_course_switch_event;
 DROP TABLE institution.course_assistant_setting;

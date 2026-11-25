@@ -40,7 +40,7 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname <> 'ductus_identity'
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['app.assistant_cost_published()', 'app.course_assistant_on(uuid)']) f
+     CROSS JOIN unnest(ARRAY['app.assistant_cost_published(uuid)', 'app.course_assistant_on(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'the workers belong to no role but the owner');
 SELECT bag_eq(
