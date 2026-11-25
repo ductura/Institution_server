@@ -299,3 +299,87 @@ BEGIN
   RESET ROLE;
 END
 $questionnaire$;
+
+-- SRV-V18-KODIRANJE-BAZA (val 18): invented material for qualitative coding of
+-- demo-student, kept through the functions the application calls (as the blocks
+-- above): two texts (`Intervju A` and `Bilješka A`), a codebook of six codes and
+-- a few marked passages. The offsets are found in the text by position(), so a
+-- wrong one is refused by the function itself. Nothing here is a real interview
+-- or a real person. A rerun adds nothing: the block is skipped when the first
+-- material exists. One DO block is one transaction; the session it opens is
+-- closed at its end.
+DO $coding$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_interview constant text :=
+    E'Pitanje: Kako biste opisali svoje iskustvo s kompostiranjem?\n'
+    || E'Odgovor: Isprva je bilo naporno, ali sada mi je to navika. Susjedi su se smijali, a sada pitaju za savjet.\n'
+    || E'Pitanje: Što vam je najteže?\n'
+    || E'Odgovor: Najteže je održati redovitost zimi, kad je hladno i ništa se ne raspada.';
+  c_note constant text :=
+    E'Bilješka s terena: dvorište iza zgrade, tri kontejnera za kompost.\n'
+    || E'Čini se da se stanari međusobno podsjećaju na red.';
+  c_codes constant text[][] := ARRAY[
+    ['Navika', 'Radnja koja je postala svakodnevna'],
+    ['Napor', 'Trud i poteškoće'],
+    ['Susjedstvo', 'Odnosi sa susjedima'],
+    ['Zima', 'Utjecaj hladnoće'],
+    ['Znanje', 'Savjet i iskustvo'],
+    ['Prostor', 'Mjesto i oprema']];
+  -- material (1 interview, 2 note), code (1..6), paragraph, quote, memo
+  c_marks constant jsonb := $m$[
+    [1, 2, 1, "naporno", null],
+    [1, 1, 1, "navika", "Promjena u odnosu na početak."],
+    [1, 3, 1, "Susjedi su se smijali", null],
+    [1, 5, 1, "pitaju za savjet", null],
+    [1, 4, 3, "zimi", "Zima se spominje kao glavna prepreka."],
+    [1, 2, 3, "Najteže je održati redovitost", null],
+    [2, 6, 0, "tri kontejnera za kompost", null],
+    [2, 3, 1, "stanari međusobno podsjećaju", null]]$m$;
+  v_institution uuid;
+  v_token text;
+  v_materials uuid[];
+  v_codes uuid[] := ARRAY[]::uuid[];
+  v_n integer;
+  v_mark jsonb;
+  v_body text;
+  v_line text;
+BEGIN
+  SELECT id INTO STRICT v_institution FROM identity.institution
+   WHERE slug = 'demo-fakultet' AND aai_home_org = c_home_org;
+  IF EXISTS (SELECT 1 FROM institution.qual_material m
+              JOIN identity.user_account u ON u.id = m.owner_id AND u.institution_id = m.institution_id
+             WHERE m.institution_id = v_institution AND u.oidc_subject = 'demo-student' AND m.title = 'Intervju A') THEN
+    RETURN;
+  END IF;
+
+  v_token := rtrim(translate(encode(
+    sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())), 'base64'), '+/', '-_'), '=');
+  SET LOCAL ROLE ductus_auth;
+  PERFORM identity.open_session(c_issuer, 'demo-student', 'demo-student@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_token, 'UTF8')), 'Lucija', 'Đaković', false);
+  RESET ROLE;
+
+  SET LOCAL ROLE ductus_app;
+  PERFORM set_config('app.session_token', v_token, true);
+  v_materials := ARRAY[app.create_qual_material('Intervju A', 'interview', c_interview),
+                       app.create_qual_material('Bilješka A', 'note', c_note)];
+  FOR v_n IN 1 .. array_length(c_codes, 1) LOOP
+    v_codes := v_codes || app.create_qual_code(c_codes[v_n][1], c_codes[v_n][2]);
+  END LOOP;
+  FOR v_mark IN SELECT * FROM jsonb_array_elements(c_marks) LOOP
+    v_body := CASE (v_mark ->> 0)::integer WHEN 1 THEN c_interview ELSE c_note END;
+    v_line := (string_to_array(v_body, E'\n'))[(v_mark ->> 2)::integer + 1];
+    v_n := strpos(v_line, v_mark ->> 3) - 1;
+    PERFORM app.create_qual_segment(
+      v_materials[(v_mark ->> 0)::integer], v_codes[(v_mark ->> 1)::integer],
+      (v_mark ->> 2)::integer, v_n, v_n + char_length(v_mark ->> 3), v_mark ->> 3,
+      CASE WHEN jsonb_typeof(v_mark -> 4) = 'string' THEN v_mark ->> 4 END);
+  END LOOP;
+  PERFORM set_config('app.session_token', v_token, true);
+  PERFORM identity.close_current_session();
+  PERFORM set_config('app.session_token', '', true);
+  RESET ROLE;
+END
+$coding$;

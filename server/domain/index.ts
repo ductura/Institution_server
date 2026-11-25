@@ -27,6 +27,8 @@ export * from "./retention/index.ts";
 export { zagrebWall, type ZagrebWall } from "./time/index.ts";
 // SRV-V18-UPITNIK-BAZA: the definition, the answers and the export of a questionnaire.
 export * from "./questionnaire/index.ts";
+// SRV-V18-KODIRANJE-BAZA: the material, the anchors, the codebook and the export of qualitative coding.
+export * from "./qualitative-coding/index.ts";
 // SRV-V13-UGOVOR-SLAJD: the canonical document of a slides work (docs/contracts/slides-v1.md).
 export * from "./slides/index.ts";
 // SRV-1308: the student data export lists the access log by day, as the student reads it.
