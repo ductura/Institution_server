@@ -120,6 +120,7 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
@@ -347,6 +348,8 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
+      ...createAssignmentRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
       ...createWorkTemplateRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.

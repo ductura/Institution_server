@@ -441,6 +441,13 @@ export {
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
 export {
+  createAssignmentRubric,
+  defaultRubricCriteria,
+  type AssignmentRubric,
+  type AssignmentRubricStore,
+  type RubricCriterion,
+} from "./assignment-rubric/index.ts";
+export {
   createWorkTemplate,
   type WorkTemplate,
   type WorkTemplateContent,
