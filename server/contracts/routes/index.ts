@@ -137,6 +137,7 @@ export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-r
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
+export { courseAssistantRoutes } from "./course-assistant.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {

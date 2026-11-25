@@ -584,6 +584,12 @@ export {
   type LateSubmissionSetting,
 } from "./late-submission.ts";
 export {
+  createCourseAssistantPort,
+  type AssistantAvailability,
+  type CourseAssistantPort,
+  type CourseAssistantSwitch,
+} from "./course-assistant.ts";
+export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,
   type InputRhythm,

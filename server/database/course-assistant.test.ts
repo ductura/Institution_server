@@ -1,0 +1,102 @@
+// The port of the assistant switch per course (SRV-ASIST-PREKIDAC) over a fake
+// withActor: the SQL it sends, refusals mapped to their outcomes, malformed ids
+// never sent, and every row it cannot vouch for thrown. All values are invented.
+import { describe, expect, it } from "vitest";
+
+import { createCourseAssistantPort } from "./course-assistant.ts";
+import type { WithActor } from "./with-actor.ts";
+
+const TOKEN = "izmisljeni-token";
+const ID = "00000000-0000-4000-8000-0000000000c1";
+
+function portOver(answer: (text: string, values: unknown[]) => unknown[] | Error) {
+  const sent: [string, unknown[]][] = [];
+  const withActor = (async (_token: string, fn: (tx: unknown) => Promise<unknown>) =>
+    fn({
+      query: async (text: string, values: unknown[]) => {
+        sent.push([text, values]);
+        const rows = answer(text, values);
+        if (rows instanceof Error) throw rows;
+        return { rows };
+      },
+    })) as unknown as WithActor;
+  return { port: createCourseAssistantPort(withActor), sent };
+}
+const refusal = (code: string) => Object.assign(new Error("izmisljeno"), { code });
+
+describe("createCourseAssistantPort", () => {
+  it("sets and reads the switch through its RPCs", async () => {
+    const { port, sent } = portOver(() => [{ enabled: false }]);
+    expect(await port.set(TOKEN, ID, false)).toEqual({ status: "read", enabled: false });
+    expect(await port.read(TOKEN, ID)).toEqual({ status: "read", enabled: false });
+    expect(sent.map(([text]) => text.match(/app\.\w+/u)![0])).toEqual([
+      "app.course_assistant_switch",
+      "app.course_assistant_switch_read",
+    ]);
+    expect(sent[0]![1]).toEqual([ID, false]);
+  });
+
+  it("a state other than the one sent is thrown, so the write rolls back", async () => {
+    const { port } = portOver(() => [{ enabled: true }]);
+    await expect(port.set(TOKEN, ID, false)).rejects.toThrow(/Unconfirmed/u);
+  });
+
+  it("reads the availability of a student", async () => {
+    const { port } = portOver(() => [{ outcome: "found", available: true }]);
+    expect(await port.available(TOKEN, ID)).toEqual({ status: "read", available: true });
+    const off = portOver(() => [{ outcome: "found", available: false }]).port;
+    expect(await off.available(TOKEN, ID)).toEqual({ status: "read", available: false });
+    const none = portOver(() => [{ outcome: "not_found", available: null }]).port;
+    expect(await none.available(TOKEN, ID)).toEqual({ status: "not_found" });
+  });
+
+  it.each([
+    ["ZD401", "unauthorized"],
+    ["ZD403", "not_found"],
+    ["ZD422", "invalid_input"],
+  ])("a refusal %s of the switch is %s", async (code, status) => {
+    const { port } = portOver(() => refusal(code));
+    expect(await port.set(TOKEN, ID, true)).toEqual({ status });
+  });
+
+  it("a session refused while reading the availability is unauthorized", async () => {
+    const { port } = portOver(() => refusal("ZD401"));
+    expect(await port.available(TOKEN, ID)).toEqual({ status: "unauthorized" });
+  });
+
+  it("an id that is not a lowercase uuid is never sent", async () => {
+    const { port, sent } = portOver(() => [{ enabled: true }]);
+    expect(await port.read(TOKEN, ID.toUpperCase())).toEqual({ status: "not_found" });
+    expect(await port.set(TOKEN, "nije-uuid", true)).toEqual({ status: "not_found" });
+    expect(await port.available(TOKEN, "")).toEqual({ status: "not_found" });
+    expect(sent).toEqual([]);
+  });
+
+  it.each([
+    ["no row", []],
+    ["two rows", [{ enabled: true }, { enabled: true }]],
+    ["not a boolean", [{ enabled: "true" }]],
+  ])("a switch answer with %s is thrown", async (_name, rows) => {
+    const { port } = portOver(() => rows);
+    await expect(port.read(TOKEN, ID)).rejects.toThrow();
+  });
+
+  it.each([
+    ["an unknown outcome", [{ outcome: "maybe", available: true }]],
+    ["not_found with a value", [{ outcome: "not_found", available: false }]],
+    ["found without a value", [{ outcome: "found", available: null }]],
+  ])("an availability with %s is thrown", async (_name, rows) => {
+    const { port } = portOver(() => rows);
+    await expect(port.available(TOKEN, ID)).rejects.toThrow();
+  });
+
+  it("a ZD422 on the availability is a database it cannot vouch for", async () => {
+    const { port } = portOver(() => refusal("ZD422"));
+    await expect(port.available(TOKEN, ID)).rejects.toThrow();
+  });
+
+  it("another error is thrown as it came", async () => {
+    const { port } = portOver(() => new Error("izmisljeni kvar"));
+    await expect(port.set(TOKEN, ID, true)).rejects.toThrow("izmisljeni kvar");
+  });
+});

@@ -897,6 +897,13 @@ export type Operations = {
     success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.assignment-assistant.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "assistantEnabled": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.assignment-code-tests.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1378,6 +1385,20 @@ export type Operations = {
     query: undefined;
     body: { "text": string; "kind": "must" | "sugg" | "q" | "praise"; "label"?: string | null };
     success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.course-assistant.get": {
+    params: { "courseId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "enabled": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.course-assistant.put": {
+    params: { "courseId": string };
+    query: undefined;
+    body: { "enabled": boolean };
+    success: { status: 200; body: { "enabled": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "teacher.course-input-rhythm.get": {

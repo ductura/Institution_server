@@ -42,6 +42,7 @@ import {
   createDeadlineExtensionRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createCourseAssistantRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDirectEditRoutesFor,
   createDownloadsManifestRoute,
@@ -609,6 +610,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createDeclarationRequiredRoutesFor", () => createDeclarationRequiredRoutesFor(STAND_IN)],
   ["createDeclarationQuestionRoutesFor", () => createDeclarationQuestionRoutesFor(STAND_IN)],
   ["createLateSubmissionRoutesFor", () => createLateSubmissionRoutesFor(STAND_IN)],
+  ["createCourseAssistantRoutesFor", () => createCourseAssistantRoutesFor(STAND_IN)],
   ["createProcessSummaryRouteFor", () => [createProcessSummaryRouteFor(STAND_IN, STAND_IN, {})]],
   [
     "createProcessSummaryDetailsRouteFor",

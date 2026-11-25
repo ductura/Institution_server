@@ -139,6 +139,7 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createCourseAssistantRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -428,6 +429,8 @@ async function main(): Promise<void> {
       ...createDeclarationQuestionRoutesFor(databases.main),
       // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
       ...createLateSubmissionRoutesFor(databases.main),
+      // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
+      ...createCourseAssistantRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
