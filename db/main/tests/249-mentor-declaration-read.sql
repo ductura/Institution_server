@@ -70,6 +70,14 @@ SELECT is(pg_temp.read('marko', 'zm1'),
   'bound ' || (SELECT val::jsonb #>> '{statement,declarationSha256}' FROM ref WHERE name = 'saved'),
   'the mentor of the work reads the bound declaration');
 SELECT is(pg_temp.logged(), 'marko:mentor:zm1', 'the read is logged as the mentor''s, on the declaration surface');
+-- Ana bound no answer (INT-32, SRV-IZJAVA-ODGOVOR-NULL): the answer is null, not an object of nulls.
+-- The read logs one more opening; it is rolled back so the log checks below stay as they are.
+SAVEPOINT answer_read;
+SELECT is(pg_temp.ask('marko', format(
+    'SELECT coalesce(answer::text, %L) FROM app.teacher_declaration_answer(%L::uuid, %L::uuid)',
+    'NULL', pg_temp.id('zm1'), pg_temp.id('ana'))),
+  'NULL', 'the mentor reads no bound answer as null');
+ROLLBACK TO SAVEPOINT answer_read;
 
 -- 4. Nobody else reads it through the mentorship, and nothing more is logged.
 SELECT matches(pg_temp.read(a.name, 'zm1'), '^ZD40[13]', a.name || ' does not read Ana''s mentored declaration')

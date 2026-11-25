@@ -158,6 +158,19 @@ export {
   CourseAggregateParams,
   type CourseAggregate,
 } from "./course-aggregate.ts";
+export {
+  ANALYSIS_IDS,
+  ANALYSIS_LIMITS,
+  ANALYSIS_MAX_COLUMN_NAME,
+  ANALYSIS_MAX_FREQUENCY_VALUES,
+  AnalysisCatalogue,
+  AnalysisRunInput,
+  AnalysisRunResult,
+  analysisCatalogueGet,
+  analysisRoutes,
+  analysisRunsPost,
+  type AnalysisId,
+} from "./analysis.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./pilot-metrics.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./retention.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";

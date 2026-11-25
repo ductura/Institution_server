@@ -515,11 +515,17 @@ export {
   ENROLLMENT_TOO_MANY_ATTEMPTS,
   ENROLLMENT_UNAUTHENTICATED,
 } from "./institution-enrollment.ts";
-export { createStudentAssignmentsReader } from "./student-assignments.ts";
+export {
+  createStudentAssignmentsReader,
+  createStudentMentoredAssignmentsReader,
+} from "./student-assignments.ts";
 export type {
   StudentAssignmentRow,
   StudentAssignmentsRead,
   StudentAssignmentsReader,
+  StudentMentoredAssignmentRow,
+  StudentMentoredAssignmentsRead,
+  StudentMentoredAssignmentsReader,
 } from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export {

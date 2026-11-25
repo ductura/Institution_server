@@ -25,6 +25,7 @@ import {
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
@@ -373,6 +374,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInstitutionCourseRoutesFor(databases.main)",
     ids: [...INSTITUTION_COURSE_ROUTES],
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createEnrollmentCodeStateRouteFor(databases.main)",
+    ids: ["institution.enrollment-code-state.get"],
+    routes: () => [createEnrollmentCodeStateRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-14: a course's new assignment and an assignment's next version.
@@ -962,6 +968,7 @@ describe("CONTRACT_ONLY", () => {
         ...TEACHER_ROSTER_ROUTES,
         ...SRV_31,
         ...INSTITUTION_COURSE_ROUTES,
+        "institution.enrollment-code-state.get",
         "institution.course-assignments.post",
         "institution.assignment-versions.post",
         "submission.submit.post",
@@ -1014,6 +1021,7 @@ describe("routes the entry point mounts itself", () => {
       "support.problem-report.post",
       "support.problem-reports.post",
       ...INSTITUTION_COURSE_ROUTES,
+      "institution.enrollment-code-state.get",
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.assignment.get",

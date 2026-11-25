@@ -2,6 +2,35 @@
 // Input validators compiled ahead of time from the request schemas.
 
 export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>) => boolean>> = {
+  "analysis.catalogue.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "analysis.runs.post:body": (() => {
+  const local0 = /^(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['analysisId'] === 'descriptive')) || ((value['analysisId'] === 'frequencies')) || ((value['analysisId'] === 'correlation'))) &&
+      (typeof value['analysisVersion'] === 'string') &&
+      local0.test(value['analysisVersion']) &&
+      Array.isArray(value['variables']) &&
+      value['variables'].length <= 12 &&
+      value['variables'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['variables']) &&
+      Array.isArray(value['columns']) &&
+      value['columns'].length <= 12 &&
+      value['columns'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['name'] === 'string') && value['name'].length <= 40 && value['name'].length >= 1 && (((value['kind'] === 'numeric')) || ((value['kind'] === 'category'))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['columns']) &&
+      Array.isArray(value['rows']) &&
+      value['rows'].length <= 500 &&
+      ((array: unknown[]) => { for(const value of array) if(!((Array.isArray(value) && value.length <= 12 && value.length >= 1 && ((array: unknown[]) => { for(const value of array) if(!((((Number.isFinite(value)) || ((typeof value === 'string') && value.length <= 64) || ((value === null)))))) { return false }; return true; })(value)))) { return false }; return true; })(value['rows']) &&
+      Object.getOwnPropertyNames(value).length === 5
+    )
+  }
+  })(),
   "auth.backchannel-logout.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

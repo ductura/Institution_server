@@ -1,0 +1,31 @@
+// Public interface of server/domain/sheet; other folders import only this file.
+export {
+  MAX_CELL_TEXT_CODE_POINTS,
+  MAX_FORMULA_CODE_POINTS,
+  MAX_SHEETS,
+  MAX_SHEET_CELLS,
+  MAX_SHEET_COLUMNS,
+  MAX_SHEET_NAME_CODE_POINTS,
+  MAX_SHEET_ROWS,
+  SHEET_KIND,
+  SHEET_SCHEMA_VERSION,
+  columnLabel,
+  formatCellRef,
+  isSheetId,
+  parseCellRef,
+  type Sheet,
+  type SheetCell,
+  type SheetCells,
+  type SheetDocument,
+} from "./schema.ts";
+export {
+  SHEET_VALIDATION_CODES,
+  filledCellCount,
+  sheetDigest,
+  sheetDocumentsEqual,
+  sheetJcsBytes,
+  validateSheetDocument,
+  type SheetValidation,
+  type SheetValidationCode,
+  type SheetValidationError,
+} from "./validate.ts";

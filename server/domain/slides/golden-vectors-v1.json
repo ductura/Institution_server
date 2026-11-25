@@ -1,0 +1,453 @@
+{
+  "slidesV1": [
+    {
+      "name": "revision-zero",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000000",
+            "layout": "titleContent",
+            "blocks": []
+          }
+        ]
+      },
+      "utf8Hex": "7b22646f63756d656e744b696e64223a22736c69646573222c22736368656d6156657273696f6e223a312c22736c69646573223a5b7b22626c6f636b73223a5b5d2c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303030222c226c61796f7574223a227469746c65436f6e74656e74227d5d7d",
+      "sha256": "f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8"
+    },
+    {
+      "name": "title-slide-with-notes",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000002",
+                "slot": "title",
+                "text": "Izmi\u0161ljena prezentacija"
+              },
+              {
+                "type": "paragraph",
+                "id": "00000000-0000-4000-8000-000000000003",
+                "slot": "subtitle",
+                "text": "Izmi\u0161ljeni podnaslov"
+              }
+            ],
+            "notes": "Prva bilje\u0161ka.\nDruga bilje\u0161ka."
+          }
+        ]
+      },
+      "utf8Hex": "7b22646f63756d656e744b696e64223a22736c69646573222c22736368656d6156657273696f6e223a312c22736c69646573223a5b7b22626c6f636b73223a5b7b226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303032222c22736c6f74223a227469746c65222c2274657874223a22497a6d69c5a16c6a656e61207072657a656e746163696a61222c2274797065223a2268656164696e67227d2c7b226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303033222c22736c6f74223a227375627469746c65222c2274657874223a22497a6d69c5a16c6a656e6920706f646e61736c6f76222c2274797065223a22706172616772617068227d5d2c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303031222c226c61796f7574223a227469746c65222c226e6f746573223a22507276612062696c6a65c5a16b612e5c6e44727567612062696c6a65c5a16b612e227d5d7d",
+      "sha256": "f628874b822b0262955cfb41a451a083591d13d992817d0f56ae091ec3001675"
+    },
+    {
+      "name": "two-columns-list-paragraph-image",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000004",
+            "layout": "twoColumns",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000005",
+                "slot": "title",
+                "text": "Usporedba"
+              },
+              {
+                "type": "list",
+                "id": "00000000-0000-4000-8000-000000000006",
+                "slot": "left",
+                "items": ["Prva stavka", "Druga stavka"]
+              },
+              {
+                "type": "image",
+                "id": "00000000-0000-4000-8000-000000000007",
+                "slot": "left",
+                "attachmentId": "00000000-0000-4000-8000-000000000008",
+                "attachmentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "alt": "Izmi\u0161ljeni dijagram"
+              },
+              {
+                "type": "paragraph",
+                "id": "00000000-0000-4000-8000-000000000009",
+                "slot": "right",
+                "text": "Izmi\u0161ljeni odlomak."
+              }
+            ]
+          }
+        ]
+      },
+      "utf8Hex": "7b22646f63756d656e744b696e64223a22736c69646573222c22736368656d6156657273696f6e223a312c22736c69646573223a5b7b22626c6f636b73223a5b7b226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303035222c22736c6f74223a227469746c65222c2274657874223a225573706f7265646261222c2274797065223a2268656164696e67227d2c7b226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303036222c226974656d73223a5b225072766120737461766b61222c22447275676120737461766b61225d2c22736c6f74223a226c656674222c2274797065223a226c697374227d2c7b22616c74223a22497a6d69c5a16c6a656e692064696a616772616d222c226174746163686d656e744964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303038222c226174746163686d656e74536861323536223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303037222c22736c6f74223a226c656674222c2274797065223a22696d616765227d2c7b226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303039222c22736c6f74223a227269676874222c2274657874223a22497a6d69c5a16c6a656e69206f646c6f6d616b2e222c2274797065223a22706172616772617068227d5d2c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303034222c226c61796f7574223a2274776f436f6c756d6e73227d5d7d",
+      "sha256": "5b0430c0d0112a15ec5df3801df8ae95ae876b86963b855fff0d53164c636710"
+    },
+    {
+      "name": "image-only-two-slides",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-00000000000a",
+            "layout": "imageOnly",
+            "blocks": [
+              {
+                "type": "image",
+                "id": "00000000-0000-4000-8000-00000000000b",
+                "slot": "image",
+                "attachmentId": "00000000-0000-4000-8000-00000000000c",
+                "attachmentSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                "alt": "Izmi\u0161ljena slika"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000000000d",
+            "layout": "titleContent",
+            "blocks": []
+          }
+        ]
+      },
+      "utf8Hex": "7b22646f63756d656e744b696e64223a22736c69646573222c22736368656d6156657273696f6e223a312c22736c69646573223a5b7b22626c6f636b73223a5b7b22616c74223a22497a6d69c5a16c6a656e6120736c696b61222c226174746163686d656e744964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303063222c226174746163686d656e74536861323536223a2230313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566222c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303062222c22736c6f74223a22696d616765222c2274797065223a22696d616765227d5d2c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303061222c226c61796f7574223a22696d6167654f6e6c79227d2c7b22626c6f636b73223a5b5d2c226964223a2230303030303030302d303030302d343030302d383030302d303030303030303030303064222c226c61796f7574223a227469746c65436f6e74656e74227d5d7d",
+      "sha256": "542fe6d8fd74a5978e9d7a33d38ccc00292a3bb58b27d5dbdf4cf0d3446e7d6b"
+    }
+  ],
+  "rejectedSlidesV1": [
+    {
+      "name": "text-document-v4",
+      "value": {
+        "schemaVersion": 4,
+        "nodes": [],
+        "sources": []
+      },
+      "errors": [
+        ["", "UNKNOWN_FIELD"],
+        ["documentKind", "DOCUMENT_KIND_INVALID"],
+        ["schemaVersion", "SCHEMA_VERSION_INVALID"],
+        ["slides", "SLIDES_INVALID"]
+      ]
+    },
+    {
+      "name": "schema-version-as-string",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": "1",
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": []
+          }
+        ]
+      },
+      "errors": [["schemaVersion", "SCHEMA_VERSION_INVALID"]]
+    },
+    {
+      "name": "no-slides",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": []
+      },
+      "errors": [["slides", "SLIDES_INVALID"]]
+    },
+    {
+      "name": "unknown-key-in-block",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "title",
+                "text": "Naslov",
+                "color": "red"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0]", "UNKNOWN_FIELD"]]
+    },
+    {
+      "name": "block-id-equals-slide-id",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000014",
+                "slot": "title",
+                "text": "Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].id", "ID_DUPLICATE"]]
+    },
+    {
+      "name": "slot-not-in-layout",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "body",
+                "text": "Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].slot", "SLOT_INVALID"]]
+    },
+    {
+      "name": "heading-in-subtitle-slot",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "subtitle",
+                "text": "Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].type", "BLOCK_TYPE_INVALID"]]
+    },
+    {
+      "name": "blocks-out-of-slot-order",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "paragraph",
+                "id": "00000000-0000-4000-8000-000000000016",
+                "slot": "subtitle",
+                "text": "Podnaslov"
+              },
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "title",
+                "text": "Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[1]", "BLOCK_ORDER_INVALID"]]
+    },
+    {
+      "name": "title-slot-holds-one-block",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "title",
+                "text": "Naslov"
+              },
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000016",
+                "slot": "title",
+                "text": "Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[1]", "SLOT_FULL"]]
+    },
+    {
+      "name": "text-with-leading-space",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "title",
+                "text": " Naslov"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].text", "TEXT_INVALID"]]
+    },
+    {
+      "name": "text-with-bidi-override",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [
+              {
+                "type": "heading",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "title",
+                "text": "Naslov\u202e"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].text", "TEXT_INVALID"]]
+    },
+    {
+      "name": "empty-notes",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "title",
+            "blocks": [],
+            "notes": ""
+          }
+        ]
+      },
+      "errors": [["slides[0].notes", "NOTES_INVALID"]]
+    },
+    {
+      "name": "empty-list",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "titleContent",
+            "blocks": [
+              {
+                "type": "list",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "body",
+                "items": []
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].items", "LIST_INVALID"]]
+    },
+    {
+      "name": "image-hash-uppercase",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "imageOnly",
+            "blocks": [
+              {
+                "type": "image",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "image",
+                "attachmentId": "00000000-0000-4000-8000-000000000016",
+                "attachmentSha256": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "alt": "Slika"
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].attachmentSha256", "IMAGE_INVALID"]]
+    },
+    {
+      "name": "image-without-alt",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "imageOnly",
+            "blocks": [
+              {
+                "type": "image",
+                "id": "00000000-0000-4000-8000-000000000015",
+                "slot": "image",
+                "attachmentId": "00000000-0000-4000-8000-000000000016",
+                "attachmentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "alt": ""
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["slides[0].blocks[0].alt", "IMAGE_INVALID"]]
+    },
+    {
+      "name": "unknown-layout",
+      "value": {
+        "documentKind": "slides",
+        "schemaVersion": 1,
+        "slides": [
+          {
+            "id": "00000000-0000-4000-8000-000000000014",
+            "layout": "fullBleed",
+            "blocks": []
+          }
+        ]
+      },
+      "errors": [["slides[0].layout", "LAYOUT_INVALID"]]
+    }
+  ]
+}

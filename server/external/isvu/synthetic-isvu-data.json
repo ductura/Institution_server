@@ -1,0 +1,30 @@
+{
+  "institutionKey": "demo-fakultet",
+  "domain": "demo.ductus.test",
+  "people": {
+    "lana": { "user": "demo-student-3", "givenName": "Lana", "familyName": "Brezik" },
+    "niko": { "user": "demo-student-4", "givenName": "Niko", "familyName": "Rastović" },
+    "ela": { "user": "demo-izvor-1", "givenName": "Ela", "familyName": "Probić" },
+    "tin": { "user": "demo-izvor-2", "givenName": "Tin", "familyName": "Uzorak" }
+  },
+  "courses": [
+    {
+      "sourceCourseKey": "SYN-101",
+      "name": "Izmišljeni seminar iz ekologije grada",
+      "academicYear": "2026/2027",
+      "roster": ["lana", "niko", "ela"]
+    },
+    {
+      "sourceCourseKey": "SYN-102",
+      "name": "Izmišljeni seminar iz urbane hidrologije",
+      "academicYear": "2026/2027",
+      "roster": ["niko", "tin"]
+    },
+    {
+      "sourceCourseKey": "SYN-201",
+      "name": "Izmišljeni seminar iz prošlogodišnje teme",
+      "academicYear": "2025/2026",
+      "roster": ["lana"]
+    }
+  ]
+}

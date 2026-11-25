@@ -2081,6 +2081,8 @@ const en = {
     alreadyAllocated: "The reviews are already allocated, so the round can no longer be changed.",
     alreadyReviewed: "This work has already been reviewed.",
     closed: "The time for this action has passed.",
+    unknownAnalysisVersion:
+      "This version of the analysis is no longer available. Choose an analysis from the list.",
     tooFewSubmissions:
       "Too few works are submitted for the review to stay anonymous. Wait for more submissions.",
     alreadySubmitted:
