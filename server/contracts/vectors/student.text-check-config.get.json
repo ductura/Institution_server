@@ -30,7 +30,8 @@
             "abbr",
             "hole"
           ],
-          "lektaProfileId": "agr-diplomski"
+          "lektaProfileId": "agr-diplomski",
+          "citationStyle": "apa"
         }
       }
     },
@@ -53,7 +54,8 @@
         },
         "body": {
           "enabledCheckIds": ["paste", "claim", "long", "term", "abbr", "hole"],
-          "lektaProfileId": null
+          "lektaProfileId": null,
+          "citationStyle": "fpzg"
         }
       }
     },
