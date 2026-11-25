@@ -401,7 +401,7 @@ export const courseGroupTeachersPost = defineRoute({
 // it is for, its rule on outside tools and the AI mode "samo sažimanje". Each is
 // optional, so a body without them keeps its meaning. The mounted route stores
 // externalToolsAllowed and aiSummaryOnly on the assignment (SRV-ZAD-POSTAVKE,
-// migration 20261219100000); groups stay their own SRV task, so until it lands
+// migration 20261219120000); groups stay their own SRV task, so until it lands
 // a non-empty groupIds is 422 (server/http/institution-assignments.ts).
 const ASSIGNMENT_SETUP = {
   /** zs-2: the course's seminar groups it is for, distinct; absent or empty is the whole course. */
