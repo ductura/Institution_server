@@ -2101,6 +2101,12 @@ export const hr = {
       neverDeleted: "Ne briše se: dokazuje predaju i nakon brisanja sadržaja.",
     },
   },
+  // Words printed by the .pptx of a slides work (server/downloads/export/pptx.ts,
+  // SRV-V13-IZVOZ-PPTX); added after the port.
+  slidesExport: {
+    slide: "Slajd",
+    presentation: "Prezentacija",
+  },
 } as const;
 
 /** A text table with the keys of `hr`, any text in place of each Croatian one. */

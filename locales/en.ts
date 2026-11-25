@@ -2119,6 +2119,10 @@ const en = {
       neverDeleted: "Not deleted: it proves the submission even after the content is deleted.",
     },
   },
+  slidesExport: {
+    slide: "Slide",
+    presentation: "Presentation",
+  },
 } as const satisfies Messages;
 
 export const messagesEn: Messages = en;
