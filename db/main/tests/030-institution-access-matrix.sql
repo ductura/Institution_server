@@ -1999,7 +1999,8 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['app.peer_review_submitted(uuid)', 'app.peer_review_blocks(uuid,uuid)']) f
+     CROSS JOIN unnest(ARRAY['app.peer_review_submitted(uuid)', 'app.peer_review_blocks(uuid,uuid)',
+                             'app.peer_review_document(uuid,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-V19-RECENZIJA-BAZA: only the identity role and its owner execute the evidence helpers of the review'
 );

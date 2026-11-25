@@ -116,6 +116,13 @@ describe("DAN-294 access log days: the classes of input", () => {
       shape([row({ reader_role: "owner" }), row({ entry_id: id(2), surface: "elsewhere" })]),
     ).toEqual([["2026-11-10", ["14:10–14:15 mentor unknown", "14:10–14:15 unknown live_view"]]]);
     expect(accessLogEntryOf(row({ reader_role: null }))?.role).toBe("unknown");
+    // SRV-V19-RECENZIJA-BAZA: a peer reviewer reaches the author as an unknown role with no
+    // name; the published role set is closed, so a neutral label is an owner decision.
+    const peer = accessLogEntryOf(
+      row({ reader_role: "peer_reviewer", reader_given_name: null, reader_family_name: null }),
+    );
+    expect(peer?.role).toBe("unknown");
+    expect(peer?.reader).toBeNull();
   });
 
   it.each([

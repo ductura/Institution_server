@@ -902,6 +902,7 @@ DROP FUNCTION institution.peer_review_rubrics_valid(jsonb);
 SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA app TO ductus_evidence;
 SET LOCAL ROLE ductus_evidence;
+DROP FUNCTION app.peer_review_document(uuid, uuid);
 DROP FUNCTION app.peer_review_blocks(uuid, uuid);
 DROP FUNCTION app.peer_review_submitted(uuid);
 SET LOCAL ROLE ductus_migrator;
