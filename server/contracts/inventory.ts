@@ -948,6 +948,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-NF4-IZNIMKA-ZAPIS (Ductus#2055, plan NF-4, NZ-5 B): the late-submission exception of one student; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/late-submission-exceptions/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153957738",
+  },
+  "app/api/student/assignments/[assignmentId]/late-submission-exceptions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153957738",
+  },
   // SRV-1306 (plan M10.3): legal holds of the institution; Ductus has no such route.
   "app/api/institution/legal-holds/route.ts": {
     methods: ["GET", "POST"],

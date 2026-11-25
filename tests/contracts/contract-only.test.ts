@@ -452,7 +452,14 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-1108: the deadline extensions of an assignment over the main database.
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
-    ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
+    ids: [
+      "teacher.deadline-extensions.get",
+      "teacher.deadline-extension.post",
+      // SRV-NF4-IZNIMKA-ZAPIS: the late-submission exceptions share the port.
+      "teacher.late-exceptions.get",
+      "teacher.late-exception.post",
+      "student.late-exceptions.get",
+    ],
     routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -1007,6 +1014,9 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
+      "teacher.late-exceptions.get",
+      "teacher.late-exception.post",
+      "student.late-exceptions.get",
       "institution.legal-holds.get",
       "institution.legal-holds.post",
       "institution.legal-hold-release.post",

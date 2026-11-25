@@ -121,6 +121,26 @@ export const STUDENT_HANDLERS: Handlers = {
     });
     return { status: 200, body: { extensions } };
   },
+  // SRV-NF4-IZNIMKA-ZAPIS: only the caller's own exceptions, marked as such.
+  "student.late-exceptions.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const exceptions = state.lateExceptions.flatMap((exception) =>
+      exception.assignmentId === assignment.id && exception.studentId === account.id
+        ? [
+            {
+              id: exception.id,
+              kind: "exception" as const,
+              untilAt: exception.untilAt,
+              reasonId: exception.reasonId as NonNullable<typeof exception.reasonId>,
+              createdAt: exception.createdAt,
+            },
+          ]
+        : [],
+    );
+    return { status: 200, body: { exceptions } };
+  },
   "student.submission.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = ownAssignment(state, account, params.assignmentId);

@@ -974,6 +974,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "enrolled" | "already_enrolled" | "enrolled_no_assignment"; "courseId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_code" | "expired_code" | "too_many_attempts" | "forbidden" | "unavailable";
   };
+  "student.late-exceptions.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "exceptions": ({ "id": string; "kind": "exception"; "untilAt": string; "reasonId": "justified" | "technical" | "agreement"; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.notice-read.post": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1393,6 +1400,20 @@ export type Operations = {
     body: { "enabled": boolean };
     success: { status: 200; body: { "enabled": boolean; "source"?: "assignment" | "course" | "default"; "changedBy": { "role": "teacher" | "mentor"; "name": string | null } | null; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "teacher.late-exception.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "studentId": string; "untilAt": string; "reasonId": "justified" | "technical" | "agreement" };
+    success: { status: 201; body: { "exception": { "id": string; "studentId": string; "untilAt": string; "reasonId": "justified" | "technical" | "agreement" | null; "createdBy": string; "createdAt": string } }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.late-exceptions.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "exceptions": ({ "id": string; "studentId": string; "untilAt": string; "reasonId": "justified" | "technical" | "agreement" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "teacher.literature-seen.put": {
     params: { "documentId": string };

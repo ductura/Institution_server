@@ -1709,6 +1709,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "student.late-exceptions.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.notice-read.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -2467,6 +2475,37 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['enabled'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.late-exception.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.late-exception.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['studentId'] === 'string') &&
+      local0.test(value['studentId']) &&
+      (typeof value['untilAt'] === 'string') &&
+      local1.test(value['untilAt']) &&
+      (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement'))) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
+  "teacher.late-exceptions.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

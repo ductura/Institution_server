@@ -134,9 +134,114 @@ function addRoute(port: DeadlineExtensions): Route {
   };
 }
 
-/** The two routes over one port: the list, then the record. */
+// SRV-NF4-IZNIMKA-ZAPIS: the exception of a late submission for one student,
+// over the same port (migration 20261219290000). Same edge as the extensions: a
+// malformed, refused or unknown id is the same 404 (C-23), a body the contract
+// does not accept is 422, an answer outside the contract or a throw is 503.
+
+type ExceptionList = { status: string; exceptions?: unknown };
+
+function readLateRoute(
+  id: string,
+  load: (port: DeadlineExtensions, token: string, assignmentId: string) => Promise<ExceptionList>,
+  port: DeadlineExtensions,
+): Route {
+  const { contract, body } = contractOf(id);
+  return {
+    contract,
+    async handle(request, response, params) {
+      const site = request.headersDistinct["sec-fetch-site"];
+      if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        return sendProblem(response, 403, "forbidden");
+      }
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      const assignmentId = params?.assignmentId ?? "";
+      if (!UUID.test(assignmentId)) return sendProblem(response, 404, "not_found");
+      try {
+        const result = await load(port, token, assignmentId.toLowerCase());
+        if (result.status !== "read") {
+          return result.status === "unauthorized"
+            ? sendProblem(response, 401, "unauthorized")
+            : sendProblem(response, 404, "not_found");
+        }
+        const answer = { exceptions: result.exceptions };
+        if (Value.Check(body, answer)) return sendJson(response, 200, answer);
+        reportServerError(
+          "route",
+          new Error("answer outside the contract"),
+          requestIdOf(response),
+          contract.id,
+        );
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), contract.id);
+      }
+      return sendProblem(response, 503, "unavailable");
+    },
+  };
+}
+
+function grantLateRoute(port: DeadlineExtensions): Route {
+  const { contract, body } = contractOf("teacher.late-exception.post");
+  const input = contract.request.body!;
+  return {
+    contract,
+    async handle(request, response, params) {
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return refuse(response, 401, "unauthorized");
+      const types = request.headersDistinct["content-type"];
+      if (
+        types?.length !== 1 ||
+        types[0]?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+      ) {
+        return refuse(response, 415, "unsupported_media_type");
+      }
+      const raw = await readBodyWithLimit(request, contract.request.maxBodyBytes!, BODY_TIMEOUT_MS);
+      if (!raw.ok) return refuse(response, raw.status, raw.reason);
+      const json = parseJson(raw.bytes);
+      if (!json.ok) return sendProblem(response, 400, "invalid_json");
+      if (!Value.Check(input, json.value)) return sendProblem(response, 422, "invalid_input");
+      const assignmentId = params?.assignmentId ?? "";
+      if (!UUID.test(assignmentId)) return sendProblem(response, 404, "not_found");
+      const sent = json.value as { studentId: string; untilAt: string; reasonId: string };
+      try {
+        const result = await port.grantLateException(token, {
+          assignmentId: assignmentId.toLowerCase(),
+          studentId: sent.studentId.toLowerCase(),
+          untilAt: sent.untilAt,
+          reasonId: sent.reasonId,
+        });
+        if (result.status === "invalid_input") return sendProblem(response, 422, "invalid_input");
+        if (result.status !== "granted") {
+          return result.status === "unauthorized"
+            ? sendProblem(response, 401, "unauthorized")
+            : sendProblem(response, 404, "not_found");
+        }
+        const answer = { exception: result.exception };
+        if (Value.Check(body, answer)) return sendJson(response, 201, answer);
+        reportServerError(
+          "route",
+          new Error("answer outside the contract"),
+          requestIdOf(response),
+          contract.id,
+        );
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), contract.id);
+      }
+      return sendProblem(response, 503, "unavailable");
+    },
+  };
+}
+
+/** The routes over one port: the extensions (list, record), then the late-submission exceptions (teacher list, record, student's own). */
 export function createDeadlineExtensionRoutes(port: DeadlineExtensions): Route[] {
-  return [listRoute(port), addRoute(port)];
+  return [
+    listRoute(port),
+    addRoute(port),
+    readLateRoute("teacher.late-exceptions.get", (p, t, a) => p.listLateExceptions(t, a), port),
+    grantLateRoute(port),
+    readLateRoute("student.late-exceptions.get", (p, t, a) => p.listOwnLateExceptions(t, a), port),
+  ];
 }
 
 /** The routes over main's application withActor. */
