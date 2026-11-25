@@ -43760,6 +43760,33 @@
   },
   {
     "route": "student-work.start.post",
+    "name": "slides-work",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-000000001412"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "workId": "00000000-0000-4000-8000-0000000014c1",
+        "rulesVersion": 2,
+        "language": "hr",
+        "documentKind": "slides"
+      }
+    }
+  },
+  {
+    "route": "student-work.start.post",
     "name": "started-again",
     "request": {
       "headers": {
@@ -115031,6 +115058,31 @@
       "body": {
         "revision": 2,
         "document": "{\"nodes\":[],\"schemaVersion\":1}"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "slides-snapshot",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "revision": 2,
+        "document": "{\"documentKind\":\"slides\",\"schemaVersion\":1,\"slides\":[]}",
+        "documentKind": "slides"
       }
     }
   },

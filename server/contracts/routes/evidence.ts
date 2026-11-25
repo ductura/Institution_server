@@ -2,6 +2,8 @@ import { Type, type TSchema } from "@sinclair/typebox";
 
 import { closed, defineRoute, type ErrorSpec, messageKeyOf } from "../schema/index.ts";
 
+import { DocumentKind } from "./shared.ts";
+
 // Port of Ductus src/server/evidence/{open,commit}-route.ts and ingest-http.ts at
 // d52a92c3 (docs/BACKEND.md 4.13). These two routes answer every refusal as
 // {status: <code>}, not {error: <code>}: the browser client of that revision
@@ -166,6 +168,11 @@ export const open = defineRoute({
           Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)]),
         ),
         revisionZeroHash: Type.Optional(Sha256),
+        // SRV-V13-UGOVOR-VRSTA: the kind of the work, fixed at its start; the server always
+        // sends it, optional only for contracts:breaking. For "slides" the version of the
+        // slides schema is slidesSchemaVersion and schemaVersion is absent.
+        documentKind: Type.Optional(DocumentKind),
+        slidesSchemaVersion: Type.Optional(Type.Literal(1)),
         /** Exact JCS bytes of the snapshot of currentRevision. */
         document: Base64,
         // The receipt keys of the work's evidence domain; the route sends [] when the domain
