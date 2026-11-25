@@ -38,7 +38,7 @@ Zapis prometa (`traffic-record.ts`, ugovor Ductus#1836 c.6919128457, dodatak c.6
 - `createTrafficRecorder` daje `arm(request, response)`: jedan zapis `traffic.request` po odgovoru, kad se odgovor zatvori (`close`); ako je već zatvoren, odmah. Drugi `arm` za isti odgovor ne radi ništa, ni iz drugog snimača.
 - Zapis nosi metodu (izvan `TRAFFIC_METHODS` je `OTHER`), predložak rute koji daje pozivatelj ili `none`, IP iz koraka 2 ili `none`, poslani status (`499` kad zaglavlja nisu poslana), trajanje od `arm` do zatvaranja (cijeli ms, 0 do 86 400 000) i vrstu računa `anonymous`. Tijelo, zaglavlja, kolačić i upit se ne čitaju.
 - `routeOf` i `requestIdOf` daje `http` (ovo područje ga ne uvozi); `requestIdOf` se zove tek pri zatvaranju, pa uspješan odgovor ne dobiva `X-Request-Id`. Sat se ubrizgava.
-- Snimač nikad ne baca i ne čeka zapisnik. Status izvan 100 do 599 katalog odbija (rezervni redak); ovaj server takve ne šalje. Uključivanje u pipeline je DAN-831-3.
+- Snimač nikad ne baca i ne čeka zapisnik. Status izvan 100 do 599 katalog odbija (rezervni redak); ovaj server takve ne šalje. U pipeline je uključen u koraku 5 (`server/http/pipeline.ts`, DAN-1536): bez log servisa se ne bilježi, a pad zapisivača ne mijenja odgovor.
 
 Izvor metrike iz zapisa prometa (`traffic-tally.ts`, DAN-834-3, ugovor Ductus#1836 c.6930660055):
 

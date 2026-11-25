@@ -130,12 +130,37 @@ it("keeps a material for its owner only and refuses everyone else with 404", asy
       const removed = await call("DELETE", `${PATH}/${material.id}`, ANA);
       expect(removed.status).toBe(204);
       expect((await call("GET", `${PATH}/${material.id}`, ANA)).status).toBe(404);
-      // Only this material's passages: the local seed (db/main/local/seed.sql) keeps others in a shared database.
       const left = await db.query<{ n: number }>(
         "SELECT count(*)::int AS n FROM institution.qual_segment WHERE material_id = $1",
         [material.id],
       );
       expect(left.rows[0]!.n).toBe(0);
+
+      // (5b) The limit of 200 materials is 409 and keeps nothing more.
+      const own = ((await (await call("GET", PATH, ANA)).json()) as { materials: unknown[] })
+        .materials.length;
+      for (let n = own; n < 200; n += 1) {
+        expect((await keep(ANA, { ...mine, title: `Gradivo ${n}` })).status).toBe(201);
+      }
+      const over = await keep(ANA, mine);
+      expect(over.status).toBe(409);
+      expect(await over.json()).toMatchObject({ code: "conflict" });
+      expect(
+        ((await (await call("GET", PATH, ANA)).json()) as { materials: unknown[] }).materials,
+      ).toHaveLength(200);
+
+      // (5c) The database asks for a signed-in person and the owner relation, not for
+      // a role, so a teacher who keeps a text keeps it for themselves only: nobody
+      // else reads or deletes it (404), and Ana's list does not show it.
+      const teacher = await keep(VESNA, mine);
+      expect(teacher.status).toBe(201);
+      const theirs = ((await teacher.json()) as { id: string }).id;
+      expect((await call("GET", `${PATH}/${theirs}`, ANA)).status).toBe(404);
+      expect((await call("DELETE", `${PATH}/${theirs}`, ANA)).status).toBe(404);
+      expect(
+        ((await (await call("GET", PATH, ANA)).json()) as { materials: { id: string }[] })
+          .materials,
+      ).not.toContainEqual(expect.objectContaining({ id: theirs }));
 
       // (6) No session: 401.
       const anonymous = await fetch(`http://127.0.0.1:${server.port}${PATH}`);

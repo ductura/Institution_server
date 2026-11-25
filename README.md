@@ -95,14 +95,13 @@ Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `
 
 | Projekt          | Datoteke                                                              | Što provjerava                                                                                                   |
 | ---------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `unit`           | `{server,test-support,tests,scripts}/**/*.test.ts`                    | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                       |
-| `property`       | `{server,test-support,tests,scripts}/**/*.property.test.ts`           | Svojstva pravila pristupa (fast-check)                                                                           |
+| `unit`           | `{server,test-support,tests,scripts}/**/*.test.ts`                    | Pomoćne funkcije, lint pravila i formatiranje                                                                    |
+| `property`       | `{server,test-support,tests,scripts}/**/*.property.test.ts`           | Svojstva pravila i ulaza (fast-check)                                                                            |
 | `integration`    | `{server,test-support,tests,scripts}/**/*.integration.test.ts`        | HTTP poslužitelj od zahtjeva do odgovora                                                                         |
 | `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)        | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
 | `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`) | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
-Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
-Pokriva je `server/app.integration.test.ts`.
+Dimni test stvarnog poslužitelja: `server/server-smoke.integration.test.ts` gradi `dist/server.js` kao `pnpm build`, pokreće ga i provjerava granicu HTTP-a (zdravlje bez prijave, 401 bez sesije i za `Authorization: Bearer <id korisnika>`, 404 u formatu ugovora, 400 i 413 za neupotrebljivo tijelo, ništa od tijela u izlazu procesa). Naslijeđeni kostur (`server/app.ts`, `server/access.ts`, `server/store.ts`) uklonjen je u DAN-1537; isti test pada ako se vrati.
 
 Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
@@ -110,23 +109,20 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 `.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP okruženja (`db/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a nakon nativnog stoga (`pnpm db:up:native`) i pgTAP matricu glavne baze (`pnpm test:db:native`, `db/main/tests`). Posao `checks` ima tri grane (matrica `shard: [1, 2, 3]`), a `database` dvije (`shard: [1, 2]`). Vitest projekti unit, integracijski i migracijski dijele se po datotekama (`vitest --shard`). U `database` ostali koraci rade na obje grane. U `checks` statičke provjere (tipovi, knjiga migracija, lint, formatiranje) rade na 1. grani, a svojstveni testovi na 2. i 3. grani, dakle dvaput po runu kao i prije. Test jednakosti, probna objava, zaštita ugovora i slike rade na svim granama. `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
 
-## Stanje kostura
+## Stanje poslužitelja
 
-- Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
+- Prijava: samo AAI@EduHr (D-09) kroz sesiju (`server/http/auth.ts`). Privremena testna zamjena prijave (`Authorization: Bearer <id korisnika>`) uklonjena je s kosturom (DAN-1537).
 - Lažni OIDC pružatelj (`packages/test-fakes/oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx packages/test-fakes/oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
-- Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
+- Baza: PostgreSQL kroz `server/database/`; memorijska baza kostura uklonjena je (DAN-1537).
 - Pozadinski poslovi: još nisu dodani.
 
 ## API
 
-Ulaz `server/server.ts` danas montira samo `GET /api/v1/health`. Ostale rute u tablici ima samo stari kostur `server/app.ts`, koji ostaje kao dimni test do S-1H.3 i više se ne pokreće kao server.
+Ulaz `server/server.ts` montira rute iz ugovora (`server/contracts/routes/`, objavljeno u `openapi/v1.json`). Stare rute kostura `/api/documents` uklonjene su (DAN-1537) i odgovaraju 404.
 
-| Metoda | Putanja              | Opis                                  |
-| ------ | -------------------- | ------------------------------------- |
-| GET    | `/api/v1/health`     | Provjera rada (`dist/server.js`)      |
-| GET    | `/api/documents`     | Dokumenti prijavljenog korisnika      |
-| GET    | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
-| PUT    | `/api/documents/:id` | Izmjena (samo vlasnik)                |
+| Metoda | Putanja          | Opis                             |
+| ------ | ---------------- | -------------------------------- |
+| GET    | `/api/v1/health` | Provjera rada (`dist/server.js`) |
 
 Unutarnje rute poslužitelj–poslužitelj (Aplication_server → Institution_server, ugovor Ductus#2028 c.6993786629 §2) montira `server/server.ts`: `POST /internal/v1/institutions` i `GET /internal/v1/institutions/{slug}` (`server/http/internal-institutions.ts`). Traže `Authorization: Bearer` jednak varijabli `DUCTURA_PROVISIONING_TOKEN` (najmanje 32 znaka, samo iz okoline); bez nje obje vraćaju 404. Nisu dio javnog ugovora `/api/v1`. Prijavljeni račun čita `GET /api/v1/me` (§3.3).
 

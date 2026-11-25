@@ -1,6 +1,6 @@
 # Gradivo za kvalitativno kodiranje v1
 
-Zadatak: SRV-V18-KODIRANJE-GRADIVO `srv-v18-kodiranje-gradivo` (Ductus#2058, nalog c.7173076650; val 18, WEB `docs/nalazi/val18-razlika.md` §5 t. 6, nalazi V18-3, V18-7 i V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.142.0). Ovisi o SRV-V18-KODIRANJE-BAZA (migracija `20261219390000_qualitative_coding.sql`; RPC-ovi `app.create_qual_material`, `app.qual_materials`, `app.qual_material`, `app.delete_qual_material`). Nova migracija nije potrebna.
+Zadatak: SRV-V18-KODIRANJE-GRADIVO `srv-v18-kodiranje-gradivo` (Ductus#2058, nalog c.7173076650; val 18, WEB `docs/nalazi/val18-razlika.md` §5 t. 6, nalazi V18-3, V18-7 i V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.146.0). Ovisi o SRV-V18-KODIRANJE-BAZA (migracija `20261219390000_qualitative_coding.sql`; RPC-ovi `app.create_qual_material`, `app.qual_materials`, `app.qual_material`, `app.delete_qual_material`). Nova migracija nije potrebna.
 
 ## Zašto
 
@@ -9,6 +9,7 @@ Student kodira vlastito gradivo: tekst intervjua ili bilješku koju je upisao il
 ## Načela
 
 - **Privatno vlasniku (V18-9, C-23).** Pristup nastaje iz odnosa „vlasnik”, ne iz uloge. Tuđe gradivo, nepoznat i neispravan identifikator (i identifikator velikim slovima) isti su 404; nastavnik i mentor ne čitaju ništa. Popis tuđe osobe je prazan, nikad greška.
+- **Uloga ne daje pristup.** Ruta je klase `student`, ali baza traži prijavljenu osobu i odnos vlasnika, ne ulogu: nastavnik koji spremi tekst sprema ga samo sebi, a nitko drugi ga ne čita. Suženje na studente traži izmjenu RPC-a i ide vlasniku.
 - **Bez zvuka i bez automatskog prepisa (V18-7).** Gradivo je upisan ili zalijepljen tekst.
 - **Pomoćnik se ne poziva (V18-3).** Nijedna ruta ne zove pomoćnika i nijedan odgovor ne nosi prijedlog koda ili sažetak.
 - **Nepromjenjivo.** Tekst gradiva se ne mijenja; izmjena je novo gradivo. Nema `PATCH` rute. Gradivo s barem jednim označenim odlomkom je `locked: true`.
