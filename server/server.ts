@@ -119,6 +119,7 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createWorkTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -343,6 +344,8 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
+      ...createWorkTemplateRoutesFor(databases.main),
       // SRV-1606: the teacher returns the whole submitted work for revision.
       ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
