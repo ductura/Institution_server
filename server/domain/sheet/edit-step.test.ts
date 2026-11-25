@@ -131,6 +131,19 @@ describe("parseSheetStep", () => {
     expect(parseSheetStep(raw)).toEqual({ ok: false, error });
   });
 
+  it("refuses a lone surrogate in a value, a formula and a sheet name instead of throwing", () => {
+    const lone = "a\ud800b";
+    const hash = "a".repeat(64);
+    for (const step of [
+      { ...ok, value: lone },
+      { type: "cellSet", sheetId: S, ref: "A1", formula: `=${lone}` },
+      { type: "sheetRename", sheetId: S, name: lone, replacedSha256: hash },
+    ]) {
+      expect(parseSheetStep(step)).toEqual({ ok: false, error: "step_invalid" });
+    }
+    expect(parseSheetSteps([{ ...ok, value: lone }])).toMatchObject({ ok: false, index: 0 });
+  });
+
   it("refuses __proto__ as a key", () => {
     expect(
       parseSheetStep(JSON.parse(`{"type":"rowInsert","sheetId":"${S}","row":1,"__proto__":{}}`)).ok,

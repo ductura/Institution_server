@@ -141,6 +141,11 @@ function isSha256(value: unknown): value is string {
   return typeof value === "string" && SHA256_PATTERN.test(value);
 }
 
+/** Well-formed Unicode (no lone surrogate); never normalised. */
+function isWellFormed(value: string): boolean {
+  return !/\p{Cs}/u.test(value);
+}
+
 function isPosition(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 1;
 }
@@ -193,9 +198,10 @@ export function parseSheetStep(raw: unknown): SheetStepParse {
       if (hasValue) {
         if (typeof value === "number") {
           if (!Number.isFinite(value)) return bad;
-        } else if (typeof value !== "string") return bad;
+        } else if (typeof value !== "string" || !isWellFormed(value)) return bad;
       } else if (
         typeof formula !== "string" ||
+        !isWellFormed(formula) ||
         Array.from(formula).length > MAX_FORMULA_CODE_POINTS
       ) {
         return bad;
@@ -247,7 +253,7 @@ export function parseSheetStep(raw: unknown): SheetStepParse {
     case "sheetRename": {
       const name = get("name");
       const replacedSha256 = get("replacedSha256");
-      if (typeof name !== "string" || !isSha256(replacedSha256)) return bad;
+      if (typeof name !== "string" || !isWellFormed(name) || !isSha256(replacedSha256)) return bad;
       return { ok: true, step: { type: kind, sheetId, name, replacedSha256 } };
     }
   }
@@ -359,7 +365,7 @@ function mutate(doc: SheetDocument, step: SheetStep): Fail | null {
         step.formula !== undefined
           ? { value: null, formula: step.formula }
           : { value: step.value as string | number };
-      if (old !== undefined && canonicalizeJcs(old) === canonicalizeJcs(cell)) {
+      if (old !== undefined && old.formula === cell.formula && Object.is(old.value, cell.value)) {
         return fail("no_change");
       }
       sheet.cells[step.ref] = cell;
