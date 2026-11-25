@@ -71,6 +71,26 @@ describe("freezeExportSnapshot", () => {
     ).toEqual(snapshot);
   });
 
+  it("lists orderedItem in the capability map only for a document with a numbered list", () => {
+    const withList = revision();
+    const snapshot = freezeExportSnapshot({
+      ...withList,
+      document: {
+        ...withList.document,
+        nodes: [
+          ...withList.document.nodes,
+          {
+            type: "orderedItem",
+            id: "00000000-0000-4000-8000-000000000002" as NodeId,
+            children: [{ type: "text", text: "Prvi.", marks: [] }],
+          },
+        ],
+      },
+    });
+    expect(snapshot.capabilityMap.orderedItem).toBe("degraded");
+    expect(freezeExportSnapshot(revision()).capabilityMap).not.toHaveProperty("orderedItem");
+  });
+
   it("changes the fingerprint with a single character edit", () => {
     expect(freezeExportSnapshot(revision("Čaj!")).sha256).not.toBe(
       freezeExportSnapshot(revision()).sha256,

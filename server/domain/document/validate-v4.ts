@@ -54,6 +54,7 @@ const BLOCK_FIELDS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ["heading", new Set(["type", "id", "level", "children"])],
   ["bulletItem", new Set(["type", "id", "children"])],
   ["quote", new Set(["type", "id", "children"])],
+  ["orderedItem", new Set(["type", "id", "children"])],
   ["codeBlock", new Set(["type", "id", "children", "language", "caption"])],
   ["box", new Set(["type", "id", "kind", "children"])],
   ["formula", new Set(["type", "id", "tex"])],
@@ -200,7 +201,7 @@ function validateBlock(
         ...(Object.hasOwn(raw, "variantGroup") ? { variantGroup: variantGroup as string } : {}),
       };
     default:
-      return { type: type as "bulletItem" | "quote", id, children };
+      return { type: type as "bulletItem" | "orderedItem" | "quote", id, children };
   }
 }
 

@@ -37,18 +37,19 @@ Posljedica za slike: bajtovi slike nisu u dokumentu, ali njihov SHA-256 jest. Za
 
 ## 2. Blokovi v4
 
-| `type`       | Vrsta                       | Novo u v4      | Sadržaj                                           |
-| ------------ | --------------------------- | -------------- | ------------------------------------------------- |
-| `paragraph`  | tekstni blok                | `variantGroup` | inline čvorovi                                    |
-| `heading`    | tekstni blok, razina 1 do 3 | ne             | samo tekst (s oznakama)                           |
-| `bulletItem` | tekstni blok                | ne             | inline čvorovi                                    |
-| `quote`      | tekstni blok                | ne             | inline čvorovi                                    |
-| `codeBlock`  | tekstni blok                | da             | samo tekst, bez oznaka (odjeljak 4.2)             |
-| `box`        | omotač                      | da             | jedan ili više blokova `paragraph` (odjeljak 4.3) |
-| `table`      | atom bloka                  | da             | polja (odjeljak 5.1)                              |
-| `image`      | atom bloka                  | da             | polja (odjeljak 5.2)                              |
-| `formula`    | atom bloka                  | da             | polja (odjeljak 4.1)                              |
-| `pageBreak`  | atom bloka                  | da             | nema (odjeljak 4.4)                               |
+| `type`        | Vrsta                       | Novo u v4      | Sadržaj                                           |
+| ------------- | --------------------------- | -------------- | ------------------------------------------------- |
+| `paragraph`   | tekstni blok                | `variantGroup` | inline čvorovi                                    |
+| `heading`     | tekstni blok, razina 1 do 3 | ne             | samo tekst (s oznakama)                           |
+| `bulletItem`  | tekstni blok                | ne             | inline čvorovi                                    |
+| `orderedItem` | tekstni blok                | da             | inline čvorovi (odjeljak 2.2)                     |
+| `quote`       | tekstni blok                | ne             | inline čvorovi                                    |
+| `codeBlock`   | tekstni blok                | da             | samo tekst, bez oznaka (odjeljak 4.2)             |
+| `box`         | omotač                      | da             | jedan ili više blokova `paragraph` (odjeljak 4.3) |
+| `table`       | atom bloka                  | da             | polja (odjeljak 5.1)                              |
+| `image`       | atom bloka                  | da             | polja (odjeljak 5.2)                              |
+| `formula`     | atom bloka                  | da             | polja (odjeljak 4.1)                              |
+| `pageBreak`   | atom bloka                  | da             | nema (odjeljak 4.4)                               |
 
 Zajednička pravila blokova:
 
@@ -74,6 +75,15 @@ Zajednička pravila blokova:
 - Odlomci iste skupine ne moraju biti susjedni i ne moraju biti dva. Skupina s jednim odlomkom je valjana: editor je pri „Zadrži samo ovu inačicu” uklanja (prototip briše `vg`), a validator je ne odbija.
 - Svaka inačica je obični odlomak dokumenta, pa njezin nastanak i ulazak u dokument bilježe koraci kao i svaki drugi tekst (PRODUCT §5, pravilo 8).
 
+### 2.2 `orderedItem` (numerirani popis, prototip `olist`)
+
+Stavka numeriranog popisa je plosnat tekstni blok iste razine kao `bulletItem`, nikad omotač: uzastopne stavke su jedan popis. Nema polja osim `type`, `id` i `children`, i vrijede sva pravila tekstnog bloka (oznake iz odjeljka 3, inline atomi v3, prazna stavka je `children: []`).
+
+- **Broj se ne sprema.** Broj stavke je njezin položaj u nizu uzastopnih blokova `orderedItem` (od 1); bilo koji drugi blok prekida niz, a sljedeća stavka opet počinje od 1. Zato isti sadržaj ima samo jedan zapis, a umetanje ili brisanje stavke ne mijenja druge blokove. Broj računaju prikaz i izvoz (odjeljak 8).
+- **Bez gniježđenja.** Stavka ne sadrži blok, a popis u popisu ne postoji. Blok u `children` daje postojeću šifru `INLINE_TYPE_INVALID`, nepoznato polje `UNKNOWN_FIELD`, a ponovljeni `id` `NODE_ID_DUPLICATE`. Nema nove šifre greške.
+- **Samo v4.** Blok nije u shemama v1 do v3 (`NODE_TYPE_INVALID`). Promjena je MINOR i kompatibilna unatrag: dokument bez ovog bloka ostaje valjan i ima iste bajtove i hash.
+- Potrošači: brojanje riječi, normalizacija, usporedba i čitač teksta tretiraju stavku kao svaki tekstni blok (odjeljak 11); DOCX izvoz piše „1. ”, „2. ” ispred stavke, pa je sposobnost izvoza `degraded`, kao za `bulletItem`.
+
 ## 3. Oznake teksta v4
 
 U v1 do v3 `marks` je niz nizova `"bold"` i `"italic"`. U v4 element niza je ili niz (oznaka bez atributa) ili objekt (oznaka s atributima):
@@ -94,7 +104,7 @@ U v1 do v3 `marks` je niz nizova `"bold"` i `"italic"`. U v4 element niza je ili
 - `sup` i `sub` se isključuju: tekst s obje oznake daje `MARKS_EXCLUSIVE` (prototip `excludes`).
 - Oznaka bez atributa piše se samo kao niz; objekt `{"type": "bold"}` je `MARK_INVALID`. Oznaka s atributima piše se samo kao objekt; niz `"lang"` je `MARK_INVALID`. Objekt oznake ima zatvoren skup ključeva (`UNKNOWN_FIELD`); nevaljan atribut daje `MARK_ATTRIBUTE_INVALID` s putem atributa.
 - `ADJACENT_TEXT_SAME_MARKS` u v4 uspoređuje oznake s atributima: dva susjedna tekstna čvora s `lang` `en` i `de` nisu iste oznake, a s dva puta `en` jesu.
-- Oznake smiju stajati na tekstu u `paragraph`, `heading`, `bulletItem` i `quote`. U `codeBlock` smiju samo oznake podrijetla `paste` i `imported`, a oznake oblikovanja ne (odjeljak 4.2). Inline atomi i dalje nemaju `marks`.
+- Oznake smiju stajati na tekstu u `paragraph`, `heading`, `bulletItem`, `orderedItem` i `quote`. U `codeBlock` smiju samo oznake podrijetla `paste` i `imported`, a oznake oblikovanja ne (odjeljak 4.2). Inline atomi i dalje nemaju `marks`.
 - U dokumentima v1 do v3 svaka oznaka osim `bold` i `italic`, i svaki objekt u `marks`, daje `MARK_INVALID`, kao danas.
 
 ### 3.1 `paste` i `imported` (✓ B-7)
@@ -325,6 +335,7 @@ Isto načelo kao u v2 i v3: što se može izvesti iz hashiranih bajtova (ili iz 
 - Bibliografija, broj fusnote, broj poglavlja i tekst unakrsne poveznice: kao u v3, uz ciljeve iz odjeljka 6.
 - Brojevi tablica, slika, blok-formula, ispisa koda i numeriranih okvira: redom pojavljivanja, svaka vrsta (i svaka vrsta okvira) zasebno.
 - Broj inačice odlomka: redom unutar skupine `variantGroup`.
+- Broj stavke numeriranog popisa: položaj u nizu uzastopnih `orderedItem` (odjeljak 2.2).
 - „Tekst je kasnije mijenjan” uz `paste`: iz evidencije (odjeljak 3.1).
 - Naslovnica: odjeljak 7. Prijelomi stranica osim `pageBreak`: mjere se pri prikazu i izvozu.
 
@@ -432,7 +443,7 @@ Uz to fast-check svojstva (a) do (g) iz ugovora v2 vrijede za validator i parser
 - Granice duljina i veličina (ćelija 1000, 3000 ćelija, naslov i izvor 500, formula 4000 i 1000, naslov ispisa 300, naslovnica 200/100/50) i obrezivanje do 45 % su izbor ugovora i prototipa. Nisu izmjerene na stvarnim radovima.
 - Ćelija tablice je običan tekst: nema oznaka, navoda ni fusnota u tablici. To traži novu verziju sheme.
 - Okvir sadrži samo odlomke, kao u prototipu; popis ili formula u okviru traže novu verziju sheme.
-- Numerirani popis (prototip `olist`, `more2.js`) nije u planu sheme v4, pa nije u ovom ugovoru (P4).
+- Numerirani popis nema početni broj ni razinu: uvijek počinje od 1 i nije ugniježđen (odjeljak 2.2).
 - `lang` provjerava samo oblik oznake jezika, ne postoji li jezik.
 - Oznaka `aitext` nije u v4 (val 12).
 
@@ -441,7 +452,7 @@ Uz to fast-check svojstva (a) do (g) iz ugovora v2 vrijede za validator i parser
 - **P1 (`rq`).** Nepromijenjeno iz ugovora v3.
 - **P2 (marker).** Prototip kaže „Marker je Vaše označavanje. Mentor ga ne vidi i ne ide u izvoz.” Plan stavlja `hl` u shemu v4, pa je marker u hashiranom dokumentu i u prikazu uživo i reprodukciji (PRODUCT §5, pravila 5 i 7). Smije li nastavnički prikaz i izvoz izostaviti marker, ili marker treba živjeti izvan dokumenta, odlučuje vlasnik prije PR-a koji marker crta nastavniku. Do tada validator marker prihvaća, a nijedan nastavnički put ga ne izostavlja tiho.
 - **P3 (`ok` uz lijepljenje).** Prototipno obrazloženje potvrde lijepljenja nije u dokumentu (odjeljak 3.1). Gdje živi i tko ga vidi, odlučuje orkestrator ili vlasnik prije PR-a koji ga gradi.
-- **P4 (numerirani popis).** Treba li v4 imati blok `orderedItem` (prototip `olist`) uz `bulletItem`. Dodavanje prije koraka baze (odjeljak 10) ne mijenja nijedan postojeći dokument; kasnije traži v5.
+- **P4 (numerirani popis).** ZATVORENO: Daniel „Popis da” (Ductus#2058, c.7171436489); blok `orderedItem`, odjeljak 2.2.
 
 ## Što bi ovaj ugovor moglo oboriti na reviewu?
 

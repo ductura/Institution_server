@@ -55,6 +55,8 @@ function blockText(block: ExportBlock): { size: number; lines: string[]; indent:
       return { size: BODY_SIZE, lines: [runs(block.runs)], indent: 0 };
     case "bullet":
       return { size: BODY_SIZE, lines: [`• ${runs(block.runs)}`], indent: 12 };
+    case "ordered":
+      return { size: BODY_SIZE, lines: [`${block.number}. ${runs(block.runs)}`], indent: 12 };
     case "quote":
       return { size: BODY_SIZE, lines: [runs(block.runs)], indent: 24 };
     case "code":

@@ -186,6 +186,7 @@ export const DOCUMENT_BLOCK_TYPES_BY_VERSION: ReadonlyMap<number, ReadonlySet<st
     new Set<string>([
       "heading",
       ...PLAIN_BLOCK_TYPES,
+      "orderedItem",
       "codeBlock",
       "box",
       "table",
@@ -490,6 +491,12 @@ export type HeadingNodeV4 = {
 };
 export type BulletItemNodeV4 = { type: "bulletItem"; id: NodeId; children: InlineNodeV4[] };
 export type QuoteNodeV4 = { type: "quote"; id: NodeId; children: InlineNodeV4[] };
+/**
+ * One item of a numbered list (v4 §2). A flat text block like `bulletItem`,
+ * never a wrapper: the number is not stored, it is the position of the item in
+ * the run of consecutive `orderedItem` blocks, counted at display.
+ */
+export type OrderedItemNode = { type: "orderedItem"; id: NodeId; children: InlineNodeV4[] };
 /** Text only, every text node with `marks: []` (§4.2). */
 export type CodeBlockNode = {
   type: "codeBlock";
@@ -507,6 +514,7 @@ export type DocumentNodeV4 =
   | ParagraphNodeV4
   | HeadingNodeV4
   | BulletItemNodeV4
+  | OrderedItemNode
   | QuoteNodeV4
   | CodeBlockNode
   | BoxNode

@@ -251,6 +251,42 @@
       },
       "utf8Hex": "7b226e6f646573223a5b7b22616c69676e223a226c656674222c226964223a2231313131313131312d313131312d343131312d383131312d313131313131313131313131222c226c616e647363617065223a747275652c2274797065223a22696d616765222c22776964746850657263656e74223a3130307d2c7b226368696c6472656e223a5b5d2c226964223a2232323232323232322d323232322d343232322d383232322d323232323232323232323232222c2274797065223a22636f6465426c6f636b227d5d2c22736368656d6156657273696f6e223a342c22736f7572636573223a5b5d7d",
       "sha256": "6d82eb16a23781dd22774cda3220b48ce6ad8ee661e7689c753e8d7cac979603"
+    },
+    {
+      "name": "v4-numbered-list-runs",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [],
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
+            "level": 1,
+            "children": [{ "type": "text", "text": "Izmi\u0161ljeni koraci", "marks": [] }]
+          },
+          {
+            "type": "orderedItem",
+            "id": "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
+            "children": [{ "type": "text", "text": "Prvi izmi\u0161ljeni korak.", "marks": [] }]
+          },
+          {
+            "type": "orderedItem",
+            "id": "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3",
+            "children": [
+              { "type": "text", "text": "Drugi ", "marks": ["bold"] },
+              { "type": "text", "text": "korak.", "marks": [] }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4",
+            "children": [{ "type": "text", "text": "Odlomak prekida popis.", "marks": [] }]
+          },
+          { "type": "orderedItem", "id": "e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e5e5", "children": [] }
+        ]
+      },
+      "utf8Hex": "7b226e6f646573223a5b7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a22497a6d69c5a16c6a656e69206b6f72616369222c2274797065223a2274657874227d5d2c226964223a2261316131613161312d613161312d346131612d386131612d613161316131613161316131222c226c6576656c223a312c2274797065223a2268656164696e67227d2c7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a225072766920697a6d69c5a16c6a656e69206b6f72616b2e222c2274797065223a2274657874227d5d2c226964223a2262326232623262322d623262322d346232622d386232622d623262326232623262326232222c2274797065223a226f7264657265644974656d227d2c7b226368696c6472656e223a5b7b226d61726b73223a5b22626f6c64225d2c2274657874223a22447275676920222c2274797065223a2274657874227d2c7b226d61726b73223a5b5d2c2274657874223a226b6f72616b2e222c2274797065223a2274657874227d5d2c226964223a2263336333633363332d633363332d346333632d386333632d633363336333633363336333222c2274797065223a226f7264657265644974656d227d2c7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a224f646c6f6d616b207072656b69646120706f7069732e222c2274797065223a2274657874227d5d2c226964223a2264346434643464342d643464342d346434642d386434642d643464346434643464346434222c2274797065223a22706172616772617068227d2c7b226368696c6472656e223a5b5d2c226964223a2265356535653565352d653565352d346535652d386535652d653565356535653565356535222c2274797065223a226f7264657265644974656d227d5d2c22736368656d6156657273696f6e223a342c22736f7572636573223a5b5d7d",
+      "sha256": "928f4495eb84d727a91b531bb43f1d77e5af2cc757f6e6211d49d909dde8f709"
     }
   ],
   "rejectedDocumentsV4": [
@@ -1593,6 +1629,43 @@
         ]
       },
       "errors": [["$.nodes[7].children[1]", "BOX_CHILDREN_INVALID"]]
+    },
+    {
+      "name": "v4-ordered-item-with-block-child",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [],
+        "nodes": [
+          {
+            "type": "orderedItem",
+            "id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
+            "children": [
+              {
+                "type": "orderedItem",
+                "id": "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "errors": [["$.nodes[0].children[0].type", "INLINE_TYPE_INVALID"]]
+    },
+    {
+      "name": "v4-ordered-item-extra-field",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [],
+        "nodes": [
+          {
+            "type": "orderedItem",
+            "id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
+            "start": 3,
+            "children": []
+          }
+        ]
+      },
+      "errors": [["$.nodes[0].start", "UNKNOWN_FIELD"]]
     }
   ]
 }

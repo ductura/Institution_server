@@ -59,6 +59,7 @@ describe("document schema versions", () => {
     // SRV-10A (contract document-schema-v4 §1) adds v4 with its own blocks.
     expect([...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(4)!]).toEqual([
       ...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(1)!,
+      "orderedItem",
       "codeBlock",
       "box",
       "table",
