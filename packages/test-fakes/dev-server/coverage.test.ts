@@ -23,6 +23,7 @@ import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
+import { seedQualMaterial } from "./qualitative-materials-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -314,6 +315,17 @@ const ADD_NOTE: Step = {
   method: "POST",
   headers: ORIGIN,
   body: { note: "Izmišljena bilješka." },
+};
+const QUAL_MATERIAL_ID = "00000000-0000-4000-8000-00000018a001";
+const seedQualMaterialOfStudent = (state: State) => {
+  seedQualMaterial(state, IDS.student, {
+    id: QUAL_MATERIAL_ID,
+    title: "Bilješka A",
+    kind: "note",
+    text: "Izmišljena bilješka.",
+    createdOn: "2026-11-25",
+    segmentCount: 0,
+  });
 };
 const seedNote = (state: State) => {
   state.sourceNotes.set(`${IDS.assignment}:${IDS.student}:${WORK_SOURCE.id}`, [
@@ -2118,6 +2130,36 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         workLanguages: ["hr", "en"],
         defaultWorkLanguage: "hr",
       },
+    },
+  },
+  "student.qual-materials.get": {
+    prepare: seedQualMaterialOfStudent,
+    request: { path: "/api/v1/student/qual/materials", as: "student", method: "GET" },
+  },
+  "student.qual-materials.post": {
+    request: {
+      path: "/api/v1/student/qual/materials",
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: { title: "Intervju B", kind: "interview", text: "Izmišljeni tekst.\nDrugi red." },
+    },
+  },
+  "student.qual-material.get": {
+    prepare: seedQualMaterialOfStudent,
+    request: {
+      path: `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "student.qual-material.delete": {
+    prepare: seedQualMaterialOfStudent,
+    request: {
+      path: `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
     },
   },
   "institution.assistant-request-limit.get": {

@@ -1121,6 +1121,34 @@ export type Operations = {
     success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.qual-material.delete": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "not_found";
+  };
+  "student.qual-material.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "id": string; "title": string; "kind": "interview" | "note"; "text": string; "createdOn": string; "segmentCount": number; "locked": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable" | "not_found";
+  };
+  "student.qual-materials.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "materials": ({ "id": string; "title": string; "kind": "interview" | "note"; "createdOn": string; "charCount": number; "segmentCount": number; "locked": boolean })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "student.qual-materials.post": {
+    params: undefined;
+    query: undefined;
+    body: { "title": string; "kind": "interview" | "note"; "text": string };
+    success: { status: 201; body: { "id": string; "title": string; "kind": "interview" | "note"; "text": string; "createdOn": string; "segmentCount": number; "locked": boolean }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "unsupported_media_type" | "invalid_json" | "conflict" | "invalid_input";
+  };
   "student.receipt-pdf.get": {
     params: { "assignmentId": string };
     query: undefined;
