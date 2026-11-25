@@ -62,6 +62,7 @@ describe("server/domain imports nothing outside itself", () => {
     expect([...folders].sort()).toEqual([
       "",
       "ai-match",
+      "analysis",
       "assignment",
       "assistant",
       "assistant-match",
