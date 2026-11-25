@@ -558,6 +558,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
   },
+  // SRV-NF4-KASNA-POLJE (Ductus#2055, orchestrator decision A): the teacher sets whether a
+  // submission after the deadline is allowed, a student of the course reads it.
+  "app/api/institution/assignments/[assignmentId]/late-submission/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
+  "app/api/student/assignments/[assignmentId]/late-submission/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   // SRV-IZJAVA-PITANJE (Ductus#2055 c.7114546002, owner decision of 23. 11. 2026): the
   // teacher's optional question with the declaration.
   "app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts": {
@@ -791,7 +801,7 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/teacher/comment-bank/[entryId]/route.ts": {
-    methods: ["DELETE"],
+    methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/works/[documentId]/review/route.ts": {
@@ -859,6 +869,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-V17-RUBRIC-DEF (Ductus#2055, val 17): the rubric of an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
+  "app/api/student/assignments/[assignmentId]/rubric/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
+  },
   // SRV-1521 (Ductus#2052, N-15 etape): the template of milestones and the plan of one work; Ductus has no such route.
   "app/api/institution/milestone-template/route.ts": {
     methods: ["GET", "PUT"],
@@ -880,6 +899,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/work-templates/[workType]/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146993897",
+  },
+  // SRV-V17-TEMPLATE-ASSIGN (val 17): the work template frozen on an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/template/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
+  },
+  "app/api/student/assignments/[assignmentId]/template/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
   },
   // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
   "app/api/works/[documentId]/return-for-revision/route.ts": {

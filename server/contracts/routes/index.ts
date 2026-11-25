@@ -79,6 +79,7 @@ export {
   WorkTemplateType,
   workTemplateRoutes,
 } from "./work-template.ts";
+export { AssignmentTemplateInput, assignmentTemplateRoutes } from "./assignment-template.ts";
 export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,
@@ -134,6 +135,7 @@ export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
+export { lateSubmissionRoutes } from "./late-submission.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {
@@ -143,6 +145,12 @@ export {
 } from "./assistant-setting.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export {
+  AssignmentRubricInput,
+  assignmentRubricRoutes,
+  RUBRIC_LEVELS,
+  RUBRIC_MAX_CRITERIA,
+} from "./assignment-rubric.ts";
 export {
   courseAggregateGet,
   CourseAggregateParams,

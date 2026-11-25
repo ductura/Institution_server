@@ -64,6 +64,7 @@ import {
   adminActionLogRoutes,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
+  assignmentRubricRoutes,
   teacherSourcesRoutes,
   teacherWorkRoutes,
   originCompositionRoutes,
@@ -71,6 +72,7 @@ import {
   inputRhythmRoutes,
   declarationRequiredRoutes,
   declarationQuestionRoutes,
+  lateSubmissionRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -90,6 +92,7 @@ import {
   workMilestonesRoutes,
   milestoneTemplateRoutes,
   workTemplateRoutes,
+  assignmentTemplateRoutes,
   returnForRevisionRoutes,
   thesisRoutes,
   practiceJournalRoutes,
@@ -155,6 +158,8 @@ export {
   WorkTemplateInput,
   WorkTemplateType,
   workTemplateRoutes,
+  AssignmentTemplateInput,
+  assignmentTemplateRoutes,
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,
@@ -180,6 +185,12 @@ export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { workTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export {
+  AssignmentRubricInput,
+  assignmentRubricRoutes,
+  RUBRIC_LEVELS,
+  RUBRIC_MAX_CRITERIA,
+} from "./routes/index.ts";
 export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
   NotificationId,
@@ -271,6 +282,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...declarationQuestionRoutes,
   ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
+  ...assignmentRubricRoutes,
   courseAggregateGet,
   pilotMetricsGet,
   retentionGet,
@@ -337,11 +349,13 @@ export const ROUTES: readonly RouteContract[] = [
   ...workMilestonesRoutes,
   ...milestoneTemplateRoutes,
   ...workTemplateRoutes,
+  ...assignmentTemplateRoutes,
   ...returnForRevisionRoutes,
   ...thesisRoutes,
   ...practiceJournalRoutes,
   ...peerReviewRoutes,
   ...opsRoutes,
+  ...lateSubmissionRoutes,
 ];
 
 /**

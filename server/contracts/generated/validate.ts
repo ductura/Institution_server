@@ -284,6 +284,24 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.assignment-late-submission.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.assignment-late-submission.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['lateSubmissionAllowed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "institution.assignment-team-setting.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1575,12 +1593,45 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.assignment-late-submission.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.assignment-requirements.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&
       value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.assignment-rubric.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.assignment-template.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.assignment-template.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
     )
   }),
   "student.assistant-conversation.get:params": (function check(value: Record<string, unknown>): boolean {
@@ -2191,6 +2242,44 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.assignment-rubric.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.assignment-rubric.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.assignment-rubric.put:body": (() => {
+  const local0 = /^[a-z0-9][a-z0-9_-]{0,31}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483646 &&
+      value['expectedVersion'] >= 0 &&
+      Array.isArray(value['criteria']) &&
+      value['criteria'].length <= 12 &&
+      value['criteria'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['id'] === 'string') && local0.test(value['id']) && (typeof value['title'] === 'string') && value['title'].length <= 120 && value['title'].length >= 1 && Array.isArray(value['levels']) && value['levels'].length <= 3 && value['levels'].length >= 3 && ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['label'] === 'string') && value['label'].length <= 80 && value['label'].length >= 1 && (typeof value['descriptor'] === 'string') && value['descriptor'].length <= 400 && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['levels']) && Object.getOwnPropertyNames(value).length === 3))) { return false }; return true; })(value['criteria']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
   "teacher.assignment-submissions.post:body": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -2200,6 +2289,46 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       value['assignmentIds'].length <= 500 &&
       ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local0.test(value)))) { return false }; return true; })(value['assignmentIds']) &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.assignment-template.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.assignment-template.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['useInstitutionTemplate'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.comment-bank-entry.put:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['entryId'] === 'string') &&
+      local0.test(value['entryId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.comment-bank-entry.put:body": (() => {
+  const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^(?=[^\u0000-\u001f\u007f-\u009f]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,40}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      (((value['kind'] === 'must')) || ((value['kind'] === 'sugg')) || ((value['kind'] === 'q')) || ((value['kind'] === 'praise'))) &&
+      (value['label'] !== undefined ? ((((typeof value['label'] === 'string') && local1.test(value['label'])) || ((value['label'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['text', 'kind', 'label'].includes(key))
     )
   }
   })(),
@@ -2216,13 +2345,15 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "teacher.comment-bank.post:body": (() => {
   const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^(?=[^\u0000-\u001f\u007f-\u009f]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,40}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['text'] === 'string') &&
       local0.test(value['text']) &&
       (((value['kind'] === 'must')) || ((value['kind'] === 'sugg')) || ((value['kind'] === 'q')) || ((value['kind'] === 'praise'))) &&
-      Object.getOwnPropertyNames(value).length === 2
+      (value['label'] !== undefined ? ((((typeof value['label'] === 'string') && local1.test(value['label'])) || ((value['label'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['text', 'kind', 'label'].includes(key))
     )
   }
   })(),

@@ -209,6 +209,7 @@ export type {
   AssignmentContent,
   AssignmentCreateOutcome,
   AssignmentPublishOutcome,
+  AssignmentSetup,
   InstitutionAssignments,
 } from "./institution-assignments.ts";
 export {
@@ -440,6 +441,13 @@ export {
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
 export {
+  createAssignmentRubric,
+  defaultRubricCriteria,
+  type AssignmentRubric,
+  type AssignmentRubricStore,
+  type RubricCriterion,
+} from "./assignment-rubric/index.ts";
+export {
   createWorkTemplate,
   type WorkTemplate,
   type WorkTemplateContent,
@@ -447,6 +455,13 @@ export {
   type WorkTemplateTitleField,
   type WorkTemplateVersion,
 } from "./work-template/index.ts";
+export {
+  createAssignmentTemplate,
+  type AssignmentTemplate,
+  type AssignmentTemplateReadResult,
+  type AssignmentTemplateSetResult,
+  type FrozenAssignmentTemplate,
+} from "./assignment-template/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
@@ -539,6 +554,11 @@ export {
   type SubmissionDeclarationGate,
   type SubmissionDeclarationGateAnswer,
 } from "./declaration/index.ts";
+export {
+  createLateSubmissionPort,
+  type LateSubmissionPort,
+  type LateSubmissionSetting,
+} from "./late-submission.ts";
 export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,

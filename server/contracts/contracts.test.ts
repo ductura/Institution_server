@@ -154,6 +154,9 @@ describe("route inventory", () => {
       "work.origin-thresholds.get: app/api/works/[documentId]/origin-thresholds/route.ts is not in the inventory",
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
+      "teacher.assignment-rubric.get: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
+      "teacher.assignment-rubric.put: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
+      "student.assignment-rubric.get: app/api/student/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
       "ops.pilot-metrics.get: app/api/ops/pilot-metrics/route.ts is not in the inventory",
       "institution.retention.get: app/api/institution/retention/route.ts is not in the inventory",
@@ -307,6 +310,7 @@ describe("route inventory", () => {
       "work.comments.publish-selected.post: app/api/works/[documentId]/comments/publish-selected/route.ts is not in the inventory",
       "teacher.comment-bank.get: app/api/teacher/comment-bank/route.ts is not in the inventory",
       "teacher.comment-bank.post: app/api/teacher/comment-bank/route.ts is not in the inventory",
+      "teacher.comment-bank-entry.put: app/api/teacher/comment-bank/[entryId]/route.ts is not in the inventory",
       "teacher.comment-bank.delete: app/api/teacher/comment-bank/[entryId]/route.ts is not in the inventory",
       "work.review.post: app/api/works/[documentId]/review/route.ts is not in the inventory",
       "work.changes-since-review.get: app/api/works/[documentId]/changes-since-review/route.ts is not in the inventory",
@@ -338,6 +342,8 @@ describe("route inventory", () => {
       "work.milestone-plan.apply-template.post: app/api/works/[documentId]/milestone-plan/apply-template/route.ts is not in the inventory",
       "institution.work-template.get: app/api/institution/work-templates/[workType]/route.ts is not in the inventory",
       "institution.work-template.put: app/api/institution/work-templates/[workType]/route.ts is not in the inventory",
+      "teacher.assignment-template.put: app/api/teacher/assignments/[assignmentId]/template/route.ts is not in the inventory",
+      "student.assignment-template.get: app/api/student/assignments/[assignmentId]/template/route.ts is not in the inventory",
       "work.return-for-revision.post: app/api/works/[documentId]/return-for-revision/route.ts is not in the inventory",
       "institution.thesis-forms.get: app/api/institution/thesis-forms/route.ts is not in the inventory",
       "institution.thesis-forms.post: app/api/institution/thesis-forms/route.ts is not in the inventory",
@@ -365,6 +371,8 @@ describe("route inventory", () => {
       "student.peer-review.post: app/api/student/peer-review/tasks/[taskId]/review/route.ts is not in the inventory",
       "student.peer-reviews-received.get: app/api/student/assignments/[assignmentId]/peer-review/received/route.ts is not in the inventory",
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
+      "institution.assignment-late-submission.put: app/api/institution/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
+      "student.assignment-late-submission.get: app/api/student/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

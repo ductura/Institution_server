@@ -120,7 +120,9 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
+  createAssignmentTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -129,6 +131,7 @@ import {
   createSubmissionRouteFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
+  createLateSubmissionRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -345,8 +348,12 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
+      ...createAssignmentRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
       ...createWorkTemplateRoutesFor(databases.main),
+      // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.
+      ...createAssignmentTemplateRoutesFor(databases.main),
       // SRV-1606: the teacher returns the whole submitted work for revision.
       ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
@@ -402,6 +409,8 @@ async function main(): Promise<void> {
       ...createDeclarationRequiredRoutesFor(databases.main),
       // SRV-IZJAVA-PITANJE: the teacher's optional question with the declaration.
       ...createDeclarationQuestionRoutesFor(databases.main),
+      // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
+      ...createLateSubmissionRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),

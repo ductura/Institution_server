@@ -1412,6 +1412,34 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
   },
+  "teacher.assignment-rubric.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`, as: "nastavnik" },
+  },
+  "teacher.assignment-rubric.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        criteria: [
+          {
+            id: "tema",
+            title: "Izmišljena tema rada",
+            levels: [
+              { label: "Treba doraditi", descriptor: "Izmišljeni opis." },
+              { label: "Dobro", descriptor: "" },
+              { label: "Vrlo dobro", descriptor: "" },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  "student.assignment-rubric.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/rubric`, as: "student" },
+  },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
   },
@@ -1483,6 +1511,39 @@ const SCENARIOS: Record<RouteId, Scenario> = {
         citationStyle: "fpzg",
       },
     },
+  },
+  "teacher.assignment-template.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { useInstitutionTemplate: false },
+    },
+  },
+  "student.assignment-template.get": {
+    before: [
+      {
+        method: "PUT",
+        path: "/api/v1/institution/work-templates/seminar_paper",
+        as: "administrator",
+        headers: ORIGIN,
+        body: {
+          expectedVersion: 0,
+          titlePage: ["title", "author"],
+          sections: [{ title: "Uvod", hint: "" }],
+          citationStyle: "fpzg",
+        },
+      },
+      {
+        method: "PUT",
+        path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+        as: "nastavnik",
+        headers: ORIGIN,
+        body: { useInstitutionTemplate: true },
+      },
+    ],
+    request: { path: `/api/v1/student/assignments/${IDS.assignment}/template`, as: "student" },
   },
   "work.milestone-states.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
@@ -1938,6 +1999,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
   },
   "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank-entry.put": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" },
+    },
+  },
   "teacher.comment-bank.delete": {
     before: [BANK_STEP],
     request: {
@@ -2244,6 +2315,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "institution.assignment-late-submission.put": {
+    request: {
+      path: `/api/v1/institution/assignments/${IDS.assignment}/late-submission`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { lateSubmissionAllowed: false },
+    },
+  },
+  "student.assignment-late-submission.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission`,
+      as: "student",
+      method: "GET",
     },
   },
   "teacher.declaration-question.get": {

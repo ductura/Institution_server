@@ -151,6 +151,7 @@ describe("fake server over HTTP", () => {
     // SRV-1521: five framing vectors each for the milestone template PUT and the plan POST (add), and five for apply-template.
     // SRV-1530: work.interview-* have eight framing vectors in all (the bodies of five mutations).
     // SRV-V17-TEMPLATE-ADMIN: five framing vectors for the work template PUT.
+    // SRV-V17-TEMPLATE-ASSIGN: five framing vectors for the assignment template PUT.
     // SRV-1606: five framing vectors for work.return-for-revision.post.
     // SRV-1230: work.assistant-match.post five.
     // PIL-P1-RITAM-SRV: work.input-rhythm.post, .delete and teacher.input-rhythm.put five each.
@@ -171,10 +172,13 @@ describe("fake server over HTTP", () => {
     // SRV-NF6-SIFRA: work.sealed-self-note.put/.delete and profile.self-note-key.put/.delete five each.
     // SRV-NF6-SIFRA-2: profile.self-note-key-checked.delete five.
     // SRV-KARTA-RASPON-RUTA: work.origin-segments.post five.
+    // SRV-V17-RUBRIC-DEF: teacher.assignment-rubric.put five.
+    // SRV-V17-BANK-EDIT: teacher.comment-bank-entry.put five.
     // SRV-V19-DNEVNIK-UGOVOR: practice.placements.post, practice.entries.post and practice.signoffs.post five each.
     // SRV-V19-RECENZIJA-UGOVOR: peer-review.round.put, peer-review.allocate.post, peer-review.review-withdrawal.post and student.peer-review.post five each.
     // SRV-V19-GRUPA-UGOVOR: four mutating team routes five each.
-    expect(VECTORS.length - overHttp.length).toBe(761);
+    // SRV-NF4-KASNA-POLJE: institution.assignment-late-submission.put five.
+    expect(VECTORS.length - overHttp.length).toBe(781);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
