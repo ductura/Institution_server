@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(3857);
+SELECT plan(3873);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -571,6 +571,7 @@ SELECT bag_eq(
     'declaration_question_of(p_assignment_id uuid)',
     'declaration_question_setting(p_assignment_id uuid) definer app',
     'set_declaration_question(p_assignment_id uuid, p_question text) definer app',
+    'set_late_submission_allowed(p_assignment_id uuid, p_allowed boolean) definer app',
     'reject_work_milestone_event_change()',
     'is_thesis_text(p_text text, p_max integer)',
     'reject_thesis_record_change()',
@@ -657,9 +658,10 @@ SELECT is_empty(
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
            UNION ALL SELECT 'public') AS r
      CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)',
-                             'app.teacher_submission_state(uuid,uuid)']) f
+                             'app.teacher_submission_state(uuid,uuid)',
+                             'app.my_assignment_late_submission(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
-  'SRV-20: only ductus_app and the owner execute the three state RPCs'
+  'SRV-20, SRV-NF4-KASNA-POLJE: only ductus_app and the owner execute the state RPCs'
 );
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
@@ -1595,6 +1597,25 @@ SELECT is(
 FROM (VALUES
   ('vesna', 'false'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
   ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+
+-- 1i2a. SRV-NF4-KASNA-POLJE: whether a submission after the deadline is
+-- allowed (institution.assignment.late_submission_allowed) is set only by the
+-- teacher of the assignment and read only by a student of its course. The
+-- rest is in 248-assignment-late-submission.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT late_submission_allowed::text FROM institution.set_late_submission_allowed({z1}, true)'), 1, 5),
+  c.result, format('SRV-NF4-KASNA-POLJE: %s sets late submission of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  pg_temp.ask(c.actor, 'SELECT outcome FROM app.my_assignment_late_submission({z1})'),
+  c.result, format('SRV-NF4-KASNA-POLJE: %s reads late submission of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
+  ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
 ) AS c (actor, result);
 
 -- 1i3. SRV-IZJAVA-PITANJE: the teacher's question with the declaration

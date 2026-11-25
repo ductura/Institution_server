@@ -124,6 +124,7 @@ import {
   createInputRhythmRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
+  createLateSubmissionRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1313,6 +1314,19 @@ const SESSION_ROUTES = {
     body: () => ({ question: "Izmišljeno pitanje?" }),
     live: 404,
   },
+  // SRV-NF4-KASNA-POLJE: a live session with no relation to such an assignment gets 404.
+  "institution.assignment-late-submission.put": {
+    method: "PUT",
+    path: `/api/v1/institution/assignments/${randomUUID()}/late-submission`,
+    body: () => ({ lateSubmissionAllowed: false }),
+    live: 404,
+  },
+  "student.assignment-late-submission.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/late-submission`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -2137,6 +2151,7 @@ const FACTORIES = [
   "createSubmissionRouteFor",
   "createDeclarationRequiredRoutesFor",
   "createDeclarationQuestionRoutesFor",
+  "createLateSubmissionRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2265,6 +2280,7 @@ const MOUNTED = [
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
   ...createDeclarationRequiredRoutesFor(databases.main),
   ...createDeclarationQuestionRoutesFor(databases.main),
+  ...createLateSubmissionRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

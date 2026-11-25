@@ -339,6 +339,8 @@ describe("route inventory", () => {
       "work.thesis-stage.get: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
       "work.thesis-stage.put: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
+      "institution.assignment-late-submission.put: app/api/institution/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
+      "student.assignment-late-submission.get: app/api/student/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

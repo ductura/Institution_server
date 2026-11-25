@@ -70,6 +70,7 @@ import {
   inputRhythmRoutes,
   declarationRequiredRoutes,
   declarationQuestionRoutes,
+  lateSubmissionRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -325,6 +326,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...returnForRevisionRoutes,
   ...thesisRoutes,
   ...opsRoutes,
+  ...lateSubmissionRoutes,
 ];
 
 /**
