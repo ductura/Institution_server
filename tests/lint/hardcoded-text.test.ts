@@ -474,13 +474,14 @@ describe("repository config", () => {
     }
   });
 
-  it("finds no text in server/app.ts, whose errors are keys (DAN-782)", async () => {
-    const [result] = await eslint.lintFiles([path.join(ROOT, "server/app.ts")]);
+  // DAN-1537: server/app.ts is gone; the entry point server/server.ts takes its place.
+  it("finds no text in server/server.ts, whose errors are keys (DAN-782)", async () => {
+    const [result] = await eslint.lintFiles([path.join(ROOT, "server/server.ts")]);
     const own = (result?.messages ?? []).filter((m) => m.ruleId === RULE || m.fatal);
     expect(own.map((m) => m.message)).toEqual([]);
   });
 
-  // Negative: the old text put back into server/app.ts is caught now that the
+  // Negative: the old text put into server/server.ts is caught now that the
   // file is read. Each piece is read on its own (no `+`, `.join` or constant
   // resolution, c.6896146643), so a joined case is caught by its own letter.
   it.each([
@@ -489,9 +490,9 @@ describe("repository config", () => {
     ["write(res, 404, { error: `Nije ${x} pronađeno.` });", "letter"],
     ['write(res, 405, { error: "Metoda nije podr" + "\\u017eana." });', "builder"],
     ['write(res, 401, { error: "Prijava je obavezna" });', "sentence"],
-  ])("reports text put back into server/app.ts: %s", async (line, messageId) => {
-    const source = readFileSync(path.join(ROOT, "server/app.ts"), "utf8");
+  ])("reports text put into server/server.ts: %s", async (line, messageId) => {
+    const source = readFileSync(path.join(ROOT, "server/server.ts"), "utf8");
     const code = `${source}\ndeclare const x: string;\n${line}\n`;
-    expect(await ids(code, "server/app.ts")).toContain(messageId);
+    expect(await ids(code, "server/server.ts")).toContain(messageId);
   });
 });

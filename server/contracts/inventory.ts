@@ -600,6 +600,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
   },
+  // SRV-V18-KODIRANJE-GRADIVO (Ductus#2055, val 18): the student's material for qualitative coding.
+  "app/api/student/qual/materials/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173076650",
+  },
+  "app/api/student/qual/materials/[id]/route.ts": {
+    methods: ["GET", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173076650",
+  },
   // SRV-ASIST-LIMIT-ADMIN (Ductus#2055 T2, approved 25. 11.): the administrator's request limit.
   "app/api/institution/assistant/request-limit/route.ts": {
     methods: ["GET", "PUT"],
