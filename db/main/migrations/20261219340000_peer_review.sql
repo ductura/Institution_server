@@ -132,7 +132,32 @@ $$;
 REVOKE ALL ON FUNCTION app.peer_review_blocks(uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app.peer_review_blocks(uuid, uuid) TO ductus_identity;
 
+-- The document of one live submission, for the access log only: the identity
+-- role reads no evidence table. Never returned by an RPC of the reviewer.
+CREATE FUNCTION app.peer_review_document(p_assignment_id uuid, p_submission_id uuid)
+RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+  SELECT r.document_id
+    FROM evidence.submission s
+    JOIN evidence.submission_request r
+      ON r.id = s.submission_request_id AND r.institution_id = s.institution_id
+   WHERE s.id = p_submission_id AND s.assignment_id = p_assignment_id
+$$;
+REVOKE ALL ON FUNCTION app.peer_review_document(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.peer_review_document(uuid, uuid) TO ductus_identity;
+
 SET LOCAL ROLE ductus_identity;
+
+-- OP-V19-6 (provisional): reading a work for a peer review is logged with the
+-- real reader, under the role peer_reviewer; the access-log readers of the
+-- author (app.read_my_access_log, the data export) show this role and no name.
+-- squawk-ignore ban-drop-constraint
+ALTER TABLE audit.access_log DROP CONSTRAINT access_log_reader_role_check;
+ALTER TABLE audit.access_log ADD CONSTRAINT access_log_reader_role_check
+  CHECK (reader_role IN ('teacher', 'mentor', 'seminar_teacher', 'peer_reviewer')) NOT VALID;
+-- squawk-ignore constraint-missing-not-valid
+ALTER TABLE audit.access_log VALIDATE CONSTRAINT access_log_reader_role_check;
 
 -- Rubrics: 1 to 6 objects with exactly the keys key and label; key a short word
 -- of lowercase letters, digits and hyphens (up to 40, distinct); label one line
@@ -483,7 +508,7 @@ $$;
 -- Another's, unknown, own-work, early, late and withdrawn: the same ZD404.
 CREATE FUNCTION app.peer_review_work(p_task_id uuid)
 RETURNS TABLE (rubrics jsonb, ord integer, kind text, body text)
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   v_actor record;
@@ -503,6 +528,14 @@ BEGIN
                      WHERE w.submission_id = v_task.author_work_ref) THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
+  -- The opening is logged with the real reader (PRODUCT 5, rule 17), once per
+  -- reader, work and 5-minute interval, as every other opening.
+  INSERT INTO audit.access_log (institution_id, document_id, assignment_id, owner_id, reader_id,
+                                reader_role, surface, opened_at)
+  SELECT v_task.institution_id, app.peer_review_document(v_task.assignment_id, v_task.author_work_ref),
+         v_task.assignment_id, v_task.author_id, v_actor.user_id, 'peer_reviewer', 'submitted_text',
+         pg_catalog.date_bin('5 minutes', pg_catalog.now(), timestamptz '2000-01-01 00:00:00+00')
+  ON CONFLICT (document_id, institution_id, reader_id, surface, opened_at) DO NOTHING;
   RETURN QUERY SELECT v_round.rubrics, b.ord, b.kind, b.body
     FROM app.peer_review_blocks(v_task.assignment_id, v_task.author_work_ref) b
    ORDER BY b.ord;
@@ -686,6 +719,82 @@ GRANT EXECUTE ON FUNCTION app.add_peer_review(uuid, jsonb, text) TO ductus_app;
 GRANT EXECUTE ON FUNCTION app.peer_reviews_received(uuid) TO ductus_app;
 GRANT EXECUTE ON FUNCTION app.peer_review_overview(uuid) TO ductus_app;
 GRANT EXECUTE ON FUNCTION app.withdraw_peer_review(uuid, uuid, text) TO ductus_app;
+-- The author's access log shows a peer reviewer by role only (OP-V19-6).
+CREATE OR REPLACE FUNCTION app.read_my_access_log(
+  p_document_id text, p_limit integer, p_before_at timestamptz, p_before_id uuid
+)
+RETURNS TABLE (
+  entry_id uuid, opened_at timestamptz, surface text, reader_role text,
+  reader_given_name text, reader_family_name text
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_actor record;
+  v_scope record;
+BEGIN
+  SELECT * INTO v_actor FROM app.current_actor();
+  IF v_actor.user_id IS NULL OR v_actor.institution_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = 'ZD401';
+  END IF;
+  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
+     OR (p_before_at IS NULL) <> (p_before_id IS NULL) THEN
+    RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  IF p_document_id IS NULL OR pg_catalog.length(p_document_id) NOT BETWEEN 1 AND 256
+     OR p_document_id ~ '[[:cntrl:]]' OR p_document_id <> pg_catalog.btrim(p_document_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The owner is the document's principal, decided once per call.
+  SELECT * INTO v_scope FROM collaboration.document_scope(p_document_id);
+  IF v_scope.principal_id IS DISTINCT FROM v_actor.user_id
+     OR v_scope.institution_id IS DISTINCT FROM v_actor.institution_id THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The owner filter holds even against a row with another owner. A page
+  -- ends on an interval: it holds the whole interval of its p_limit-th row,
+  -- so it may be longer than p_limit by the rest of that interval, and the
+  -- next page takes only older intervals (opened_at < p_before_at). Openings
+  -- are written only into the current interval, so one written after a page
+  -- shows on a fresh first page, never in a continuation (QA c.6711590695).
+  -- p_before_id stays the other half of the cursor, checked as a pair above.
+  RETURN QUERY
+  WITH mine AS (
+    SELECT l.id, l.opened_at, l.surface, l.reader_role, l.reader_id, l.institution_id
+      FROM audit.access_log l
+     WHERE l.document_id = p_document_id AND l.institution_id = v_actor.institution_id
+       AND l.owner_id = v_actor.user_id
+       AND (p_before_at IS NULL OR l.opened_at < p_before_at)
+  ), edge AS (
+    SELECT pg_catalog.min(f.opened_at) AS opened_at
+      FROM (SELECT m.opened_at FROM mine m ORDER BY m.opened_at DESC LIMIT p_limit) f
+  )
+  SELECT m.id, m.opened_at, m.surface, m.reader_role,
+         CASE WHEN m.reader_role = 'peer_reviewer' THEN NULL ELSE n.given_name END,
+         CASE WHEN m.reader_role = 'peer_reviewer' THEN NULL ELSE n.family_name END
+    FROM mine m
+    CROSS JOIN edge e
+    LEFT JOIN identity.person_name n ON n.user_id = m.reader_id AND n.institution_id = m.institution_id
+   WHERE m.opened_at >= e.opened_at
+   ORDER BY m.opened_at DESC, m.id DESC;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION app.worker_student_data_export_access_log(p_export_id uuid)
+RETURNS TABLE (entry_id uuid, opened_at timestamptz, surface text, reader_role text,
+               reader_given_name text, reader_family_name text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+  SELECT l.id, l.opened_at, l.surface, l.reader_role,
+         CASE WHEN l.reader_role = 'peer_reviewer' THEN NULL ELSE n.given_name END,
+         CASE WHEN l.reader_role = 'peer_reviewer' THEN NULL ELSE n.family_name END
+    FROM app.student_data_export_subject(p_export_id) s
+    JOIN audit.access_log l ON l.institution_id = s.institution_id AND l.owner_id = s.student_id
+    LEFT JOIN identity.person_name n ON n.user_id = l.reader_id AND n.institution_id = l.institution_id
+   ORDER BY l.opened_at DESC, l.id DESC
+$$;
+
+
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA institution, app FROM ductus_identity;
 REVOKE CREATE ON SCHEMA app FROM ductus_evidence;
@@ -695,6 +804,80 @@ REVOKE CREATE ON SCHEMA app FROM ductus_evidence;
 SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution, app TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
+CREATE OR REPLACE FUNCTION app.worker_student_data_export_access_log(p_export_id uuid)
+RETURNS TABLE (entry_id uuid, opened_at timestamptz, surface text, reader_role text,
+               reader_given_name text, reader_family_name text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+  SELECT l.id, l.opened_at, l.surface, l.reader_role, n.given_name, n.family_name
+    FROM app.student_data_export_subject(p_export_id) s
+    JOIN audit.access_log l ON l.institution_id = s.institution_id AND l.owner_id = s.student_id
+    LEFT JOIN identity.person_name n ON n.user_id = l.reader_id AND n.institution_id = l.institution_id
+   ORDER BY l.opened_at DESC, l.id DESC
+$$;
+
+SET LOCAL ROLE ductus_migrator;
+SET LOCAL ROLE ductus_identity;
+CREATE OR REPLACE FUNCTION app.read_my_access_log(
+  p_document_id text, p_limit integer, p_before_at timestamptz, p_before_id uuid
+)
+RETURNS TABLE (
+  entry_id uuid, opened_at timestamptz, surface text, reader_role text,
+  reader_given_name text, reader_family_name text
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_actor record;
+  v_scope record;
+BEGIN
+  SELECT * INTO v_actor FROM app.current_actor();
+  IF v_actor.user_id IS NULL OR v_actor.institution_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = 'ZD401';
+  END IF;
+  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
+     OR (p_before_at IS NULL) <> (p_before_id IS NULL) THEN
+    RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  IF p_document_id IS NULL OR pg_catalog.length(p_document_id) NOT BETWEEN 1 AND 256
+     OR p_document_id ~ '[[:cntrl:]]' OR p_document_id <> pg_catalog.btrim(p_document_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The owner is the document's principal, decided once per call.
+  SELECT * INTO v_scope FROM collaboration.document_scope(p_document_id);
+  IF v_scope.principal_id IS DISTINCT FROM v_actor.user_id
+     OR v_scope.institution_id IS DISTINCT FROM v_actor.institution_id THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The owner filter holds even against a row with another owner. A page
+  -- ends on an interval: it holds the whole interval of its p_limit-th row,
+  -- so it may be longer than p_limit by the rest of that interval, and the
+  -- next page takes only older intervals (opened_at < p_before_at). Openings
+  -- are written only into the current interval, so one written after a page
+  -- shows on a fresh first page, never in a continuation (QA c.6711590695).
+  -- p_before_id stays the other half of the cursor, checked as a pair above.
+  RETURN QUERY
+  WITH mine AS (
+    SELECT l.id, l.opened_at, l.surface, l.reader_role, l.reader_id, l.institution_id
+      FROM audit.access_log l
+     WHERE l.document_id = p_document_id AND l.institution_id = v_actor.institution_id
+       AND l.owner_id = v_actor.user_id
+       AND (p_before_at IS NULL OR l.opened_at < p_before_at)
+  ), edge AS (
+    SELECT pg_catalog.min(f.opened_at) AS opened_at
+      FROM (SELECT m.opened_at FROM mine m ORDER BY m.opened_at DESC LIMIT p_limit) f
+  )
+  SELECT m.id, m.opened_at, m.surface, m.reader_role, n.given_name, n.family_name
+    FROM mine m
+    CROSS JOIN edge e
+    LEFT JOIN identity.person_name n ON n.user_id = m.reader_id AND n.institution_id = m.institution_id
+   WHERE m.opened_at >= e.opened_at
+   ORDER BY m.opened_at DESC, m.id DESC;
+END
+$$;
+ALTER TABLE audit.access_log DROP CONSTRAINT access_log_reader_role_check;
+ALTER TABLE audit.access_log ADD CONSTRAINT access_log_reader_role_check
+  CHECK (reader_role IN ('teacher', 'mentor', 'seminar_teacher')) NOT VALID;
 DROP FUNCTION app.withdraw_peer_review(uuid, uuid, text);
 DROP FUNCTION app.peer_review_overview(uuid);
 DROP FUNCTION app.peer_reviews_received(uuid);

@@ -386,6 +386,27 @@ FROM (VALUES ('ana'), ('boris'), ('ivo'), ('jana'), ('karlo'), ('lena'), ('vesna
 SELECT is(pg_temp.code(pg_temp.author_of((SELECT t1 FROM probe)), format('SELECT 1 FROM app.peer_review_work(%L)', (SELECT t1 FROM probe))), 'ZD404',
   'the author does not read the task of their own work');
 SELECT is(pg_temp.code('dora', 'SELECT 1 FROM app.peer_review_work(gen_random_uuid())'), 'ZD404', 'an unknown task reads 404');
+-- The reading is logged with the real reader (OP-V19-6, PRODUCT 5 rule 17); the author
+-- reads the log without any identity of the reviewer; the teacher sees both ends.
+SELECT is((SELECT count(*)::integer FROM audit.access_log l
+            WHERE l.reader_id = pg_temp.id('dora') AND l.reader_role = 'peer_reviewer' AND l.surface = 'submitted_text'
+              AND l.owner_id = pg_temp.id(pg_temp.author_of((SELECT t1 FROM probe)))), 1,
+  'the work read by Dora is in the access log once, with Dora as the real reader, role peer_reviewer');
+CREATE TEMP TABLE log_probe AS
+  SELECT l.document_id AS doc, pg_temp.author_of((SELECT t1 FROM probe)) AS author
+    FROM audit.access_log l
+   WHERE l.reader_id = pg_temp.id('dora') AND l.reader_role = 'peer_reviewer'
+     AND l.owner_id = pg_temp.id(pg_temp.author_of((SELECT t1 FROM probe)));
+GRANT SELECT ON log_probe TO PUBLIC;
+SELECT is(pg_temp.ask((SELECT author FROM log_probe), format($$ SELECT string_agg(DISTINCT l.reader_role || '@' || l.surface || '@' ||
+    coalesce(l.reader_given_name, '-') || '@' || coalesce(l.reader_family_name, '-'), ';')
+    FROM app.read_my_access_log(%L, 10, NULL, NULL) l $$, (SELECT doc FROM log_probe))),
+  'peer_reviewer@submitted_text@-@-', 'the author sees every reading of the work (each reviewer of it) by role only: no name, no id');
+SELECT ok(pg_temp.ask((SELECT author FROM log_probe), format($$ SELECT string_agg(to_jsonb(l)::text, '|')
+    FROM app.read_my_access_log(%L, 10, NULL, NULL) l $$, (SELECT doc FROM log_probe))) !~* ('dora|babi|' || pg_temp.id('dora')::text),
+  'nothing of the reviewer (name, id) is in the log rows the author reads');
+SELECT is(pg_temp.code('dora', format('SELECT 1 FROM app.read_my_access_log(%L, 10, NULL, NULL)', (SELECT doc FROM log_probe))), 'ZD403',
+  'the reviewer cannot read the access log of the work they reviewed');
 SELECT is(pg_temp.code('dora', 'SELECT 1 FROM app.peer_review_work(NULL)'), 'ZD404', 'a missing task reads 404');
 SELECT is(pg_temp.code('anon', format('SELECT 1 FROM app.peer_review_work(%L)', (SELECT t1 FROM probe))), 'ZD401', 'without a session no work is read');
 SELECT is(pg_temp.code('dora', format('SELECT 1 FROM app.peer_review_work(%L)', (SELECT a.id FROM institution.peer_review_allocation a WHERE a.reviewer_id = pg_temp.id('ivo') LIMIT 1))),
@@ -453,6 +474,9 @@ SELECT is(pg_temp.code('marko', 'SELECT 1 FROM app.peer_reviews_received({z1})')
 
 -- The overview: the teachers of K1 see both ends.
 SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.peer_review_overview({z1}) $$), '10', 'the teacher sees all ten allocations');
+SELECT ok(pg_temp.ask('vesna', format($$ SELECT string_agg(o.reviewer_given_name, ',') FROM app.peer_review_overview({z1}) o
+    WHERE o.author_id = %L $$, pg_temp.id((SELECT author FROM log_probe)))) ~ 'Dora',
+  'the teacher sees the reviewer by name where the author of the same work sees the role only');
 SELECT is(pg_temp.ask('vesna', $$ SELECT string_agg(DISTINCT state, ',' ORDER BY state) FROM app.peer_review_overview({z1}) $$), 'pending,submitted',
   'pending and submitted allocations');
 SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.peer_review_overview({z1}) WHERE state = 'pending' AND review_id IS NOT NULL $$), '0',

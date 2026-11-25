@@ -107,6 +107,16 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     ],
   },
   {
+    fn: "app.peer_review_work",
+    returns: "content",
+    surfaces: ["submitted_text"],
+    proof: "db/main/tests/249-peer-review.sql",
+    // SRV-V19-RECENZIJA-BAZA (OP-V19-6, provisional): the reviewer's reading of an author's
+    // submitted text is logged with the real reader and the role peer_reviewer; the author's
+    // log (read_my_access_log, the data export) shows that role and no identity. No adapter yet.
+    callers: [],
+  },
+  {
     fn: "app.teacher_declaration",
     returns: "content",
     surfaces: ["declaration"],

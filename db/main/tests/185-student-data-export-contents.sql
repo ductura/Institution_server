@@ -76,6 +76,11 @@ SELECT l.entry::uuid, pg_temp.id(l.fak), l.doc, pg_temp.id(l.assignment), pg_tem
     ('00000000-0000-4000-8000-0000000001c2', 'fak_a', 'doc-a', 'z1', 'ana', 'vesna', 'process_summary', '2026-10-20 08:00:00+00'),
     ('00000000-0000-4000-8000-0000000001c3', 'fak_a', 'doc-d', 'z1', 'dora', 'vesna', 'live_view', '2026-10-19 12:00:00+00')
   ) AS l (entry, fak, doc, assignment, owner, reader, surface, at);
+-- A peer reviewer's reading of Ana's work (OP-V19-6): logged with the real reader.
+INSERT INTO audit.access_log (id, institution_id, document_id, assignment_id, owner_id, reader_id, reader_role,
+                              surface, opened_at)
+VALUES ('00000000-0000-4000-8000-0000000001c4', pg_temp.id('fak_a'), 'doc-a', pg_temp.id('z1'), pg_temp.id('ana'),
+        pg_temp.id('dora'), 'peer_reviewer', 'submitted_text', '2026-10-21 08:00:00+00');
 
 -- The exports, written as the operator: Ana's approved, Dora's still
 -- requested. Boris stands in for the clerk who requested, Iva approved.
@@ -142,6 +147,11 @@ SELECT is(pg_temp.work($$ SELECT string_agg(l.surface || '@' || l.opened_at::dat
                                              ';' ORDER BY l.opened_at)
                             FROM app.worker_student_data_export_access_log('00000000-0000-4000-8000-0000000001f1') l $$),
   'live_view@2026-10-19@Vesna;process_summary@2026-10-20@Vesna', 'the access log is of Ana''s work only');
+SELECT is(pg_temp.work($$ SELECT string_agg(l.reader_role || '@' || coalesce(l.reader_given_name, '-') || '@'
+                                             || coalesce(l.reader_family_name, '-'), ';')
+                            FROM app.worker_student_data_export_access_log('00000000-0000-4000-8000-0000000001f1') l
+                           WHERE l.reader_role = 'peer_reviewer' $$),
+  'peer_reviewer@-@-', 'a peer reviewer is in the export by role only, without a name (the log row holds the reader)');
 SELECT is(pg_temp.work($$ SELECT count(*)::text FROM (
     SELECT s.body FROM app.worker_student_data_export_submissions('00000000-0000-4000-8000-0000000001f1') s
      WHERE s.body LIKE '%Dore%' OR s.body LIKE '%Tome%'

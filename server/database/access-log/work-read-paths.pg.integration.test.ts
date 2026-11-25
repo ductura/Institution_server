@@ -51,7 +51,7 @@ const CATALOGUE = `
 WITH RECURSIVE fns AS (
   SELECT p.oid, n.nspname || '.' || p.proname AS name, p.prosrc,
          p.prosrc ~ ('(' || $2 || ')\\M') AS content,
-         p.prosrc ~ 'audit\\.record_work_opening\\(' AS logs
+         p.prosrc ~ '(audit\\.record_work_opening\\(|INSERT INTO audit\\.access_log)' AS logs
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = ANY ($1::text[])
 ), edges AS (
