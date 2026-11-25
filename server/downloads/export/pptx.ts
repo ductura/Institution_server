@@ -21,7 +21,7 @@ import {
   type SlidesExportLabels,
   type SlidesExportSlide,
 } from "./slides-model.ts";
-import { writeZip, type ZipEntry } from "./zip.ts";
+import { crc32, writeZip, type ZipEntry } from "./zip.ts";
 
 export type SlidesPptxInput = {
   /** The exact JCS bytes of the frozen slides snapshot (docs/contracts/slides-v1.md §4). */
@@ -109,24 +109,65 @@ const rels = (items: readonly Rel[]): string =>
 
 type ImageInfo = { readonly ext: "png" | "jpeg"; readonly width: number; readonly height: number };
 
-/** PNG and JPEG with their pixel size, read from the header; anything else is unsupported. */
+const PNG_IHDR = [0x49, 0x48, 0x44, 0x52];
+const PNG_IDAT = [0x49, 0x44, 0x41, 0x54];
+const PNG_IEND = [0x49, 0x45, 0x4e, 0x44];
+const isType = (type: Uint8Array, expected: readonly number[]): boolean =>
+  expected.every((b, i) => type[i] === b);
+
+/** CRC-32 of a PNG chunk (type and data). */
+function pngCrc(bytes: Uint8Array): number {
+  return crc32(bytes);
+}
+
+/**
+ * PNG and JPEG with their pixel size. The structure is checked to the end, so a
+ * header with no picture data is unsupported: PNG chunks must have valid
+ * lengths and checksums, an IDAT and a closing IEND; JPEG must have a frame,
+ * a scan and the end marker. Anything else is unsupported.
+ */
 function imageInfo(bytes: Uint8Array): ImageInfo | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  if (bytes.length >= 24 && png.every((b, i) => bytes[i] === b)) {
-    const width = view.getUint32(16);
-    const height = view.getUint32(20);
-    return width > 0 && height > 0 ? { ext: "png", width, height } : null;
+  if (bytes.length >= 8 && png.every((b, i) => bytes[i] === b)) {
+    let at = 8;
+    let size: { width: number; height: number } | null = null;
+    let data = false;
+    let first = true;
+    while (at + 12 <= bytes.length) {
+      const length = view.getUint32(at);
+      const end = at + 12 + length;
+      if (end > bytes.length) return null;
+      const type = bytes.subarray(at + 4, at + 8);
+      if (view.getUint32(end - 4) !== pngCrc(bytes.subarray(at + 4, end - 4))) return null;
+      if (first) {
+        if (!isType(type, PNG_IHDR) || length !== 13) return null;
+        size = { width: view.getUint32(at + 8), height: view.getUint32(at + 12) };
+        first = false;
+      } else if (isType(type, PNG_IDAT)) {
+        data = length > 0 || data;
+      } else if (isType(type, PNG_IEND)) {
+        return end === bytes.length && data && size && size.width > 0 && size.height > 0
+          ? { ext: "png", ...size }
+          : null;
+      }
+      at = end;
+    }
+    return null;
   }
   if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    if (bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9) return null;
     let at = 2;
-    while (at + 9 < bytes.length) {
+    let size: { width: number; height: number } | null = null;
+    while (at + 4 <= bytes.length) {
       if (bytes[at] !== 0xff) return null;
       const marker = bytes[at + 1] ?? 0;
       if (marker === 0xff) {
         at += 1;
         continue;
       }
+      const length = view.getUint16(at + 2);
+      if (length < 2 || at + 2 + length > bytes.length) return null;
       if (
         marker >= 0xc0 &&
         marker <= 0xcf &&
@@ -134,11 +175,16 @@ function imageInfo(bytes: Uint8Array): ImageInfo | null {
         marker !== 0xc8 &&
         marker !== 0xcc
       ) {
-        const height = view.getUint16(at + 5);
-        const width = view.getUint16(at + 7);
-        return width > 0 && height > 0 ? { ext: "jpeg", width, height } : null;
+        if (length < 8) return null;
+        size = { height: view.getUint16(at + 5), width: view.getUint16(at + 7) };
+      } else if (marker === 0xda) {
+        // The scan: entropy-coded data must follow before the end marker.
+        const scan = at + 2 + length;
+        return size && size.width > 0 && size.height > 0 && scan < bytes.length - 2
+          ? { ext: "jpeg", ...size }
+          : null;
       }
-      at += 2 + view.getUint16(at + 2);
+      at += 2 + length;
     }
   }
   return null;

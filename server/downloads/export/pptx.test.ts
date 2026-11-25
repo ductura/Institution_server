@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { crc32 } from "node:zlib";
+import { crc32, deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { messagesHr } from "../../../locales/index.ts";
 import {
@@ -20,13 +20,28 @@ const LABELS: SlidesExportLabels = messagesHr.slidesExport;
 const id = (n: number): string => `00000000-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
 const sha = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 
-// A 2x1 PNG header is enough: the writer reads only the signature and the size.
-const PNG = new Uint8Array([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 2,
-  0, 0, 0, 1, 8, 6, 0, 0, 0,
-]);
+// Real (tiny) files: the writer checks the structure to the end.
+function chunk(type: string, data: Uint8Array): Uint8Array {
+  const body = new Uint8Array([...new TextEncoder().encode(type), ...data]);
+  const out = new Uint8Array(12 + data.length);
+  const view = new DataView(out.buffer);
+  view.setUint32(0, data.length);
+  out.set(body, 4);
+  view.setUint32(8 + data.length, crc32(body));
+  return out;
+}
+const u32 = (n: number): number[] => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const IHDR = chunk("IHDR", new Uint8Array([...u32(2), ...u32(1), 8, 0, 0, 0, 0]));
+const IDAT = chunk("IDAT", new Uint8Array(deflateSync(new Uint8Array([0, 128, 128]))));
+const IEND = chunk("IEND", new Uint8Array());
+const png = (...chunks: Uint8Array[]): Uint8Array =>
+  new Uint8Array([...SIGNATURE, ...chunks.flatMap((c) => [...c])]);
+const PNG = png(IHDR, IDAT, IEND);
+// SOI, frame 8 x 4, scan header, two bytes of scan data, EOI.
 const JPEG = new Uint8Array([
-  0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 0, 4, 0, 8, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1,
+  0xff, 0xd8, 0xff, 0xc0, 0, 11, 8, 0, 4, 0, 8, 1, 1, 0x11, 0, 0xff, 0xda, 0, 8, 1, 1, 0, 0, 63, 0,
+  0x12, 0x34, 0xff, 0xd9,
 ]);
 
 const heading = (n: number, slot: SlideBlock["slot"], text: string): SlideBlock => ({
@@ -295,6 +310,34 @@ describe("renderSlidesPptx", () => {
         images: new Map([[id(1090), junk]]),
       }),
     ).toMatchObject({ status: "image_problem", reason: "image_unsupported" });
+  });
+
+  it("refuses truncated or damaged pictures that still match the bound hash", () => {
+    const damaged = png(IHDR, IDAT, IEND);
+    damaged[40] = (damaged[40] ?? 0) ^ 0xff;
+    const cases: [string, Uint8Array][] = [
+      ["png header only", png(IHDR)],
+      ["png without IEND", png(IHDR, IDAT)],
+      ["png without IDAT", png(IHDR, IEND)],
+      ["png cut short", PNG.subarray(0, PNG.length - 5)],
+      ["png bad checksum", damaged],
+      ["png trailing bytes", new Uint8Array([...PNG, 0])],
+      ["jpeg frame header only", JPEG.subarray(0, 15)],
+      ["jpeg without end marker", JPEG.subarray(0, JPEG.length - 2)],
+      ["jpeg without scan data", new Uint8Array([...JPEG.subarray(0, 25), 0xff, 0xd9])],
+    ];
+    for (const [name, bytes] of cases) {
+      const doc: SlidesDocument = {
+        ...DOC,
+        slides: [{ id: id(9), layout: "imageOnly", blocks: [image(90, "image", bytes)] }],
+      };
+      const out = renderSlidesPptx({
+        ...input,
+        snapshot: snapshotOf(doc),
+        images: new Map([[id(1090), bytes]]),
+      });
+      expect(out, name).toMatchObject({ status: "image_problem", reason: "image_unsupported" });
+    }
   });
 
   it("refuses a snapshot that is not the exact bytes of a slides document", () => {
