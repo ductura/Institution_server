@@ -1872,6 +1872,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
   },
   "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank-entry.put": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" },
+    },
+  },
   "teacher.comment-bank.delete": {
     before: [BANK_STEP],
     request: {
@@ -2027,6 +2037,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "institution.student-data-exports.get": {
     request: { path: "/api/v1/institution/student-data-exports", as: "bez-uloge" },
+  },
+  "institution.student-data-export-students.get": {
+    request: { path: "/api/v1/institution/student-data-export-students", as: "bez-uloge" },
   },
   "institution.student-data-exports.post": {
     request: {

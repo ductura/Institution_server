@@ -758,7 +758,7 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/teacher/comment-bank/[entryId]/route.ts": {
-    methods: ["DELETE"],
+    methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/works/[documentId]/review/route.ts": {
@@ -928,6 +928,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/student-data-exports/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052",
+  },
+  // SRV-NF7-IZVOZ-STUDENT (Ductus#2055): the person and state of each export beside the list; Ductus has no such route.
+  "app/api/institution/student-data-export-students/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
   },
   "app/api/institution/student-data-exports/[exportId]/approve/route.ts": {
     methods: ["POST"],
