@@ -24,6 +24,7 @@ Područje iz [karte servera](../../docs/server-map.md).
 | [provenance-share](provenance-share/README.md) | — (novo, SRV-1221)                | Udio predanog teksta iz zabilježenih događaja i zapis `ductura-provenance-share-v1`        |
 | [practice-journal](practice-journal/README.md) | — (novo, SRV-V19-DNEVNIK-RUTE)    | Sažetak zapisa dnevnika prakse (JCS SHA-256) i provjera ulaza                              |
 | [work-team](work-team/README.md)               | — (novo, SRV-V19-GRUPA-RUTE)      | Redoslijed članova tima po imenu i sastavljanje doprinosa (bez udjela i ranga)             |
+| [slides](slides/README.md)                     | — (novo, SRV-V13-UGOVOR-SLAJD)    | Kanonski dokument slajdova v1: tipovi, validator, snimka (JCS), revizija nula              |
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 
