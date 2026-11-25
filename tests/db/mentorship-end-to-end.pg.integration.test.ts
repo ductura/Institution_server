@@ -126,9 +126,9 @@ it("carries one mentorship from opening to consent along relations only", async 
         >[]
       ).find((m) => m.mentorshipId === mentorshipId);
       expect(mine).toMatchObject({ workType: "master_thesis", topic: "Izmišljena tema o tlu" });
-      expect(JSON.stringify((await call("D", "GET", "student/mentorships")).body)).not.toContain(
-        mentorshipId,
-      );
+      const others = await call("D", "GET", "student/mentorships");
+      expect(others.status).toBeLessThan(500);
+      expect(JSON.stringify(others.body)).not.toContain(mentorshipId);
 
       // Dora starts the work (the notice acknowledged as the RPC would write it).
       await db.query(
@@ -250,6 +250,8 @@ it("carries one mentorship from opening to consent along relations only", async 
       });
       for (const stranger of ["A", "B", "D", "I"]) {
         const got = await call(stranger, "GET", `${work}/sealed-self-note`);
+        // A refusal, never a server error that happens to carry no ciphertext.
+        expect(got.status).toBeLessThan(500);
         expect(JSON.stringify(got.body)).not.toContain(sealed.ct);
       }
 
@@ -263,6 +265,7 @@ it("carries one mentorship from opening to consent along relations only", async 
       ).toMatchObject({ documentId: started.rows[0]!.id, workType: "master_thesis" });
       for (const other of ["B", "I"]) {
         const got = await call(other, "GET", "teacher/mentorship-overview");
+        expect(got.status).toBeLessThan(500);
         expect(JSON.stringify(got.body)).not.toContain(mentorshipId);
       }
       // Whoever mentors nobody, the student included, reads an empty list (the contract).
