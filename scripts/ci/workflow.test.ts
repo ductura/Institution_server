@@ -68,7 +68,7 @@ describe("ci.yml", () => {
     );
     for (const name of ["scope", "ci-ok"]) {
       expect(job(name)).toContain(
-        "ref: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.base.sha || 'main' }}",
+        "ref: ${{ (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'migracija/kopija-ductus-backend') && github.event.pull_request.base.sha || 'main' }}",
       );
     }
   });
