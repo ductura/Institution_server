@@ -455,6 +455,13 @@ export {
   type WorkTemplateTitleField,
   type WorkTemplateVersion,
 } from "./work-template/index.ts";
+export {
+  createAssignmentTemplate,
+  type AssignmentTemplate,
+  type AssignmentTemplateReadResult,
+  type AssignmentTemplateSetResult,
+  type FrozenAssignmentTemplate,
+} from "./assignment-template/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
