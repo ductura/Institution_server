@@ -15,6 +15,7 @@ import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
 import { MENTORSHIP_CONSULTATION_HANDLERS } from "./mentorship-consultation-routes.ts";
 import { KEY_DATES_HANDLERS } from "./key-dates.ts";
 import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
+import { WORK_TEAM_HANDLERS } from "./work-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -43,6 +44,7 @@ import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
 import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
+import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
@@ -120,6 +122,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTORSHIP_CONSULTATION_HANDLERS,
   ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
+  ...WORK_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...THESIS_HANDLERS,
@@ -147,6 +150,7 @@ export const DEV_HANDLERS: Handlers = {
   ...TEACHER_SOURCE_HANDLERS,
   ...MILESTONE_HANDLERS,
   ...MILESTONE_TEMPLATE_HANDLERS,
+  ...WORK_TEMPLATE_HANDLERS,
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...DECLARATION_REQUIRED_HANDLERS,

@@ -73,6 +73,7 @@ import {
   createMerlinRosterRoutesFor,
   createMeRouteFor,
   createMilestoneTemplateRoutesFor,
+  createWorkTemplateRoutesFor,
   createNotificationsRoutesFor,
   createOperatorDenialLog,
   createOriginCompositionRoutesFor,
@@ -556,6 +557,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createEventDisputeRoutesFor", () => createEventDisputeRoutesFor(STAND_IN)],
   ["createWorkMilestonesRoutesFor", () => createWorkMilestonesRoutesFor(STAND_IN)],
   ["createMilestoneTemplateRoutesFor", () => createMilestoneTemplateRoutesFor(STAND_IN)],
+  ["createWorkTemplateRoutesFor", () => createWorkTemplateRoutesFor(STAND_IN)],
   ["createReturnForRevisionRoutesFor", () => createReturnForRevisionRoutesFor(STAND_IN)],
   ["createAcknowledgmentRouteFor", () => [createAcknowledgmentRouteFor(STAND_IN)]],
   [
