@@ -426,26 +426,28 @@ it("reads another's or unknown team contribution as 404 for the teacher", async 
 
 it("gives the student and the teacher the same bytes, alphabetical, with the notice and no share", async () => {
   query.mockImplementation((sql) =>
-    sql.includes("student_team")
-      ? [
-          {
-            rowKind: "member",
-            formation: "student_choice",
-            teamId: TEAM,
-            memberCount: null,
-            givenName: "Ana",
-            familyName: "Babić",
-          },
-        ]
-      : [
-          {
-            teamId: TEAM,
-            studentId: S1,
-            givenName: "Ana",
-            familyName: "Babić",
-            workState: "submitted",
-          },
-        ],
+    sql.includes("assignment_team_setting")
+      ? [{ enabled: true, minSize: 2, maxSize: 4, formation: "student_choice" }]
+      : sql.includes("student_team")
+        ? [
+            {
+              rowKind: "member",
+              formation: "student_choice",
+              teamId: TEAM,
+              memberCount: null,
+              givenName: "Ana",
+              familyName: "Babić",
+            },
+          ]
+        : [
+            {
+              teamId: TEAM,
+              studentId: S1,
+              givenName: "Ana",
+              familyName: "Babić",
+              workState: "submitted",
+            },
+          ],
   );
   const student = await (
     await call(`${STUDENT_BASE}/team/contribution`, { on: withSource })
@@ -511,4 +513,40 @@ it("carries the contribution on no route but the two contribution routes", () =>
     "student.work-team-contribution.get",
     "teacher.work-team-contribution.get",
   ]);
+});
+
+it("reads disabled for the teacher too once the teams are switched off, as the student does", async () => {
+  query.mockImplementation((sql) =>
+    sql.includes("assignment_team_setting")
+      ? [{ enabled: false, minSize: 2, maxSize: 4, formation: "student_choice" }]
+      : sql.includes("student_team")
+        ? [
+            {
+              rowKind: "disabled",
+              formation: "student_choice",
+              teamId: null,
+              memberCount: null,
+              givenName: null,
+              familyName: null,
+            },
+          ]
+        : [
+            {
+              teamId: TEAM,
+              studentId: S1,
+              givenName: "Ana",
+              familyName: "Babić",
+              workState: "submitted",
+            },
+          ],
+  );
+  const student = await (
+    await call(`${STUDENT_BASE}/team/contribution`, { on: withSource })
+  ).text();
+  const teacher = await (
+    await call(`${TEACHER_BASE}/teams/${TEAM}/contribution`, { on: withSource })
+  ).text();
+  expect(teacher).toBe(student);
+  expect(JSON.parse(teacher)).toEqual({ state: "disabled" });
+  expect(readParts).not.toHaveBeenCalled();
 });

@@ -266,6 +266,11 @@ export function createWorkTeamStore(withActor: WithActor, source: ContributionSo
         const { rows } = await tx.query<TeacherTeamRow>(TEACHER_TEAMS, [assignmentId]);
         // Another's, an unknown and a malformed team all read the same 404.
         if (!rows.some((row) => row.teamId === teamId)) notFound();
+        // Teams off reads disabled for the teacher as for the student: the same answer.
+        const setting = await tx.query<SettingRow>(GET_SETTING, [assignmentId]);
+        if (setting.rows[0]?.enabled !== true) {
+          return assembleContribution({ enabled: false, members: null });
+        }
         return contribution(tx, assignmentId, teamId);
       }),
   };
