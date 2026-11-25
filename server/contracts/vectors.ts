@@ -35,6 +35,7 @@ const VectorSchema = closed({
         Type.Literal("text/html"),
         Type.Literal("image/jpeg"),
         Type.Literal("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        Type.Literal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
       ]),
     ),
     headers: Type.Optional(
@@ -63,12 +64,13 @@ export type Vector = {
   };
   readonly response: {
     readonly status: number;
-    /** image/jpeg and DOCX: `body` is the bytes in Base64. */
+    /** image/jpeg, DOCX and .xlsx: `body` is the bytes in Base64. */
     readonly contentType?:
       | "application/json"
       | "text/html"
       | "image/jpeg"
-      | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     readonly headers?: Readonly<Record<string, string | readonly string[]>>;
     readonly body?: unknown;
   };
@@ -177,11 +179,12 @@ function checkVector(
 const JPEG_BASE64 = /^\/9j\/[A-Za-z0-9+/]*={0,2}$/u;
 
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-/** Base64 of bytes that start with the ZIP marker "PK" 03 04 (a DOCX is a ZIP). */
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+/** Base64 of bytes that start with the ZIP marker "PK" 03 04 (a DOCX and an .xlsx are ZIPs). */
 const ZIP_BASE64 = /^UEsDB[A-Za-z0-9+/]*={0,2}$/u;
 
 function checkBody(
-  expected: TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE,
+  expected: TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE | typeof XLSX_TYPE,
   response: Vector["response"],
   check: SchemaCheck,
 ): string[] {
@@ -198,6 +201,13 @@ function checkBody(
       ZIP_BASE64.test(response.body)
       ? []
       : ["the contract answers with DOCX bytes"];
+  }
+  if (expected === XLSX_TYPE) {
+    return response.contentType === XLSX_TYPE &&
+      typeof response.body === "string" &&
+      ZIP_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with .xlsx bytes"];
   }
   if (expected === "none") {
     return response.body === undefined && response.contentType === undefined

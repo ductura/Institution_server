@@ -51,10 +51,13 @@ export type SuccessSpec = {
   readonly body?: TSchema;
   /**
    * A binary body of this media type instead of JSON (SRV-1102: the JPEG of a
-   * source proof; SRV-1310: the DOCX of a work). Such an answer has no `body` schema.
+   * source proof; SRV-1310: the DOCX of a work; SRV-V14-SHEET-XLSX: the .xlsx of a
+   * spreadsheet work). Such an answer has no `body` schema.
    */
   readonly contentType?:
-    "image/jpeg" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    | "image/jpeg"
+    | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
 };

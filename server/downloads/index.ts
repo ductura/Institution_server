@@ -13,7 +13,9 @@ export {
   A4_PAGE,
   buildExportModel,
   renderDocx,
+  renderSheetXlsx,
   renderWorkDocx,
+  XLSX_TYPE,
   type ExportLabels,
 } from "./export/index.ts";
 // SRV-1902: the ZIP of all submissions of an assignment uses the same deterministic writer.
