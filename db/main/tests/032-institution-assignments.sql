@@ -306,6 +306,9 @@ ALTER TABLE evidence.assistant_match_explanation DISABLE TRIGGER assistant_match
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
 ALTER TABLE institution.deadline_extension DISABLE TRIGGER deadline_extension_no_truncate;
+-- A late-submission exception (SRV-NF4-IZNIMKA-ZAPIS) and its audit event reference the assignment and are append-only.
+ALTER TABLE institution.late_submission_exception DISABLE TRIGGER late_submission_exception_no_truncate;
+ALTER TABLE audit.late_submission_exception_event DISABLE TRIGGER late_submission_exception_event_no_truncate;
 -- The Merlin package (SRV-1110) and the record of its downloads reference the assignment and refuse TRUNCATE.
 ALTER TABLE institution.merlin_package DISABLE TRIGGER merlin_package_no_truncate;
 ALTER TABLE institution.merlin_package_download DISABLE TRIGGER merlin_package_download_no_truncate;
@@ -370,6 +373,8 @@ ALTER TABLE evidence.assistant_match_attachment ENABLE TRIGGER assistant_match_a
 ALTER TABLE evidence.assistant_match_explanation ENABLE TRIGGER assistant_match_explanation_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
+ALTER TABLE institution.late_submission_exception ENABLE TRIGGER late_submission_exception_no_truncate;
+ALTER TABLE audit.late_submission_exception_event ENABLE TRIGGER late_submission_exception_event_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
 ALTER TABLE assistant.assignment_tool_setting ENABLE TRIGGER assignment_tool_setting_no_truncate;
 ALTER TABLE audit.assistant_tool_setting_event ENABLE TRIGGER assistant_tool_setting_event_no_truncate;

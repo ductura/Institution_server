@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4267);
+SELECT plan(4354);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -189,7 +189,7 @@ SELECT bag_eq(
         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
-        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
+        'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
@@ -317,6 +317,7 @@ SELECT bag_eq(
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
     'deadline_extension: deadline_extension_owner ALL to ductus_identity',
+    'late_submission_exception: late_submission_exception_owner ALL to ductus_identity',
     'merlin_package: merlin_package_owner ALL to ductus_identity',
     'merlin_package_download: merlin_package_download_owner ALL to ductus_identity',
     'consultation_slot: consultation_slot_owner ALL to ductus_identity',
@@ -388,6 +389,7 @@ SELECT bag_eq(
         'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O',
         'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
         'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O',
+        'late_submission_exception: late_submission_exception_immutable 27 O', 'late_submission_exception: late_submission_exception_no_truncate 34 O',
         'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
         'merlin_package: merlin_package_practice 7 O',
         'merlin_package_download: merlin_package_download_immutable 27 O',
@@ -556,6 +558,10 @@ SELECT bag_eq(
     'source_proofs(p_assignment_id uuid, p_source_id uuid, p_student_id uuid) definer app',
     'read_source_proof_image(p_assignment_id uuid, p_source_id uuid, p_proof_id uuid, p_student_id uuid) definer app',
     'refuse_deadline_extension_change()',
+    'reject_late_submission_exception_change()',
+    'grant_late_submission_exception(p_assignment_id uuid, p_student_id uuid, p_until_at timestamp with time zone, p_reason_id text) definer app',
+    'late_submission_exceptions(p_assignment_id uuid) definer app',
+    'student_late_submission_exceptions(p_assignment_id uuid) definer app',
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
@@ -905,6 +911,15 @@ SELECT is_empty(
      CROSS JOIN unnest(ARRAY['app.work_origin_segments_record(text,bigint,jsonb)', 'app.work_origin_segments(text,bigint)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-KARTA-RASPON: only the web role (and the owner) execute the RPCs of the ranges');
+
+-- The trail of the late-submission exception (audit.late_submission_exception_event), SRV-NF4-IZNIMKA-ZAPIS.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-NF4-IZNIMKA-ZAPIS: audit.late_submission_exception_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.late_submission_exception_event'::regclass;
 
 -- 1c4. SRV-1230: the match with the assistant (evidence.assistant_match_finding,
 -- assistant_match_attachment, assistant_match_setting) only through the RPCs; the
@@ -1579,6 +1594,29 @@ SELECT is(
 FROM (VALUES ('vesna', '1'), ('marko', 'ZD403'), ('ana', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
   AS c (actor, result);
 
+-- 1i2. SRV-NF4-IZNIMKA-ZAPIS: the exception of a late submission for one
+-- student (institution.late_submission_exception) only through its RPCs; the
+-- teacher of Z1 grants and lists, only Ana reads her own, everyone else is the
+-- same refusal. The rest is in 252-late-submission-exception.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT ''ok'' FROM institution.grant_late_submission_exception({z1}, {ana}, now() + interval ''500 days'', ''justified'')'), 1, 5), c.outcome,
+  format('SRV-NF4-IZNIMKA-ZAPIS: %s grants Ana a late-submission exception on Z1: %s', c.actor, c.outcome))
+FROM (VALUES
+  ('vesna', 'ok'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'),
+  ('dora', 'ZD403'), ('boris', 'ZD403'), ('nina', 'ZD403'), ('tomo', 'ZD403'),
+  ('lea', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM institution.late_submission_exceptions({z1})'), 1, 5), c.result,
+  format('SRV-NF4-IZNIMKA-ZAPIS: %s lists the late-submission exceptions of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '1'), ('marko', 'ZD403'), ('ana', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
+  AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM institution.student_late_submission_exceptions({z1})'), 1, 5), c.result,
+  format('SRV-NF4-IZNIMKA-ZAPIS: %s reads only the own late-submission exceptions of Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', '1'), ('dora', '0'), ('vesna', 'ZD403'), ('marko', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
+  AS c (actor, result);
+
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was
 -- extended in 1h); null for everyone else. The rest is in
@@ -1813,7 +1851,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
+                        'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
                         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
@@ -1824,7 +1862,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
