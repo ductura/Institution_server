@@ -163,6 +163,46 @@ SELECT is(pg_temp.copy('vesna', '{z4}', '{k1}', '{key3}'), 'ok', 'Vesna copies t
 SELECT is((SELECT is_practice FROM institution.assignment WHERE request_id = pg_temp.id('key3')), true,
   'a copy of a practice assignment is practice too');
 
+-- 20261219260000: the teacher's two rules of the source come along; the copy
+-- above has neither, Z5 (partially allowed, no AI purpose) has both.
+SELECT is((SELECT format('%s|%s', external_tools_allowed, ai_summary_only) FROM institution.assignment
+            WHERE id = pg_temp.id('copy1')), 'f|f', 'a copy of an assignment without the rules has neither');
+INSERT INTO ref VALUES ('z5', '00000000-0000-4000-8000-0000000000a5'), ('key4', '00000000-0000-4000-8000-00000000c0f4');
+INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by,
+                                    external_tools_allowed, ai_summary_only)
+VALUES (pg_temp.id('z5'), pg_temp.id('k1'), pg_temp.id('fak_a'), 1, pg_temp.id('vesna'), true, true);
+INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type, opens_at, due_at,
+  ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+VALUES (pg_temp.id('z5'), 1, 'Z5', 'Upute za izmišljeni zadatak s pravilima.', 'essay', now(), now() + interval '7 days',
+  'partially_allowed', '{}', 'basic', false, pg_temp.id('vesna'));
+SELECT is(pg_temp.copy('vesna', '{z5}', '{k1}', '{key4}'), 'ok', 'Vesna copies Z5, which has both rules');
+SELECT is((SELECT format('%s|%s', external_tools_allowed, ai_summary_only) FROM institution.assignment
+            WHERE request_id = pg_temp.id('key4')), 't|t', 'the copy carries outside tools and summary only');
+SELECT is(pg_temp.ask('vesna', 'SELECT institution.copy_assignment({z5}, {k1}, {key4}, NULL, NULL)'),
+  (SELECT id::text FROM institution.assignment WHERE request_id = pg_temp.id('key4')),
+  'the same key answers the same copy with the rules');
+-- A copy whose rules differ from the source (made here by hand, with triggers
+-- off for this one statement) is not answered as a replay of the same key.
+SET LOCAL session_replication_role = replica;
+UPDATE institution.assignment SET ai_summary_only = false WHERE request_id = pg_temp.id('key4');
+SET LOCAL session_replication_role = origin;
+SELECT is(pg_temp.ask('vesna', 'SELECT institution.copy_assignment({z5}, {k1}, {key4}, NULL, NULL)'),
+  'ZD409: conflict', 'a replay whose copy has other rules is a conflict');
+-- Summary only under a policy that became prohibited later (a new version, as
+-- publish_assignment_version allows) is refused, as create_assignment refuses it.
+INSERT INTO ref VALUES ('z6', '00000000-0000-4000-8000-0000000000a6'), ('key5', '00000000-0000-4000-8000-00000000c0f5');
+INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by,
+                                    external_tools_allowed, ai_summary_only)
+VALUES (pg_temp.id('z6'), pg_temp.id('k1'), pg_temp.id('fak_a'), 1, pg_temp.id('vesna'), false, true);
+INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type, opens_at, due_at,
+  ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+VALUES (pg_temp.id('z6'), 1, 'Z6', 'Upute za izmišljeni zadatak bez AI-ja.', 'essay', now(), now() + interval '7 days',
+  'prohibited', '{}', 'basic', false, pg_temp.id('vesna'));
+SELECT is(pg_temp.copy('vesna', '{z6}', '{k1}', '{key5}'), 'ZD422',
+  'summary only under a prohibited policy is not copied');
+SELECT is((SELECT count(*) FROM institution.assignment WHERE request_id = pg_temp.id('key5')), 0::bigint,
+  'the refused copy wrote no assignment');
+
 -- A student of K1 sees the copy as a new assignment of the course, as after
 -- any new assignment; the copy is readable through RLS like any other.
 SELECT is(pg_temp.ask('ana', 'SELECT count(*)::text FROM institution.assignment WHERE id = {copy1}'), '1',
