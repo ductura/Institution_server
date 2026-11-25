@@ -1,0 +1,152 @@
+{
+  "route": "practice.entries.get",
+  "vectors": [
+    {
+      "name": "listed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-dnevnik-000000001"
+        },
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": [
+            {
+              "entryId": "00000000-0000-4000-8000-00000000a301",
+              "date": "2026-03-09",
+              "hours": 4,
+              "text": "Probni opis rada u izmisljenoj organizaciji.",
+              "correctsEntryId": null,
+              "createdAt": "2026-03-09T16:00:00.000Z"
+            },
+            {
+              "entryId": "00000000-0000-4000-8000-00000000a302",
+              "date": "2026-03-10",
+              "hours": 7.5,
+              "text": "Ispravak sati.",
+              "correctsEntryId": "00000000-0000-4000-8000-00000000a301",
+              "createdAt": "2026-03-10T16:00:00.000Z"
+            }
+          ],
+          "signoffs": [
+            {
+              "signoffId": "00000000-0000-4000-8000-00000000a401",
+              "throughDate": "2026-03-10",
+              "entryCount": 2,
+              "entriesSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "comment": "Potvrdujem zapise.",
+              "signedAt": "2026-03-11T09:00:00.000Z",
+              "mentor": {
+                "id": "00000000-0000-4000-8000-00000000a501",
+                "givenName": "Mentor",
+                "familyName": "Probni"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-dnevnik-000000001"
+        },
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": [],
+          "signoffs": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {},
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a101"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000007015"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-dnevnik-000000001"
+        },
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a102"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000007016"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-dnevnik-000000001"
+        },
+        "params": {
+          "placementId": "00000000-0000-4000-8000-00000000a101"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000007017"
+        }
+      }
+    }
+  ]
+}
