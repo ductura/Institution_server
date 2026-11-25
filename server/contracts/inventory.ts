@@ -765,6 +765,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
   },
+  // SRV-V14-SHEET-CSV (val 14, docs/nalazi/val14-razlika.md decision 6): the CSV of one sheet of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/csv/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
+  },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
     methods: ["GET"],

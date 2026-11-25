@@ -117,7 +117,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "assignmentId": string; "start"?: boolean };
-    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "schemaVersion"?: 1 | 2 | 3; "revisionZeroHash"?: string; "documentKind"?: "text" | "slides"; "slidesSchemaVersion"?: 1; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
+    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "schemaVersion"?: 1 | 2 | 3; "revisionZeroHash"?: string; "documentKind"?: "text" | "slides"; "slidesSchemaVersion"?: 1; "sheetSchemaVersion"?: 1; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
   };
   "evidence.replay.post": {
@@ -2079,6 +2079,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdf"; "reportHash": null; "docxBase64": string; "noticeKey": "workExport.plainPdf" } | { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdfa-2u"; "reportHash": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "work.export-sheet-csv.get": {
+    params: { "documentId": string };
+    query: { "sheet"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "content-disposition"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.export.get": {
     params: { "documentId": string };
