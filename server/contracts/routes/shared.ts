@@ -1,3 +1,5 @@
+import { Type } from "@sinclair/typebox";
+
 import { error } from "../schema/index.ts";
 
 /**
@@ -16,3 +18,10 @@ export const MUTATION_GUARD = [
   error(400, "content_length_mismatch"),
   error(400, "body_stream_error"),
 ] as const;
+
+/**
+ * SRV-V13-UGOVOR-VRSTA: the kind of document of an assignment or work, "text" or "slides"
+ * (docs/contracts/slides-v1.md). Optional only because a new required field is a breaking
+ * change (contracts:breaking); a client without it treats the work as text.
+ */
+export const DocumentKind = Type.Union([Type.Literal("text"), Type.Literal("slides")]);
