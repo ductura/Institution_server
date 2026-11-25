@@ -1,0 +1,134 @@
+{
+  "route": "teacher.assignment-rubric.get",
+  "vectors": [
+    {
+      "name": "latest-version",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "version": 1,
+          "criteria": [
+            {
+              "id": "tema",
+              "title": "Izmišljena tema i cilj rada",
+              "levels": [
+                {
+                  "label": "Treba doraditi",
+                  "descriptor": "Izmišljeni opis niže razine."
+                },
+                {
+                  "label": "Dobro",
+                  "descriptor": "Izmišljeni opis srednje razine."
+                },
+                {
+                  "label": "Vrlo dobro",
+                  "descriptor": "Izmišljeni opis više razine."
+                }
+              ]
+            },
+            {
+              "id": "izvori",
+              "title": "Izmišljeni izvori i navođenje",
+              "levels": [
+                {
+                  "label": "Treba doraditi",
+                  "descriptor": "Izmišljeni opis niže razine."
+                },
+                {
+                  "label": "Dobro",
+                  "descriptor": "Izmišljeni opis srednje razine."
+                },
+                {
+                  "label": "Vrlo dobro",
+                  "descriptor": "Izmišljeni opis više razine."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000001710016"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000001710017"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000001710018"
+        }
+      }
+    }
+  ]
+}

@@ -32,9 +32,11 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
   createThesisRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -127,6 +129,7 @@ import {
   createInputRhythmRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
+  createLateSubmissionRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -203,6 +206,11 @@ const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 const IMPORT_ID = randomUUID();
 /** A submission that does not exist; the package link is signed for it (SRV-1807). */
 const PACKAGE_SUBMISSION = randomUUID();
+function rubricCriterion() {
+  const level = { label: "Dobro", descriptor: "Izmišljeni opis." };
+  return { id: "tema", title: "Izmišljena tema", levels: [level, level, level] };
+}
+
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -444,6 +452,12 @@ const SESSION_ROUTES = {
   "teacher.comment-bank.post": {
     path: "/api/v1/teacher/comment-bank",
     body: () => ({ text: "Izmišljeno: navedite izvor.", kind: "must" }),
+    live: 404,
+  },
+  "teacher.comment-bank-entry.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/comment-bank/${randomUUID()}`,
+    body: () => ({ text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" }),
     live: 404,
   },
   "teacher.comment-bank.delete": {
@@ -804,6 +818,45 @@ const SESSION_ROUTES = {
     body: () => ({ body: "Izmisljena biljeska." }),
     live: 404,
   },
+  // SRV-V19-DNEVNIK-RUTE: a live session with no part in any practice reads 404 (or an empty list).
+  "practice.placements.post": {
+    path: "/api/v1/practice/placements",
+    body: () => ({
+      mentorshipId: randomUUID(),
+      organisationName: "Izmisljena organizacija",
+      startsOn: "2026-10-01",
+      endsOn: "2026-12-01",
+    }),
+    live: 404,
+  },
+  "practice.placements.get": {
+    method: "GET",
+    path: "/api/v1/practice/placements",
+    body: () => undefined,
+    live: 200,
+  },
+  "practice.entries.get": {
+    method: "GET",
+    path: `/api/v1/practice/placements/${randomUUID()}/entries`,
+    body: () => undefined,
+    live: 404,
+  },
+  "practice.entries.post": {
+    path: `/api/v1/practice/placements/${randomUUID()}/entries`,
+    body: () => ({ date: "2026-11-02", hours: 4, text: "Izmisljeni zapis." }),
+    live: 404,
+  },
+  "practice.signoffs.post": {
+    path: `/api/v1/practice/placements/${randomUUID()}/signoffs`,
+    body: () => ({ throughDate: "2026-11-02" }),
+    live: 404,
+  },
+  "practice.signoffs.get": {
+    method: "GET",
+    path: `/api/v1/practice/placements/${randomUUID()}/signoffs`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-MENTOR-2: a live session with no part in any thesis.
   "institution.thesis-forms.get": {
     method: "GET",
@@ -977,6 +1030,24 @@ const SESSION_ROUTES = {
     method: "POST",
     path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/request-revision`,
     body: () => ({ comment: "Dopuni uvod." }),
+    live: 404,
+  },
+  "teacher.assignment-rubric.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/rubric`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.assignment-rubric.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/rubric`,
+    body: () => ({ expectedVersion: 0, criteria: [rubricCriterion()] }),
+    live: 404,
+  },
+  "student.assignment-rubric.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/rubric`,
+    body: () => undefined,
     live: 404,
   },
   "institution.milestone-template.get": {
@@ -1348,6 +1419,19 @@ const SESSION_ROUTES = {
     body: () => ({ question: "Izmišljeno pitanje?" }),
     live: 404,
   },
+  // SRV-NF4-KASNA-POLJE: a live session with no relation to such an assignment gets 404.
+  "institution.assignment-late-submission.put": {
+    method: "PUT",
+    path: `/api/v1/institution/assignments/${randomUUID()}/late-submission`,
+    body: () => ({ lateSubmissionAllowed: false }),
+    live: 404,
+  },
+  "student.assignment-late-submission.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/late-submission`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -1710,6 +1794,13 @@ const SESSION_ROUTES = {
   "institution.student-data-exports.get": {
     method: "GET",
     path: "/api/v1/institution/student-data-exports",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-NF7-IZVOZ-STUDENT: the same reach as the list, so the same 200 with none.
+  "institution.student-data-export-students.get": {
+    method: "GET",
+    path: "/api/v1/institution/student-data-export-students",
     body: () => undefined,
     live: 200,
   },
@@ -2137,6 +2228,7 @@ const FACTORIES = [
   "createEventDisputeRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createMilestoneTemplateRoutesFor",
+  "createAssignmentRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createAssignmentTemplateRoutesFor",
   "createFormatRulesRoutesFor",
@@ -2162,12 +2254,14 @@ const FACTORIES = [
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
+  "createPracticeJournalRoutesFor",
   "createThesisRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
   "createDeclarationRequiredRoutesFor",
   "createDeclarationQuestionRoutesFor",
+  "createLateSubmissionRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2267,6 +2361,7 @@ const MOUNTED = [
   ...createEventDisputeRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   ...createMilestoneTemplateRoutesFor(databases.main),
+  ...createAssignmentRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createAssignmentTemplateRoutesFor(databases.main),
   ...createFormatRulesRoutesFor(databases.main),
@@ -2293,12 +2388,14 @@ const MOUNTED = [
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
+  ...createPracticeJournalRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
   ...createDeclarationRequiredRoutesFor(databases.main),
   ...createDeclarationQuestionRoutesFor(databases.main),
+  ...createLateSubmissionRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
@@ -2596,6 +2693,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("student-work.") ||
         id.startsWith("work.") ||
         id.startsWith("mentorship.") ||
+        id.startsWith("practice.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : id.startsWith("ops.")

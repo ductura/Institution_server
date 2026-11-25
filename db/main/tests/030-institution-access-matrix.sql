@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4179);
+SELECT plan(4267);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -190,7 +190,7 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
+        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
@@ -325,6 +325,7 @@ SELECT bag_eq(
     'work_milestone_progress: work_milestone_progress_owner ALL to ductus_identity',
     'work_milestone_event: work_milestone_event_owner ALL to ductus_identity',
     'milestone_template_version: milestone_template_version_owner ALL to ductus_identity',
+    'assignment_rubric_version: assignment_rubric_version_owner ALL to ductus_identity',
     'work_template_version: work_template_version_owner ALL to ductus_identity',
     'assignment_template_pin: assignment_template_pin_owner ALL to ductus_identity',
     'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity',
@@ -354,7 +355,8 @@ SELECT bag_eq(
   $$ SELECT c.relname || ': ' || t.tgname || ' ' || t.tgtype::text || ' ' || t.tgenabled::text
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
-  ARRAY['assignment: assignment_practice_immutable 19 O', 'assignment: assignment_config_pin 23 O',
+  ARRAY['assignment: assignment_practice_immutable 19 O', 'assignment: assignment_setup_immutable 19 O',
+        'assignment: assignment_config_pin 23 O',
         'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',
@@ -369,6 +371,7 @@ SELECT bag_eq(
         'work_thesis_form_event: work_thesis_form_event_append_only 27 O', 'work_thesis_form_event: work_thesis_form_event_no_truncate 34 O',
         'work_mentor_consent_event: work_mentor_consent_event_append_only 27 O', 'work_mentor_consent_event: work_mentor_consent_event_no_truncate 34 O',
         'work_thesis_stage_event: work_thesis_stage_event_append_only 27 O', 'work_thesis_stage_event: work_thesis_stage_event_no_truncate 34 O',
+        'assignment_rubric_version: assignment_rubric_version_immutable 27 O', 'assignment_rubric_version: assignment_rubric_version_no_truncate 34 O',
         'work_template_version: work_template_version_immutable 27 O', 'work_template_version: work_template_version_no_truncate 34 O',
         'assignment_template_pin: assignment_template_pin_frozen 19 O',
         'milestone_template_version: milestone_template_version_immutable 27 O', 'milestone_template_version: milestone_template_version_no_truncate 34 O',
@@ -443,8 +446,10 @@ SELECT bag_eq(
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean) definer app',
+    'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean, p_external_tools_allowed boolean, p_ai_summary_only boolean) definer app',
     'assignment_grade_state(p_assignment_id uuid) app',
     'refuse_assignment_practice_change()',
+    'refuse_assignment_setup_change()',
     'pin_assignment_config() definer',
     'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
@@ -583,6 +588,7 @@ SELECT bag_eq(
     'declaration_question_of(p_assignment_id uuid)',
     'declaration_question_setting(p_assignment_id uuid) definer app',
     'set_declaration_question(p_assignment_id uuid, p_question text) definer app',
+    'set_late_submission_allowed(p_assignment_id uuid, p_allowed boolean) definer app',
     'reject_work_milestone_event_change()',
     'is_thesis_text(p_text text, p_max integer)',
     'reject_thesis_record_change()',
@@ -592,6 +598,10 @@ SELECT bag_eq(
     'thesis_setting_now()',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
+    'reject_assignment_rubric_change()',
+    'is_rubric_text(p_value jsonb, p_min integer, p_max integer, p_lines boolean)',
+    'is_rubric_criteria(p_list jsonb)',
+    'assignment_rubric_role(p_assignment_id uuid) definer',
     'reject_work_template_change()',
     'reject_assignment_template_pin_update()',
     'is_work_template_text(p_text text, p_min integer, p_max integer)',
@@ -677,9 +687,10 @@ SELECT is_empty(
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
            UNION ALL SELECT 'public') AS r
      CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)',
-                             'app.teacher_submission_state(uuid,uuid)']) f
+                             'app.teacher_submission_state(uuid,uuid)',
+                             'app.my_assignment_late_submission(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
-  'SRV-20: only ductus_app and the owner execute the three state RPCs'
+  'SRV-20, SRV-NF4-KASNA-POLJE: only ductus_app and the owner execute the state RPCs'
 );
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
@@ -1617,6 +1628,36 @@ FROM (VALUES
   ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
 ) AS c (actor, result);
 
+-- 1i2a. SRV-NF4-KASNA-POLJE: whether a submission after the deadline is
+-- allowed (institution.assignment.late_submission_allowed) is set only by the
+-- teacher of the assignment and read only by a student of its course. The
+-- rest is in 248-assignment-late-submission.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT late_submission_allowed::text FROM institution.set_late_submission_allowed({z1}, true)'), 1, 5),
+  c.result, format('SRV-NF4-KASNA-POLJE: %s sets late submission of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  pg_temp.ask(c.actor, 'SELECT outcome FROM app.my_assignment_late_submission({z1})'),
+  c.result, format('SRV-NF4-KASNA-POLJE: %s reads late submission of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
+  ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
+) AS c (actor, result);
+-- 1i2b. SRV-NF4-KASNA-PROVEDBA: request_submission reads the field through
+-- app.student_late_submission_allowed, as the evidence role, only for a
+-- student of the assignment; null for everyone else. The rest is in
+-- 249-late-submission-enforcement.sql.
+SELECT is(
+  coalesce(pg_temp.ask_as('ductus_evidence', c.actor, 'SELECT app.student_late_submission_allowed({z1})::text'), 'null'),
+  c.result, format('SRV-NF4-KASNA-PROVEDBA: %s reads late submission of Z1 through the bridge: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', 'true'), ('dora', 'true'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
+  ('tomo', 'null'), ('petra', 'null'), ('anon', 'null')
+) AS c (actor, result);
+
 -- 1i3. SRV-IZJAVA-PITANJE: the teacher's question with the declaration
 -- (audit.declaration_question_event) only through its RPCs, only for the
 -- teacher of the assignment; the answer (declaration.question_answer) only
@@ -1694,6 +1735,8 @@ SELECT is_empty(
        'app.read_milestone_template()', 'app.publish_milestone_template(integer,boolean,jsonb)',
        'app.read_work_milestone_plan(text)', 'app.add_work_milestone(text,text,timestamptz,text)',
        'app.apply_milestone_template_to_work(text)',
+       'app.read_assignment_rubric_teacher(uuid)', 'app.read_assignment_rubric_student(uuid)',
+       'app.publish_assignment_rubric(uuid,integer,jsonb)',
        'app.read_work_template(text)', 'app.publish_work_template(text,integer,jsonb,jsonb,text)',
        'app.set_assignment_template(uuid,boolean)', 'app.read_assignment_template(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
@@ -1772,7 +1815,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
+                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff'])
@@ -1781,7 +1824,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

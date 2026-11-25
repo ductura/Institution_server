@@ -28,6 +28,7 @@ export {
 } from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export { createPracticeJournalStore } from "./practice-journal/index.ts";
 export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
 export {
   createInstitutionConfigStore,
@@ -208,6 +209,7 @@ export type {
   AssignmentContent,
   AssignmentCreateOutcome,
   AssignmentPublishOutcome,
+  AssignmentSetup,
   InstitutionAssignments,
 } from "./institution-assignments.ts";
 export {
@@ -439,6 +441,13 @@ export {
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
 export {
+  createAssignmentRubric,
+  defaultRubricCriteria,
+  type AssignmentRubric,
+  type AssignmentRubricStore,
+  type RubricCriterion,
+} from "./assignment-rubric/index.ts";
+export {
   createWorkTemplate,
   type WorkTemplate,
   type WorkTemplateContent,
@@ -545,6 +554,11 @@ export {
   type SubmissionDeclarationGate,
   type SubmissionDeclarationGateAnswer,
 } from "./declaration/index.ts";
+export {
+  createLateSubmissionPort,
+  type LateSubmissionPort,
+  type LateSubmissionSetting,
+} from "./late-submission.ts";
 export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,

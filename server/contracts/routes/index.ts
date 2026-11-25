@@ -136,6 +136,7 @@ export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
+export { lateSubmissionRoutes } from "./late-submission.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {
@@ -145,6 +146,12 @@ export {
 } from "./assistant-setting.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export {
+  AssignmentRubricInput,
+  assignmentRubricRoutes,
+  RUBRIC_LEVELS,
+  RUBRIC_MAX_CRITERIA,
+} from "./assignment-rubric.ts";
 export {
   courseAggregateGet,
   CourseAggregateParams,
@@ -182,6 +189,20 @@ export {
 export { StudentWork, studentWorkRoutes } from "./student-work.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
+export {
+  institutionAssignmentTeamSettingPut,
+  studentWorkTeamContributionGet,
+  studentWorkTeamPost,
+  teacherWorkTeamContributionGet,
+  teacherWorkTeamMemberPost,
+  WORK_TEAM_CATEGORIES,
+  WORK_TEAM_FORMATIONS,
+  WORK_TEAM_NOTICE,
+  WORK_TEAM_SIZE_MAX,
+  WORK_TEAM_SIZE_MIN,
+  WORK_TEAM_WORK_STATES,
+  workTeamRoutes,
+} from "./work-team.ts";
 export {
   MentorNoteInput,
   MentorshipNoteParams,

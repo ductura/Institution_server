@@ -60,6 +60,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
   createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -70,6 +71,7 @@ import {
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -249,6 +251,15 @@ const SRV_1408 = [
   "institution.teaching-group-members.put",
 ];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
+// SRV-V19-DNEVNIK-RUTE: the six routes of the practice journal.
+const SRV_V19_DNEVNIK = [
+  "practice.placements.post",
+  "practice.placements.get",
+  "practice.entries.get",
+  "practice.entries.post",
+  "practice.signoffs.post",
+  "practice.signoffs.get",
+];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -459,6 +470,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createStudentDataExportRoutesFor(databases.main, process.env, process.cwd())",
     ids: [
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",
@@ -596,6 +608,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createPracticeJournalRoutesFor(databases.main)",
+    ids: SRV_V19_DNEVNIK,
+    routes: () => createPracticeJournalRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -672,6 +689,15 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.milestone-plan.apply-template.post",
     ],
     routes: () => createMilestoneTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createAssignmentRubricRoutesFor(databases.main)",
+    ids: [
+      "teacher.assignment-rubric.get",
+      "teacher.assignment-rubric.put",
+      "student.assignment-rubric.get",
+    ],
+    routes: () => createAssignmentRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createWorkTemplateRoutesFor(databases.main)",
@@ -985,6 +1011,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.legal-holds.post",
       "institution.legal-hold-release.post",
       "institution.student-data-exports.get",
+      "institution.student-data-export-students.get",
       "institution.student-data-exports.post",
       "institution.student-data-exports-approve.post",
       "student.data-export.get",
@@ -1026,6 +1053,7 @@ describe("routes the entry point mounts itself", () => {
       "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
+      ...SRV_V19_DNEVNIK,
       ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",
@@ -1054,6 +1082,9 @@ describe("routes the entry point mounts itself", () => {
       "work.milestone-plan.get",
       "work.milestone-plan.add.post",
       "work.milestone-plan.apply-template.post",
+      "teacher.assignment-rubric.get",
+      "teacher.assignment-rubric.put",
+      "student.assignment-rubric.get",
       "institution.work-template.get",
       "institution.work-template.put",
       "teacher.assignment-template.put",

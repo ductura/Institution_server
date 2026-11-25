@@ -3,7 +3,7 @@ import type { Account, State } from "./state.ts";
 
 // SRV-V17-TEMPLATE-ADMIN: the work template of the institution, one per work type, on the dev
 // fake server. Only the administrator reads or adds a version, a version is only ever added.
-// The real rules are 20261218130000_work_template.sql.
+// The real rules are 20261219110000_work_template.sql.
 type Section = { title: string; hint: string };
 type Version = {
   version: number;

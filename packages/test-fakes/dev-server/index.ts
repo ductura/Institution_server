@@ -15,6 +15,7 @@ import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
 import { MENTORSHIP_CONSULTATION_HANDLERS } from "./mentorship-consultation-routes.ts";
 import { KEY_DATES_HANDLERS } from "./key-dates.ts";
 import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
+import { WORK_TEAM_HANDLERS } from "./work-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -42,6 +43,7 @@ import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
 import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
 import { ASSIGNMENT_TEMPLATE_HANDLERS } from "./assignment-template-routes.ts";
@@ -50,6 +52,7 @@ import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
+import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -123,6 +126,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTORSHIP_CONSULTATION_HANDLERS,
   ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
+  ...WORK_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...THESIS_HANDLERS,
@@ -150,6 +154,7 @@ export const DEV_HANDLERS: Handlers = {
   ...TEACHER_SOURCE_HANDLERS,
   ...MILESTONE_HANDLERS,
   ...MILESTONE_TEMPLATE_HANDLERS,
+  ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,
   ...FORMAT_RULES_HANDLERS,
@@ -157,6 +162,7 @@ export const DEV_HANDLERS: Handlers = {
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...DECLARATION_REQUIRED_HANDLERS,
   ...DECLARATION_QUESTION_HANDLERS,
+  ...LATE_SUBMISSION_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,

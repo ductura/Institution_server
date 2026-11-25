@@ -38,11 +38,13 @@ const vectorsOf = (id: string): Vector[] =>
     }
   ).vectors;
 const LIST = vectorsOf("institution.student-data-exports.get");
+const STUDENTS = vectorsOf("institution.student-data-export-students.get");
 const REQUEST = vectorsOf("institution.student-data-exports.post");
 const APPROVE = vectorsOf("institution.student-data-exports-approve.post");
 const DOWNLOAD = vectorsOf("student.data-export.get");
 const ORIGIN = "https://ductura.example.invalid";
 const BASE = "/api/v1/institution/student-data-exports";
+const STUDENTS_PATH = "/api/v1/institution/student-data-export-students";
 const EXPORT = APPROVE[0]!.request.params!.exportId!;
 const TOKEN = DOWNLOAD[0]!.request.params!.token!;
 const ZIP = new TextEncoder().encode("PK izmisljeni paket");
@@ -164,6 +166,69 @@ describe("institution.student-data-exports.get", () => {
     expect((await fetch(`${base}${BASE}`, { headers })).status).toBe(503);
     calls.length = 0;
     const cross = await fetch(`${base}${BASE}`, {
+      headers: { ...headers, "sec-fetch-site": "cross-site" },
+    });
+    expect(cross.status).toBe(403);
+    expect(calls).toEqual([]);
+  });
+});
+
+// SRV-NF7-IZVOZ-STUDENT: the person and state beside the list, from the same port read.
+describe("institution.student-data-export-students.get", () => {
+  it.each(STUDENTS.map((v) => [v.name, v] as const))("vector %s", async (_name, v) => {
+    list = answerFor(v, () => ({ status: "ok", exports: v.response.body!.exports }));
+    const base = await start();
+    await expectAnswer(
+      await fetch(`${base}${STUDENTS_PATH}`, { headers: v.request.headers ?? {} }),
+      v,
+    );
+  });
+
+  it("sends only the person and the state, and the list never the person", async () => {
+    const row = {
+      exportId: "00000000-0000-4000-8000-0000000001f1",
+      studentId: "00000000-0000-4000-8000-000000000201",
+      state: "approved",
+      requestedAt: "2026-11-21T09:15:00.000Z",
+      expiresAt: null,
+    };
+    list = async () => ({ status: "ok", exports: [row] });
+    const base = await start();
+    const headers = STUDENTS[0]!.request.headers!;
+    const students = await fetch(`${base}${STUDENTS_PATH}`, { headers });
+    expect(students.headers.get("cache-control")).toBe("no-store");
+    expect(await students.json()).toEqual({
+      exports: [{ exportId: row.exportId, studentId: row.studentId, state: "approved" }],
+    });
+    const listed = await fetch(`${base}${BASE}`, { headers });
+    expect(await listed.json()).toEqual({
+      exports: [
+        {
+          exportId: row.exportId,
+          state: "approved",
+          requestedAt: row.requestedAt,
+          expiresAt: null,
+        },
+      ],
+    });
+  });
+
+  it("a person outside the contract is 503, a cross-site read 403 before the port", async () => {
+    list = async () => ({
+      status: "ok",
+      exports: [
+        {
+          exportId: "00000000-0000-4000-8000-0000000001f1",
+          studentId: "nije-uuid",
+          state: "ready",
+        },
+      ],
+    });
+    const base = await start();
+    const headers = STUDENTS[0]!.request.headers!;
+    expect((await fetch(`${base}${STUDENTS_PATH}`, { headers })).status).toBe(503);
+    calls.length = 0;
+    const cross = await fetch(`${base}${STUDENTS_PATH}`, {
       headers: { ...headers, "sec-fetch-site": "cross-site" },
     });
     expect(cross.status).toBe(403);

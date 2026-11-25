@@ -20,6 +20,7 @@ import { fakeImportIds } from "./import-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
+import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
@@ -226,6 +227,23 @@ const SET_TEAM: Step = {
   as: "nastavnik",
   headers: ORIGIN,
   body: { assistantIds: [IDS.teacher2] },
+};
+const WORK_TEAM_BASE = `/api/v1/student/assignments/${IDS.assignment}/team`;
+const TEACHER_TEAMS = `/api/v1/teacher/assignments/${IDS.assignment}/teams`;
+const TEAM_SETTING_PATH = `/api/v1/institution/assignments/${IDS.assignment}/team-setting`;
+const TEAMS_ON = { enabled: true, minSize: 2, maxSize: 4, formation: "student_choice" } as const;
+const TEAMS_ON_STEP: Step = {
+  path: TEAM_SETTING_PATH,
+  method: "PUT",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: TEAMS_ON,
+};
+const TEAM_CREATE_STEP: Step = {
+  path: WORK_TEAM_BASE,
+  as: "student",
+  headers: ORIGIN,
+  body: { action: "create" },
 };
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
@@ -891,6 +909,45 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  // SRV-V19-GRUPA-UGOVOR: work teams; the first team of a fake state has FAKE_TEAM_ID.
+  "institution.assignment-team-setting.put": { request: TEAMS_ON_STEP },
+  "institution.assignment-team-setting.get": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEAM_SETTING_PATH, as: "nastavnik" },
+  },
+  "student.work-team.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: WORK_TEAM_BASE, as: "student" },
+  },
+  "student.work-team.post": { before: [TEAMS_ON_STEP], request: TEAM_CREATE_STEP },
+  "teacher.work-teams.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik" },
+  },
+  "teacher.work-teams.post": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik", headers: ORIGIN, body: {} },
+  },
+  "teacher.work-team-member.post": {
+    prepare: (state) => {
+      state.courses.find((course) => course.id === IDS.course)?.studentIds.push(IDS.student2);
+    },
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: {
+      path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/members`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { studentId: IDS.student2, action: "add" },
+    },
+  },
+  "student.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${WORK_TEAM_BASE}/contribution`, as: "student" },
+  },
+  "teacher.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/contribution`, as: "nastavnik" },
+  },
   "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
   "institution.teaching-team-view.get": { request: { path: `${TEAM}/view`, as: "nastavnik" } },
   "institution.teaching-team.post": { request: SET_TEAM },
@@ -1291,6 +1348,34 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
+  },
+  "teacher.assignment-rubric.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`, as: "nastavnik" },
+  },
+  "teacher.assignment-rubric.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        criteria: [
+          {
+            id: "tema",
+            title: "Izmišljena tema rada",
+            levels: [
+              { label: "Treba doraditi", descriptor: "Izmišljeni opis." },
+              { label: "Dobro", descriptor: "" },
+              { label: "Vrlo dobro", descriptor: "" },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  "student.assignment-rubric.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/rubric`, as: "student" },
   },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
@@ -1851,6 +1936,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
   },
   "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank-entry.put": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" },
+    },
+  },
   "teacher.comment-bank.delete": {
     before: [BANK_STEP],
     request: {
@@ -2007,6 +2102,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "institution.student-data-exports.get": {
     request: { path: "/api/v1/institution/student-data-exports", as: "bez-uloge" },
   },
+  "institution.student-data-export-students.get": {
+    request: { path: "/api/v1/institution/student-data-export-students", as: "bez-uloge" },
+  },
   "institution.student-data-exports.post": {
     request: {
       path: "/api/v1/institution/student-data-exports",
@@ -2154,6 +2252,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "institution.assignment-late-submission.put": {
+    request: {
+      path: `/api/v1/institution/assignments/${IDS.assignment}/late-submission`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { lateSubmissionAllowed: false },
+    },
+  },
+  "student.assignment-late-submission.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission`,
+      as: "student",
+      method: "GET",
     },
   },
   "teacher.declaration-question.get": {

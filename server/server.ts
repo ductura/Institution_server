@@ -67,6 +67,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
   createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -119,6 +120,7 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -130,6 +132,7 @@ import {
   createSubmissionRouteFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
+  createLateSubmissionRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -346,6 +349,8 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
+      ...createAssignmentRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
       ...createWorkTemplateRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.
@@ -395,6 +400,7 @@ async function main(): Promise<void> {
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
+      ...createPracticeJournalRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
@@ -406,6 +412,8 @@ async function main(): Promise<void> {
       ...createDeclarationRequiredRoutesFor(databases.main),
       // SRV-IZJAVA-PITANJE: the teacher's optional question with the declaration.
       ...createDeclarationQuestionRoutesFor(databases.main),
+      // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
+      ...createLateSubmissionRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
