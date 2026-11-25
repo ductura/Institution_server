@@ -47,6 +47,7 @@ import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { ASSIGNMENT_CODE_TESTS_HANDLERS } from "./assignment-code-tests-routes.ts";
+import { QUESTIONNAIRE_HANDLERS } from "./questionnaire-routes.ts";
 import { WORK_RUBRIC_HANDLERS } from "./work-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
@@ -58,7 +59,6 @@ import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts"
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
-import { QUESTIONNAIRE_HANDLERS } from "./questionnaire-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -164,6 +164,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...ASSIGNMENT_CODE_TESTS_HANDLERS,
+  ...QUESTIONNAIRE_HANDLERS,
   ...WORK_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,
@@ -174,7 +175,6 @@ export const DEV_HANDLERS: Handlers = {
   ...DECLARATION_QUESTION_HANDLERS,
   ...LATE_SUBMISSION_HANDLERS,
   ...COURSE_ASSISTANT_HANDLERS,
-  ...QUESTIONNAIRE_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,
