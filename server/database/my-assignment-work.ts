@@ -15,7 +15,7 @@
 //
 // SRV-NF4-IZNIMKA-PREDAJA (NF-4, NZ-5 B): the same statement reads the
 // caller's own latest late-submission exception per assignment through
-// app.student_late_exception_until (20261219300000), the bridge the
+// app.student_late_exception_until (20261219320000), the bridge the
 // submission request honours; null for none. Only the caller's own record is
 // ever read, so no other student's exception can reach the answer.
 
