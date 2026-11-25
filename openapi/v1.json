@@ -46570,7 +46570,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "pattern": "^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\\s\\S])",
+              "minLength": 1,
+              "maxLength": 64,
               "type": "string"
             }
           }
@@ -69220,7 +69221,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "pattern": "^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\\s\\S])",
+              "minLength": 1,
+              "maxLength": 64,
               "type": "string"
             }
           }
@@ -69465,7 +69467,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "pattern": "^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\\s\\S])",
+              "minLength": 1,
+              "maxLength": 64,
               "type": "string"
             }
           }
@@ -69513,7 +69516,7 @@
             }
           }
         },
-        "x-max-body-bytes": 65536,
+        "x-max-body-bytes": 131072,
         "responses": {
           "201": {
             "description": "the written review",

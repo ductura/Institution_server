@@ -264,6 +264,7 @@ export const PEER_REVIEW_HANDLERS: Handlers = {
         (a) => a.taskId === params.taskId.toLowerCase() && a.reviewerId === account.id,
       );
       const at = now.toISOString();
+      if (enrolled(state, account, assignment.id) === null) continue;
       if (task === undefined || round === null || at < round.opensAt || at >= round.dueAt) continue;
       return {
         status: 200,
@@ -283,6 +284,7 @@ export const PEER_REVIEW_HANDLERS: Handlers = {
         (a) => a.taskId === params.taskId.toLowerCase() && a.reviewerId === account.id,
       );
       if (task === undefined || round === null) continue;
+      if (enrolled(state, account, assignment.id) === null) continue;
       const at = now.toISOString();
       if (at < round.opensAt) return { error: "not_found" };
       if (at >= round.dueAt) return { error: "closed" };

@@ -1251,19 +1251,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
-  "peer-review.review-withdrawal.post:params": (() => {
-  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
-  return function check(value: Record<string, unknown>): boolean {
+  "peer-review.review-withdrawal.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&
       value['assignmentId'].length >= 1 &&
       (typeof value['reviewId'] === 'string') &&
-      local0.test(value['reviewId']) &&
+      value['reviewId'].length <= 64 &&
+      value['reviewId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 2
     )
-  }
-  })(),
+  }),
   "peer-review.review-withdrawal.post:body": (() => {
   const local0 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,600}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1754,28 +1752,24 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
-  "student.peer-review-work.get:params": (() => {
-  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
-  return function check(value: Record<string, unknown>): boolean {
+  "student.peer-review-work.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['taskId'] === 'string') &&
-      local0.test(value['taskId']) &&
+      value['taskId'].length <= 64 &&
+      value['taskId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
-  }
-  })(),
-  "student.peer-review.post:params": (() => {
-  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
-  return function check(value: Record<string, unknown>): boolean {
+  }),
+  "student.peer-review.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['taskId'] === 'string') &&
-      local0.test(value['taskId']) &&
+      value['taskId'].length <= 64 &&
+      value['taskId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
-  }
-  })(),
+  }),
   "student.peer-review.post:body": (() => {
   const local0 = /^[a-z][a-z0-9-]{0,39}(?![\s\S])/;
   const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,4000}(?![\s\S])/;

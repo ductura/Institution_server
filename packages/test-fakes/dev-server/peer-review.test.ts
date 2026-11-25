@@ -167,3 +167,29 @@ describe("peer review", () => {
     expect(get.json).toMatchObject({ round: null, state: "none" });
   });
 });
+
+describe("peer review access after a change of membership", () => {
+  it("reads 404 for a malformed id and, once removed from the course, for the work and the review", async () => {
+    const { state, student, allocate } = await setup(1);
+    await allocate();
+    const base = "/api/v1/student/peer-review/tasks";
+    expect((await send(state, `${base}/not-a-uuid/work`, { headers: student })).status).toBe(404);
+    const bad = await send(state, `${base}/not-a-uuid/review`, {
+      method: "POST",
+      headers: student,
+      body: { byRubric: [{ key: "argument", text: "x" }] },
+    });
+    expect(bad.status).toBe(404);
+    const task = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+    expect((await send(state, `${base}/${task}/work`, { headers: student })).status).toBe(200);
+    const course = state.courses.find((c) => c.id === IDS.course)!;
+    course.studentIds = course.studentIds.filter((id) => id !== IDS.student);
+    expect((await send(state, `${base}/${task}/work`, { headers: student })).status).toBe(404);
+    const review = await send(state, `${base}/${task}/review`, {
+      method: "POST",
+      headers: student,
+      body: { byRubric: [{ key: "argument", text: "Izmisljeno." }] },
+    });
+    expect(review.status).toBe(404);
+  });
+});

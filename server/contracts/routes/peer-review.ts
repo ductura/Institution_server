@@ -18,10 +18,13 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END } from "./teacher.ts";
 
-const Uuid = `[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}`;
 const Id = Type.String({ pattern: `^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}${END}` });
-/** A path id: the same shape, either case; a malformed one is the same 404. */
-const IdParam = Type.String({ pattern: `^${Uuid}${END}` });
+/**
+ * A path id of a task or review: any non-empty text, so that a malformed one
+ * reaches the handler and reads the same 404 as an unknown one (a pattern here
+ * would answer it 422 before the handler runs, C-23). The body ids stay strict.
+ */
+const IdParam = Type.String({ minLength: 1, maxLength: 64 });
 const Instant = Type.String({
   pattern: `^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}Z${END}`,
 });
@@ -343,7 +346,8 @@ export const studentPeerReviewPost = defineRoute({
     params: TaskParams,
     body: closed({ byRubric: ByRubric, general: Type.Optional(ReviewText) }),
     contentType: "application/json",
-    maxBodyBytes: 65_536,
+    // 7 texts of 4000 code points of 4 bytes each, plus keys and quotes.
+    maxBodyBytes: 131_072,
   },
   responses: [
     {
