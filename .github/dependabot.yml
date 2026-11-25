@@ -1,0 +1,33 @@
+# DAN-1538. Weekly update PRs for the pnpm workspace (root, packages/contracts,
+# packages/test-fakes) and for the GitHub Actions pinned in .github/workflows.
+# Updates only open PRs; nothing merges by itself (the engineering gate applies).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/packages/*"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns:
+          - "*"
