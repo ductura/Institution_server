@@ -2063,6 +2063,7 @@ export const hr = {
     alreadyAllocated: "Recenzije su već dodijeljene, pa se krug više ne može mijenjati.",
     alreadyReviewed: "Recenzija ovog rada je već napisana.",
     closed: "Rok za ovu radnju je istekao.",
+    unknownAnalysisVersion: "Ta verzija analize više nije dostupna. Odaberite analizu iz popisa.",
     tooFewSubmissions:
       "Predanih radova je premalo da bi recenzija ostala anonimna. Pričekajte više predaja.",
     alreadySubmitted: "Rad je već predan, pa se izjava više ne može mijenjati.",
