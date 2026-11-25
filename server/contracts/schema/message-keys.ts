@@ -74,6 +74,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["unauthenticated", "errors.unauthenticated"],
   ["unauthorized", "errors.unauthorized"],
   ["unavailable", "errors.unavailable"],
+  ["unknown_analysis_version", "errors.unknownAnalysisVersion"],
   ["unsupported_media_type", "errors.unsupportedMediaType"],
   ["upgrade_required", "errors.upgradeRequired"],
   ["too_few_submissions", "errors.tooFewSubmissions"],

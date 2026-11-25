@@ -498,6 +498,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
   },
+  // SRV-V15-UGOVOR (Ductus#2055 c.7163756092, val 15): a small calculation in the request, no stored dataset; Ductus has no such route.
+  "app/api/analysis/catalogue/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7163756092",
+  },
+  "app/api/analysis/runs/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7163756092",
+  },
   // SRV-MENTOR-2 (NF-6, MK-12 and MK-14): thesis forms, mentor consent, stage after submission.
   "app/api/institution/thesis-forms/route.ts": {
     methods: ["GET", "POST"],
