@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(5983);
+SELECT plan(6112);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -195,6 +195,8 @@ SELECT bag_eq(
         'course_required_source', 'source_proof_request', 'work_literature_seen',
         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
         'mentorship_opening',
+        -- SRV-V16-TEMA-PRIJEDLOG: the topic of a thesis; cells in 247-thesis-topic.sql.
+        'work_thesis_topic_version', 'work_thesis_topic_decision',
         -- SRV-V19-DNEVNIK-BAZA: the practice journal; cells in 247-practice-journal.sql.
         'practice_placement', 'practice_entry', 'practice_signoff',
         -- SRV-V19-GRUPA-BAZA: teams on an assignment; cells in 248-work-team.sql.
@@ -353,6 +355,8 @@ SELECT bag_eq(
     'work_mentor_consent_event: work_mentor_consent_event_owner ALL to ductus_identity',
     'work_thesis_stage_event: work_thesis_stage_event_owner ALL to ductus_identity',
     'mentorship_opening: mentorship_opening_owner ALL to ductus_identity',
+    'work_thesis_topic_version: work_thesis_topic_version_owner ALL to ductus_identity',
+    'work_thesis_topic_decision: work_thesis_topic_decision_owner ALL to ductus_identity',
     'practice_placement: practice_placement_owner ALL to ductus_identity',
     'practice_entry: practice_entry_owner ALL to ductus_identity',
     'practice_signoff: practice_signoff_owner ALL to ductus_identity',
@@ -426,6 +430,8 @@ SELECT bag_eq(
         'merlin_package_download: merlin_package_download_no_truncate 34 O',
         'submission_withdrawal_setting: submission_withdrawal_setting_immutable 27 O',
         'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O',
+        'work_thesis_topic_version: work_thesis_topic_version_append_only 27 O', 'work_thesis_topic_version: work_thesis_topic_version_no_truncate 34 O',
+        'work_thesis_topic_decision: work_thesis_topic_decision_append_only 27 O', 'work_thesis_topic_decision: work_thesis_topic_decision_no_truncate 34 O',
         'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O',
         'practice_placement: practice_placement_append_only 27 O', 'practice_placement: practice_placement_no_truncate 34 O',
         'practice_entry: practice_entry_append_only 27 O', 'practice_entry: practice_entry_no_truncate 34 O',
@@ -690,6 +696,7 @@ SELECT bag_eq(
     'is_code_tests(p_tests jsonb)',
     'assignment_code_tests_role(p_assignment_id uuid)',
     'thesis_setting_now()',
+    'thesis_topic_now(p_institution_id uuid, p_document_id text)',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
     'reject_assignment_rubric_change()',
@@ -2279,6 +2286,17 @@ SELECT is_empty(
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-MENTOR-2: only ductus_app and the owner execute the thesis form, consent and stage RPCs'
 );
+-- SRV-V16-TEMA-PRIJEDLOG: actor-level cases are in 247-thesis-topic.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_thesis_topic(text)', 'app.read_work_thesis_topic_history(text)',
+       'app.set_work_thesis_topic(text,text,text)', 'app.decide_work_thesis_topic(text,integer,text,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V16-TEMA-PRIJEDLOG: only ductus_app and the owner execute the thesis topic RPCs'
+);
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
      FROM (SELECT rolname::text FROM pg_roles
@@ -2436,7 +2454,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
-                        'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff',
+                        'mentorship_opening', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'practice_placement', 'practice_entry', 'practice_signoff',
                         'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests',
                         'course_assistant_setting'])
                         WITH ORDINALITY AS t (tbl, n)
@@ -2444,7 +2462,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
