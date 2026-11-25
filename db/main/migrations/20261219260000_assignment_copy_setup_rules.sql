@@ -6,8 +6,10 @@
 -- so they come along like the rest of the content. Both are fixed on
 -- creation (assignment_setup_immutable) and the idempotency key binds them:
 -- a replay answers the earlier copy only when its rules are the source's.
--- The source's rules already fit its AI policy, which the copy keeps, so the
--- summary-only rule needs no new check. Who may copy is unchanged (C-23).
+-- The source's policy can change after creation (publish_assignment_version),
+-- so the copy checks the summary-only rule as create_assignment does: summary
+-- only under a prohibited policy or with any AI purpose is refused (ZD422).
+-- Who may copy is unchanged (C-23).
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
@@ -50,6 +52,7 @@ BEGIN
                                               src.ai_policy, src.ai_purposes, src.evidence_profile,
                                               src.import_allowed, src.purpose_catalog_version)
      OR NOT institution.is_word_range(src.word_min, src.word_max)
+     OR (src.ai_summary_only AND (src.ai_policy = 'prohibited' OR coalesce(cardinality(src.ai_purposes), 0) > 0))
      OR institution.ai_policy_rank(src.ai_policy)
         > (SELECT institution.ai_policy_rank(c.ai_policy) FROM institution.course c
             WHERE c.id = p_course_id AND c.institution_id = actor.institution_id) THEN
