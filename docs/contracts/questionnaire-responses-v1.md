@@ -67,4 +67,4 @@ POST /api/v1/student/questionnaires/00000000-0000-4000-8000-0000000000b1/respons
 
 ## Testovi
 
-`server/http/questionnaire-responses.integration.test.ts` (loš ulaz, neispravan id, 401, preslikavanje grešaka baze, odgovor izvan ugovora), vektori u `server/contracts/vectors/`, `packages/test-fakes/dev-server/questionnaire-routes.ts` (lažni dev server), `tests/db/logout-old-cookie.integration.test.ts` (401 za staru sesiju), adapter `server/database/questionnaire/questionnaire.test.ts` i pgTAP `db/main/tests/247-questionnaire.sql` (SRV-V18-UPITNIK-BAZA).
+`server/http/questionnaire-responses.integration.test.ts` (loš ulaz, neispravan id, 401, preslikavanje grešaka baze, odgovor izvan ugovora), vektori u `server/contracts/vectors/`, `packages/test-fakes/dev-server/questionnaire-responses-routes.ts` (lažni dev server), `tests/db/logout-old-cookie.integration.test.ts` (401 za staru sesiju), adapter `server/database/questionnaire/questionnaire.test.ts` i pgTAP `db/main/tests/247-questionnaire.sql` (SRV-V18-UPITNIK-BAZA).
