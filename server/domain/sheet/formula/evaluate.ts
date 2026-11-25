@@ -140,6 +140,8 @@ class Evaluator {
       }
       case "binary": {
         const left = this.value(node.left);
+        // The first error wins: a left error is not hidden by one on the right.
+        if (left.type === "error") throw new Fault(left.code);
         const right = this.value(node.right);
         if (
           node.operator === "=" ||

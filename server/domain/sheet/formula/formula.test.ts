@@ -118,9 +118,10 @@ describe("limits", () => {
     expect(codeOf(nested(MAX_FORMULA_DEPTH))).toBe("FORMULA_TOO_DEEP");
     expect(codeOf(`=${"-".repeat(MAX_FORMULA_DEPTH - 1)}1`)).toBe("ok");
     expect(codeOf(`=${"-".repeat(MAX_FORMULA_DEPTH)}1`)).toBe("FORMULA_TOO_DEEP");
-    expect(codeOf(`=${"SUM(".repeat(MAX_FORMULA_DEPTH)}1${")".repeat(MAX_FORMULA_DEPTH)}`)).toBe(
-      "FORMULA_TOO_DEEP",
-    );
+    const calls = (levels: number) => `=${"ABS(".repeat(levels)}1${")".repeat(levels)}`;
+    expect(codeOf(calls(MAX_FORMULA_DEPTH - 1))).toBe("ok");
+    expect(resultOf(calls(MAX_FORMULA_DEPTH - 1))).toEqual({ type: "number", value: 1 });
+    expect(codeOf(calls(MAX_FORMULA_DEPTH))).toBe("FORMULA_TOO_DEEP");
     expect(resultOf(nested(MAX_FORMULA_DEPTH))).toEqual({ type: "error", code: "#VALUE!" });
   });
 

@@ -251,7 +251,6 @@ class Parser {
   private call(name: string): FormulaNode {
     this.expectSymbol("(");
     const args: FormulaNode[] = [];
-    this.enter();
     if (this.peekSymbol() !== ")") {
       for (;;) {
         args.push(this.expression());
@@ -260,7 +259,6 @@ class Parser {
       }
     }
     this.expectSymbol(")");
-    this.depth -= 1;
     const known = FUNCTION_NAMES.find((candidate) => candidate === name);
     return known === undefined ? { type: "bad-name" } : { type: "call", name: known, args };
   }

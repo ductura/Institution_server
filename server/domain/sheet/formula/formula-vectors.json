@@ -2706,6 +2706,56 @@
       },
       "rows": 3,
       "columns": 3
+    },
+    {
+      "name": "left error wins over right error (arithmetic)",
+      "cells": {
+        "A1": {
+          "formula": "=1/0"
+        },
+        "B1": {
+          "formula": "=A1+AA1"
+        },
+        "C1": {
+          "formula": "=AA1+A1"
+        },
+        "D1": {
+          "formula": "=A1*FOO(1)"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#DIV/0!"
+        },
+        "C1": {
+          "e": "#REF!"
+        },
+        "D1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "left error wins over right error (comparison)",
+      "cells": {
+        "A1": {
+          "formula": "=1/0"
+        },
+        "B1": {
+          "formula": "=A1=AA1"
+        },
+        "C1": {
+          "formula": "=AA1<A1"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#DIV/0!"
+        },
+        "C1": {
+          "e": "#REF!"
+        }
+      }
     }
   ]
 }
