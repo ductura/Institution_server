@@ -4,7 +4,7 @@ import { teachesCourse, type Account, type Assignment, type State } from "./stat
 // SRV-V17-RUBRIC-DEF: the rubric of an assignment on the dev fake server. A teacher of the
 // assignment's course reads it and adds a version (only ever added); a student of the course
 // reads it, the six default criteria while none is set. Anyone else, an unknown and a foreign
-// assignment read the same 404. The real rules are 20261219120000_assignment_rubric.sql.
+// assignment read the same 404. The real rules are 20261219160000_assignment_rubric.sql.
 type Level = { label: string; descriptor: string };
 type Criterion = { id: string; title: string; levels: Level[] };
 type Rubric = { version: number; criteria: Criterion[] };
