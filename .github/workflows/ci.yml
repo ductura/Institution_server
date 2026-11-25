@@ -418,6 +418,25 @@ jobs:
           PATH="$PGBIN:$PATH" node scripts/stack/vs1-commit-check.ts
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
+      # ZEL-SRV-PGCTL: diagnostics only. `pg_ctl: could not start server` does not
+      # say why; the postmaster logs of every cluster of this job do. Also the
+      # listeners and the ephemeral port range: 54329, 54330 and 54360 lie inside
+      # it (32768-60999), so an outgoing connection can hold such a port.
+      - name: Dijagnostika PostgreSQL-a (zadnjih 100 redaka loga)
+        if: failure()
+        run: |
+          for log in "$RUNNER_TEMP/pg.log" "$RUNNER_TEMP/main.log" "$RUNNER_TEMP/logs.log" "$RUNNER_TEMP/native.log" "$GITHUB_WORKSPACE/.stack/vs1/postgres.log"; do
+            echo "::group::$log"
+            if [ -f "$log" ]; then tail -n 100 "$log"; else echo "(no such log)"; fi
+            echo "::endgroup::"
+          done
+          echo "::group::clusters, ports, shared memory"
+          show() { "$@" || echo "($* exited $?)"; }
+          show pgrep -a postgres
+          show cat /proc/sys/net/ipv4/ip_local_port_range
+          show ss -tanp
+          show ipcs -m
+          echo "::endgroup::"
       # Also after a failed up, but not when the job stopped before it (then
       # nothing of the stack runs and pnpm may not even be installed).
       - name: Gašenje stoga VS-1 (pnpm stack:vs1 down)
