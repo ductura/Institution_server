@@ -1003,6 +1003,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // INT-31: the assignments of the caller's open mentorships; none here, so an empty list.
+  "student.mentored-assignments.get": {
+    method: "GET",
+    path: "/api/v1/student/mentored-assignments",
+    body: () => undefined,
+    live: 200,
+  },
   "student.access-log.get": {
     method: "GET",
     path: `/api/v1/student/works/${randomUUID()}/access-log`,
