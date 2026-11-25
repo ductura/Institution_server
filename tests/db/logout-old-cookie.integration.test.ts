@@ -1595,6 +1595,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "student.assignment-assistant-requests.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/assistant/requests`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",

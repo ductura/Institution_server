@@ -47,4 +47,13 @@ export const COURSE_ASSISTANT_HANDLERS: Handlers = {
     if (assignment === undefined) return { error: "not_found" };
     return { status: 200, body: { assistantEnabled: false } };
   },
+  // SRV-ASIST-BROJAC: the dev server has no assistant, so no limit and nothing used.
+  "student.assignment-assistant-requests.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = studentAssignments(state, account).find(
+      (a) => a.id === params.assignmentId.toLowerCase(),
+    );
+    if (assignment === undefined) return { error: "not_found" };
+    return { status: 200, body: { limit: null, used: 0 } };
+  },
 };

@@ -8,6 +8,9 @@
 // switch on, decided by the database. The session decides who asks, the
 // database whether the relation holds; anyone else, an unknown and a malformed
 // id read the same 404 (C-23). Every answer is checked against its contract.
+// GET /api/v1/student/assignments/{assignmentId}/assistant/requests
+// (SRV-ASIST-BROJAC, student.assignment-assistant-requests.get): the same
+// student reads the daily request limit and today's requests, {limit, used}.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { Value } from "@sinclair/typebox/value";
@@ -41,12 +44,13 @@ function contractOf(id: string) {
 const READ = contractOf("teacher.course-assistant.get");
 const SET = contractOf("teacher.course-assistant.put");
 const AVAILABLE = contractOf("student.assignment-assistant.get");
+const REQUESTS = contractOf("student.assignment-assistant-requests.get");
 
 const idOf = (segment: string | undefined) =>
   segment !== undefined && UUID.test(segment) ? segment.toLowerCase() : null;
 
 type Result =
-  | { readonly status: "read"; readonly answer: Record<string, boolean> }
+  | { readonly status: "read"; readonly answer: Record<string, boolean | number | null> }
   | { readonly status: "unauthorized" | "not_found" | "invalid_input" };
 
 /** The outcome on the wire: 401, 404, 422, else the checked answer. */
@@ -168,11 +172,31 @@ export function createCourseAssistantRoutes({
         });
       },
     },
+    {
+      contract: REQUESTS.contract,
+      async handle(request, response, params) {
+        if (!sameOrigin(request)) return sendProblem(response, 403, "forbidden");
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const assignmentId = idOf(params?.assignmentId);
+        if (assignmentId === null) return sendProblem(response, 404, "not_found");
+        await guarded(response, REQUESTS.contract.id, async () => {
+          const result = await port.requests(token, assignmentId);
+          send(
+            response,
+            REQUESTS,
+            result.status === "read"
+              ? { status: "read", answer: { limit: result.limit, used: result.used } }
+              : result,
+          );
+        });
+      },
+    },
   ];
 }
 
 /**
- * The three routes over main's application withActor. (a) is the provider the
+ * The four routes over main's application withActor. (a) is the provider the
  * production request route has (PRODUCTION_ASSISTANT_PROVIDER), so the two
  * never disagree.
  */

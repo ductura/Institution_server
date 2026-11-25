@@ -1775,6 +1775,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "GET",
     },
   },
+  "student.assignment-assistant-requests.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/assistant/requests`,
+      as: "student",
+      method: "GET",
+    },
+  },
   "teacher.course-input-rhythm.get": {
     request: { path: `/api/v1/teacher/courses/${IDS.course}/input-rhythm`, as: "nastavnik" },
   },
