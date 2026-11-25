@@ -45,14 +45,14 @@ LANGUAGE sql IMMUTABLE SET search_path = ''
 AS $$
   SELECT CASE WHEN p_options IS NULL OR jsonb_typeof(p_options) <> 'array'
                 OR jsonb_array_length(p_options) NOT BETWEEN 2 AND 20 THEN false
-         ELSE (SELECT coalesce(bool_and(
+         ELSE (SELECT coalesce(bool_and(coalesce(
                   jsonb_typeof(e) = 'object'
                   AND (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(e) k) = ARRAY['code', 'label']
                   AND jsonb_typeof(e -> 'code') = 'string' AND jsonb_typeof(e -> 'label') = 'string'
                   AND (e ->> 'code') ~ '^[a-z0-9][a-z0-9-]{0,39}$'
                   AND char_length(e ->> 'label') BETWEEN 1 AND 120
                   AND (e ->> 'label') = btrim(e ->> 'label')
-                  AND (e ->> 'label') !~ '[[:cntrl:]]'), false)
+                  AND (e ->> 'label') !~ '[[:cntrl:]]', false)), false)
                  FROM jsonb_array_elements(p_options) e)
               AND (SELECT count(DISTINCT e ->> 'code') FROM jsonb_array_elements(p_options) e)
                   = jsonb_array_length(p_options)
@@ -63,12 +63,12 @@ $$;
 CREATE FUNCTION institution.questionnaire_scale_valid(p_scale jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE SET search_path = ''
 AS $$
-  SELECT p_scale IS NOT NULL AND jsonb_typeof(p_scale) = 'object'
+  SELECT coalesce(p_scale IS NOT NULL AND jsonb_typeof(p_scale) = 'object'
      AND (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(p_scale) k) = ARRAY['max', 'min']
      AND jsonb_typeof(p_scale -> 'min') = 'number' AND jsonb_typeof(p_scale -> 'max') = 'number'
      AND (p_scale ->> 'min') ~ '^[0-9]+$' AND (p_scale ->> 'max') ~ '^[0-9]+$'
      AND (p_scale ->> 'min')::integer >= 0 AND (p_scale ->> 'max')::integer <= 10
-     AND (p_scale ->> 'min')::integer < (p_scale ->> 'max')::integer
+     AND (p_scale ->> 'min')::integer < (p_scale ->> 'max')::integer, false)
 $$;
 
 -- The kind decides which of options and scale there is: single and multiple
@@ -77,21 +77,21 @@ $$;
 CREATE FUNCTION institution.questionnaire_shape_valid(p_kind text, p_options jsonb, p_scale jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE SET search_path = ''
 AS $$
-  SELECT CASE p_kind
+  SELECT coalesce(CASE p_kind
     WHEN 'single' THEN institution.questionnaire_options_valid(p_options) AND p_scale IS NULL
     WHEN 'multiple' THEN institution.questionnaire_options_valid(p_options) AND p_scale IS NULL
     WHEN 'scale' THEN institution.questionnaire_scale_valid(p_scale) AND p_options IS NULL
     WHEN 'number' THEN p_options IS NULL AND p_scale IS NULL
     WHEN 'text' THEN p_options IS NULL AND p_scale IS NULL
-    ELSE false END
+    ELSE false END, false)
 $$;
 
 -- One-line text of 1 to p_max characters, trimmed, no control characters.
 CREATE FUNCTION institution.questionnaire_line_valid(p_value text, p_max integer) RETURNS boolean
 LANGUAGE sql IMMUTABLE SET search_path = ''
 AS $$
-  SELECT p_value IS NOT NULL AND char_length(p_value) BETWEEN 1 AND p_max
-     AND p_value = btrim(p_value) AND p_value !~ '[[:cntrl:]]'
+  SELECT coalesce(p_value IS NOT NULL AND char_length(p_value) BETWEEN 1 AND p_max
+     AND p_value = btrim(p_value) AND p_value !~ '[[:cntrl:]]', false)
 $$;
 
 -- The questions as sent: 1 to 40 objects with kind, text and, by kind, options
@@ -101,12 +101,12 @@ LANGUAGE sql IMMUTABLE SET search_path = ''
 AS $$
   SELECT p_questions IS NOT NULL AND jsonb_typeof(p_questions) = 'array'
      AND jsonb_array_length(p_questions) BETWEEN 1 AND 40
-     AND (SELECT coalesce(bool_and(
+     AND (SELECT coalesce(bool_and(coalesce(
             jsonb_typeof(e) = 'object'
             AND NOT EXISTS (SELECT 1 FROM jsonb_object_keys(e) k WHERE k NOT IN ('kind', 'text', 'options', 'scale'))
             AND jsonb_typeof(e -> 'kind') = 'string' AND jsonb_typeof(e -> 'text') = 'string'
             AND institution.questionnaire_line_valid(e ->> 'text', 500)
-            AND institution.questionnaire_shape_valid(e ->> 'kind', e -> 'options', e -> 'scale')), false)
+            AND institution.questionnaire_shape_valid(e ->> 'kind', e -> 'options', e -> 'scale'), false)), false)
             FROM jsonb_array_elements(p_questions) e)
 $$;
 
@@ -329,14 +329,14 @@ CREATE FUNCTION institution.questionnaire_answers_valid(p_id uuid, p_answers jso
 LANGUAGE sql STABLE SET search_path = ''
 AS $$
   SELECT p_answers IS NOT NULL AND jsonb_typeof(p_answers) = 'array' AND jsonb_array_length(p_answers) >= 1
-     AND (SELECT coalesce(bool_and(
+     AND (SELECT coalesce(bool_and(coalesce(
             jsonb_typeof(a) = 'object'
             AND (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(a) k) = ARRAY['questionId', 'value']
             AND jsonb_typeof(a -> 'questionId') = 'string'
             AND (a ->> 'questionId') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
             AND EXISTS (SELECT 1 FROM institution.questionnaire_question q
                          WHERE q.questionnaire_id = p_id AND q.id = (a ->> 'questionId')::uuid
-                           AND institution.questionnaire_value_valid(q.kind, q.options, q.scale, a -> 'value'))), false)
+                           AND institution.questionnaire_value_valid(q.kind, q.options, q.scale, a -> 'value')), false)), false)
             FROM jsonb_array_elements(p_answers) a)
      AND (SELECT count(DISTINCT a ->> 'questionId') FROM jsonb_array_elements(p_answers) a)
          = jsonb_array_length(p_answers)
@@ -528,6 +528,13 @@ BEGIN
   END IF;
   IF NOT institution.questionnaire_answers_valid(p_id, p_answers) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  -- The questionnaire row is locked and its state read again, so a teacher who
+  -- closes it at the same time cannot be overtaken (set_questionnaire_state
+  -- takes FOR UPDATE).
+  PERFORM 1 FROM institution.questionnaire q WHERE q.id = p_id FOR SHARE;
+  IF (SELECT q.state FROM institution.questionnaire q WHERE q.id = p_id) <> 'open' THEN
+    RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('questionnaire:' || p_id || ':' || v_ctx.o_user_id, 0));

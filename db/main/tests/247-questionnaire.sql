@@ -41,6 +41,12 @@ SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'
   'a choice with one option is refused');
 SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'', ''[{"kind":"scale","text":"Pitanje?","scale":{"min":3,"max":3}}]'')'), 'ZD422',
   'a scale with min equal to max is refused');
+SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'', ''[{"kind":"text","text":"Pitanje?"},{"kind":"scale","text":"Skala?","scale":{}}]'')'), 'ZD422',
+  'a valid question next to a scale question with an empty scale is refused');
+SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'', ''[{"kind":"text","text":"Pitanje?"},{"kind":"single","text":"Izbor?","options":[{"code":"a","label":"A"},{}]}]'')'), 'ZD422',
+  'a valid question next to a choice with an empty option is refused');
+SELECT is(institution.questionnaire_scale_valid('{}'), false, 'an empty scale is false, not null');
+SELECT is(institution.questionnaire_shape_valid('scale', NULL, '{}'), false, 'a scale question with an empty scale is false, not null');
 SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'', ''[{"kind":"text","text":"Pitanje?","extra":1}]'')'), 'ZD422',
   'an unknown key of a question is refused');
 SELECT is(pg_temp.code('vesna', 'SELECT app.create_questionnaire({k1}, ''Naslov'', ''[{"kind":"number","text":"Pitanje?","options":[{"code":"a","label":"A"},{"code":"b","label":"B"}]}]'')'), 'ZD422',
