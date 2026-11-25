@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4958);
+SELECT plan(4974);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1816,6 +1816,20 @@ FROM (VALUES
   ('ana', 'true'), ('dora', 'true'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
   ('tomo', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
+-- 1i2c. SRV-NF4-IZNIMKA-PREDAJA: request_submission (the evidence role) and
+-- student.assignment-work.get (the web role) read the caller's own latest
+-- late-submission exception through app.student_late_exception_until, only
+-- for a student of the assignment (Ana's was recorded above); null for
+-- everyone else, Dora included. The rest is in
+-- 253-late-submission-exception-honoured.sql.
+SELECT is(
+  coalesce(pg_temp.ask_as(r.role, c.actor, 'SELECT (app.student_late_exception_until({z1}) > now())::text'), 'null'),
+  c.result, format('SRV-NF4-IZNIMKA-PREDAJA: %s reads the own exception of Z1 as %s: %s', c.actor, r.role, c.result))
+FROM (VALUES
+  ('ana', 'true'), ('dora', 'null'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
+  ('tomo', 'null'), ('petra', 'null'), ('anon', 'null')
+) AS c (actor, result)
+CROSS JOIN (VALUES ('ductus_evidence'), ('ductus_app')) AS r (role);
 
 -- 1i3. SRV-IZJAVA-PITANJE: the teacher's question with the declaration
 -- (audit.declaration_question_event) only through its RPCs, only for the

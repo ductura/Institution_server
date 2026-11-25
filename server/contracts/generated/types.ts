@@ -929,7 +929,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "assignments": ({ "assignmentId": string; "workState": "not_started" | "in_progress" | "submitted" })[] }; headers: {  } };
+    success: { status: 200; body: { "assignments": ({ "assignmentId": string; "workState": "not_started" | "in_progress" | "submitted"; "lateException"?: { "untilAt": string } })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "student.assignments.get": {
