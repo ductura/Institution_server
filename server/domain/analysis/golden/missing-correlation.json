@@ -1,0 +1,83 @@
+{
+  "id": "missing-correlation",
+  "description": "Pearson r with pairwise deletion, a perfect pair and a pair with zero variance.",
+  "request": {
+    "analysisId": "correlation",
+    "analysisVersion": "1.0.0",
+    "variables": ["u", "v", "w", "k"],
+    "columns": [
+      {
+        "name": "u",
+        "kind": "numeric"
+      },
+      {
+        "name": "v",
+        "kind": "numeric"
+      },
+      {
+        "name": "w",
+        "kind": "numeric"
+      },
+      {
+        "name": "k",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [1, 2, 9, 5],
+      [2, 4, 7, 5],
+      [3, 6, null, 5],
+      [4, 8, 3, 5],
+      [null, 10, 1, 5],
+      [6, 12, 0, null]
+    ]
+  },
+  "expected": {
+    "analysisId": "correlation",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "ec2617235a752f13009c61e1f0e7b4da473f57a68794abfa49542b3867a6914e",
+    "resultSha256": "66029bd5e31b291791513da8eca9066cb6d39409df2f0369fad711010ece6867",
+    "rowCount": 6,
+    "result": {
+      "kind": "correlation",
+      "pairs": [
+        {
+          "a": "u",
+          "b": "v",
+          "n": 5,
+          "r": 1
+        },
+        {
+          "a": "u",
+          "b": "w",
+          "n": 4,
+          "r": -0.997563
+        },
+        {
+          "a": "u",
+          "b": "k",
+          "n": 4,
+          "r": null
+        },
+        {
+          "a": "v",
+          "b": "w",
+          "n": 5,
+          "r": -0.996116
+        },
+        {
+          "a": "v",
+          "b": "k",
+          "n": 5,
+          "r": null
+        },
+        {
+          "a": "w",
+          "b": "k",
+          "n": 4,
+          "r": null
+        }
+      ]
+    }
+  }
+}

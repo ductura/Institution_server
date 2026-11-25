@@ -1,0 +1,63 @@
+{
+  "id": "rounding-descriptive",
+  "description": "Decimals that round badly: sums of 0.1, 0.2, 0.3, thirds and a half at the sixth decimal.",
+  "request": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "variables": ["x", "y"],
+    "columns": [
+      {
+        "name": "x",
+        "kind": "numeric"
+      },
+      {
+        "name": "y",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [0.1, 0.3333333333333333],
+      [0.2, 0.6666666666666666],
+      [0.3, 5e-7],
+      [0.7, 1.0000005],
+      [0.1, 0.1234565],
+      [0.2, 2.5e-7]
+    ]
+  },
+  "expected": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "88251443434a710331ea645c877f9c2cad4406ee89e01331fbf14a00877e753c",
+    "resultSha256": "caef5219eaa0d86c4517083c717ecfc9f0c0a20e5d5d5de302159054051fcf21",
+    "rowCount": 6,
+    "result": {
+      "kind": "descriptive",
+      "columns": [
+        {
+          "name": "x",
+          "n": 6,
+          "missing": 0,
+          "mean": 0.266667,
+          "sd": 0.225093,
+          "median": 0.2,
+          "min": 0.1,
+          "q1": 0.125,
+          "q3": 0.275,
+          "max": 0.7
+        },
+        {
+          "name": "y",
+          "n": 6,
+          "missing": 0,
+          "mean": 0.35391,
+          "sd": 0.404793,
+          "median": 0.228395,
+          "min": 0,
+          "q1": 0.030864,
+          "q3": 0.583333,
+          "max": 1.000001
+        }
+      ]
+    }
+  }
+}

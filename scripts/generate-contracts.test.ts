@@ -113,4 +113,11 @@ describe("typeScriptOf", () => {
     );
     expect(typeScriptOf(Type.Object({}))).toBe("{ [key: string]: unknown }");
   });
+
+  it("writes any JSON value as unknown, and still refuses a schema it does not know (SRV-V21-KOD-TESTOVI-RUTA)", () => {
+    expect(
+      typeScriptOf(Type.Object({ input: Type.Unknown() }, { additionalProperties: false })),
+    ).toBe('{ "input": unknown }');
+    expect(() => typeScriptOf(Type.Any({ description: "x" }))).toThrow(/unsupported schema/u);
+  });
 });

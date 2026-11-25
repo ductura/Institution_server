@@ -1,0 +1,63 @@
+{
+  "id": "negative-descriptive",
+  "description": "Negative values, a negative zero and a negative mean.",
+  "request": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "variables": ["temperatura", "promjena"],
+    "columns": [
+      {
+        "name": "temperatura",
+        "kind": "numeric"
+      },
+      {
+        "name": "promjena",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [-12.5, 0],
+      [-3, 0.5],
+      [-7.25, -1.5],
+      [0, -2],
+      [-20, 3.75],
+      [-1, null]
+    ]
+  },
+  "expected": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "fa01de1e71acbbf6601db131c0428e06509831099702ffeb86b34bc537ee395f",
+    "resultSha256": "22716c285fba9737354fd430b14b0189577e9be8c8117d3b0294ab7d21f65965",
+    "rowCount": 6,
+    "result": {
+      "kind": "descriptive",
+      "columns": [
+        {
+          "name": "temperatura",
+          "n": 6,
+          "missing": 0,
+          "mean": -7.291667,
+          "sd": 7.743411,
+          "median": -5.125,
+          "min": -20,
+          "q1": -11.1875,
+          "q3": -1.5,
+          "max": 0
+        },
+        {
+          "name": "promjena",
+          "n": 5,
+          "missing": 1,
+          "mean": 0.15,
+          "sd": 2.261084,
+          "median": 0,
+          "min": -2,
+          "q1": -1.5,
+          "q3": 0.5,
+          "max": 3.75
+        }
+      ]
+    }
+  }
+}

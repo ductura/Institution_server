@@ -19,6 +19,7 @@ export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
+export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export {
   createConsultationRecordRoutes,
@@ -34,6 +35,7 @@ export {
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createMilestoneTemplateRoutesFor } from "./milestone-template/index.ts";
 export { createAssignmentRubricRoutesFor } from "./assignment-rubric/index.ts";
+export { createAssignmentCodeTestsRoutesFor } from "./assignment-code-tests/index.ts";
 export { createWorkRubricRoutesFor } from "./work-rubric/index.ts";
 export { createWorkTemplateRoutesFor } from "./work-template/index.ts";
 export { createAssignmentTemplateRoutesFor } from "./assignment-template/index.ts";

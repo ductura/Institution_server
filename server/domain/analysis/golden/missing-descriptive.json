@@ -1,0 +1,78 @@
+{
+  "id": "missing-descriptive",
+  "description": "Missing values (null) in numeric columns, including a column that is all null.",
+  "request": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "variables": ["a", "b", "c"],
+    "columns": [
+      {
+        "name": "a",
+        "kind": "numeric"
+      },
+      {
+        "name": "b",
+        "kind": "numeric"
+      },
+      {
+        "name": "c",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [1, null, null],
+      [null, 4, null],
+      [3, 6, null],
+      [7, null, null],
+      [null, null, null]
+    ]
+  },
+  "expected": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "0e3a16e02a8697bb4ac28f6c49c513b4950af8477fdb15965821525d71055e8a",
+    "resultSha256": "06346629f05a1c8681bde0322a3f266cc664938d3f4ec59716f14572909ba437",
+    "rowCount": 5,
+    "result": {
+      "kind": "descriptive",
+      "columns": [
+        {
+          "name": "a",
+          "n": 3,
+          "missing": 2,
+          "mean": 3.666667,
+          "sd": 3.05505,
+          "median": 3,
+          "min": 1,
+          "q1": 2,
+          "q3": 5,
+          "max": 7
+        },
+        {
+          "name": "b",
+          "n": 2,
+          "missing": 3,
+          "mean": 5,
+          "sd": 1.414214,
+          "median": 5,
+          "min": 4,
+          "q1": 4.5,
+          "q3": 5.5,
+          "max": 6
+        },
+        {
+          "name": "c",
+          "n": 0,
+          "missing": 5,
+          "mean": null,
+          "sd": null,
+          "median": null,
+          "min": null,
+          "q1": null,
+          "q3": null,
+          "max": null
+        }
+      ]
+    }
+  }
+}

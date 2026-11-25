@@ -35,10 +35,12 @@ import {
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
+  createPeerReviewRoutesFor,
   createThesisRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createAssignmentCodeTestsRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -913,6 +915,66 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V19-RECENZIJA-RUTE: a live session with no part in any peer review reads 404.
+  "peer-review.round.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/peer-review`,
+    body: () => ({
+      opensAt: "2026-12-01T08:00:00.000Z",
+      dueAt: "2026-12-08T08:00:00.000Z",
+      reviewsPerStudent: 2,
+      rubrics: [{ key: "clarity", label: "Clarity" }],
+    }),
+    live: 404,
+  },
+  "peer-review.round.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/peer-review`,
+    body: () => undefined,
+    live: 404,
+  },
+  "peer-review.allocate.post": {
+    method: "POST",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/peer-review/allocations`,
+    body: () => undefined,
+    live: 404,
+  },
+  "peer-review.teacher-overview.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/peer-review/overview`,
+    body: () => undefined,
+    live: 404,
+  },
+  "peer-review.review-withdrawal.post": {
+    method: "POST",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/peer-review/reviews/${randomUUID()}/withdrawal`,
+    body: () => ({ reason: "Invented reason." }),
+    live: 404,
+  },
+  "student.peer-review-tasks.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/peer-review/tasks`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.peer-review-work.get": {
+    method: "GET",
+    path: `/api/v1/student/peer-review/tasks/${randomUUID()}/work`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.peer-review.post": {
+    method: "POST",
+    path: `/api/v1/student/peer-review/tasks/${randomUUID()}/review`,
+    body: () => ({ byRubric: [{ key: "clarity", text: "Invented text." }] }),
+    live: 404,
+  },
+  "student.peer-reviews-received.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/peer-review/received`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-MENTOR-2: a live session with no part in any thesis.
   "institution.thesis-forms.get": {
     method: "GET",
@@ -1110,6 +1172,24 @@ const SESSION_ROUTES = {
   "student.assignment-rubric.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/rubric`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.assignment-code-tests.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/code-tests`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.assignment-code-tests.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/code-tests`,
+    body: () => ({ language: "javascript", tests: [] }),
+    live: 404,
+  },
+  "student.assignment-code-tests.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/code-tests`,
     body: () => undefined,
     live: 404,
   },
@@ -2334,6 +2414,7 @@ const FACTORIES = [
   "createWorkMilestonesRoutesFor",
   "createMilestoneTemplateRoutesFor",
   "createAssignmentRubricRoutesFor",
+  "createAssignmentCodeTestsRoutesFor",
   "createWorkRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createAssignmentTemplateRoutesFor",
@@ -2362,6 +2443,7 @@ const FACTORIES = [
   "createMentorNotesRoutesFor",
   "createPracticeJournalRoutesFor",
   "createWorkTeamRoutesFor",
+  "createPeerReviewRoutesFor",
   "createThesisRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -2471,6 +2553,7 @@ const MOUNTED = [
   ...createWorkMilestonesRoutesFor(databases.main),
   ...createMilestoneTemplateRoutesFor(databases.main),
   ...createAssignmentRubricRoutesFor(databases.main),
+  ...createAssignmentCodeTestsRoutesFor(databases.main),
   ...createWorkRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createAssignmentTemplateRoutesFor(databases.main),
@@ -2500,6 +2583,7 @@ const MOUNTED = [
   ...createMentorNotesRoutesFor(databases.main),
   ...createPracticeJournalRoutesFor(databases.main),
   ...createWorkTeamRoutesFor(databases.main),
+  ...createPeerReviewRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -2806,6 +2890,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("work.") ||
         id.startsWith("mentorship.") ||
         id.startsWith("practice.") ||
+        id.startsWith("peer-review.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : id.startsWith("ops.")

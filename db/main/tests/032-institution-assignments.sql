@@ -367,6 +367,8 @@ ALTER TABLE institution.peer_review_round DISABLE TRIGGER peer_review_round_no_t
 ALTER TABLE institution.peer_review_allocation DISABLE TRIGGER peer_review_allocation_no_truncate;
 ALTER TABLE institution.peer_review DISABLE TRIGGER peer_review_no_truncate;
 ALTER TABLE institution.peer_review_withdrawal DISABLE TRIGGER peer_review_withdrawal_no_truncate;
+-- The code tests of an assignment (SRV-V21-KOD-TESTOVI-DB) reference the assignment; they are append only.
+ALTER TABLE institution.assignment_code_tests DISABLE TRIGGER assignment_code_tests_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',

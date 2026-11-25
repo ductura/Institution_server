@@ -1622,6 +1622,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.assignment-code-tests.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "student.assignment-format-rules.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -2240,6 +2251,41 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       local1.test(value['appVersion']) &&
       (value['courseId'] !== undefined ? ((typeof value['courseId'] === 'string') && local2.test(value['courseId'])) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['category', 'description', 'appVersion', 'courseId'].includes(key))
+    )
+  }
+  })(),
+  "teacher.assignment-code-tests.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.assignment-code-tests.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.assignment-code-tests.put:body": (() => {
+  const local0 = /^[a-z0-9][a-z0-9_-]{0,31}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['language'] === 'javascript') &&
+      Array.isArray(value['tests']) &&
+      value['tests'].length <= 10 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['id'] === 'string') && local0.test(value['id']) && (typeof value['title'] === 'string') && value['title'].length <= 120 && value['title'].length >= 1 && true && ('input' in value) && true && ('expected' in value) && Object.getOwnPropertyNames(value).length === 4))) { return false }; return true; })(value['tests']) &&
+      Object.getOwnPropertyNames(value).length === 2
     )
   }
   })(),

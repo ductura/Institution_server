@@ -2021,6 +2021,8 @@ export const hr = {
     invalidAiPolicy: "Pravilo o umjetnoj inteligenciji nije ispravno.",
     invalidAiPurposes: "Namjene umjetne inteligencije nisu ispravne za odabrano pravilo.",
     invalidEvidenceProfile: "Profil dokaza nije ispravan.",
+    invalidCodeTests:
+      "Testovi uz zadatak nisu ispravni: najviše 10 testova s različitim oznakama, ukupno do 16 KiB.",
     invalidLogoutToken: "Zahtjev za odjavu nije ispravan.",
     loginFailed: "Prijava nije uspjela. Pokušajte ponovno.",
     loginRefused: "Prijava je odbijena.",

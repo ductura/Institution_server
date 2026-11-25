@@ -70,6 +70,7 @@ import {
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
+  createPeerReviewRoutesFor,
   createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -124,6 +125,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createAssignmentCodeTestsRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -357,6 +359,8 @@ async function main(): Promise<void> {
       ...createMilestoneTemplateRoutesFor(databases.main),
       // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
       ...createAssignmentRubricRoutesFor(databases.main),
+      // SRV-V21-KOD-TESTOVI-RUTA: the code tests of an assignment (teacher writes, both read).
+      ...createAssignmentCodeTestsRoutesFor(databases.main),
       // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
       ...createWorkRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
@@ -410,6 +414,7 @@ async function main(): Promise<void> {
       ...createMentorNotesRoutesFor(databases.main),
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
+      ...createPeerReviewRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),

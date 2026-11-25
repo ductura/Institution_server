@@ -1,0 +1,44 @@
+{
+  "id": "negative-correlation",
+  "description": "A negative correlation with decimals that round badly.",
+  "request": {
+    "analysisId": "correlation",
+    "analysisVersion": "1.0.0",
+    "variables": ["a", "b"],
+    "columns": [
+      {
+        "name": "a",
+        "kind": "numeric"
+      },
+      {
+        "name": "b",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [-1.1, 3.3],
+      [-2.2, 2.1],
+      [0.3, 0.9],
+      [1.7, -0.4],
+      [2.9, -1.8]
+    ]
+  },
+  "expected": {
+    "analysisId": "correlation",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "383369de8a7df04da9a4bd13f5b52ead1e4ae6f762145edbfab3316eb6eb8536",
+    "resultSha256": "378ead29837044169a70fdbfaa2cf58362534210792ede05632bd850d82d40bc",
+    "rowCount": 5,
+    "result": {
+      "kind": "correlation",
+      "pairs": [
+        {
+          "a": "a",
+          "b": "b",
+          "n": 5,
+          "r": -0.918867
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1014 @@
+{
+  "vectorSchema": "ductus-golden-vectors-v1",
+  "about": [
+    "Golden vectors for the spreadsheet document v1 (SRV-V14-SHEET-MODEL, val 14 decision 2). All data is invented.",
+    "Derived outside the repository code: Python json.dumps with sorted keys, compact separators and ensure_ascii=False (JCS for this data: ASCII keys, integers and numbers whose shortest form is the same in JavaScript) and hashlib.sha256 over the UTF-8 bytes. Never regenerate them from the code under test.",
+    "The same file is copied byte for byte to the web repository (WEB-V14-SHEET-CORE). Each rejected document lists every expected error as [path, code], in the order the validator reports them."
+  ],
+  "sheetDocuments": [
+    {
+      "name": "sheet-minimal-one-text-cell",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 1,
+            "columns": 1,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "utf8Hex": "7b226b696e64223a227370726561647368656574222c22736368656d6156657273696f6e223a312c22736865657473223a5b7b2263656c6c73223a7b224131223a7b2276616c7565223a2264656d6f227d7d2c22636f6c756d6e73223a312c226964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c226e616d65223a224c69737431222c22726f7773223a317d5d7d",
+      "sha256": "61bbf78e1abfb9da32d5580495d7b3379579875423775190af5745089515235e"
+    },
+    {
+      "name": "sheet-empty-grid",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "Prazno",
+            "rows": 200,
+            "columns": 26,
+            "cells": {}
+          }
+        ]
+      },
+      "utf8Hex": "7b226b696e64223a227370726561647368656574222c22736368656d6156657273696f6e223a312c22736865657473223a5b7b2263656c6c73223a7b7d2c22636f6c756d6e73223a32362c226964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c226e616d65223a225072617a6e6f222c22726f7773223a3230307d5d7d",
+      "sha256": "921d1097da84960d3007af757f0f12c12931811829466d03909c280565d82945"
+    },
+    {
+      "name": "sheet-two-sheets-numbers-formulas-text",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "Podaci",
+            "rows": 10,
+            "columns": 3,
+            "cells": {
+              "A1": {
+                "value": "Stavka"
+              },
+              "B1": {
+                "value": 1.5
+              },
+              "B2": {
+                "value": 0.1
+              },
+              "B3": {
+                "value": -2
+              },
+              "C1": {
+                "value": 0
+              },
+              "A2": {
+                "value": "\u0106elija \u010d\u0161\u017e \ud83d\ude00"
+              },
+              "A3": {
+                "value": "red 1\nred 2\ttab"
+              },
+              "C2": {
+                "value": null,
+                "formula": "=SUM(B1:B3)"
+              },
+              "C3": {
+                "value": null,
+                "formula": "=IF(B1>1,ROUND(B2,1),0)"
+              }
+            }
+          },
+          {
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "name": "Zbroj",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null,
+                "formula": "=Podaci!C2"
+              },
+              "B2": {
+                "value": "demo-tekst"
+              }
+            }
+          }
+        ]
+      },
+      "utf8Hex": "7b226b696e64223a227370726561647368656574222c22736368656d6156657273696f6e223a312c22736865657473223a5b7b2263656c6c73223a7b224131223a7b2276616c7565223a22537461766b61227d2c224132223a7b2276616c7565223a22c486656c696a6120c48dc5a1c5be20f09f9880227d2c224133223a7b2276616c7565223a2272656420315c6e72656420325c74746162227d2c224231223a7b2276616c7565223a312e357d2c224232223a7b2276616c7565223a302e317d2c224233223a7b2276616c7565223a2d327d2c224331223a7b2276616c7565223a307d2c224332223a7b22666f726d756c61223a223d53554d2842313a423329222c2276616c7565223a6e756c6c7d2c224333223a7b22666f726d756c61223a223d49462842313e312c524f554e442842322c31292c3029222c2276616c7565223a6e756c6c7d7d2c22636f6c756d6e73223a332c226964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c226e616d65223a22506f64616369222c22726f7773223a31307d2c7b2263656c6c73223a7b224131223a7b22666f726d756c61223a223d506f64616369214332222c2276616c7565223a6e756c6c7d2c224232223a7b2276616c7565223a2264656d6f2d74656b7374227d7d2c22636f6c756d6e73223a322c226964223a2262626262626262622d626262622d346262622d386262622d626262626262626262626262222c226e616d65223a225a62726f6a222c22726f7773223a327d5d7d",
+      "sha256": "9f8858fa3a9bd2f5469364f1dde5070476aa23d83a15f4771bdb4b5b3e4cc6c4"
+    },
+    {
+      "name": "sheet-limits-name-31-rows-200-columns-26",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "rows": 200,
+            "columns": 26,
+            "cells": {
+              "Z200": {
+                "value": "kraj"
+              },
+              "A1": {
+                "value": "pocetak"
+              }
+            }
+          }
+        ]
+      },
+      "utf8Hex": "7b226b696e64223a227370726561647368656574222c22736368656d6156657273696f6e223a312c22736865657473223a5b7b2263656c6c73223a7b224131223a7b2276616c7565223a22706f636574616b227d2c225a323030223a7b2276616c7565223a226b72616a227d7d2c22636f6c756d6e73223a32362c226964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c226e616d65223a2278787878787878787878787878787878787878787878787878787878787878222c22726f7773223a3230307d5d7d",
+      "sha256": "b6c63f3b7a89bcbb86f264b63c0b33262bfc42fd5e8ea918c684a3ab754fc319"
+    }
+  ],
+  "rejectedSheetDocuments": [
+    {
+      "name": "not-an-object",
+      "value": [],
+      "errors": [["$", "SHEET_NOT_OBJECT"]]
+    },
+    {
+      "name": "unknown-document-field",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ],
+        "extra": 1
+      },
+      "errors": [["$.extra", "SHEET_FIELD_UNKNOWN"]]
+    },
+    {
+      "name": "wrong-schema-version",
+      "value": {
+        "schemaVersion": 2,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.schemaVersion", "SHEET_VERSION_INVALID"]]
+    },
+    {
+      "name": "wrong-kind",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "text",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.kind", "SHEET_KIND_INVALID"]]
+    },
+    {
+      "name": "no-sheets",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": []
+      },
+      "errors": [["$.sheets", "SHEET_LIST_INVALID"]]
+    },
+    {
+      "name": "six-sheets",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "00000000-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L0",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "00000001-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L1",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "00000002-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L2",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "00000003-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L3",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "00000004-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L4",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "00000005-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "L5",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          }
+        ]
+      },
+      "errors": [["$.sheets", "SHEET_LIST_INVALID"]]
+    },
+    {
+      "name": "uppercase-sheet-id",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].id", "SHEET_ID_INVALID"]]
+    },
+    {
+      "name": "unknown-sheet-field",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            },
+            "extra": true
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].extra", "SHEET_FIELD_UNKNOWN"]]
+    },
+    {
+      "name": "sheet-name-with-slash",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "a/b",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].name", "SHEET_NAME_INVALID"]]
+    },
+    {
+      "name": "sheet-name-32-code-points",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].name", "SHEET_NAME_INVALID"]]
+    },
+    {
+      "name": "sheet-name-leading-space",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": " List",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].name", "SHEET_NAME_INVALID"]]
+    },
+    {
+      "name": "sheet-name-duplicate-ignoring-case",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "Podaci",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "name": "podaci",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          }
+        ]
+      },
+      "errors": [["$.sheets[1].name", "SHEET_NAME_DUPLICATE"]]
+    },
+    {
+      "name": "sheet-id-duplicate",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "Prvi",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          },
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "Drugi",
+            "rows": 1,
+            "columns": 1,
+            "cells": {}
+          }
+        ]
+      },
+      "errors": [["$.sheets[1].id", "SHEET_ID_DUPLICATE"]]
+    },
+    {
+      "name": "rows-201",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 201,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].rows", "SHEET_ROWS_INVALID"]]
+    },
+    {
+      "name": "columns-27",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 27,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].columns", "SHEET_COLUMNS_INVALID"]]
+    },
+    {
+      "name": "rows-not-integer",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 1.5,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].rows", "SHEET_ROWS_INVALID"]]
+    },
+    {
+      "name": "cells-not-an-object",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": []
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells", "SHEET_CELLS_INVALID"]]
+    },
+    {
+      "name": "cell-ref-a1",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "a1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.a1", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-ref-A0",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A0": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A0", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-ref-AA1",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "AA1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.AA1", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-ref-A201",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A201": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A201", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-ref-A01",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A01": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A01", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-ref-1A",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "1A": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.1A", "CELL_REF_INVALID"]]
+    },
+    {
+      "name": "cell-column-outside-grid",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "C1": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.C1", "CELL_OUT_OF_GRID"]]
+    },
+    {
+      "name": "cell-row-outside-grid",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A3": {
+                "value": "demo"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A3", "CELL_OUT_OF_GRID"]]
+    },
+    {
+      "name": "cell-not-an-object",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": "demo"
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1", "CELL_NOT_OBJECT"]]
+    },
+    {
+      "name": "cell-empty-null-value",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1", "CELL_EMPTY"]]
+    },
+    {
+      "name": "cell-empty-no-fields",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {}
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "unknown-cell-field",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "x",
+                "style": 1
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.style", "CELL_FIELD_UNKNOWN"]]
+    },
+    {
+      "name": "cell-empty-text",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": ""
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "cell-boolean",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": true
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "cell-text-with-nul",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "a\u0000b"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "cell-text-with-zero-width-space",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "a\u200bb"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "cell-text-1001-code-points",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "formula-without-equals",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null,
+                "formula": "SUM(A2)"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.formula", "CELL_FORMULA_INVALID"]]
+    },
+    {
+      "name": "formula-only-equals",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null,
+                "formula": "="
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.formula", "CELL_FORMULA_INVALID"]]
+    },
+    {
+      "name": "formula-501-code-points",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null,
+                "formula": "=11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.formula", "CELL_FORMULA_INVALID"]]
+    },
+    {
+      "name": "formula-with-line-break",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": null,
+                "formula": "=1+\n2"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.formula", "CELL_FORMULA_INVALID"]]
+    },
+    {
+      "name": "formula-with-stored-result",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": 3,
+                "formula": "=1+2"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "formula-without-value-field",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "formula": "=1+2"
+              }
+            }
+          }
+        ]
+      },
+      "errors": [["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]]
+    },
+    {
+      "name": "formula-null",
+      "value": {
+        "schemaVersion": 1,
+        "kind": "spreadsheet",
+        "sheets": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "name": "List1",
+            "rows": 2,
+            "columns": 2,
+            "cells": {
+              "A1": {
+                "value": "x",
+                "formula": null
+              }
+            }
+          }
+        ]
+      },
+      "errors": [
+        ["$.sheets[0].cells.A1.formula", "CELL_FORMULA_INVALID"],
+        ["$.sheets[0].cells.A1.value", "CELL_VALUE_INVALID"]
+      ]
+    }
+  ]
+}
