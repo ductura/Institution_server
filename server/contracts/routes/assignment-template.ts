@@ -10,7 +10,7 @@ import { WorkTemplateSection } from "./work-template.ts";
 // work. The teacher switches the template on for an assignment: the latest version of the
 // template of the assignment's work type is frozen on it, and a version added later changes
 // nothing for that assignment. Database: app.set_assignment_template and
-// app.read_assignment_template (20261219170000).
+// app.read_assignment_template (20261219250000).
 
 const TitleField = Type.Union(
   (["title", "author", "mentor", "course", "date"] as const).map((field) => Type.Literal(field)),

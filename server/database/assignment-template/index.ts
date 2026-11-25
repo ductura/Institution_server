@@ -1,5 +1,5 @@
 // The port of the work template of an assignment (SRV-V17-TEMPLATE-ASSIGN; migration
-// 20261219170000): the teacher of the assignment's course switches the institution's template
+// 20261219250000): the teacher of the assignment's course switches the institution's template
 // on (freezing its latest version for the assignment's work type) or off, and a student of the
 // course reads the frozen version. Writes go through the RPC only; the caller comes only from
 // the session.

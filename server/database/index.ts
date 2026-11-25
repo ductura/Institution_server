@@ -209,6 +209,7 @@ export type {
   AssignmentContent,
   AssignmentCreateOutcome,
   AssignmentPublishOutcome,
+  AssignmentSetup,
   InstitutionAssignments,
 } from "./institution-assignments.ts";
 export {
