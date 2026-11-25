@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { validateDocument } from "./validate.ts";
 import { validateDocumentV4 } from "./validate-v4.ts";
 
 // Document v4 blocks, part 1 (docs/contracts/document-schema-v4.md §1 to §4;
@@ -255,8 +256,44 @@ describe("page break (§4.4, class 55) and v3 atoms in v4", () => {
   });
 
   it("refuses a block type v4 does not have", () => {
-    for (const type of ["orderedItem", "prikaz", "tbox", "pagebreak"]) {
+    for (const type of ["orderedList", "prikaz", "tbox", "pagebreak"]) {
       expect(errorsOf(doc({ type, id: P }))).toEqual([["$.nodes[0].type", "NODE_TYPE_INVALID"]]);
+    }
+  });
+});
+
+describe("numbered list item (§2, P4)", () => {
+  const item = (id: string, ...children: unknown[]) => ({ type: "orderedItem", id, children });
+
+  it("accepts flat items with marks, atoms and an empty item", () => {
+    accepts(
+      doc(
+        item(P, text("Prvi.", ["bold"]), { type: "footnote", text: "Izmišljena bilješka." }),
+        item(Q),
+        { type: "paragraph", id: R, children: [text("Prekid.")] },
+        item(A, text("Novi popis.")),
+      ),
+    );
+  });
+
+  it("refuses nesting, an unknown field and a shared id", () => {
+    expect(errorsOf(doc(item(P, item(Q))))).toEqual([
+      ["$.nodes[0].children[0].type", "INLINE_TYPE_INVALID"],
+    ]);
+    expect(errorsOf(doc({ ...item(P), start: 3 }))).toEqual([
+      ["$.nodes[0].start", "UNKNOWN_FIELD"],
+    ]);
+    expect(errorsOf(doc(item(P), item(P)))).toEqual([["$.nodes[1].id", "NODE_ID_DUPLICATE"]]);
+  });
+
+  it("is not a block of v1 to v3, which stay as they were", () => {
+    for (const version of [1, 2, 3]) {
+      const outcome = validateDocument({
+        schemaVersion: version,
+        nodes: [item(P, text("x"))],
+        ...(version === 1 ? {} : { sources: [] }),
+      });
+      expect(outcome.ok).toBe(false);
     }
   });
 });

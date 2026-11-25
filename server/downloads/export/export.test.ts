@@ -68,6 +68,26 @@ const DOC: CanonicalDocumentV4 = {
   ],
 };
 
+describe("numbered list (contract v4 §2.2)", () => {
+  const items: CanonicalDocumentV4 = {
+    schemaVersion: 4,
+    sources: [],
+    nodes: [
+      { type: "orderedItem", id: id(21), children: [t("a")] },
+      { type: "orderedItem", id: id(22), children: [t("b")] },
+      { type: "paragraph", id: id(23), children: [t("p")] },
+      { type: "orderedItem", id: id(24), children: [t("c")] },
+    ],
+  };
+
+  it("numbers each run of items from 1 and a block between breaks the run", () => {
+    const kinds = buildExportModel(items, LABELS).blocks.map((block) =>
+      block.kind === "ordered" ? block.number : block.kind,
+    );
+    expect(kinds).toEqual([1, 2, "paragraph", 1]);
+  });
+});
+
 function entries(zip: Uint8Array): Map<string, string> {
   const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
   const out = new Map<string, string>();

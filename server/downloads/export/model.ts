@@ -34,6 +34,7 @@ export type ExportBlock =
       readonly runs: readonly ExportRun[];
     }
   | { readonly kind: "paragraph" | "bullet" | "quote"; readonly runs: readonly ExportRun[] }
+  | { readonly kind: "ordered"; readonly number: number; readonly runs: readonly ExportRun[] }
   | {
       readonly kind: "code";
       readonly lines: readonly string[];
@@ -89,10 +90,13 @@ export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels)
   const boxCounts = new Map<BoxKind, number>();
   let formulas = 0;
   let listings = 0;
+  // Position in the current run of consecutive numbered-list items (v4 §2).
+  let orderedRun = 0;
   let title = "";
   let titleSeen = false;
   const blocks: ExportBlock[] = [];
   for (const node of doc.nodes) {
+    if (node.type !== "orderedItem") orderedRun = 0;
     switch (node.type) {
       case "heading": {
         counters[node.level - 1] = (counters[node.level - 1] ?? 0) + 1;
@@ -115,6 +119,10 @@ export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels)
         break;
       case "bulletItem":
         blocks.push({ kind: "bullet", runs: runsOf(node.children) });
+        break;
+      case "orderedItem":
+        orderedRun += 1;
+        blocks.push({ kind: "ordered", number: orderedRun, runs: runsOf(node.children) });
         break;
       case "quote":
         blocks.push({ kind: "quote", runs: runsOf(node.children) });
