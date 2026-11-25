@@ -13,6 +13,12 @@ import { MUTATION_GUARD } from "./shared.ts";
 // @ductura/contracts (scripts/release/README.md, QA #92). Access comes only
 // from the relation (C-23). Database: app.course_assistant_switch,
 // app.course_assistant_switch_read, app.my_assistant_available (20261219440000).
+//
+// SRV-ASIST-BROJAC (Ductus#2055 T2, decision A): the daily number of requests a
+// student of the assignment may send, as {limit, used}; a number of requests,
+// never an amount (SRV-1809). A new route for the same reason. Over the limit,
+// the request route answers its existing budget_exceeded. Database:
+// app.my_assistant_requests (20261219450000).
 
 const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -20,6 +26,11 @@ const Uuid = Type.String({
 const CourseParams = closed({ courseId: Uuid });
 const Switch = closed({ enabled: Type.Boolean() });
 const Availability = closed({ assistantEnabled: Type.Boolean() });
+const MAX_INT = 2_147_483_647;
+const Requests = closed({
+  limit: Type.Union([Type.Integer({ minimum: 1, maximum: MAX_INT }), Type.Null()]),
+  used: Type.Integer({ minimum: 0, maximum: MAX_INT }),
+});
 const COURSE_INVENTORY = "app/api/teacher/courses/[courseId]/assistant/route.ts";
 
 const READ_ERRORS = [
@@ -80,8 +91,22 @@ export const studentAssignmentAssistantGet = defineRoute({
   errors: READ_ERRORS,
 });
 
+export const studentAssignmentAssistantRequestsGet = defineRoute({
+  id: "student.assignment-assistant-requests.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/assistant/requests",
+  inventory: "app/api/student/assignments/[assignmentId]/assistant/requests/route.ts",
+  access: "student_enrolled",
+  summary:
+    "How many assistant requests a student of the assignment may send today and has sent, as {limit, used}: limit is the daily number of requests per student and assignment the institution set, null when it set none; used counts today's requests (Europe/Zagreb) that were not refused. A number of requests, never an amount. Over the limit the request route answers budget_exceeded. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [{ status: 200, description: "the daily request count", body: Requests }],
+  errors: READ_ERRORS,
+});
+
 export const courseAssistantRoutes = [
   teacherCourseAssistantGet,
   teacherCourseAssistantPut,
   studentAssignmentAssistantGet,
+  studentAssignmentAssistantRequestsGet,
 ] as const;

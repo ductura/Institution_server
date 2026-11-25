@@ -572,6 +572,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
   },
+  // SRV-ASIST-BROJAC (Ductus#2055 c.7162920212 T2): the daily request count of a student.
+  "app/api/student/assignments/[assignmentId]/assistant/requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
     methods: ["GET", "PUT"],

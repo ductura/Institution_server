@@ -95,6 +95,56 @@ describe("createCourseAssistantPort", () => {
     await expect(port.available(TOKEN, ID)).rejects.toThrow();
   });
 
+  // SRV-ASIST-BROJAC: the daily request count.
+  it("reads the request count of a student through its RPC", async () => {
+    const { port, sent } = portOver(() => [{ outcome: "found", limit: 20, used: 3 }]);
+    expect(await port.requests(TOKEN, ID)).toEqual({ status: "read", limit: 20, used: 3 });
+    expect(sent).toEqual([
+      [
+        expect.stringContaining(
+          'request_limit AS "limit", used FROM app.my_assistant_requests($1::uuid)',
+        ),
+        [ID],
+      ],
+    ]);
+    const free = portOver(() => [{ outcome: "found", limit: null, used: 0 }]).port;
+    expect(await free.requests(TOKEN, ID)).toEqual({ status: "read", limit: null, used: 0 });
+    const none = portOver(() => [{ outcome: "not_found", limit: null, used: null }]).port;
+    expect(await none.requests(TOKEN, ID)).toEqual({ status: "not_found" });
+  });
+
+  it.each([
+    ["ZD401", "unauthorized"],
+    ["ZD403", "not_found"],
+  ])("a refusal %s of the request count is %s", async (code, status) => {
+    const { port } = portOver(() => refusal(code));
+    expect(await port.requests(TOKEN, ID)).toEqual({ status });
+  });
+
+  it("a request count of a malformed id is never sent", async () => {
+    const { port, sent } = portOver(() => [{ outcome: "found", limit: null, used: 0 }]);
+    expect(await port.requests(TOKEN, "nije-uuid")).toEqual({ status: "not_found" });
+    expect(sent).toEqual([]);
+  });
+
+  it.each([
+    ["an unknown outcome", [{ outcome: "maybe", limit: 5, used: 1 }]],
+    ["not_found with a value", [{ outcome: "not_found", limit: null, used: 0 }]],
+    ["a limit of 0", [{ outcome: "found", limit: 0, used: 0 }]],
+    ["a negative count", [{ outcome: "found", limit: 5, used: -1 }]],
+    ["a count as text", [{ outcome: "found", limit: 5, used: "1" }]],
+    ["no count", [{ outcome: "found", limit: 5, used: null }]],
+    ["a fraction", [{ outcome: "found", limit: 5.5, used: 1 }]],
+  ])("a request count with %s is thrown", async (_name, rows) => {
+    const { port } = portOver(() => rows);
+    await expect(port.requests(TOKEN, ID)).rejects.toThrow();
+  });
+
+  it("a ZD422 on the request count is a database it cannot vouch for", async () => {
+    const { port } = portOver(() => refusal("ZD422"));
+    await expect(port.requests(TOKEN, ID)).rejects.toThrow();
+  });
+
   it("another error is thrown as it came", async () => {
     const { port } = portOver(() => new Error("izmisljeni kvar"));
     await expect(port.set(TOKEN, ID, true)).rejects.toThrow("izmisljeni kvar");
