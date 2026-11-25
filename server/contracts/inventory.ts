@@ -768,7 +768,7 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/teacher/comment-bank/[entryId]/route.ts": {
-    methods: ["DELETE"],
+    methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
   "app/api/works/[documentId]/review/route.ts": {

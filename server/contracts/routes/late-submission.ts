@@ -15,7 +15,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // teacher of the assignment sets it and only a student of its course reads it
 // (C-23, from the relation). Enforcement is SRV-NF4-KASNA-PROVEDBA, over the
 // same column. Database: institution.set_late_submission_allowed,
-// app.my_assignment_late_submission (20261219121000).
+// app.my_assignment_late_submission (20261219160000).
 
 const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
