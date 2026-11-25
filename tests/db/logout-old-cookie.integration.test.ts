@@ -36,6 +36,7 @@ import {
   createThesisRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createReturnForRevisionRoutesFor,
   createDatabases,
@@ -203,6 +204,11 @@ const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 const IMPORT_ID = randomUUID();
 /** A submission that does not exist; the package link is signed for it (SRV-1807). */
 const PACKAGE_SUBMISSION = randomUUID();
+function rubricCriterion() {
+  const level = { label: "Dobro", descriptor: "Izmišljeni opis." };
+  return { id: "tema", title: "Izmišljena tema", levels: [level, level, level] };
+}
+
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -1022,6 +1028,24 @@ const SESSION_ROUTES = {
     method: "POST",
     path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}/request-revision`,
     body: () => ({ comment: "Dopuni uvod." }),
+    live: 404,
+  },
+  "teacher.assignment-rubric.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/rubric`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.assignment-rubric.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/rubric`,
+    body: () => ({ expectedVersion: 0, criteria: [rubricCriterion()] }),
+    live: 404,
+  },
+  "student.assignment-rubric.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/rubric`,
+    body: () => undefined,
     live: 404,
   },
   "institution.milestone-template.get": {
@@ -2182,6 +2206,7 @@ const FACTORIES = [
   "createEventDisputeRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createMilestoneTemplateRoutesFor",
+  "createAssignmentRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createReturnForRevisionRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -2312,6 +2337,7 @@ const MOUNTED = [
   ...createEventDisputeRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   ...createMilestoneTemplateRoutesFor(databases.main),
+  ...createAssignmentRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createReturnForRevisionRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),

@@ -32428,7 +32428,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.125.0",
+        "apiVersion": "1.126.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -32444,7 +32444,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.125.0",
+        "apiVersion": "1.126.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40566,6 +40566,204 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000001905"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-rubric.get",
+    "name": "default-criteria",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "version": 0,
+        "criteria": [
+          {
+            "id": "topic",
+            "title": "workingCriteria.topic",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          },
+          {
+            "id": "structure",
+            "title": "workingCriteria.structure",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          },
+          {
+            "id": "sources",
+            "title": "workingCriteria.sources",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          },
+          {
+            "id": "method",
+            "title": "workingCriteria.method",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          },
+          {
+            "id": "language",
+            "title": "workingCriteria.language",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          },
+          {
+            "id": "formatting",
+            "title": "workingCriteria.formatting",
+            "levels": [
+              {
+                "label": "assignmentRubric.levelLow",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelMid",
+                "descriptor": ""
+              },
+              {
+                "label": "assignmentRubric.levelHigh",
+                "descriptor": ""
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.assignment-rubric.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000001710019"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-rubric.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000001710020"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-rubric.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000001710021"
       }
     }
   },
@@ -55772,6 +55970,1124 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.get",
+    "name": "latest-version",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "version": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000001710016"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000001710017"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000001710018"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "replaced",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "version": 2,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710001"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugi.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710002"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710003"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "16385"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000001710004"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000001710005"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710006"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "1"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710007"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710008"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000001710009"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000001710010"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710011"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000001710012"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000001710013"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "expectedVersion": 0,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000001710015"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-rubric.put",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000a1701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "criteria": [
+          {
+            "id": "tema",
+            "title": "Izmišljena tema i cilj rada",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          },
+          {
+            "id": "izvori",
+            "title": "Izmišljeni izvori i navođenje",
+            "levels": [
+              {
+                "label": "Treba doraditi",
+                "descriptor": "Izmišljeni opis niže razine."
+              },
+              {
+                "label": "Dobro",
+                "descriptor": "Izmišljeni opis srednje razine."
+              },
+              {
+                "label": "Vrlo dobro",
+                "descriptor": "Izmišljeni opis više razine."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000001710014"
       }
     }
   },
