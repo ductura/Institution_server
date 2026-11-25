@@ -36,11 +36,13 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
   createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -977,6 +979,31 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK: a live session with no code of that id reads 404; the codebook itself is the caller's own.
+  "student.qual-codes.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/codes",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-codes.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/codes",
+    body: () => ({ name: "Izmišljeni kod nakon odjave" }),
+    live: 201,
+  },
+  "student.qual-code.patch": {
+    method: "PATCH",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => ({ name: "Izmišljeni novi naziv" }),
+    live: 404,
+  },
+  "student.qual-code.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-MENTOR-2: a live session with no part in any thesis.
   "institution.thesis-forms.get": {
     method: "GET",
@@ -1193,6 +1220,42 @@ const SESSION_ROUTES = {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/code-tests`,
     body: () => undefined,
+    live: 404,
+  },
+  "teacher.questionnaires.get": {
+    method: "GET",
+    path: `/api/v1/teacher/courses/${randomUUID()}/questionnaires`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.questionnaires.post": {
+    method: "POST",
+    path: `/api/v1/teacher/courses/${randomUUID()}/questionnaires`,
+    body: () => ({
+      title: "Izmišljeni upitnik",
+      questions: [{ kind: "text", text: "Primjedba?" }],
+    }),
+    live: 404,
+  },
+  "teacher.questionnaire.get": {
+    method: "GET",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.questionnaire.patch": {
+    method: "PATCH",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}`,
+    body: () => ({
+      title: "Izmišljeni upitnik",
+      questions: [{ kind: "text", text: "Primjedba?" }],
+    }),
+    live: 404,
+  },
+  "teacher.questionnaire-state.post": {
+    method: "POST",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/state`,
+    body: () => ({ state: "open" }),
     live: 404,
   },
   "institution.milestone-template.get": {
@@ -2480,6 +2543,7 @@ const FACTORIES = [
   "createMilestoneTemplateRoutesFor",
   "createAssignmentRubricRoutesFor",
   "createAssignmentCodeTestsRoutesFor",
+  "createQuestionnaireRoutesFor",
   "createWorkRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createAssignmentTemplateRoutesFor",
@@ -2509,6 +2573,7 @@ const FACTORIES = [
   "createPracticeJournalRoutesFor",
   "createWorkTeamRoutesFor",
   "createPeerReviewRoutesFor",
+  "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -2621,6 +2686,7 @@ const MOUNTED = [
   ...createMilestoneTemplateRoutesFor(databases.main),
   ...createAssignmentRubricRoutesFor(databases.main),
   ...createAssignmentCodeTestsRoutesFor(databases.main),
+  ...createQuestionnaireRoutesFor(databases.main),
   ...createWorkRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createAssignmentTemplateRoutesFor(databases.main),
@@ -2651,6 +2717,7 @@ const MOUNTED = [
   ...createPracticeJournalRoutesFor(databases.main),
   ...createWorkTeamRoutesFor(databases.main),
   ...createPeerReviewRoutesFor(databases.main),
+  ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -2871,6 +2938,8 @@ afterAll(async () => {
   await admin.query("DELETE FROM institution.qual_material WHERE institution_id = $1", [
     institution,
   ]);
+  // The live session of student.qual-codes.post made a code of its own: it refers to user_account too.
+  await admin.query("DELETE FROM institution.qual_code WHERE institution_id = $1", [institution]);
   // user_preference and problem_report refer to user_account, so they go first.
   for (const table of [
     "user_preference",

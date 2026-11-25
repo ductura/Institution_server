@@ -156,6 +156,14 @@ export {
   RUBRIC_MAX_CRITERIA,
 } from "./assignment-rubric.ts";
 export {
+  Questionnaire,
+  QuestionnaireInput,
+  QUESTIONNAIRE_KINDS,
+  QUESTIONNAIRE_MAX_BYTES,
+  QUESTIONNAIRE_STATES,
+  questionnaireRoutes,
+} from "./questionnaires.ts";
+export {
   AssignmentCodeTestsInput,
   assignmentCodeTestsRoutes,
   CODE_TESTS_MAX,
@@ -259,6 +267,16 @@ export {
   practicePlacementsPost,
   practiceSignoffsPost,
 } from "./practice-journal.ts";
+export {
+  QUAL_CODES_MAX,
+  QUAL_CODE_DESCRIPTION_MAX,
+  QUAL_CODE_NAME_MAX,
+  qualitativeCodesRoutes,
+  studentQualCodeDelete,
+  studentQualCodePatch,
+  studentQualCodesGet,
+  studentQualCodesPost,
+} from "./qualitative-codes.ts";
 export {
   PEER_REVIEW_ALLOCATIONS_MAX,
   PEER_REVIEW_RUBRICS_MAX,

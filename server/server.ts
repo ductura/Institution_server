@@ -71,6 +71,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -126,6 +127,7 @@ import {
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
   createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -363,6 +365,8 @@ async function main(): Promise<void> {
       ...createAssignmentRubricRoutesFor(databases.main),
       // SRV-V21-KOD-TESTOVI-RUTA: the code tests of an assignment (teacher writes, both read).
       ...createAssignmentCodeTestsRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-AUTOR: the questionnaires of a course (teacher makes, edits a draft, opens, closes).
+      ...createQuestionnaireRoutesFor(databases.main),
       // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
       ...createWorkRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
@@ -417,6 +421,8 @@ async function main(): Promise<void> {
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
       ...createPeerReviewRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own qualitative coding.
+      ...createQualitativeCodesRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),

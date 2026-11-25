@@ -40,6 +40,7 @@ import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { PRACTICE_HANDLERS } from "./practice-routes.ts";
 import { ANALYSIS_HANDLERS } from "./analysis-routes.ts";
 import { PEER_REVIEW_HANDLERS } from "./peer-review-routes.ts";
+import { QUALITATIVE_CODES_HANDLERS } from "./qualitative-codes-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
@@ -47,6 +48,7 @@ import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { ASSIGNMENT_CODE_TESTS_HANDLERS } from "./assignment-code-tests-routes.ts";
+import { QUESTIONNAIRE_HANDLERS } from "./questionnaire-routes.ts";
 import { WORK_RUBRIC_HANDLERS } from "./work-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
@@ -136,6 +138,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...PEER_REVIEW_HANDLERS,
+  ...QUALITATIVE_CODES_HANDLERS,
   ...ANALYSIS_HANDLERS,
   ...THESIS_HANDLERS,
   ...ASSISTANT_HANDLERS,
@@ -164,6 +167,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...ASSIGNMENT_CODE_TESTS_HANDLERS,
+  ...QUESTIONNAIRE_HANDLERS,
   ...WORK_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,

@@ -64,6 +64,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -76,6 +77,7 @@ import {
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
   createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -288,6 +290,13 @@ const SRV_V19_RECENZIJA = [
   "student.peer-review-work.get",
   "student.peer-review.post",
   "student.peer-reviews-received.get",
+];
+// SRV-V18-KODIRANJE-SIFRARNIK: the four routes of the codebook of qualitative coding.
+const SRV_V18_SIFRARNIK = [
+  "student.qual-codes.get",
+  "student.qual-codes.post",
+  "student.qual-code.patch",
+  "student.qual-code.delete",
 ];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
@@ -664,6 +673,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createQualitativeCodesRoutesFor(databases.main)",
+    ids: SRV_V18_SIFRARNIK,
+    routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -758,6 +772,17 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "student.assignment-code-tests.get",
     ],
     routes: () => createAssignmentCodeTestsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQuestionnaireRoutesFor(databases.main)",
+    ids: [
+      "teacher.questionnaires.get",
+      "teacher.questionnaires.post",
+      "teacher.questionnaire.get",
+      "teacher.questionnaire.patch",
+      "teacher.questionnaire-state.post",
+    ],
+    routes: () => createQuestionnaireRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createWorkRubricRoutesFor(databases.main)",
@@ -1126,6 +1151,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
       ...SRV_V19_RECENZIJA,
+      ...SRV_V18_SIFRARNIK,
       ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",
@@ -1160,6 +1186,11 @@ describe("routes the entry point mounts itself", () => {
       "teacher.assignment-code-tests.get",
       "teacher.assignment-code-tests.put",
       "student.assignment-code-tests.get",
+      "teacher.questionnaires.get",
+      "teacher.questionnaires.post",
+      "teacher.questionnaire.get",
+      "teacher.questionnaire.patch",
+      "teacher.questionnaire-state.post",
       "teacher.work-rubric.get",
       "teacher.work-rubric-mark.put",
       "institution.work-template.get",

@@ -66,6 +66,7 @@ import {
   teacherWorkingCriteriaRoutes,
   assignmentRubricRoutes,
   assignmentCodeTestsRoutes,
+  questionnaireRoutes,
   workRubricRoutes,
   teacherSourcesRoutes,
   teacherWorkRoutes,
@@ -102,6 +103,7 @@ import {
   thesisRoutes,
   practiceJournalRoutes,
   peerReviewRoutes,
+  qualitativeCodesRoutes,
   analysisRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
@@ -186,6 +188,11 @@ export {
   thesisRoutes,
   practiceJournalRoutes,
   peerReviewRoutes,
+  qualitativeCodesRoutes,
+  studentQualCodeDelete,
+  studentQualCodePatch,
+  studentQualCodesGet,
+  studentQualCodesPost,
   analysisRoutes,
   ANALYSIS_IDS,
   ANALYSIS_LIMITS,
@@ -208,6 +215,11 @@ export {
   assignmentCodeTestsRoutes,
   CODE_TESTS_MAX,
   CODE_TESTS_MAX_BYTES,
+} from "./routes/index.ts";
+export {
+  questionnaireRoutes,
+  QuestionnaireInput,
+  QUESTIONNAIRE_MAX_BYTES,
 } from "./routes/index.ts";
 export { workRubricRoutes } from "./routes/index.ts";
 export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
@@ -303,6 +315,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkingCriteriaRoutes,
   ...assignmentRubricRoutes,
   ...assignmentCodeTestsRoutes,
+  ...questionnaireRoutes,
   ...workRubricRoutes,
   courseAggregateGet,
   pilotMetricsGet,
@@ -376,6 +389,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...thesisRoutes,
   ...practiceJournalRoutes,
   ...peerReviewRoutes,
+  ...qualitativeCodesRoutes,
   ...analysisRoutes,
   ...opsRoutes,
   ...lateSubmissionRoutes,

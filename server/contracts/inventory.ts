@@ -465,6 +465,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK (Ductus#2058 c.7173077456, val 18): the codebook of a student's own qualitative coding; Ductus has no such route.
+  "app/api/student/qual/codes/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
+  "app/api/student/qual/codes/[id]/route.ts": {
+    methods: ["PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
   // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055 c.7149250861, val 19): anonymous peer review among students; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts": {
     methods: ["GET", "PUT"],
@@ -930,6 +939,19 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/code-tests/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7168911312",
+  },
+  // SRV-V18-UPITNIK-AUTOR (Ductus#2058, val 18): the questionnaires of a course for its teacher; Ductus has no such route.
+  "app/api/teacher/courses/[courseId]/questionnaires/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075140",
+  },
+  "app/api/teacher/questionnaires/[id]/route.ts": {
+    methods: ["GET", "PATCH"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075140",
+  },
+  "app/api/teacher/questionnaires/[id]/state/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075140",
   },
   // SRV-V17-RUBRIC-LEVEL (Ductus#2055, val 17): the teacher's mark of a level per rubric criterion on a work; Ductus has no such route.
   "app/api/teacher/works/[documentId]/rubric/route.ts": {
