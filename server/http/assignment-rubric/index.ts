@@ -13,7 +13,7 @@ import {
   type RubricCriterion,
   type WithActor,
 } from "../../database/index.ts";
-import { liveSessionTokenFromCookie } from "../../session/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../../session/index.ts";
 import {
   parseJson,
   readBodyWithLimit,
@@ -55,7 +55,7 @@ export function createAssignmentRubricRoutesFor(main: { withActor: WithActor }):
           } else {
             const json = await jsonBody(request, response, contract.request.maxBodyBytes!);
             if (json === undefined) return;
-            if (!Value.Check(AssignmentRubricInput, json)) {
+            if (!Value.Check(AssignmentRubricInput, json) || hasNul(json)) {
               return sendProblem(response, 422, "invalid_input");
             }
             const sent = json as { expectedVersion: number; criteria: RubricCriterion[] };
@@ -70,7 +70,11 @@ export function createAssignmentRubricRoutesFor(main: { withActor: WithActor }):
             );
             return sendProblem(response, 503, "unavailable");
           }
-          return sendJson(response, 200, body);
+          sendJson(response, 200, body);
+          // An accepted write counts as activity (session/activity.ts); reads and refusals do not.
+          if (contract.method === "PUT")
+            void recordActivity(token, main.withActor).catch(() => undefined);
+          return;
         } catch (error) {
           const code =
             error && typeof error === "object" && "code" in error ? error.code : undefined;
@@ -82,6 +86,14 @@ export function createAssignmentRubricRoutesFor(main: { withActor: WithActor }):
       },
     };
   });
+}
+
+/** PostgreSQL's jsonb refuses U+0000 before the database could judge the text: it is input outside the contract. */
+function hasNul(value: unknown): boolean {
+  if (typeof value === "string") return value.includes("\u0000");
+  if (Array.isArray(value)) return value.some(hasNul);
+  if (value !== null && typeof value === "object") return Object.values(value).some(hasNul);
+  return false;
 }
 
 async function jsonBody(

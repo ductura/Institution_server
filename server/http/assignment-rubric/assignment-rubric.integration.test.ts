@@ -29,6 +29,7 @@ const criterion = (id: string) => ({
 
 type Row = { version: number; criteria: unknown[] };
 const stored = new Map<string, Row>();
+let touches = 0;
 const roles: Record<string, string> = { [TEACHER]: "teacher", [STUDENT]: "student" };
 const refuse = (code: string) => Object.assign(new Error(code), { code });
 
@@ -36,7 +37,7 @@ const withActor = (async (token: string, fn: (tx: unknown) => Promise<unknown>) 
   if (token === SIGNED_OUT) throw refuse("ZD401");
   if (token === BROKEN) throw new Error("down");
   return fn({
-    async query(sql: string, params: unknown[]) {
+    async query(sql: string, params: unknown[] = []) {
       const id = params[0] as string;
       const role = roles[token];
       const allowed = (want: string) => {
@@ -58,6 +59,10 @@ const withActor = (async (token: string, fn: (tx: unknown) => Promise<unknown>) 
         stored.set(id, row);
         return { rows: [row] };
       }
+      if (sql.includes("touch_current_session")) {
+        touches += 1;
+        return { rows: [{ touched: true }] };
+      }
       throw new Error(`unexpected sql ${sql}`);
     },
   });
@@ -68,6 +73,7 @@ afterEach(async () => {
   await server?.close();
   server = undefined;
   stored.clear();
+  touches = 0;
 });
 
 async function call(
@@ -117,6 +123,18 @@ const put = (
 ) => call("PUT", teacherUrl(id), token, JSON.stringify({ expectedVersion, criteria }));
 
 describe("assignment rubric", () => {
+  it("counts an accepted PUT as session activity, and nothing else", async () => {
+    await call("GET", teacherUrl(ASSIGNMENT), TEACHER);
+    await put(TEACHER, 0, []); // refused: 422
+    await put(TEACHER, 5, [criterion("a")]); // refused: 409
+    await put(STUDENT, 0, [criterion("a")]); // refused: 404
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(touches).toBe(0);
+    expect((await put(TEACHER, 0, [criterion("a")])).status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(touches).toBe(1);
+  });
+
   it("is empty for the teacher and the six default criteria for the student while none is set", async () => {
     expect(await call("GET", teacherUrl(ASSIGNMENT), TEACHER)).toEqual({
       status: 200,
@@ -187,6 +205,8 @@ describe("assignment rubric", () => {
         )
       ).status,
     ).toBe(422);
+    const nul = { ...criterion("a"), title: "a\u0000b" };
+    expect((await put(TEACHER, 0, [nul])).status).toBe(422);
     expect(stored.size).toBe(0);
   });
 

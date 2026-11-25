@@ -9,7 +9,8 @@ type Level = { label: string; descriptor: string };
 type Criterion = { id: string; title: string; levels: Level[] };
 type Rubric = { version: number; criteria: Criterion[] };
 
-const rubrics = new WeakMap<State, Map<string, Rubric>>();
+// Keyed by the assignments array, which a reset of the state replaces (the State object itself is kept).
+const rubrics = new WeakMap<object, Map<string, Rubric>>();
 
 const IDS = ["topic", "structure", "sources", "method", "language", "formatting"];
 const defaultCriteria = (): Criterion[] =>
@@ -45,7 +46,7 @@ export const ASSIGNMENT_RUBRIC_HANDLERS: Handlers = {
     if (assignment === null) return { error: "not_found" };
     return {
       status: 200,
-      body: rubrics.get(state)?.get(assignment.id) ?? { version: 0, criteria: [] },
+      body: rubrics.get(state.assignments)?.get(assignment.id) ?? { version: 0, criteria: [] },
     };
   },
   "teacher.assignment-rubric.put": ({ state, account, params, body }) => {
@@ -62,12 +63,12 @@ export const ASSIGNMENT_RUBRIC_HANDLERS: Handlers = {
     ) {
       return { error: "invalid_input" };
     }
-    const all = rubrics.get(state) ?? new Map<string, Rubric>();
+    const all = rubrics.get(state.assignments) ?? new Map<string, Rubric>();
     const latest = all.get(assignment.id)?.version ?? 0;
     if (body.expectedVersion !== latest) return { error: "conflict" };
     const made: Rubric = { version: latest + 1, criteria: body.criteria };
     all.set(assignment.id, made);
-    rubrics.set(state, all);
+    rubrics.set(state.assignments, all);
     return { status: 200, body: made };
   },
   "student.assignment-rubric.get": ({ state, account, params }) => {
@@ -76,7 +77,10 @@ export const ASSIGNMENT_RUBRIC_HANDLERS: Handlers = {
     if (assignment === null) return { error: "not_found" };
     return {
       status: 200,
-      body: rubrics.get(state)?.get(assignment.id) ?? { version: 0, criteria: defaultCriteria() },
+      body: rubrics.get(state.assignments)?.get(assignment.id) ?? {
+        version: 0,
+        criteria: defaultCriteria(),
+      },
     };
   },
 };
