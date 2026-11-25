@@ -170,6 +170,7 @@ describe("route inventory", () => {
       "institution.legal-holds.post: app/api/institution/legal-holds/route.ts is not in the inventory",
       "institution.legal-hold-release.post: app/api/institution/legal-holds/[holdId]/release/route.ts is not in the inventory",
       "institution.student-data-exports.get: app/api/institution/student-data-exports/route.ts is not in the inventory",
+      "institution.student-data-export-students.get: app/api/institution/student-data-export-students/route.ts is not in the inventory",
       "institution.student-data-exports.post: app/api/institution/student-data-exports/route.ts is not in the inventory",
       "institution.student-data-exports-approve.post: app/api/institution/student-data-exports/[exportId]/approve/route.ts is not in the inventory",
       "student.data-export.get: app/api/student/data-export/[token]/route.ts is not in the inventory",

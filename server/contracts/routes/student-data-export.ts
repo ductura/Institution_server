@@ -170,6 +170,34 @@ export const studentDataExportsGet = defineRoute({
   errors: [error(401, "unauthorized"), error(403, "forbidden"), error(503, "unavailable")],
 });
 
+// SRV-NF7-IZVOZ-STUDENT (NF-7 OA-6): who each request is for, beside the list,
+// so the registry office sees that a person already has an open request
+// before asking again. A new route rather than a field of the list: a new
+// field in an existing body is a major release (scripts/release/README.md,
+// QA #92). The same reach as the list, read from the same function; nothing
+// but the person and the state.
+export const studentDataExportStudentsGet = defineRoute({
+  id: "institution.student-data-export-students.get",
+  method: "GET",
+  path: "/api/v1/institution/student-data-export-students",
+  inventory: "app/api/institution/student-data-export-students/route.ts",
+  access: "signed_in",
+  summary:
+    "For each data export the caller may see, the person it is for and its state, newest first: every request of the institution for a clerk of the registry office or an administrator, the caller's own for anyone else, never another institution's (someone else's request is absent, as one that does not exist). Only exportId, studentId and state.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "the person and state of each export, possibly none",
+      body: closed({
+        exports: Type.Array(closed({ exportId: ExportId, studentId: ExportId, state: State })),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(403, "forbidden"), error(503, "unavailable")],
+});
+
 export const studentDataExportGet = defineRoute({
   id: "student.data-export.get",
   method: "GET",
@@ -193,6 +221,7 @@ export const studentDataExportGet = defineRoute({
 
 export const studentDataExportRoutes = [
   studentDataExportsGet,
+  studentDataExportStudentsGet,
   studentDataExportsPost,
   studentDataExportsApprovePost,
   studentDataExportGet,
