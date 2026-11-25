@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4354);
+SELECT plan(4602);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -197,6 +197,8 @@ SELECT bag_eq(
         'mentorship_opening',
         -- SRV-V19-DNEVNIK-BAZA: the practice journal; cells in 247-practice-journal.sql.
         'practice_placement', 'practice_entry', 'practice_signoff',
+        -- SRV-V19-GRUPA-BAZA: teams on an assignment; cells in 248-work-team.sql.
+        'assignment_team_setting', 'work_team', 'work_team_member_event',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
         'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
@@ -343,6 +345,9 @@ SELECT bag_eq(
     'practice_placement: practice_placement_owner ALL to ductus_identity',
     'practice_entry: practice_entry_owner ALL to ductus_identity',
     'practice_signoff: practice_signoff_owner ALL to ductus_identity',
+    'assignment_team_setting: assignment_team_setting_owner ALL to ductus_identity',
+    'work_team: work_team_owner ALL to ductus_identity',
+    'work_team_member_event: work_team_member_event_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
     'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
@@ -400,6 +405,9 @@ SELECT bag_eq(
         'practice_placement: practice_placement_append_only 27 O', 'practice_placement: practice_placement_no_truncate 34 O',
         'practice_entry: practice_entry_append_only 27 O', 'practice_entry: practice_entry_no_truncate 34 O',
         'practice_signoff: practice_signoff_append_only 27 O', 'practice_signoff: practice_signoff_no_truncate 34 O',
+        'assignment_team_setting: assignment_team_setting_append_only 27 O', 'assignment_team_setting: assignment_team_setting_no_truncate 34 O',
+        'work_team: work_team_append_only 27 O', 'work_team: work_team_no_truncate 34 O',
+        'work_team_member_event: work_team_member_event_append_only 27 O', 'work_team_member_event: work_team_member_event_no_truncate 34 O',
         'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
         'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
@@ -601,6 +609,12 @@ SELECT bag_eq(
     'reject_practice_record_change()',
     'practice_entries_digest(p_placement_id uuid, p_through date)',
     'practice_context(p_placement_id uuid, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_starts_on date, OUT o_ends_on date, OUT o_mentorship_open boolean)',
+    'reject_work_team_record_change()',
+    'work_team_setting_of(p_assignment_id uuid, OUT o_enabled boolean, OUT o_min_size integer, OUT o_max_size integer, OUT o_formation text)',
+    'work_team_members_now(p_assignment_id uuid)',
+    'work_team_context(p_assignment_id uuid, p_part text, OUT o_user_id uuid, OUT o_institution_id uuid, OUT o_enabled boolean, OUT o_min_size integer, OUT o_max_size integer, OUT o_formation text)',
+    'work_team_lock(p_assignment_id uuid)',
+    'work_team_part_submitted(p_assignment_id uuid, p_student_id uuid)',
     'thesis_setting_now()',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
@@ -1617,6 +1631,40 @@ SELECT is(
 FROM (VALUES ('ana', '1'), ('dora', '0'), ('vesna', 'ZD403'), ('marko', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
   AS c (actor, result);
 
+-- 1i3. SRV-V19-GRUPA-BAZA: teams on an assignment (institution.assignment_team_setting,
+-- work_team, work_team_member_event) only through the app.* RPCs. The teachers of Z1 read
+-- and set the setting and list the teams, the students of Z1 read only their own state;
+-- everyone else is the same refusal (ZD404: another course, another institution, no
+-- relation). The rest is in 248-work-team.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT enabled::text FROM app.assignment_team_setting({z1})'), 1, 5), c.result,
+  format('SRV-V19-GRUPA-BAZA: %s reads the team setting of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'false'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.teacher_teams({z1})'), 1, 5), c.result,
+  format('SRV-V19-GRUPA-BAZA: %s lists the teams of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '2'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT row_kind FROM app.student_team({z1})'), 1, 5), c.result,
+  format('SRV-V19-GRUPA-BAZA: %s reads the own team state on Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'disab'), ('dora', 'disab'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'),
+             ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.set_assignment_team_setting({z1}, false, 2, 6, ''student_choice'')'), 1, 5), c.result,
+  format('SRV-V19-GRUPA-BAZA: %s sets the team setting of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '1'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.team_action({z1}, ''leave'', NULL)'), 1, 5), c.result,
+  format('SRV-V19-GRUPA-BAZA: only a student of Z1 acts on a team (%s): %s', c.actor, c.result))
+FROM (VALUES ('ana', 'ZD409'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('boris', 'ZD404'),
+             ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was
 -- extended in 1h); null for everyone else. The rest is in
@@ -1812,6 +1860,32 @@ SELECT ok((SELECT bool_and(has_function_privilege('ductus_app', f, 'EXECUTE') AN
                'app.practice_placements()', 'app.practice_entries(uuid)', 'app.practice_signoffs(uuid)']) f
              JOIN pg_proc p ON p.oid = f::regprocedure),
   'SRV-V19-DNEVNIK-BAZA: the web role calls the practice journal RPCs, all SECURITY DEFINER');
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.set_assignment_team_setting(uuid,boolean,integer,integer,text)',
+       'app.assignment_team_setting(uuid)', 'app.team_action(uuid,text,uuid)', 'app.student_team(uuid)',
+       'app.teacher_teams(uuid)', 'app.teacher_create_team(uuid)', 'app.teacher_team_member(uuid,uuid,uuid,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V19-GRUPA-BAZA: only ductus_app and the owner execute the team RPCs'
+);
+SELECT ok((SELECT bool_and(has_function_privilege('ductus_app', f, 'EXECUTE') AND p.prosecdef)
+             FROM unnest(ARRAY['app.set_assignment_team_setting(uuid,boolean,integer,integer,text)',
+               'app.assignment_team_setting(uuid)', 'app.team_action(uuid,text,uuid)', 'app.student_team(uuid)',
+               'app.teacher_teams(uuid)', 'app.teacher_create_team(uuid)', 'app.teacher_team_member(uuid,uuid,uuid,text)']) f
+             JOIN pg_proc p ON p.oid = f::regprocedure),
+  'SRV-V19-GRUPA-BAZA: the web role calls the team RPCs, all SECURITY DEFINER');
+-- The helper that reads the state of a part from the evidence is the identity role's alone.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute the team part-state helper'
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     WHERE has_function_privilege(r.rolname, 'app.work_team_part_states(uuid,uuid[])', 'EXECUTE') $$,
+  'SRV-V19-GRUPA-BAZA: only the identity role and its owner execute the part-state helper'
+);
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
@@ -1856,13 +1930,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
-                        'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff'])
+                        'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff',
+                        'assignment_team_setting', 'work_team', 'work_team_member_event'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
