@@ -358,6 +358,10 @@ ALTER TABLE collaboration.consultation_task DISABLE TRIGGER consultation_task_no
 ALTER TABLE collaboration.consultation_task_mark DISABLE TRIGGER consultation_task_mark_no_truncate;
 -- The versions of the rubric of an assignment (SRV-V17-RUBRIC-DEF) reference the assignment; they are append only.
 ALTER TABLE institution.assignment_rubric_version DISABLE TRIGGER assignment_rubric_version_no_truncate;
+-- The teams of an assignment (SRV-V19-GRUPA-BAZA) reference the assignment; they are append only.
+ALTER TABLE institution.assignment_team_setting DISABLE TRIGGER assignment_team_setting_no_truncate;
+ALTER TABLE institution.work_team DISABLE TRIGGER work_team_no_truncate;
+ALTER TABLE institution.work_team_member_event DISABLE TRIGGER work_team_member_event_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
