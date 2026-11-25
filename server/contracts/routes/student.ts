@@ -185,6 +185,19 @@ export const studentAssignmentWorkGet = defineRoute({
           closed({
             assignmentId: LowerUuid,
             workState: oneOf(["not_started", "in_progress", "submitted"]),
+            // SRV-NF4-IZNIMKA-PREDAJA (NF-4, NZ-5 B). Optional only because a new
+            // required field breaks clients (server/contracts/breaking.ts), and the
+            // summary stays as it was for the same reason.
+            lateException: Type.Optional(
+              Type.Object(
+                { untilAt: Instant },
+                {
+                  additionalProperties: false,
+                  description:
+                    "The caller's own latest late-submission exception on the assignment: the teacher's record that this student may still submit until untilAt although the deadline has passed, even when late submission is not allowed (a submission then is still after the deadline). Absent when the caller has none; sent also after untilAt, so a client compares untilAt with the time. Another student's exception is never in the answer.",
+                },
+              ),
+            ),
           }),
         ),
       }),
@@ -312,6 +325,12 @@ export const studentNoticeGet = defineRoute({
         wordMax: WordBound,
         readAt: Type.Union([Instant, Type.Null()]),
         acknowledgedAt: Type.Union([Instant, Type.Null()]),
+        /**
+         * SRV-ASIST-CITANJE (Ductus#2055): the purpose catalog of this version,
+         * whose keys aiPurposes names; the assistant request sends it back as
+         * purposeCatalogVersion. Not a member of the notice fingerprint.
+         */
+        purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
       }),
     },
   ],
@@ -362,6 +381,51 @@ export const studentAssignmentRequirementsGet = defineRoute({
   request: { params: assignmentParams },
   responses: [{ status: 200, description: "word range", body: closed({ wordRange: WordRange }) }],
   errors: assignmentReadErrors,
+});
+
+// SRV-NF1-PREDANO (Ductus#2055, NF-1 P-6): when each own submission was confirmed, for the
+// whole list at once. A route of its own, not two fields of student.assignment-work.get: a
+// new member of an existing route is a major release of @ductura/contracts
+// (scripts/release/README.md, QA #92). The values are those of the signed receipt
+// (receipt.payload.requestedAt and .afterDeadline), so the list never says more than
+// student.submission.get would for the same assignment.
+/** isSubmissionInstant: the database clock with exactly six fraction digits, in UTC. */
+const Microsecond = Type.String({
+  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+});
+
+export const studentAssignmentSubmissionsGet = defineRoute({
+  id: "student.assignment-submissions.get",
+  method: "GET",
+  path: "/api/v1/student/assignment-submissions",
+  inventory: "app/api/student/assignment-submissions/route.ts",
+  access: "signed_in",
+  summary:
+    "When the caller's own submission was confirmed, for every assignment student.assignment-work.get would list at the same instant: one row per assignment, by assignmentId (lowercase). With a signed receipt, submittedAt and afterDeadline are receipt.payload.requestedAt and receipt.payload.afterDeadline of the receipt student.submission.get returns. With no submission, a withdrawn one or one still waiting for its receipt (ceka), both are null. The identity comes from the session only, so the list holds only the caller's own assignments. A row or a receipt the read cannot vouch for makes the whole answer 503, never a partial list.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "ready (an empty list when the student has no course)",
+      body: closed({
+        assignments: Type.Array(
+          Type.Union([
+            closed({
+              assignmentId: LowerUuid,
+              submittedAt: Microsecond,
+              afterDeadline: Type.Boolean(),
+            }),
+            closed({
+              assignmentId: LowerUuid,
+              submittedAt: Type.Null(),
+              afterDeadline: Type.Null(),
+            }),
+          ]),
+        ),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(503, "unavailable")],
 });
 
 const NoteText = Type.String({
@@ -420,6 +484,7 @@ export const studentRoutes = [
   studentNoticeGet,
   studentSubmissionGet,
   studentAssignmentRequirementsGet,
+  studentAssignmentSubmissionsGet,
   studentSubmissionNotesGet,
   studentSubmissionNotesPost,
 ] as const;

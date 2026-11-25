@@ -39,6 +39,7 @@ import {
   startDetached,
   stopProcess,
   serverReady,
+  tailLines,
 } from "./processes.ts";
 import * as stateFile from "./state.ts";
 import {
@@ -95,6 +96,16 @@ const base = (): Record<string, string> => ({
 
 async function must(what: string, command: string, args: string[]): Promise<void> {
   if ((await spawnRun(command, args, { env: base() })) !== 0) throw new Error(`${what} failed`);
+}
+
+const LOG_TAIL_LINES = 100;
+
+function readLog(path: string): string {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return `(${path} is missing or unreadable)`;
+  }
 }
 
 /** Polls until `pid` itself listens on `port`; the local S3 has no health route. */
@@ -193,16 +204,24 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   if (!existsSync(PGDATA))
     await must("initdb", "initdb", ["-D", PGDATA, "-U", userInfo().username, ...init]);
   const options = postgresOptions(postgres, DIR);
-  await must("pg_ctl start", "pg_ctl", [
-    "-D",
-    PGDATA,
-    "-l",
-    join(DIR, "postgres.log"),
-    "-w",
-    "start",
-    "-o",
-    options,
-  ]);
+  const postgresLog = join(DIR, "postgres.log");
+  try {
+    await must("pg_ctl start", "pg_ctl", [
+      "-D",
+      PGDATA,
+      "-l",
+      postgresLog,
+      "-w",
+      "start",
+      "-o",
+      options,
+    ]);
+  } catch (error) {
+    // ZEL-SRV-PGCTL: pg_ctl only says "could not start server"; the reason is in the postmaster log.
+    console.error(`--- last ${LOG_TAIL_LINES} lines of ${postgresLog} ---`);
+    console.error(tailLines(readLog(postgresLog), LOG_TAIL_LINES));
+    throw error;
+  }
   const env = { ...base(), DUCTUS_NATIVE_PGPORT: String(postgres), DUCTUS_NATIVE_PGSOCKET: DIR };
   await provision({
     env,

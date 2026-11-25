@@ -14,7 +14,7 @@ Izvori:
 
 Postojeće rute ostaju kakve jesu, pa nijedan njihov klijent ne dobiva novo polje ni novo stanje:
 
-- `work.consultation-slots.get|post|patch` i dalje znaju samo `requested`, `countered` i `confirmed`. Zatvoren termin (`withdrawn`, `declined`, `cancelled`) stara ruta izostavlja, a ne broji se ni u 20 otvorenih zahtjeva. `patch` na zatvorenom terminu daje 409.
+- `work.consultation-slots.get|post|patch` i dalje znaju samo `requested`, `countered` i `confirmed`. Zatvoren termin (`withdrawn`, `declined`, `cancelled`) stara ruta izostavlja, a ne broji se ni u 20 otvorenih zahtjeva. `patch` na zatvorenom terminu daje 409. Od API-ja 1.113.0 (SRV-KONZ-STANJA, niže) `post` prima neobveznu temu, a svaki odgovor te rute nosi `topic`.
 - `notifications.list.get` izostavlja novu vrstu `mentorship_opened`, kao i `returned_for_revision`. Stranica i kursor računaju se preko svih vrsta, pa stranica može biti kraća. Obavijest se označava pročitanom postojećom rutom `notifications.read.post`.
 - `mentorship.requests.post` i ostali koraci studentskog zahtjeva ostaju u kodu (odluka 4 ih ne briše).
 - Suženje je namjerno i potvrđeno (odluka 1, 24. 11. 2026.): zapis (`work.consultation-records.post`) i dopune (`work.consultation-additions.post`) za **sve radove**, ne samo u mentorstvu, piše samo nastavnik rada (mentor); student ih čita. Od ove migracije baza studentu na pisanje vraća 404, isto kao za tuđi rad. Oblik zahtjeva i odgovora se ne mijenja. Deklaracija u ugovoru (`x-access: owner_or_course_teacher` i opis rute) zasad ostaje ista, jer provjera `contracts:breaking` svaku promjenu `x-access` i `summary` postojeće rute odbija kao prijelomnu (vidi „Otvoreno za vlasnika”). **WEB:** studentski obrazac zapisa i dopune treba ukloniti; student zapisnik samo čita.
@@ -73,8 +73,22 @@ Zadatke upisuje i označava samo nastavnik rada (mentor), a student ih čita. Za
 
 `packages/test-fakes/dev-server/mentorship-consultation-routes.ts` odgovara na svih devet ruta s izmišljenim podacima i istim odbijanjima. Stari lažni rukovatelji termina izostavljaju zatvorene termine. Zapisnik i dopune piše samo nastavnik rada; studentu lažni poslužitelj vraća 404.
 
+## Dopuna 1.113.0: tema na `work.consultation-slots.*` (SRV-KONZ-STANJA)
+
+Zadatak SRV-KONZ-STANJA `konzultacije-tema-povlacenje` (orkestrator, 24. 11. 2026., NF-6 MK-3) traži da stara ruta termina dobije temu, radnje `withdraw`, `decline` i `cancel` i stanja `withdrawn`, `declined` i `cancelled`. Baza sve to već ima (migracija ovog ugovora), pa ovaj korak **ne dira bazu** i nema migracije ni pgTAP-a.
+
+- `work.consultation-slots.post` prima neobvezno polje `topic` (1 do 200 znakova, nije prazno; NFC, kontrolni i bidi znakovi su 422 poslužitelja, kao kod `work.consultation-slot-requests.post`). Granica je ona iz baze (`SLOT_TOPIC_MAX`), ne 280 iz opisa zadatka: šira tema tražila bi promjenu provjere u bazi i odgovora `work.consultation-slot-details.get`. Tijelo ostaje do 1024 bajta, jer je i promjena `x-max-body-bytes` prijelomna; tema od 200 znakova u UTF-8 stane.
+- `work.consultation-slots.get|post|patch` u svakom terminu vraćaju `topic` (tekst ili `null`). U shemi je polje neobvezno samo da klijent verzije 1.112.0 ostane ispravan; poslužitelj ga uvijek šalje. Poslužitelj čita termine iz `institution.consultation_slot_details` i zadržava samo otvorena stanja.
+- **Radnje i stanja zatvaranja ostaju na postojećim rutama.** Dodavanje grane u tijelo `patch` (`anyOf`) i novih vrijednosti u `state` odgovora `contracts:breaking` odbija kao prijelomno (provjereno prema `origin/migracija/kopija-ductus-backend`: `requestBody/.../anyOf: changed`, `.../state/anyOf: changed`). Po pravilu naloga ugovor ima prednost, a kriterij je ispunjen postojećim ponašanjem:
+  - povlačenje (student, samo `requested`), odbijanje (nastavnik, samo `requested`) i otkazivanje (obje strane, `countered` ili `confirmed`, dok je termin u budućnosti), uz razlog do 600 znakova: `work.consultation-slot-close.post`;
+  - termini u svim stanjima s temom i zatvaranjem (`closing: { by, reason, at }`): `work.consultation-slot-details.get`;
+  - `patch` s `withdraw`, `decline` ili `cancel` i dalje je 422, a `patch` na zatvorenom terminu 409.
+- Lažni poslužitelj (`packages/test-fakes/dev-server/consultation-slots.ts`) sprema temu kao i `consultation-slot-requests` i vraća je na sve tri rute.
+
 ## Otvoreno za vlasnika
 
 - **Deklaracija pristupa pisanja zapisnika.** Vlasnik je 24. 11. 2026. potvrdio suženje, i ponašanje ga provodi. Promjena `x-access` u `mentor_teacher` i opisa ruta `work.consultation-records.post` i `work.consultation-additions.post` pala je na `contracts:breaking` prema bazi (CI na `19d70cb`: `x-access: changed`, `summary: changed`), jer je provjera zatvorena za svaku promjenu postojeće rute osim `description`, `example(s)` i `title`. Po pravilu naloga pisac ne mijenja ugovor ni provjeru i ne traži iznimku. Treba li deklaraciju promijeniti vlasničkom iznimkom provjere, novom glavnom verzijom ili tako da `x-access` bude izuzet iz provjere?
 - **Izbor studenta pri otvaranju.** Nastavnik upisuje `studentId`. Ruta za pretraživanje studenata ustanove nije dio ovog zadatka; klijent ID uzima iz postojećih popisa kolegija.
 - **Podsjetnik na termin** (`deadline_reminder`, MK-3) nije dio ovog zadatka.
+- **Zatvaranje na staroj ruti (SRV-KONZ-STANJA).** Zadatak traži radnje `withdraw`, `decline` i `cancel` na `work.consultation-slots.patch` i stanja zatvaranja u `.get`, a provjera `contracts:breaking` to odbija. Klijent zasad koristi `work.consultation-slot-close.post` i `work.consultation-slot-details.get`. Treba li to spojiti u staru rutu novom glavnom verzijom ili iznimkom provjere?
+- **Granice teme i razloga.** Opis zadatka traži do 280 znakova; baza i ugovor drže temu do 200 i razlog do 600 znakova (SRV-MENTOR-1). Promjena traži migraciju i novu verziju odgovora `consultation-slot-details`.

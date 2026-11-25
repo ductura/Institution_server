@@ -333,6 +333,10 @@ export type State = {
   deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
     assignmentId: string;
   })[];
+  /** SRV-NF4-IZNIMKA-ZAPIS: the late-submission exceptions, oldest first; never changed or removed. */
+  lateExceptions: (Operations["teacher.late-exception.post"]["success"]["body"]["exception"] & {
+    assignmentId: string;
+  })[];
   /** SRV-1306: the institution's legal holds, oldest first. */
   legalHolds: Operations["institution.legal-holds.get"]["success"]["body"]["holds"];
   /** SRV-1308: the clerks of the registry office (account ids); the fake's clerk is the account without a role. */
@@ -633,6 +637,7 @@ export function createState(
     ],
     submissionNotes: [],
     deadlineExtensions: [],
+    lateExceptions: [],
     legalHolds: [],
     registryClerks: [IDS.noRole],
     studentDataExports: [],

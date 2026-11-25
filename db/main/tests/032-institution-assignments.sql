@@ -306,6 +306,9 @@ ALTER TABLE evidence.assistant_match_explanation DISABLE TRIGGER assistant_match
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
 ALTER TABLE institution.deadline_extension DISABLE TRIGGER deadline_extension_no_truncate;
+-- A late-submission exception (SRV-NF4-IZNIMKA-ZAPIS) and its audit event reference the assignment and are append-only.
+ALTER TABLE institution.late_submission_exception DISABLE TRIGGER late_submission_exception_no_truncate;
+ALTER TABLE audit.late_submission_exception_event DISABLE TRIGGER late_submission_exception_event_no_truncate;
 -- The Merlin package (SRV-1110) and the record of its downloads reference the assignment and refuse TRUNCATE.
 ALTER TABLE institution.merlin_package DISABLE TRIGGER merlin_package_no_truncate;
 ALTER TABLE institution.merlin_package_download DISABLE TRIGGER merlin_package_download_no_truncate;
@@ -348,15 +351,29 @@ ALTER TABLE audit.declaration_question_event DISABLE TRIGGER declaration_questio
 ALTER TABLE declaration.question_answer DISABLE TRIGGER question_answer_no_truncate;
 -- The record of a restore (INT-21) references the revisions of a work; it is append only.
 ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
+-- The ranges of origin of a revision (SRV-KARTA-RASPON) reference the revisions of a work; append only.
+ALTER TABLE evidence.origin_segment DISABLE TRIGGER origin_segment_no_truncate;
 -- The agreed tasks of a consultation record (SRV-MENTOR-1) reference the assignment through the record; they are append only.
 ALTER TABLE collaboration.consultation_task DISABLE TRIGGER consultation_task_no_truncate;
 ALTER TABLE collaboration.consultation_task_mark DISABLE TRIGGER consultation_task_mark_no_truncate;
+-- The versions of the rubric of an assignment (SRV-V17-RUBRIC-DEF) reference the assignment; they are append only.
+ALTER TABLE institution.assignment_rubric_version DISABLE TRIGGER assignment_rubric_version_no_truncate;
+-- The teams of an assignment (SRV-V19-GRUPA-BAZA) reference the assignment; they are append only.
+ALTER TABLE institution.assignment_team_setting DISABLE TRIGGER assignment_team_setting_no_truncate;
+ALTER TABLE institution.work_team DISABLE TRIGGER work_team_no_truncate;
+ALTER TABLE institution.work_team_member_event DISABLE TRIGGER work_team_member_event_no_truncate;
+-- The anonymous peer review of an assignment (SRV-V19-RECENZIJA-BAZA) references the assignment; it is append only.
+ALTER TABLE institution.peer_review_round DISABLE TRIGGER peer_review_round_no_truncate;
+ALTER TABLE institution.peer_review_allocation DISABLE TRIGGER peer_review_allocation_no_truncate;
+ALTER TABLE institution.peer_review DISABLE TRIGGER peer_review_no_truncate;
+ALTER TABLE institution.peer_review_withdrawal DISABLE TRIGGER peer_review_withdrawal_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
   'with the TRUNCATE trigger disabled the same statement empties the versions'
 );
 ALTER TABLE evidence.revision_restore ENABLE TRIGGER revision_restore_no_truncate;
+ALTER TABLE evidence.origin_segment ENABLE TRIGGER origin_segment_no_truncate;
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;
@@ -365,6 +382,8 @@ ALTER TABLE evidence.assistant_match_attachment ENABLE TRIGGER assistant_match_a
 ALTER TABLE evidence.assistant_match_explanation ENABLE TRIGGER assistant_match_explanation_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
+ALTER TABLE institution.late_submission_exception ENABLE TRIGGER late_submission_exception_no_truncate;
+ALTER TABLE audit.late_submission_exception_event ENABLE TRIGGER late_submission_exception_event_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
 ALTER TABLE assistant.assignment_tool_setting ENABLE TRIGGER assignment_tool_setting_no_truncate;
 ALTER TABLE audit.assistant_tool_setting_event ENABLE TRIGGER assistant_tool_setting_event_no_truncate;

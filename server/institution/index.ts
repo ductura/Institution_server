@@ -21,7 +21,11 @@ export {
   type FacultyAssistantSwitch,
 } from "./assistant-setting.ts";
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
-export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
+export {
+  readAssignmentFollowUp,
+  readAssignmentOverview,
+  readTeacherRoster,
+} from "./course-students.ts";
 export {
   type AiPolicy,
   type CourseBody,
@@ -50,6 +54,11 @@ export {
   type StudentAccessLogAnswer,
   type StudentAccessLogEntry,
 } from "./student-access-log-route.ts";
+export {
+  readStudentAssignmentSubmissions,
+  type AssignmentSubmission,
+  type StudentAssignmentSubmissionsAnswer,
+} from "./student-assignment-submissions-route.ts";
 export {
   readStudentSubmission,
   type StudentSubmissionAnswer,

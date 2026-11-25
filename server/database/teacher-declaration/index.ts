@@ -1,5 +1,6 @@
 // SRV-1213: the declaration a student bound to the live submission, read by
-// the course teacher. app.teacher_declaration checks the relationship (C-23)
+// the course teacher or, since SRV-IZJAVA-MENTOR, the mentor of the work.
+// app.teacher_declaration checks the relationship (C-23)
 // and records the opening of a bound declaration in the access log; a refusal
 // (ZD403) is the same 404 as an unknown id.
 import type { WithActor } from "../index.ts";

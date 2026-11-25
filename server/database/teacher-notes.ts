@@ -25,6 +25,8 @@ export type CommentTemplate = {
   readonly templateId: string;
   readonly kind: TemplateKind;
   readonly body: string;
+  /** A short label of the teacher's (SRV-V17-BANK-EDIT); null for none. */
+  readonly label: string | null;
   readonly createdAt: string;
 };
 
@@ -38,6 +40,7 @@ export type Created = {
 };
 export type Listed<T> = { readonly status: "ok"; readonly items: readonly T[] };
 export type Deleted = { readonly status: "deleted" };
+export type Updated = { readonly status: "updated" };
 
 export type TeacherNotes = {
   createNote(
@@ -48,7 +51,20 @@ export type TeacherNotes = {
   ): Promise<Created | Refusal>;
   listNotes(token: string, documentId: string): Promise<Listed<TeacherNote> | Refusal>;
   deleteNote(token: string, noteId: string): Promise<Deleted | Refusal>;
-  createTemplate(token: string, body: string, kind: TemplateKind): Promise<Created | Refusal>;
+  createTemplate(
+    token: string,
+    body: string,
+    kind: TemplateKind,
+    label?: string | null,
+  ): Promise<Created | Refusal>;
+  /** Replaces text, kind and label of the caller's own entry; another's and a missing one are not_found. */
+  updateTemplate(
+    token: string,
+    templateId: string,
+    body: string,
+    kind: TemplateKind,
+    label: string | null,
+  ): Promise<Updated | Refusal>;
   listTemplates(token: string): Promise<Listed<CommentTemplate> | Refusal>;
   deleteTemplate(token: string, templateId: string): Promise<Deleted | Refusal>;
 };
@@ -60,9 +76,10 @@ const SQL = {
     'SELECT note_id AS "noteId", body, anchor, created_at AS "createdAt" FROM collaboration.list_teacher_notes($1)',
   deleteNote: "SELECT collaboration.delete_teacher_note($1::uuid)",
   createTemplate:
-    'SELECT template_id AS id, created_at AS "createdAt" FROM collaboration.create_comment_template($1, $2)',
+    'SELECT template_id AS id, created_at AS "createdAt" FROM collaboration.create_comment_template($1, $2, $3)',
+  updateTemplate: "SELECT collaboration.update_comment_template($1::uuid, $2, $3, $4)",
   listTemplates:
-    'SELECT template_id AS "templateId", kind, body, created_at AS "createdAt" FROM collaboration.list_comment_templates()',
+    'SELECT template_id AS "templateId", kind, body, label, created_at AS "createdAt" FROM collaboration.list_comment_templates()',
   deleteTemplate: "SELECT collaboration.delete_comment_template($1::uuid)",
 } as const;
 
@@ -120,6 +137,7 @@ function toTemplate(row: Record<string, unknown>): CommentTemplate {
     templateId: text(row.templateId),
     kind: row.kind,
     body: text(row.body),
+    label: row.label === null ? null : text(row.label),
     createdAt: iso(row.createdAt),
   };
 }
@@ -159,8 +177,13 @@ export function createTeacherNotes(withActor: WithActor): TeacherNotes {
         await rowsOf(tx, SQL.deleteNote, [noteId]);
         return { status: "deleted" as const };
       }),
-    createTemplate: (token, body, kind) =>
-      run(token, async (tx) => created(await rowsOf(tx, SQL.createTemplate, [body, kind]))),
+    createTemplate: (token, body, kind, label = null) =>
+      run(token, async (tx) => created(await rowsOf(tx, SQL.createTemplate, [body, kind, label]))),
+    updateTemplate: (token, templateId, body, kind, label) =>
+      run(token, async (tx) => {
+        await rowsOf(tx, SQL.updateTemplate, [templateId, body, kind, label]);
+        return { status: "updated" as const };
+      }),
     listTemplates: (token) =>
       run(token, async (tx) => ({
         status: "ok" as const,

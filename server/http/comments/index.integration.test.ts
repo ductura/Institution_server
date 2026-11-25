@@ -13,6 +13,7 @@ import {
 const ORIGIN = "https://ductura.example.invalid";
 const TOKEN = "A".repeat(43);
 const ID = "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e01";
+const ID2 = "7b6c5d4e-3f2a-4b1c-8d9e-0a1b2c3d4e02";
 const AT = new Date("2026-11-21T09:00:00.000Z");
 const ANCHOR = { nodeId: ID, quote: "odlomak", prefix: "", suffix: "", startHint: 0, endHint: 7 };
 
@@ -171,11 +172,23 @@ it("discards a draft with 204 and answers 404 for one that is not the caller's",
 
 it("serves the comment bank: list, save, delete; the text rules apply", async () => {
   query.mockResolvedValueOnce(
-    rows({ templateId: ID, kind: "must", body: "Navedite izvor.", createdAt: AT }),
+    rows(
+      { templateId: ID, kind: "must", body: "Navedite izvor.", label: "Izvor", createdAt: AT },
+      { templateId: ID2, kind: "q", body: "Zašto?", label: null, createdAt: AT },
+    ),
   );
   const listed = await fetch(`${base()}/teacher/comment-bank`, { headers: cookie });
   expect(await listed.json()).toEqual({
-    entries: [{ id: ID, kind: "must", text: "Navedite izvor.", createdAt: AT.toISOString() }],
+    entries: [
+      {
+        id: ID,
+        kind: "must",
+        text: "Navedite izvor.",
+        label: "Izvor",
+        createdAt: AT.toISOString(),
+      },
+      { id: ID2, kind: "q", text: "Zašto?", label: null, createdAt: AT.toISOString() },
+    ],
   });
   query.mockResolvedValueOnce(rows({ id: ID, createdAt: AT }));
   const saved = await send("POST", "/teacher/comment-bank", {
@@ -194,6 +207,63 @@ it("serves the comment bank: list, save, delete; the text rules apply", async ()
   expect((await send("DELETE", `/teacher/comment-bank/${ID}`)).status).toBe(204);
   query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD403" }));
   expect((await send("DELETE", `/teacher/comment-bank/${ID}`)).status).toBe(404);
+});
+
+it("saves a bank entry with its label, or none", async () => {
+  query.mockResolvedValueOnce(rows({ id: ID, createdAt: AT }));
+  expect(
+    (await send("POST", "/teacher/comment-bank", { text: "Tekst.", kind: "q", label: "Oznaka" }))
+      .status,
+  ).toBe(201);
+  expect(query.mock.calls.at(-1)![1]).toEqual(["Tekst.", "q", "Oznaka"]);
+  query.mockResolvedValueOnce(rows({ id: ID, createdAt: AT }));
+  await send("POST", "/teacher/comment-bank", { text: "Tekst.", kind: "q" });
+  expect(query.mock.calls.at(-1)![1]).toEqual(["Tekst.", "q", null]);
+  const before = query.mock.calls.length;
+  for (const label of ["", "   ", "x".repeat(41), "a\u0000b", "e\u0301", "a\u202eb", 7]) {
+    expect(
+      (await send("POST", "/teacher/comment-bank", { text: "Tekst.", kind: "q", label })).status,
+    ).toBe(422);
+  }
+  expect(query.mock.calls.length).toBe(before);
+});
+
+it("replaces a bank entry: the body goes to the database, the answer is 204, another's is 404", async () => {
+  query.mockResolvedValueOnce(rows({}));
+  const put = await send("PUT", `/teacher/comment-bank/${ID}`, {
+    text: "Novi tekst.",
+    kind: "sugg",
+    label: "Nova",
+  });
+  expect(put.status).toBe(204);
+  expect(query.mock.calls.at(-1)![1]).toEqual([ID, "Novi tekst.", "sugg", "Nova"]);
+  query.mockResolvedValueOnce(rows({}));
+  expect((await send("PUT", `/teacher/comment-bank/${ID}`, { text: "T.", kind: "q" })).status).toBe(
+    204,
+  );
+  expect(query.mock.calls.at(-1)![1]).toEqual([ID, "T.", "q", null]);
+  query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD403" }));
+  expect((await send("PUT", `/teacher/comment-bank/${ID}`, { text: "T.", kind: "q" })).status).toBe(
+    404,
+  );
+  query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "XX000" }));
+  expect((await send("PUT", `/teacher/comment-bank/${ID}`, { text: "T.", kind: "q" })).status).toBe(
+    503,
+  );
+  const before = query.mock.calls.length;
+  expect(
+    (await send("PUT", "/teacher/comment-bank/nije-id", { text: "T.", kind: "q" })).status,
+  ).toBe(404);
+  expect((await send("PUT", `/teacher/comment-bank/${ID}`, { text: " ", kind: "q" })).status).toBe(
+    422,
+  );
+  expect(
+    (await send("PUT", `/teacher/comment-bank/${ID}`, { text: "T.", kind: "loud" })).status,
+  ).toBe(422);
+  expect(
+    (await send("PUT", `/teacher/comment-bank/${ID}`, { text: "T.", kind: "q", label: "" })).status,
+  ).toBe(422);
+  expect(query.mock.calls.length).toBe(before);
 });
 
 it("marks a work reviewed with the revision the database gives, never one from the body", async () => {
@@ -268,6 +338,15 @@ it.each([
 it("refuses a missing session and a wrong media type, and maps the database's refusals", async () => {
   expect((await fetch(`${base()}${DRAFTS}`)).status).toBe(401);
   expect((await fetch(`${base()}/teacher/comment-bank`)).status).toBe(401);
+  expect(
+    (
+      await fetch(`${base()}/teacher/comment-bank/${ID}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", origin: ORIGIN },
+        body: JSON.stringify({ text: "T.", kind: "q" }),
+      })
+    ).status,
+  ).toBe(401);
   expect((await send("POST", DRAFTS, "{}", { "content-type": "text/plain" })).status).toBe(415);
   expect((await send("POST", DRAFTS, "{")).status).toBe(400);
   expect(query).not.toHaveBeenCalled();

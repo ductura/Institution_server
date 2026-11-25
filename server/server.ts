@@ -30,7 +30,9 @@ import {
   createStaffAffiliationRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentConversationsRouteFor,
   createStudentAssignmentsRouteFor,
   createStudentMentoredAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
@@ -66,6 +68,8 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
+  createWorkTeamRoutesFor,
   createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -118,6 +122,11 @@ import {
   createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
+  createAssignmentRubricRoutesFor,
+  createWorkRubricRoutesFor,
+  createWorkTemplateRoutesFor,
+  createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -126,6 +135,7 @@ import {
   createSubmissionRouteFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
+  createLateSubmissionRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -342,6 +352,16 @@ async function main(): Promise<void> {
       ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       ...createMilestoneTemplateRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
+      ...createAssignmentRubricRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
+      ...createWorkRubricRoutesFor(databases.main),
+      // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
+      ...createWorkTemplateRoutesFor(databases.main),
+      // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.
+      ...createAssignmentTemplateRoutesFor(databases.main),
+      // SRV-V17-FORMAT-RULES: the format rules of an assignment for the check before submission.
+      ...createFormatRulesRoutesFor(databases.main),
       // SRV-1606: the teacher returns the whole submitted work for revision.
       ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
@@ -385,6 +405,8 @@ async function main(): Promise<void> {
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
+      ...createPracticeJournalRoutesFor(databases.main),
+      ...createWorkTeamRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
@@ -396,6 +418,8 @@ async function main(): Promise<void> {
       ...createDeclarationRequiredRoutesFor(databases.main),
       // SRV-IZJAVA-PITANJE: the teacher's optional question with the declaration.
       ...createDeclarationQuestionRoutesFor(databases.main),
+      // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
+      ...createLateSubmissionRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
@@ -406,6 +430,9 @@ async function main(): Promise<void> {
       // SRV-22: the student's own submission state and word range of one
       // assignment, the receipt byte for byte as the submission bound it.
       ...createStudentSubmissionRoutesFor(databases.main),
+      // SRV-9C, INT-31: the PDF of the receipt, for the student and for the
+      // teacher, its verification link on the same origin as the pipeline.
+      ...createReceiptPdfRoutesFor(databases.main, APP_ORIGIN),
       // SRV-NG: the notice of the current version for a student of the course (E-6).
       createStudentNoticeRouteFor(databases.main),
       // Faza 3 readiness: the student's assignment list (DAN-803), own access log
@@ -465,6 +492,8 @@ async function main(): Promise<void> {
       ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
+      // SRV-ASIST-CITANJE: the student's own assistant conversations of an assignment.
+      createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server

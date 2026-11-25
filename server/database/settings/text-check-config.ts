@@ -1,4 +1,4 @@
-import { enabledCheckIdsFor, lektaProfileOf } from "../../domain/index.ts";
+import { enabledCheckIdsFor, lektaProfileOf, settingOf } from "../../domain/index.ts";
 
 import type { WithActor } from "../index.ts";
 
@@ -13,7 +13,22 @@ const IN_WORKSPACE = `SELECT 1 FROM app.student_workspace() WHERE assignment_id 
   UNION ALL SELECT 1 FROM app.student_mentored_workspace() WHERE assignment_id = $1::uuid`;
 const SETTINGS = "SELECT key, value FROM settings.read_institution_values()";
 
-export type TextCheckConfig = { enabledCheckIds: string[]; lektaProfileId: string | null };
+export type TextCheckConfig = {
+  enabledCheckIds: string[];
+  lektaProfileId: string | null;
+  citationStyle: string;
+};
+
+// citation.style of the institution: a stored value outside the catalogue, or no
+// row, gives the catalogue default (fpzg). Unlike the Lekta profile, the default
+// is shown: a student always formats in some style.
+function citationStyleOf(stored: unknown): string {
+  const definition = settingOf("citation.style");
+  if (definition?.kind !== "enum") throw new Error("citation.style is not an enum setting");
+  return typeof stored === "string" && definition.values.includes(stored)
+    ? stored
+    : definition.default;
+}
 
 /** The configuration, or null when the assignment is not in the caller's workspace. */
 export async function readTextCheckConfig(
@@ -27,6 +42,7 @@ export async function readTextCheckConfig(
     const { rows } = await tx.query<{ key: string | null; value: unknown }>(SETTINGS);
     // No stored profile row: null. The catalogue default is not the institution's choice.
     const lektaProfileId = lektaProfileOf(rows.find((row) => row.key === "lekta.profile")?.value);
-    return { enabledCheckIds: enabledCheckIdsFor(lektaProfileId), lektaProfileId };
+    const citationStyle = citationStyleOf(rows.find((row) => row.key === "citation.style")?.value);
+    return { enabledCheckIds: enabledCheckIdsFor(lektaProfileId), lektaProfileId, citationStyle };
   });
 }

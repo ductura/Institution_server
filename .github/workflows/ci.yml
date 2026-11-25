@@ -49,18 +49,20 @@ jobs:
           fi
 
   checks:
-    name: Provjere i testovi (${{ matrix.shard }}/${{ strategy.job-total }})
+    name: Provjere i testovi (${{ matrix.leg }})
     runs-on: ubuntu-latest
     strategy:
-      # Three legs split the vitest unit and integration projects by file
-      # (vitest --shard). The static checks run on leg 1 (types, ledger, lint,
-      # format), the property tests on legs 2 and 3 (twice per run, as
-      # before). ZEL-CI-SRV: equality, the release dry run, contract check and
-      # both images run once, on leg 1, which has the least test time; each
-      # leg used to repeat them. Every check still runs on every run.
+      # SRV-CI-UBRZANJE: leg "provjere" runs every static check (types,
+      # ledger, lint, format, equality, the release dry run, the contract
+      # check and both images) in parallel with the tests, and four legs
+      # split the vitest unit and integration projects by file (vitest
+      # --shard, leg i/4). The property tests run on legs 3/4 and 4/4 (twice per
+      # run, as before). All legs are one job, so ci-ok, which knows exactly
+      # scope, checks and database, sees one result for them, failed when any
+      # leg failed. Every check still runs on every run.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        leg: [provjere, 1/4, 2/4, 3/4, 4/4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -72,14 +74,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Provjera tipova
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: pnpm typecheck
       # D-91 (1), S-0.13: db/main/migrations.sum matches the files, and no
       # migration of the base (PR base, or main before this push) changed or
       # disappeared. On a PR the checkout is the merge commit, so main's newer
       # migrations count. Ported from the Ductus step "Migration ledger (D-91)".
       - name: Knjiga migracija (D-91)
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
@@ -95,39 +97,41 @@ jobs:
             node scripts/db/migrations-ledger.ts
           fi
       - name: Lint
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: pnpm lint
       - name: Formatiranje
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: pnpm format:check
       - name: Unit testovi
+        if: matrix.leg != 'provjere'
         env:
-          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          SHARD: ${{ matrix.leg }}
         run: pnpm test:unit --shard="$SHARD"
       # SRV-1512 (plan M7.9, R-07): the text of an invented work in the API, the
       # export snapshot and the DOCX must be the same; a difference fails the build.
       # Its own step, so the check is visible and stays required through ci-ok.
       - name: Test jednakosti prikaza (R-07)
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: pnpm test:equality
       - name: Svojstveni testovi
-        if: matrix.shard != 1
+        if: matrix.leg == '3/4' || matrix.leg == '4/4'
         run: pnpm test:property
       - name: Integracijski testovi
+        if: matrix.leg != 'provjere'
         env:
-          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+          SHARD: ${{ matrix.leg }}
         run: pnpm test:integration --shard="$SHARD"
       # U10-b (DAN-742): the whole path of publish.yml except the upload, with
       # no token: stage and check, pack, check the unpacked tarball, and a dry
       # run of `npm publish` of each tarball.
       - name: Probna objava
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: |
           pnpm release:check
           pnpm release:tarball contracts test-fakes
           for file in dist/release/tarball/*.tgz; do npm publish --dry-run --ignore-scripts "$file"; done
       - name: Zaštita od lomljenja ugovora
-        if: github.event_name == 'pull_request' && matrix.shard == 1
+        if: github.event_name == 'pull_request' && matrix.leg == 'provjere'
         run: |
           git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
           pnpm contracts:breaking FETCH_HEAD
@@ -136,7 +140,7 @@ jobs:
       # checks, not a job of its own: ci-ok runs from main and refuses an
       # unknown job. Also on the docs profile, an accepted cost.
       - name: Slika web procesa (DAN-893)
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile -t ductura-web:ci .
           [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
@@ -157,7 +161,7 @@ jobs:
           docker stop ductura-web
           [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-web)" = 0 ]
       - name: Slika testnog servera (DAN-938)
-        if: matrix.shard == 1
+        if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile --target test-server -t ductura-test-server:ci .
           [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
@@ -184,12 +188,12 @@ jobs:
     if: needs.scope.outputs.profile == 'full'
     runs-on: ubuntu-latest
     strategy:
-      # Two legs split the vitest database and integration-pg projects by
+      # Three legs split the vitest database and integration-pg projects by
       # file (vitest --shard) and the pgTAP files of the main database
-      # (scripts/db/native-db.ts, SHARD); everything else runs on both legs.
+      # (scripts/db/native-db.ts, SHARD); everything else runs on every leg.
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     env:
       PGBIN: /usr/lib/postgresql/17/bin
       PGPORT: "5499"
@@ -414,6 +418,25 @@ jobs:
           PATH="$PGBIN:$PATH" node scripts/stack/vs1-commit-check.ts
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
+      # ZEL-SRV-PGCTL: diagnostics only. `pg_ctl: could not start server` does not
+      # say why; the postmaster logs of every cluster of this job do. Also the
+      # listeners and the ephemeral port range: 54329, 54330 and 54360 lie inside
+      # it (32768-60999), so an outgoing connection can hold such a port.
+      - name: Dijagnostika PostgreSQL-a (zadnjih 100 redaka loga)
+        if: failure()
+        run: |
+          for log in "$RUNNER_TEMP/pg.log" "$RUNNER_TEMP/main.log" "$RUNNER_TEMP/logs.log" "$RUNNER_TEMP/native.log" "$GITHUB_WORKSPACE/.stack/vs1/postgres.log"; do
+            echo "::group::$log"
+            if [ -f "$log" ]; then tail -n 100 "$log"; else echo "(no such log)"; fi
+            echo "::endgroup::"
+          done
+          echo "::group::clusters, ports, shared memory"
+          show() { "$@" || echo "($* exited $?)"; }
+          show pgrep -a postgres
+          show cat /proc/sys/net/ipv4/ip_local_port_range
+          show ss -tanp
+          show ipcs -m
+          echo "::endgroup::"
       # Also after a failed up, but not when the job stopped before it (then
       # nothing of the stack runs and pnpm may not even be installed).
       - name: Gašenje stoga VS-1 (pnpm stack:vs1 down)

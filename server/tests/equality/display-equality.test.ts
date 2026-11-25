@@ -927,7 +927,7 @@ describe("the check is required in CI (SRV-1512 acceptance 1)", () => {
       workflow.indexOf("\n  database:\n"),
     );
     expect(checks).toContain(
-      "      - name: Test jednakosti prikaza (R-07)\n        if: matrix.shard == 1\n        run: pnpm test:equality\n",
+      "      - name: Test jednakosti prikaza (R-07)\n        if: matrix.leg == 'provjere'\n        run: pnpm test:equality\n",
     );
     expect(workflow).toMatch(/needs: \[scope, checks, database\]/u);
     const scripts = (

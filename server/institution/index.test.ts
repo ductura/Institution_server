@@ -45,12 +45,16 @@ describe("server/institution public interface", () => {
       // LOK-SRV-2: the administrator's reads (institution-courses.ts, teacher-roles.ts).
       "readAcademicYears",
       "readAssignmentCurrentVersion",
+      // SRV-NF4-POTVRDE-DORADE: notice and revision follow-up beside the overview.
+      "readAssignmentFollowUp",
       "readAssignmentOverview",
       // SRV-ADMIN-3: the faculty's assistant setting, read only (assistant-setting.ts).
       "readAssistantSetting",
       "readFacultyRules",
       "readInstitutionCourses",
       "readStudentAccessLog",
+      // SRV-NF1-PREDANO: when each own submission was confirmed.
+      "readStudentAssignmentSubmissions",
       "readStudentRequirements",
       "readStudentSubmission",
       "readTeacherRoles",

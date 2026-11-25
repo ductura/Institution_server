@@ -338,9 +338,9 @@ describe("infra/web/Dockerfile", () => {
     expect(step).toContain('"DUCTURA_MODE=test", "HOST=0.0.0.0", "NODE_ENV=test", "PORT=4000"');
     expect(step).toContain("= healthy ]");
     expect(step).toContain("docker inspect -f '{{.State.ExitCode}}' ductura-test-server)\" = 0 ]");
-    // ZEL-CI-SRV: once per run, on leg 1 of checks; no other condition.
-    expect(step).toContain("\n        if: matrix.shard == 1\n");
-    expect(step.replaceAll("\n        if: matrix.shard == 1\n", "\n")).not.toMatch(
+    // ZEL-CI-SRV: once per run, on the leg provjere of checks; no other condition.
+    expect(step).toContain("\n        if: matrix.leg == 'provjere'\n");
+    expect(step.replaceAll("\n        if: matrix.leg == 'provjere'\n", "\n")).not.toMatch(
       /\n {8}if:|continue-on-error|\|\| true|set \+e/,
     );
   });
@@ -352,9 +352,9 @@ describe("infra/web/Dockerfile", () => {
     expect(step).toContain("docker run -d");
     expect(step).toContain("= healthy ]");
     expect(step).toContain(`curl -fsS "http://127.0.0.1:4000${HEALTH}"`);
-    // ZEL-CI-SRV: once per run, on leg 1 of checks; no other condition.
-    expect(step).toContain("\n        if: matrix.shard == 1\n");
-    expect(step.replaceAll("\n        if: matrix.shard == 1\n", "\n")).not.toMatch(
+    // ZEL-CI-SRV: once per run, on the leg provjere of checks; no other condition.
+    expect(step).toContain("\n        if: matrix.leg == 'provjere'\n");
+    expect(step.replaceAll("\n        if: matrix.leg == 'provjere'\n", "\n")).not.toMatch(
       /\n {8}if:|continue-on-error|\|\| true|set \+e/,
     );
   });

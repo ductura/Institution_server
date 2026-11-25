@@ -129,6 +129,30 @@ it("keeps a draft from the student until it is published, keeps the bank private
       status: "not_found",
     });
 
+    // SRV-V17-BANK-EDIT: the author edits text, kind and label; no one else can.
+    const listed = await notes.listTemplates(TEACHER);
+    if (listed.status !== "ok") throw new Error("bank not listed");
+    const entryId = listed.items[0]!.templateId;
+    expect(listed.items[0]!.label).toBeNull();
+    for (const other of [OTHER_TEACHER, STUDENT, OTHER_STUDENT, OTHER_TENANT]) {
+      expect(await notes.updateTemplate(other, entryId, "Tuđe.", "q", "Tuđa")).toEqual({
+        status: "not_found",
+      });
+    }
+    expect(
+      await notes.updateTemplate(TEACHER, entryId, "Dopunite izvor.", "sugg", "Izvor"),
+    ).toEqual({ status: "updated" });
+    expect(await notes.listTemplates(TEACHER)).toMatchObject({
+      items: [{ templateId: entryId, body: "Dopunite izvor.", kind: "sugg", label: "Izvor" }],
+    });
+    expect(await notes.updateTemplate(TEACHER, entryId, "T.", "q", "x".repeat(41))).toEqual({
+      status: "invalid",
+    });
+    expect(await notes.updateTemplate(TEACHER, entryId, "T.", "q", null)).toEqual({
+      status: "updated",
+    });
+    expect(await notes.listTemplates(TEACHER)).toMatchObject({ items: [{ label: null }] });
+
     // N-05: the reviewed revision is the teacher's own.
     expect(await delay.markReviewed(TEACHER, WORK)).toEqual({ status: "conflict" });
     await db.exec(`

@@ -80,4 +80,79 @@ describe("origin composition port", () => {
       status: "unavailable",
     });
   });
+
+  const BLOCK = "1b0c2d3e-4f50-4a61-8b72-0c1d2e3f4a51";
+  const row = (extra: Record<string, unknown> = {}) => ({
+    revision: "7",
+    blockId: BLOCK,
+    start: 0,
+    end: 40,
+    kind: "assistant_match",
+    segmentRef: "odlomak-1",
+    ...extra,
+  });
+
+  it("reads the ranges of a revision with the revision as a number", async () => {
+    const { port: origin, seen } = port([
+      row(),
+      row({ start: 40, end: 52, kind: "typed", segmentRef: null }),
+    ]);
+    expect(await origin.segments(TOKEN, "izmisljeni-rad-0001", 9)).toEqual({
+      status: "ok",
+      revision: 7,
+      segments: [
+        { blockId: BLOCK, start: 0, end: 40, kind: "assistant_match", segmentRef: "odlomak-1" },
+        { blockId: BLOCK, start: 40, end: 52, kind: "typed", segmentRef: null },
+      ],
+    });
+    expect(seen[0]!.values).toEqual(["izmisljeni-rad-0001", "9"]);
+  });
+
+  it("answers no revision and no ranges while none is recorded, and asks for the latest with null", async () => {
+    const { port: origin, seen } = port([]);
+    expect(await origin.segments(TOKEN, "izmisljeni-rad-0001", null)).toEqual({
+      status: "ok",
+      revision: null,
+      segments: [],
+    });
+    expect(seen[0]!.values).toEqual(["izmisljeni-rad-0001", null]);
+  });
+
+  it.each([
+    ["two revisions in one answer", [row(), row({ revision: "6" })]],
+    ["an empty range", [row({ end: 0 })]],
+    ["a kind outside the list", [row({ kind: "dictated" })]],
+    ["a block that is not a node id", [row({ blockId: "odlomak" })]],
+    ["a segmentRef with a control character", [row({ segmentRef: "a\u0007" })]],
+    ["a negative revision", [row({ revision: "-1" })]],
+  ])("answers unavailable for %s", async (_name, rows) => {
+    const { port: origin } = port(rows);
+    expect(await origin.segments(TOKEN, "izmisljeni-rad-0001", null)).toEqual({
+      status: "unavailable",
+    });
+  });
+
+  it("records the ranges of a revision once; a second time is a conflict", async () => {
+    const segments = [{ blockId: BLOCK, start: 0, end: 40, kind: "typed" as const }];
+    const recorded = port([{ recorded: 1 }]);
+    expect(await recorded.port.recordSegments(TOKEN, "izmisljeni-rad-0001", 7, segments)).toEqual({
+      status: "ok",
+      recorded: 1,
+    });
+    expect(recorded.seen[0]!.values).toEqual([
+      "izmisljeni-rad-0001",
+      "7",
+      JSON.stringify(segments),
+    ]);
+    for (const code of ["ZD409", "23505"]) {
+      const again = port(sqlError(code));
+      expect(await again.port.recordSegments(TOKEN, "izmisljeni-rad-0001", 7, segments)).toEqual({
+        status: "conflict",
+      });
+    }
+    const refused = port(sqlError("ZD403"));
+    expect(await refused.port.recordSegments(TOKEN, "izmisljeni-rad-0001", 7, segments)).toEqual({
+      status: "not_found",
+    });
+  });
 });

@@ -29,7 +29,8 @@
           "id": "00000000-0000-4000-8000-000000000001",
           "startsAt": "2026-12-04T12:00:00.000Z",
           "proposedAt": "2026-11-20T11:11:00.000Z",
-          "state": "confirmed"
+          "state": "confirmed",
+          "topic": null
         }
       }
     },
@@ -62,7 +63,8 @@
           "id": "00000000-0000-4000-8000-000000000001",
           "startsAt": "2026-12-05T13:00:00.000Z",
           "proposedAt": "2026-11-20T11:11:00.000Z",
-          "state": "countered"
+          "state": "countered",
+          "topic": null
         }
       }
     },
@@ -94,7 +96,8 @@
           "id": "00000000-0000-4000-8000-000000000001",
           "startsAt": "2026-12-05T13:00:00.000Z",
           "proposedAt": "2026-11-20T11:11:00.000Z",
-          "state": "confirmed"
+          "state": "confirmed",
+          "topic": null
         }
       }
     },

@@ -74,6 +74,14 @@ export {
   milestoneTemplateRoutes,
 } from "./milestone-template.ts";
 export {
+  WORK_TEMPLATE_TYPES,
+  WorkTemplateInput,
+  WorkTemplateType,
+  workTemplateRoutes,
+} from "./work-template.ts";
+export { AssignmentTemplateInput, assignmentTemplateRoutes } from "./assignment-template.ts";
+export { FormatRules, formatRulesRoutes, studentAssignmentFormatRulesGet } from "./format-rules.ts";
+export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,
@@ -128,6 +136,7 @@ export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
+export { lateSubmissionRoutes } from "./late-submission.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {
@@ -137,6 +146,13 @@ export {
 } from "./assistant-setting.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export { workRubricRoutes } from "./work-rubric.ts";
+export {
+  AssignmentRubricInput,
+  assignmentRubricRoutes,
+  RUBRIC_LEVELS,
+  RUBRIC_MAX_CRITERIA,
+} from "./assignment-rubric.ts";
 export {
   courseAggregateGet,
   CourseAggregateParams,
@@ -175,6 +191,20 @@ export { StudentWork, studentWorkRoutes } from "./student-work.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
+  institutionAssignmentTeamSettingPut,
+  studentWorkTeamContributionGet,
+  studentWorkTeamPost,
+  teacherWorkTeamContributionGet,
+  teacherWorkTeamMemberPost,
+  WORK_TEAM_CATEGORIES,
+  WORK_TEAM_FORMATIONS,
+  WORK_TEAM_NOTICE,
+  WORK_TEAM_SIZE_MAX,
+  WORK_TEAM_SIZE_MIN,
+  WORK_TEAM_WORK_STATES,
+  workTeamRoutes,
+} from "./work-team.ts";
+export {
   MentorNoteInput,
   MentorshipNoteParams,
   mentorNotesGet,
@@ -199,3 +229,22 @@ export {
   workAccessGet,
 } from "./access-log.ts";
 export { IDENTITY_CHECKS, studentDataExportRoutes } from "./student-data-export.ts";
+export {
+  PRACTICE_ENTRIES_MAX,
+  PRACTICE_PLACEMENTS_MAX,
+  PRACTICE_SIGNOFFS_MAX,
+  practiceEntriesPost,
+  practiceJournalRoutes,
+  practicePlacementsPost,
+  practiceSignoffsPost,
+} from "./practice-journal.ts";
+export {
+  PEER_REVIEW_ALLOCATIONS_MAX,
+  PEER_REVIEW_RUBRICS_MAX,
+  PEER_REVIEW_MIN_SUBMISSIONS,
+  PEER_REVIEW_PER_STUDENT,
+  peerReviewMinSubmissions,
+  peerReviewRoundPut,
+  peerReviewRoutes,
+  studentPeerReviewPost,
+} from "./peer-review.ts";

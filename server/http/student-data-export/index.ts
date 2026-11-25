@@ -21,6 +21,7 @@ import { Value } from "@sinclair/typebox/value";
 import { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY, ROUTES } from "../../contracts/index.ts";
 import {
   createStudentDataExports,
+  type StudentDataExportRow,
   type StudentDataExports,
   type WithActor,
 } from "../../database/index.ts";
@@ -79,8 +80,22 @@ export type StudentDataExportRouteOptions = {
 /** The stored reference of the identity check: how it was checked and its reference. */
 const identityCheckRef = (checkedBy: string, note: string) => `${checkedBy}: ${note}`;
 
-function listRoute({ exports }: StudentDataExportRouteOptions): Route {
-  const { contract, body } = contractOf("institution.student-data-exports.get");
+/**
+ * A read of the port's list: the list itself (without the person) or, for
+ * SRV-NF7-IZVOZ-STUDENT, the person and state of each export. The same reach,
+ * the same refusals; an answer outside the contract is 503.
+ */
+function listRoute(
+  { exports }: StudentDataExportRouteOptions,
+  id = "institution.student-data-exports.get",
+  shape: (row: StudentDataExportRow) => Record<string, unknown> = (row) => ({
+    exportId: row.exportId,
+    state: row.state,
+    requestedAt: row.requestedAt,
+    expiresAt: row.expiresAt,
+  }),
+): Route {
+  const { contract, body } = contractOf(id);
   return {
     contract,
     async handle(request, response) {
@@ -96,7 +111,7 @@ function listRoute({ exports }: StudentDataExportRouteOptions): Route {
           const [status, code] = refusalOf(result.status);
           return sendProblem(response, status, code);
         }
-        const answer = { exports: result.exports };
+        const answer = { exports: result.exports.map(shape) };
         if (Value.Check(body!, answer)) return sendJson(response, 200, answer);
         reportServerError(
           "route",
@@ -249,9 +264,19 @@ function downloadRoute({ exports, storage }: StudentDataExportRouteOptions): Rou
   };
 }
 
-/** The four routes over one port: the list, the request, the approval, the download. */
+/** The routes over one port: the list, who each export is for, the request, the approval, the download. */
 export function createStudentDataExportRoutes(options: StudentDataExportRouteOptions): Route[] {
-  return [listRoute(options), requestRoute(options), approveRoute(options), downloadRoute(options)];
+  return [
+    listRoute(options),
+    listRoute(options, "institution.student-data-export-students.get", (row) => ({
+      exportId: row.exportId,
+      studentId: row.studentId,
+      state: row.state,
+    })),
+    requestRoute(options),
+    approveRoute(options),
+    downloadRoute(options),
+  ];
 }
 
 /** The routes over main's application withActor and the package storage; server/server.ts mounts them. */
