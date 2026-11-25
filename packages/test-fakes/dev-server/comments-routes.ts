@@ -25,6 +25,7 @@ type BankEntry = {
   readonly id: string;
   readonly kind: "must" | "sugg" | "q" | "praise";
   readonly text: string;
+  readonly label: string | null;
   readonly createdAt: string;
 };
 
@@ -182,10 +183,21 @@ export const COMMENTS_HANDLERS: Handlers = {
       id: nextId(state),
       kind: body.kind,
       text: body.text,
+      label: body.label ?? null,
       createdAt: now.toISOString(),
     };
     bank.push(entry);
     return { status: 201, body: { id: entry.id, createdAt: entry.createdAt } };
+  },
+  "teacher.comment-bank-entry.put": ({ state, account, params, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const bank = bankOf(state, account.id);
+    const at = bank.findIndex((e) => e.id === params.entryId);
+    if (at === -1) return { error: "not_found" };
+    if (body.text.trim() === "" || (body.label ?? "x").trim() === "")
+      return { error: "invalid_input" };
+    bank[at] = { ...bank[at]!, kind: body.kind, text: body.text, label: body.label ?? null };
+    return { status: 204 };
   },
   "teacher.comment-bank.delete": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
