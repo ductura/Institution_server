@@ -103,6 +103,7 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createAnalysisRoutesFor,
   createProblemReportInboxRoutesFor,
   createAdminActionLogRouteFor,
   createRetentionRouteFor,
@@ -1571,6 +1572,25 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-V15-HTTP: the stateless analysis, mounted switched on in this file; the
+  // session is read and nothing else of the database, so the old cookie is 401.
+  "analysis.catalogue.get": {
+    method: "GET",
+    path: "/api/v1/analysis/catalogue",
+    body: () => undefined,
+    live: 200,
+  },
+  "analysis.runs.post": {
+    path: "/api/v1/analysis/runs",
+    body: () => ({
+      analysisId: "descriptive",
+      analysisVersion: "1.0.0",
+      variables: ["x"],
+      columns: [{ name: "x", kind: "numeric" }],
+      rows: [[1], [2], [3]],
+    }),
+    live: 200,
+  },
   "teacher.working-criteria.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001/working-criteria",
@@ -2448,6 +2468,7 @@ const FACTORIES = [
   "createTeacherDeclarationRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
+  "createAnalysisRoutesFor",
   "createProblemReportInboxRoutesFor",
   "createAdminActionLogRouteFor",
   "createRetentionRouteFor",
@@ -2587,6 +2608,7 @@ const MOUNTED = [
   createTeacherDeclarationRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
+  ...createAnalysisRoutesFor(databases.main, { enabled: true }),
   ...createProblemReportInboxRoutesFor(databases.main),
   createAdminActionLogRouteFor(databases.main),
   createRetentionRouteFor(databases.main),
