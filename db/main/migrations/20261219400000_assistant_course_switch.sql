@@ -71,8 +71,9 @@ CREATE POLICY assistant_course_switch_event_owner ON audit.assistant_course_swit
 -- (b): the latest service version has a cap, and the latest version of the
 -- institution has every limit and the reservation. Exactly the condition under
 -- which assistant.begin_request does not answer ai_disabled; 254 checks both
--- agree. Called only by the functions below, never by a role.
-CREATE FUNCTION app.assistant_cost_published(p_institution_id uuid) RETURNS boolean
+-- agree. Called only by the functions below, never by a role. The
+-- institution is the session's (U1), never the caller's.
+CREATE FUNCTION app.assistant_cost_published() RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT coalesce((SELECT v.cap_micro IS NOT NULL
@@ -82,16 +83,16 @@ AS $$
      AND coalesce((SELECT v.cap_micro IS NOT NULL AND v.student_day_micro IS NOT NULL
                           AND v.student_assignment_day_micro IS NOT NULL AND v.reserve_micro IS NOT NULL
                      FROM assistant.cost_config_version v
-                    WHERE v.institution_id = p_institution_id
+                    WHERE v.institution_id = app.current_institution_id()
                     ORDER BY v.version_no DESC LIMIT 1), false)
 $$;
 
 -- (c): the course's own switch, else on.
-CREATE FUNCTION app.course_assistant_on(p_institution_id uuid, p_course_id uuid) RETURNS boolean
+CREATE FUNCTION app.course_assistant_on(p_course_id uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT coalesce((SELECT s.enabled FROM institution.course_assistant_setting s
-                    WHERE s.institution_id = p_institution_id AND s.course_id = p_course_id), true)
+                    WHERE s.institution_id = app.current_institution_id() AND s.course_id = p_course_id), true)
 $$;
 
 -- Only a teacher of the course (institution.require_course_teacher) sets it.
@@ -111,7 +112,7 @@ BEGIN
   -- One writer per course at a time, so the trail follows the row.
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
     'institution.course_assistant_setting:' || p_course_id::text, 0));
-  IF app.course_assistant_on(v_actor.institution_id, p_course_id) IS DISTINCT FROM p_enabled THEN
+  IF app.course_assistant_on(p_course_id) IS DISTINCT FROM p_enabled THEN
     INSERT INTO institution.course_assistant_setting AS s (institution_id, course_id, enabled, changed_by)
     VALUES (v_actor.institution_id, p_course_id, p_enabled, v_actor.user_id)
     ON CONFLICT (institution_id, course_id)
@@ -131,7 +132,7 @@ DECLARE
   v_actor record;
 BEGIN
   SELECT * INTO v_actor FROM institution.require_course_teacher(p_course_id);
-  RETURN QUERY SELECT app.course_assistant_on(v_actor.institution_id, p_course_id);
+  RETURN QUERY SELECT app.course_assistant_on(p_course_id);
 END
 $$;
 
@@ -153,13 +154,13 @@ BEGIN
     RETURN;
   END IF;
   RETURN QUERY SELECT 'found'::text,
-    app.assistant_cost_published(v_actor.institution_id)
-    AND app.course_assistant_on(v_actor.institution_id, v_course);
+    app.assistant_cost_published()
+    AND app.course_assistant_on(v_course);
 END
 $$;
 
-REVOKE ALL ON FUNCTION app.assistant_cost_published(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION app.course_assistant_on(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.assistant_cost_published() FROM PUBLIC;
+REVOKE ALL ON FUNCTION app.course_assistant_on(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.course_assistant_switch(uuid, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.course_assistant_switch_read(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.my_assistant_available(uuid) FROM PUBLIC;
@@ -176,7 +177,7 @@ SET LOCAL ROLE ductus_identity;
 DROP FUNCTION app.my_assistant_available(uuid);
 DROP FUNCTION app.course_assistant_switch_read(uuid);
 DROP FUNCTION app.course_assistant_switch(uuid, boolean);
-DROP FUNCTION app.course_assistant_on(uuid, uuid);
-DROP FUNCTION app.assistant_cost_published(uuid);
+DROP FUNCTION app.course_assistant_on(uuid);
+DROP FUNCTION app.assistant_cost_published();
 DROP TABLE audit.assistant_course_switch_event;
 DROP TABLE institution.course_assistant_setting;
