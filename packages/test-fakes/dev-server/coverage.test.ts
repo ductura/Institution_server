@@ -1924,7 +1924,7 @@ const SCENARIOS: Record<RouteId, Scenario> = {
             name: "Demo",
             rows: 3,
             columns: 2,
-            cells: { A1: { value: 2 }, A2: { value: null, formula: "=A1*2" } },
+            cells: { ["A1"]: { value: 2 }, ["A2"]: { value: null, formula: "=A1*2" } },
           },
         ],
       };

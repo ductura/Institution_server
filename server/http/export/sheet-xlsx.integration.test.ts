@@ -23,9 +23,9 @@ const SHEET = {
       rows: 5,
       columns: 3,
       cells: {
-        A1: { value: 2 },
-        A2: { value: 3 },
-        A3: { value: null, formula: "=SUM(A1:A2)" },
+        ["A1"]: { value: 2 },
+        ["A2"]: { value: 3 },
+        ["A3"]: { value: null, formula: "=SUM(A1:A2)" },
       },
     },
   ],
