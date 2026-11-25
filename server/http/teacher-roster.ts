@@ -1,6 +1,10 @@
 import { ROUTES, workIdFromPath } from "../contracts/index.ts";
 import type { WithActor } from "../database/index.ts";
-import { readAssignmentOverview, readTeacherRoster } from "../institution/index.ts";
+import {
+  readAssignmentFollowUp,
+  readAssignmentOverview,
+  readTeacherRoster,
+} from "../institution/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
@@ -44,5 +48,11 @@ export function createTeacherRosterRoutesFor({ withActor }: { withActor: WithAct
   return [
     listRoute("teacher.course-students.get", "courseId", readTeacherRoster, withActor),
     listRoute("teacher.assignment-overview.get", "assignmentId", readAssignmentOverview, withActor),
+    listRoute(
+      "teacher.assignment-follow-up.get",
+      "assignmentId",
+      readAssignmentFollowUp,
+      withActor,
+    ),
   ];
 }

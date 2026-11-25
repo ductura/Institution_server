@@ -1058,6 +1058,13 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "versionNo": 1 }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
   };
+  "teacher.assignment-follow-up.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "students": ({ "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": string; "noticeVersionNo": number; "revisionState": "open" | "responded" | "closed" | "withdrawn"; "revisionChangedAt": string; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": string; "noticeVersionNo": number; "revisionState": null; "revisionChangedAt": null; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": null; "noticeVersionNo": null; "revisionState": "open" | "responded" | "closed" | "withdrawn"; "revisionChangedAt": string; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": null; "noticeVersionNo": null; "revisionState": null; "revisionChangedAt": null; "openRevisionCount": number })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "teacher.assignment-grade.get": {
     params: { "assignmentId": string };
     query: undefined;
