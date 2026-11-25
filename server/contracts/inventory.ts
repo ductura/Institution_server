@@ -547,6 +547,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7086920979",
   },
+  // SRV-ASIST-PREKIDAC (Ductus#2055 c.7162920212): the assistant switch per course and
+  // the availability of the assistant for a student of an assignment.
+  "app/api/teacher/courses/[courseId]/assistant/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
+  "app/api/student/assignments/[assignmentId]/assistant/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
     methods: ["GET", "PUT"],

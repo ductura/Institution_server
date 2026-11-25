@@ -379,6 +379,9 @@ describe("route inventory", () => {
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
       "institution.assignment-late-submission.put: app/api/institution/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
       "student.assignment-late-submission.get: app/api/student/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
+      "teacher.course-assistant.get: app/api/teacher/courses/[courseId]/assistant/route.ts is not in the inventory",
+      "teacher.course-assistant.put: app/api/teacher/courses/[courseId]/assistant/route.ts is not in the inventory",
+      "student.assignment-assistant.get: app/api/student/assignments/[assignmentId]/assistant/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

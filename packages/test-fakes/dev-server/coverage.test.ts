@@ -1718,6 +1718,25 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  "teacher.course-assistant.get": {
+    request: { path: `/api/v1/teacher/courses/${IDS.course}/assistant`, as: "nastavnik" },
+  },
+  "teacher.course-assistant.put": {
+    request: {
+      path: `/api/v1/teacher/courses/${IDS.course}/assistant`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { enabled: false },
+    },
+  },
+  "student.assignment-assistant.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/assistant`,
+      as: "student",
+      method: "GET",
+    },
+  },
   "teacher.course-input-rhythm.get": {
     request: { path: `/api/v1/teacher/courses/${IDS.course}/input-rhythm`, as: "nastavnik" },
   },

@@ -132,6 +132,7 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createCourseAssistantRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1486,6 +1487,25 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-ASIST-PREKIDAC: a live session with no relation to such a course or assignment gets 404.
+  "teacher.course-assistant.get": {
+    method: "GET",
+    path: `/api/v1/teacher/courses/${randomUUID()}/assistant`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.course-assistant.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/courses/${randomUUID()}/assistant`,
+    body: () => ({ enabled: false }),
+    live: 404,
+  },
+  "student.assignment-assistant.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/assistant`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -2352,6 +2372,7 @@ const FACTORIES = [
   "createDeclarationRequiredRoutesFor",
   "createDeclarationQuestionRoutesFor",
   "createLateSubmissionRoutesFor",
+  "createCourseAssistantRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2488,6 +2509,7 @@ const MOUNTED = [
   ...createDeclarationRequiredRoutesFor(databases.main),
   ...createDeclarationQuestionRoutesFor(databases.main),
   ...createLateSubmissionRoutesFor(databases.main),
+  ...createCourseAssistantRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

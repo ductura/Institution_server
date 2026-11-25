@@ -26,6 +26,7 @@ import {
   createAssistantRoutesFor,
   parseAssistantProviderConfig,
   type AssignmentRulesReader,
+  type AssistantAvailabilityReader,
   type AssistantProviderConfig,
 } from "./index.ts";
 import type {
@@ -331,6 +332,7 @@ type Setup = {
   rules?: AssignmentRulesReader;
   port?: AssistantPort | null;
   portTimeoutMs?: number;
+  availability?: AssistantAvailabilityReader;
 };
 
 async function start(setup: Setup = {}) {
@@ -351,6 +353,7 @@ async function start(setup: Setup = {}) {
       requests,
       rules,
       provider: port === null ? null : { config: CONFIG, port },
+      availability: setup.availability ?? (async () => ({ status: "read", available: true })),
       ...(setup.portTimeoutMs === undefined ? {} : { portTimeoutMs: setup.portTimeoutMs }),
     }),
   });
@@ -864,6 +867,49 @@ describe("no network connection in the assistant path (S1)", () => {
     expect(route).not.toMatch(
       /createSyntheticAssistant|SyntheticBranch|external\/assistant\/synthetic/u,
     );
+  });
+});
+
+describe("student.assistant-request.post: the course switch (SRV-ASIST-PREKIDAC)", () => {
+  it("a course switched off answers ai_disabled before any reservation or port call", async () => {
+    const asked: string[] = [];
+    const { requests, port, base } = await start({
+      availability: async (token, assignmentId) => {
+        asked.push(`${token}:${assignmentId}`);
+        return { status: "read", available: false };
+      },
+    });
+    const body = await answerOf(await post(base));
+    expect(body).toEqual({ outcome: "ai_disabled", requestId: null, conversationId: null });
+    expect(asked).toEqual([`${STUDENT_TOKEN}:${ASSIGNMENT}`]);
+    expect(requests.calls).toEqual([]);
+    expect((port as ReturnType<typeof createSyntheticAssistant>).calls).toHaveLength(0);
+  });
+
+  it("a session the availability refuses is 401 and reaches no RPC", async () => {
+    const { requests, base } = await start({
+      availability: async () => ({ status: "unauthorized" }),
+    });
+    expect((await post(base)).status).toBe(401);
+    expect(requests.calls).toEqual([]);
+  });
+
+  it("an assignment that is not the student's goes on to begin_request, which decides", async () => {
+    const { requests, base } = await start({
+      availability: async () => ({ status: "not_found" }),
+    });
+    await post(base);
+    expect(names(requests)[0]).toBe("begin");
+  });
+
+  it("an availability that fails is 503 and reaches no RPC", async () => {
+    const { requests, base } = await start({
+      availability: async () => {
+        throw new Error("izmisljeni kvar");
+      },
+    });
+    expect((await post(base)).status).toBe(503);
+    expect(requests.calls).toEqual([]);
   });
 });
 
