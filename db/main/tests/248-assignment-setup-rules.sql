@@ -7,7 +7,7 @@ SELECT plan(13);
 
 SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s', external_tools_allowed, ai_summary_only)
                                     FROM institution.assignment WHERE id = {z1} $$),
-  'false|false', 'assignments created before the rules have neither');
+  'f|f', 'assignments created before the rules have neither');
 
 CREATE FUNCTION pg_temp.create_with(p_key text, p_policy text, p_purposes text, p_tools boolean, p_summary boolean)
 RETURNS text
@@ -23,7 +23,7 @@ INSERT INTO ref SELECT 'rules', pg_temp.create_with('00000000-0000-4000-8000-000
 SELECT matches((SELECT val FROM ref WHERE name = 'rules'), '^[0-9a-f-]{36}$', 'a teacher creates an assignment with both rules');
 SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s', external_tools_allowed, ai_summary_only)
                                     FROM institution.assignment WHERE id = {rules} $$),
-  'true|true', 'both rules are stored');
+  't|t', 'both rules are stored');
 SELECT is(pg_temp.create_with('00000000-0000-4000-8000-00000000a501', 'partially_allowed', '{}', true, true),
   (SELECT val FROM ref WHERE name = 'rules'), 'the same key and rules are idempotent');
 SELECT is(pg_temp.create_with('00000000-0000-4000-8000-00000000a501', 'partially_allowed', '{}', false, true),
@@ -54,7 +54,7 @@ INSERT INTO ref SELECT 'legacy', pg_temp.ask('vesna', $$
     'partially_allowed', '{}', 'basic', false, NULL, NULL, 1, false)::text $$);
 SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s', external_tools_allowed, ai_summary_only)
                                     FROM institution.assignment WHERE id = {legacy} $$),
-  'false|false', 'the earlier signature stores neither rule');
+  'f|f', 'the earlier signature stores neither rule');
 
 SELECT throws_ok($$ UPDATE institution.assignment SET ai_summary_only = false WHERE id = pg_temp.id('rules') $$,
   'ZD409', 'assignment setup is immutable', 'the rules cannot change after creation');
