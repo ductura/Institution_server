@@ -337,6 +337,12 @@ describe("route inventory", () => {
       "work.mentor-consent.put: app/api/works/[documentId]/mentor-consent/route.ts is not in the inventory",
       "work.thesis-stage.get: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
       "work.thesis-stage.put: app/api/works/[documentId]/thesis-stage/route.ts is not in the inventory",
+      "practice.placements.post: app/api/practice/placements/route.ts is not in the inventory",
+      "practice.placements.get: app/api/practice/placements/route.ts is not in the inventory",
+      "practice.entries.get: app/api/practice/placements/[placementId]/entries/route.ts is not in the inventory",
+      "practice.entries.post: app/api/practice/placements/[placementId]/entries/route.ts is not in the inventory",
+      "practice.signoffs.post: app/api/practice/placements/[placementId]/signoffs/route.ts is not in the inventory",
+      "practice.signoffs.get: app/api/practice/placements/[placementId]/signoffs/route.ts is not in the inventory",
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };

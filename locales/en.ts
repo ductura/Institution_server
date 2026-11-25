@@ -2076,6 +2076,8 @@ const en = {
     versionConflict:
       "The assignment has changed in the meantime. Load the latest version and try again.",
     practiceAssignment: "Practice assignments are ungraded.",
+    placementClosed: "The date of the entry is outside the period of the placement.",
+    nothingToSign: "There are no entries to sign up to the chosen date.",
     alreadySubmitted:
       "The work has already been submitted, so the declaration can no longer be changed.",
     attachmentStale: "An attached conversation has changed in the meantime. Attach it again.",
