@@ -17,8 +17,10 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
+import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
@@ -226,6 +228,23 @@ const SET_TEAM: Step = {
   headers: ORIGIN,
   body: { assistantIds: [IDS.teacher2] },
 };
+const WORK_TEAM_BASE = `/api/v1/student/assignments/${IDS.assignment}/team`;
+const TEACHER_TEAMS = `/api/v1/teacher/assignments/${IDS.assignment}/teams`;
+const TEAM_SETTING_PATH = `/api/v1/institution/assignments/${IDS.assignment}/team-setting`;
+const TEAMS_ON = { enabled: true, minSize: 2, maxSize: 4, formation: "student_choice" } as const;
+const TEAMS_ON_STEP: Step = {
+  path: TEAM_SETTING_PATH,
+  method: "PUT",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: TEAMS_ON,
+};
+const TEAM_CREATE_STEP: Step = {
+  path: WORK_TEAM_BASE,
+  as: "student",
+  headers: ORIGIN,
+  body: { action: "create" },
+};
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
 const REQUEST_SLOT: Step = {
@@ -406,6 +425,15 @@ const BANK_STEP: Step = {
 
 const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
 const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
+const PRACTICE_PLACEMENT = `/api/v1/practice/placements/${FAKE_PLACEMENT_ID}`;
+const PRACTICE_ENTRIES = `${PRACTICE_PLACEMENT}/entries`;
+const PRACTICE_ENTRY: Step = {
+  path: PRACTICE_ENTRIES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { date: "2026-03-09", hours: 4, text: "Izmisljen opis rada u izmisljenoj organizaciji." },
+};
 const REQUEST_MENTORSHIP: Step = {
   path: MENTORSHIP_REQUESTS,
   as: "student",
@@ -435,6 +463,40 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
       body: { body: "Izmisljena privatna biljeska." },
     },
+  },
+  // SRV-V19-DNEVNIK-UGOVOR: the practice journal; the invented placement exists from the start.
+  "practice.placements.post": {
+    request: {
+      path: "/api/v1/practice/placements",
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: {
+        mentorshipId: IDS.mentorship,
+        organisationName: "Organizacija B",
+        startsOn: "2026-03-02",
+        endsOn: "2026-06-30",
+      },
+    },
+  },
+  "practice.placements.get": { request: { path: "/api/v1/practice/placements", as: "student" } },
+  "practice.entries.get": {
+    before: [PRACTICE_ENTRY],
+    request: { path: PRACTICE_ENTRIES, as: "nastavnik" },
+  },
+  "practice.entries.post": { request: PRACTICE_ENTRY },
+  "practice.signoffs.post": {
+    before: [PRACTICE_ENTRY],
+    request: {
+      path: `${PRACTICE_PLACEMENT}/signoffs`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { throughDate: "2026-03-10", comment: "Potvrdujem zapise." },
+    },
+  },
+  "practice.signoffs.get": {
+    request: { path: `${PRACTICE_PLACEMENT}/signoffs`, as: "nastavnik" },
   },
   // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
   "institution.thesis-forms.get": {
@@ -847,6 +909,45 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  // SRV-V19-GRUPA-UGOVOR: work teams; the first team of a fake state has FAKE_TEAM_ID.
+  "institution.assignment-team-setting.put": { request: TEAMS_ON_STEP },
+  "institution.assignment-team-setting.get": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEAM_SETTING_PATH, as: "nastavnik" },
+  },
+  "student.work-team.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: WORK_TEAM_BASE, as: "student" },
+  },
+  "student.work-team.post": { before: [TEAMS_ON_STEP], request: TEAM_CREATE_STEP },
+  "teacher.work-teams.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik" },
+  },
+  "teacher.work-teams.post": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik", headers: ORIGIN, body: {} },
+  },
+  "teacher.work-team-member.post": {
+    prepare: (state) => {
+      state.courses.find((course) => course.id === IDS.course)?.studentIds.push(IDS.student2);
+    },
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: {
+      path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/members`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { studentId: IDS.student2, action: "add" },
+    },
+  },
+  "student.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${WORK_TEAM_BASE}/contribution`, as: "student" },
+  },
+  "teacher.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/contribution`, as: "nastavnik" },
+  },
   "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
   "institution.teaching-team-view.get": { request: { path: `${TEAM}/view`, as: "nastavnik" } },
   "institution.teaching-team.post": { request: SET_TEAM },
