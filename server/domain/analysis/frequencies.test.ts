@@ -61,6 +61,14 @@ describe("tabulate", () => {
     );
   });
 
+  it("returns the value as it came, so the 64-character bound of the contract holds", () => {
+    // NFC would turn each U+0344 into two characters (128 in all)
+    const long = "\u0344".repeat(64);
+    const result = tabulate("c", [long]);
+    expect(result.values[0]?.value).toBe(long);
+    expect(result.values[0]?.value.length).toBe(64);
+  });
+
   it("gives an empty table for no values", () => {
     expect(tabulate("c", [])).toEqual({ name: "c", n: 0, missing: 0, values: [], otherCount: 0 });
     expect(tabulate("c", [null, "", Number.NaN])).toEqual({

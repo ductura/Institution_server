@@ -115,6 +115,13 @@ describe("describeNumeric", () => {
     expect(describeNumeric("x", [1e-9, 2e-9]).mean).toBe(0);
   });
 
+  it("keeps the deviation when every value carries a huge common offset", () => {
+    // the deviations from 1e15 are 0, -0.125, -0.125: mean shift -1/12, sample sd 0.072169
+    const result = describeNumeric("x", [1e15, 1e15 - 0.125, 1e15 - 0.125]);
+    expect(result.sd).toBe(0.072169);
+    expect(result.min).toBe(1e15 - 0.125);
+  });
+
   it("does not change its input", () => {
     const cells = Object.freeze([3, 1, 2]);
     expect(() => describeNumeric("x", cells)).not.toThrow();

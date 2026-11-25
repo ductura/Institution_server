@@ -95,11 +95,16 @@ export function describeNumeric(name: string, cells: readonly unknown[]): Descri
       max: null,
     };
   }
-  const mean = sumSorted(sorted) / n;
+  // Everything is computed on values shifted by the smallest one: a common offset of
+  // 1e15 would otherwise swallow the deviations (the shifted values are exact enough).
+  const shift = sorted[0] ?? 0;
+  const shifted = sorted.map((value) => value - shift);
+  const shiftedMean = sumSorted(shifted) / n;
+  const mean = shift + shiftedMean;
   let sd: number | null = null;
   if (n >= 2) {
-    // Two passes: squared deviations from the unrounded mean, in ascending order of the values.
-    const squares = sorted.map((value) => (value - mean) * (value - mean));
+    // Two passes: squared deviations from the shifted mean, in ascending order.
+    const squares = shifted.map((value) => (value - shiftedMean) * (value - shiftedMean));
     sd = roundResult(Math.sqrt(sumSorted(squares.sort((a, b) => a - b)) / (n - 1)));
   }
   return {

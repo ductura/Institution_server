@@ -110,7 +110,7 @@ export function compareCroatian(a: string, b: string): number {
 
 /** The text a cell is counted under, or null when the cell is missing. */
 function valueOf(cell: unknown): string | null {
-  if (typeof cell === "string") return cell === "" ? null : cell.normalize("NFC");
+  if (typeof cell === "string") return cell === "" ? null : cell;
   if (typeof cell === "number" && Number.isFinite(cell)) return String(cell + 0);
   return null;
 }
