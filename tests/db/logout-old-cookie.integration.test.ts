@@ -445,6 +445,12 @@ const SESSION_ROUTES = {
     body: () => ({ text: "Izmišljeno: navedite izvor.", kind: "must" }),
     live: 404,
   },
+  "teacher.comment-bank-entry.put": {
+    method: "PUT",
+    path: `/api/v1/teacher/comment-bank/${randomUUID()}`,
+    body: () => ({ text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" }),
+    live: 404,
+  },
   "teacher.comment-bank.delete": {
     method: "DELETE",
     path: `/api/v1/teacher/comment-bank/${randomUUID()}`,

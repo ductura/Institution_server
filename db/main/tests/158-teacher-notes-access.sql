@@ -61,15 +61,18 @@ SELECT is_empty(
         'collaboration.list_teacher_notes(text)'::regprocedure, 'collaboration.delete_teacher_note(uuid)'::regprocedure,
         'collaboration.delete_teacher_notes(text,uuid)'::regprocedure,
         'collaboration.create_comment_template(text,text)'::regprocedure,
+        'collaboration.create_comment_template(text,text,text)'::regprocedure,
+        'collaboration.update_comment_template(uuid,text,text,text)'::regprocedure,
         'collaboration.list_comment_templates()'::regprocedure, 'collaboration.delete_comment_template(uuid)'::regprocedure)
         AND (NOT p.prosecdef OR p.proowner <> 'ductus_identity'::regrole OR NOT 'search_path=""' = ANY (p.proconfig)) $$,
-  'the seven functions are SECURITY DEFINER functions of the identity role with an empty search_path');
+  'the nine functions are SECURITY DEFINER functions of the identity role with an empty search_path');
 SELECT bag_eq(
   $$ SELECT r || ' ' || f FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'ductus_test_stranger']) AS r
       CROSS JOIN unnest(ARRAY['collaboration.create_teacher_note(text,text,jsonb)', 'collaboration.list_teacher_notes(text)',
         'collaboration.delete_teacher_note(uuid)', 'collaboration.delete_teacher_notes(text,uuid)',
         'collaboration.create_comment_template(text,text)', 'collaboration.list_comment_templates()',
-        'collaboration.delete_comment_template(uuid)']) AS f
+        'collaboration.delete_comment_template(uuid)', 'collaboration.create_comment_template(text,text,text)',
+        'collaboration.update_comment_template(uuid,text,text,text)']) AS f
       WHERE has_function_privilege(r, f, 'EXECUTE') $$,
   $$ VALUES ('ductus_app collaboration.create_teacher_note(text,text,jsonb)'),
             ('ductus_app collaboration.list_teacher_notes(text)'),
@@ -77,6 +80,8 @@ SELECT bag_eq(
             ('ductus_app collaboration.create_comment_template(text,text)'),
             ('ductus_app collaboration.list_comment_templates()'),
             ('ductus_app collaboration.delete_comment_template(uuid)'),
+            ('ductus_app collaboration.create_comment_template(text,text,text)'),
+            ('ductus_app collaboration.update_comment_template(uuid,text,text,text)'),
             ('ductus_retention collaboration.delete_teacher_notes(text,uuid)') $$,
   'the web role writes, reads and removes, the retention role alone deletes a document''s notes');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'collaboration', 'CREATE'),
@@ -181,6 +186,38 @@ SELECT is(pg_temp.ask(a.name, $$ SELECT collaboration.delete_comment_template({t
 FROM (VALUES ('marko'), ('ana'), ('petra')) AS a (name);
 SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.delete_comment_template({t1})::text $$), '', 'Vesna removes her template');
 SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM collaboration.list_comment_templates() $$), '1', 'one template is left');
+
+-- 5b. SRV-V17-BANK-EDIT: a label on a template and replacing one. Only the author; a label of 1 to 40 characters.
+INSERT INTO ref SELECT 'tl', pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Označeni predložak.', 'sugg', 'Izvor') $$);
+SELECT matches((SELECT val FROM ref WHERE name = 'tl'), '^[0-9a-f-]{36}$', 'Vesna saves a template with a label');
+SELECT is(pg_temp.ask('vesna', $$ SELECT string_agg(coalesce(label, '-'), ',' ORDER BY created_at, template_id) FROM collaboration.list_comment_templates() $$),
+  '-,Izvor', 'the listing carries the label, null for a template without one');
+SELECT is(pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Tekst.', 'q', repeat('x', 41)) $$), 'ZD422: invalid input',
+  'a label of 41 characters is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Tekst.', 'q', '  ') $$), 'ZD422: invalid input',
+  'a blank label is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Tekst.', 'q', E'a\nb') $$), 'ZD422: invalid input',
+  'a label with a control character is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template({tl}, 'Izmijenjeni tekst.', 'praise', 'Nova')::text $$), '',
+  'Vesna replaces text, kind and label of her template');
+SELECT is(pg_temp.ask('vesna', $$ SELECT string_agg(kind || ':' || body || ':' || coalesce(label, '-'), ' / ' ORDER BY created_at, template_id) FROM collaboration.list_comment_templates() WHERE template_id = {tl} $$),
+  'praise:Izmijenjeni tekst.:Nova', 'the replacement is stored');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template({tl}, 'Bez oznake.', 'q', NULL)::text $$), '',
+  'a null label removes the label');
+SELECT is(pg_temp.ask('vesna', $$ SELECT label IS NULL FROM collaboration.list_comment_templates() WHERE template_id = {tl} $$), 'true', 'the label is gone');
+SELECT is(pg_temp.ask(a.name, $$ SELECT collaboration.update_comment_template({tl}, 'Tuđe.', 'q', NULL) $$), 'ZD403: forbidden',
+  a.name || ' cannot replace Vesna''s template')
+FROM (VALUES ('marko'), ('ana'), ('petra')) AS a (name);
+SELECT is(pg_temp.ask('marko', $$ SELECT collaboration.update_comment_template({tl}, ' ', 'loud', NULL) $$), 'ZD403: forbidden',
+  'another''s template is refused before the input is looked at');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template('00000000-0000-4000-8000-0000000000ff', 'T.', 'q', NULL) $$), 'ZD403: forbidden',
+  'a template that does not exist reads as a forbidden one');
+SELECT matches(pg_temp.ask('anon', $$ SELECT collaboration.update_comment_template({tl}, 'T.', 'q', NULL) $$), '^ZD401', 'replacing needs a session');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template({tl}, ' ', 'q', NULL) $$), 'ZD422: invalid input', 'a blank text is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template({tl}, 'T.', 'loud', NULL) $$), 'ZD422: invalid input', 'a kind outside the four is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.update_comment_template({tl}, 'T.', 'q', repeat('x', 41)) $$), 'ZD422: invalid input', 'a long label is refused');
+SELECT is(pg_temp.ask('vesna', $$ SELECT body FROM collaboration.list_comment_templates() WHERE template_id = {tl} $$), 'Bez oznake.', 'a refused replacement changes nothing');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.delete_comment_template({tl})::text $$), '', 'Vesna removes the template again');
 
 -- 6. Bounds: 500 notes of one author on one document, 200 templates of one author.
 SET LOCAL ROLE ductus_identity;
