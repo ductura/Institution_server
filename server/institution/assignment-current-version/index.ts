@@ -4,7 +4,8 @@ import type { WithActor } from "../../database/index.ts";
 // pointer and its content. RLS also applies to both assignment tables.
 const SELECT_CURRENT = `
   SELECT a.id AS "assignmentId", a.course_id AS "courseId", v.version_no AS "versionNo",
-         a.is_practice AS "isPractice",
+         a.is_practice AS "isPractice", a.external_tools_allowed AS "externalToolsAllowed",
+         a.ai_summary_only AS "aiSummaryOnly",
          v.title, v.instructions, v.work_type AS "workType",
          v.opens_at AS "opensAt", v.due_at AS "dueAt", v.ai_policy AS "aiPolicy",
          v.ai_purposes AS "aiPurposes", v.evidence_profile AS "evidenceProfile",
