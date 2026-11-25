@@ -27492,6 +27492,210 @@
         ]
       }
     },
+    "/api/v1/institution/student-data-export-students": {
+      "get": {
+        "operationId": "institution.student-data-export-students.get",
+        "summary": "For each data export the caller may see, the person it is for and its state, newest first: every request of the institution for a clerk of the registry office or an administrator, the caller's own for anyone else, never another institution's (someone else's request is absent, as one that does not exist). Only exportId, studentId and state.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/institution/student-data-export-students/route.ts",
+        "responses": {
+          "200": {
+            "description": "the person and state of each export, possibly none",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "exports"
+                  ],
+                  "properties": {
+                    "exports": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "exportId",
+                          "studentId",
+                          "state"
+                        ],
+                        "properties": {
+                          "exportId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "studentId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "const": "requested",
+                                "type": "string"
+                              },
+                              {
+                                "const": "approved",
+                                "type": "string"
+                              },
+                              {
+                                "const": "ready",
+                                "type": "string"
+                              },
+                              {
+                                "const": "downloaded",
+                                "type": "string"
+                              },
+                              {
+                                "const": "expired",
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/institution/student-data-exports/{exportId}/approve": {
       "post": {
         "operationId": "institution.student-data-exports-approve.post",

@@ -1,0 +1,3 @@
+# server/database/practice-journal
+
+Adapter dnevnika stručne prakse (val 19, SRV-V19-DNEVNIK-RUTE): `createPracticeJournalStore(withActor)`. Svaki poziv je jedna `withActor` transakcija s jednim `app.*` RPC-om iz migracije `20261219100000` (`open_practice_placement`, `practice_placements`, `practice_entries`, `add_practice_entry`, `sign_practice_entries`, `practice_signoffs`); klijent nikad ne piše izravno u tablice. Datume formatira baza (`YYYY-MM-DD`), a stupci izlaze pod camelCase imenima iz SQL-a. Ulaz prije poziva provjerava `server/domain/practice-journal` (ZD422 bez puta do baze). Potpis bez imena mentora ne prikazuje se pod izmišljenim imenom: odgovor ne prolazi ugovor i čita se kao nedostupan.
