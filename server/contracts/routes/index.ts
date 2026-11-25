@@ -162,6 +162,14 @@ export {
   RUBRIC_MAX_CRITERIA,
 } from "./assignment-rubric.ts";
 export {
+  Questionnaire,
+  QuestionnaireInput,
+  QUESTIONNAIRE_KINDS,
+  QUESTIONNAIRE_MAX_BYTES,
+  QUESTIONNAIRE_STATES,
+  questionnaireRoutes,
+} from "./questionnaires.ts";
+export {
   AssignmentCodeTestsInput,
   assignmentCodeTestsRoutes,
   CODE_TESTS_MAX,

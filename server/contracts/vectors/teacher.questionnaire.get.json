@@ -1,0 +1,137 @@
+{
+  "route": "teacher.questionnaire.get",
+  "vectors": [
+    {
+      "name": "one",
+      "kind": "success",
+      "request": {
+        "params": {
+          "id": "00000000-0000-4000-8000-0000000b1801"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "id": "00000000-0000-4000-8000-0000000b1801",
+          "courseId": "00000000-0000-4000-8000-0000000a1801",
+          "title": "Izmišljeno istraživanje: navike kompostiranja",
+          "state": "open",
+          "questions": [
+            {
+              "id": "00000000-0000-4000-8000-0000000c1801",
+              "order": 1,
+              "kind": "single",
+              "text": "Kompostirate li kod kuće?",
+              "options": [
+                {
+                  "code": "da",
+                  "label": "Da"
+                },
+                {
+                  "code": "ne",
+                  "label": "Ne"
+                }
+              ],
+              "scale": null
+            },
+            {
+              "id": "00000000-0000-4000-8000-0000000c1802",
+              "order": 2,
+              "kind": "scale",
+              "text": "Koliko vam je kompostiranje važno?",
+              "options": null,
+              "scale": {
+                "min": 1,
+                "max": 5
+              }
+            },
+            {
+              "id": "00000000-0000-4000-8000-0000000c1803",
+              "order": 3,
+              "kind": "text",
+              "text": "Što vas sprječava?",
+              "options": null,
+              "scale": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "id": "00000000-0000-4000-8000-0000000b1801"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000211818"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "id": "00000000-0000-4000-8000-0000000b1801"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000211819"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "id": "00000000-0000-4000-8000-0000000b1801"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000211820"
+        }
+      }
+    }
+  ]
+}
