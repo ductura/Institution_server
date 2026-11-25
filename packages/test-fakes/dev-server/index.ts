@@ -60,6 +60,7 @@ import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts"
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
+import { QUALITATIVE_MATERIALS_HANDLERS } from "./qualitative-materials-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -179,6 +180,7 @@ export const DEV_HANDLERS: Handlers = {
   ...DECLARATION_QUESTION_HANDLERS,
   ...LATE_SUBMISSION_HANDLERS,
   ...COURSE_ASSISTANT_HANDLERS,
+  ...QUALITATIVE_MATERIALS_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,
