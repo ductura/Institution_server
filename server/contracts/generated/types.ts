@@ -1660,6 +1660,20 @@ export type Operations = {
     success: { status: 200; body: { "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "teacher.work-rubric-mark.put": {
+    params: { "documentId": string; "criterionId": string };
+    query: undefined;
+    body: { "level": 0 | 1 | 2 | null; "note": string | null };
+    success: { status: 200; body: { "criterionId": string; "level": 0 | 1 | 2 | null; "note": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.work-rubric.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "rubricVersion": number; "marks": ({ "criterionId": string; "level": 0 | 1 | 2 | null; "note": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "teacher.work-team-contribution.get": {
     params: { "assignmentId": string; "teamId": string };
     query: undefined;

@@ -121,6 +121,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -351,6 +352,8 @@ async function main(): Promise<void> {
       ...createMilestoneTemplateRoutesFor(databases.main),
       // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
       ...createAssignmentRubricRoutesFor(databases.main),
+      // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
+      ...createWorkRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
       ...createWorkTemplateRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.

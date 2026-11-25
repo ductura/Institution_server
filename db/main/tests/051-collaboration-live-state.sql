@@ -125,6 +125,8 @@ SELECT bag_eq(
             ('collaboration.list_work_messages(text)'),
             ('collaboration.list_working_criteria(text)'),
             ('collaboration.save_working_criterion(text,text,smallint,text)'),
+            ('collaboration.list_work_rubric(text)'),
+            ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
             ('collaboration.reply_comment_draft(text,uuid,text)'),
             ('collaboration.list_comment_drafts(text)'),
@@ -160,7 +162,7 @@ SELECT bag_eq(
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
   $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)'),
             ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)'),
-            ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_work_reviews(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)'),
+            ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_work_rubric_levels(text,uuid)'), ('collaboration.delete_work_reviews(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)'),
             ('collaboration.delete_work_self_notes(text,uuid)'), ('collaboration.delete_work_items_seen(text,uuid)'),
             ('collaboration.purge_orphan_work_data()') $$,
   'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201, the note-to-self and seen-mark deletes of 237 and the orphan work data purge of 239');

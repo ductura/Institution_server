@@ -37,6 +37,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -1459,6 +1460,18 @@ const SESSION_ROUTES = {
     body: () => ({ assessment: 1, note: null }),
     live: 404,
   },
+  "teacher.work-rubric.get": {
+    method: "GET",
+    path: "/api/v1/teacher/works/izmisljeni-rad-0001/rubric",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.work-rubric-mark.put": {
+    method: "PUT",
+    path: "/api/v1/teacher/works/izmisljeni-rad-0001/rubric/sources",
+    body: () => ({ level: 1, note: null }),
+    live: 404,
+  },
   // SRV-7C: a live session that is no student of the work gets 404 on each source route.
   "student.work-sources.get": {
     method: "GET",
@@ -2251,6 +2264,7 @@ const FACTORIES = [
   "createWorkMilestonesRoutesFor",
   "createMilestoneTemplateRoutesFor",
   "createAssignmentRubricRoutesFor",
+  "createWorkRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createAssignmentTemplateRoutesFor",
   "createFormatRulesRoutesFor",
@@ -2384,6 +2398,7 @@ const MOUNTED = [
   ...createWorkMilestonesRoutesFor(databases.main),
   ...createMilestoneTemplateRoutesFor(databases.main),
   ...createAssignmentRubricRoutesFor(databases.main),
+  ...createWorkRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createAssignmentTemplateRoutesFor(databases.main),
   ...createFormatRulesRoutesFor(databases.main),
