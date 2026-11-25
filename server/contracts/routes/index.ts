@@ -74,6 +74,12 @@ export {
   milestoneTemplateRoutes,
 } from "./milestone-template.ts";
 export {
+  WORK_TEMPLATE_TYPES,
+  WorkTemplateInput,
+  WorkTemplateType,
+  workTemplateRoutes,
+} from "./work-template.ts";
+export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,

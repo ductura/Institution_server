@@ -439,6 +439,14 @@ export {
   type MilestoneTemplateItem,
   type MilestoneTemplateVersion,
 } from "./milestone-template/index.ts";
+export {
+  createWorkTemplate,
+  type WorkTemplate,
+  type WorkTemplateContent,
+  type WorkTemplateSection,
+  type WorkTemplateTitleField,
+  type WorkTemplateVersion,
+} from "./work-template/index.ts";
 export { createReturnForRevision } from "./return-for-revision/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
