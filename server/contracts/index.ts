@@ -98,6 +98,7 @@ import {
   returnForRevisionRoutes,
   thesisRoutes,
   practiceJournalRoutes,
+  peerReviewRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -180,6 +181,9 @@ export {
   WorkThesisFormInput,
   thesisRoutes,
   practiceJournalRoutes,
+  peerReviewRoutes,
+  peerReviewMinSubmissions,
+  PEER_REVIEW_MIN_SUBMISSIONS,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
@@ -357,6 +361,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...returnForRevisionRoutes,
   ...thesisRoutes,
   ...practiceJournalRoutes,
+  ...peerReviewRoutes,
   ...opsRoutes,
   ...lateSubmissionRoutes,
 ];

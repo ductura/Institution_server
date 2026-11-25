@@ -1,0 +1,142 @@
+{
+  "route": "student.peer-reviews-received.get",
+  "vectors": [
+    {
+      "name": "received",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-recenzija-000000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reviews": [
+            {
+              "reviewId": "00000000-0000-4000-8000-00000000b201",
+              "byRubric": [
+                {
+                  "key": "argument",
+                  "label": "Jasnoća argumenta",
+                  "text": "Izmišljena ocjena kriterija argument."
+                },
+                {
+                  "key": "izvori",
+                  "label": "Korištenje izvora",
+                  "text": "Izmišljena ocjena kriterija izvori."
+                },
+                {
+                  "key": "struktura",
+                  "label": "Struktura rada",
+                  "text": "Izmišljena ocjena kriterija struktura."
+                }
+              ],
+              "general": "Izmišljen opći komentar.",
+              "submittedAt": "2026-04-10T11:30:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-recenzija-000000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reviews": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {},
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000007059"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-recenzija-000000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-0000000000ff"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-00000000705a"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-recenzija-000000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000705b"
+        }
+      }
+    }
+  ]
+}

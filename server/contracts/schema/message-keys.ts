@@ -5,7 +5,9 @@
 // error() takes the key only from here, so a code without a row cannot be
 // declared (server/http/problem.test.ts).
 export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
+  ["already_allocated", "errors.alreadyAllocated"],
   ["already_requested", "errors.alreadyRequested"],
+  ["already_reviewed", "errors.alreadyReviewed"],
   ["bad_request", "errors.badRequest"],
   ["blocked", "errors.blocked"],
   ["body_stream_error", "errors.bodyStreamError"],
@@ -15,6 +17,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["ceremony_invalid", "errors.ceremonyInvalid"],
   ["chain_conflict", "errors.chainConflict"],
   ["challenge_invalid", "errors.challengeInvalid"],
+  ["closed", "errors.closed"],
   ["conflict", "errors.conflict"],
   ["content_length_invalid", "errors.contentLengthInvalid"],
   ["content_length_mismatch", "errors.contentLengthMismatch"],
@@ -73,6 +76,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["unavailable", "errors.unavailable"],
   ["unsupported_media_type", "errors.unsupportedMediaType"],
   ["upgrade_required", "errors.upgradeRequired"],
+  ["too_few_submissions", "errors.tooFewSubmissions"],
   ["version_conflict", "errors.versionConflict"],
   ["practice_assignment", "errors.practiceAssignment"],
   ["already_submitted", "errors.alreadySubmitted"],
