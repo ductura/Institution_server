@@ -29,7 +29,7 @@ export {
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
 export { createPracticeJournalStore } from "./practice-journal/index.ts";
-export { createQuestionnaireStore } from "./questionnaire/index.ts";
+export { createQuestionnaireStore, type QuestionnaireForm } from "./questionnaire/index.ts";
 export { createQualitativeCodingStore } from "./qualitative-coding.ts";
 export { createWorkTeamStore, type ContributionSource } from "./work-team/index.ts";
 export { createPeerReviewStore } from "./peer-review/index.ts";
