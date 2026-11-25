@@ -1346,6 +1346,34 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { dueAt: "2026-12-03T15:30:00Z" },
     },
   },
+  "teacher.assignment-rubric.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`, as: "nastavnik" },
+  },
+  "teacher.assignment-rubric.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/rubric`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        criteria: [
+          {
+            id: "tema",
+            title: "Izmišljena tema rada",
+            levels: [
+              { label: "Treba doraditi", descriptor: "Izmišljeni opis." },
+              { label: "Dobro", descriptor: "" },
+              { label: "Vrlo dobro", descriptor: "" },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  "student.assignment-rubric.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/rubric`, as: "student" },
+  },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
   },
