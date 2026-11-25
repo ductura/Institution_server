@@ -174,21 +174,21 @@ Test je u istoj mapi kao kod koji provjerava i ima isto ime plus sufiks. Sufiks 
 
 Provedba: lint `local/test-file-suffix` za datoteku koja po imenu izgleda kao test (`x.spec.ts`, `x.e2e.test.ts`), ostalo review. Datoteka s drugim sufiksom ili izvan mapa iz `vitest.config.ts` (`server/`, `test-support/`, `scripts/`, `tests/`) ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
 
-Prelazno: `server/smoke.test.ts` nema pripadni `smoke.ts` (dimni test cijelog kostura).
+Dimni test stvarnog poslužitelja `server/server-smoke.integration.test.ts` provjerava izgrađeni `dist/server.js`, ulaz `server/server.ts` (DAN-1537).
 
 Ispravno:
 
 ```text
-server/access.ts
-server/access.test.ts
-server/access.property.test.ts
+server/contracts/breaking.ts
+server/contracts/breaking.test.ts
+server/contracts/breaking.property.test.ts
 ```
 
 Pogrešno:
 
 ```text
-server/tests/access.spec.ts
-server/access_test.ts
+server/tests/breaking.spec.ts
+server/contracts/breaking_test.ts
 ```
 
 ## 8. Jedan oblik rezultata i greške
@@ -202,7 +202,7 @@ type Result<T> = { ok: true; value: T } | { ok: false; error: AppError };
 
 Provedba: review i `tsc`. Zajednički tipovi `Result` i `AppError` su u `server/domain/result.ts`. Prvi port koji ih koristi je `server/external/keys`; ostali se usklađuju uz zadatak koji ih mijenja.
 
-Prijelazni poslužitelj `server/app.ts` od DAN-782 vraća greške kao `{ code, messageKey }` (`APP_ERRORS`, tekst u `locales/hr.json` pod `app`).
+HTTP greške idu kroz `sendProblem` (`server/http/problem.ts`) s `code` i `messageKey` iz kataloga `errors.*`. Prijelazni poslužitelj `server/app.ts` i njegov odjeljak `app` u `locales/hr.json` uklonjeni su (DAN-1537).
 
 Ispravno:
 

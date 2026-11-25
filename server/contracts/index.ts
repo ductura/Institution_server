@@ -78,6 +78,7 @@ import {
   lateSubmissionRoutes,
   courseAssistantRoutes,
   questionnaireResponsesRoutes,
+  qualitativeMaterialsRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -402,6 +403,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...lateSubmissionRoutes,
   ...courseAssistantRoutes,
   ...questionnaireResponsesRoutes,
+  ...qualitativeMaterialsRoutes,
 ];
 
 /**

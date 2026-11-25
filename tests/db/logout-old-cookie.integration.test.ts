@@ -142,6 +142,7 @@ import {
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
+  createQualitativeMaterialsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1717,6 +1718,31 @@ const SESSION_ROUTES = {
     body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
     live: 404,
   },
+  // SRV-V18-KODIRANJE-GRADIVO: the student's own material; an id that is not theirs is 404.
+  "student.qual-materials.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/materials",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-materials.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/materials",
+    body: () => ({ title: "Izmišljeni intervju", kind: "interview", text: "Izmišljeni tekst." }),
+    live: 201,
+  },
+  "student.qual-material.get": {
+    method: "GET",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-material.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -2612,6 +2638,7 @@ const FACTORIES = [
   "createLateSubmissionRoutesFor",
   "createCourseAssistantRoutesFor",
   "createQuestionnaireResponsesRoutesFor",
+  "createQualitativeMaterialsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2758,6 +2785,7 @@ const MOUNTED = [
   ...createLateSubmissionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
   ...createQuestionnaireResponsesRoutesFor(databases.main),
+  ...createQualitativeMaterialsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
@@ -2965,6 +2993,10 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
+  // The material kept through student.qual-materials.post refers to its owner.
+  await admin.query("DELETE FROM institution.qual_material WHERE institution_id = $1", [
+    institution,
+  ]);
   // The live session of student.qual-codes.post made a code of its own: it refers to user_account too.
   await admin.query("DELETE FROM institution.qual_code WHERE institution_id = $1", [institution]);
   // user_preference and problem_report refer to user_account, so they go first.

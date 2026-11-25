@@ -162,7 +162,7 @@ describe("@ductura/test-fakes stays out of production", () => {
     const roots = productionRoots();
     expect(roots).toContain(join(REPO_ROOT, "server", "server.ts"));
     const loaded = loadedFiles(roots);
-    expect(loaded).toContain("server/app.ts");
+    expect(loaded).toContain("server/server-map.ts");
     expect(loaded).toContain("server/http/start.ts");
     expect(reachesFakes(loaded)).toEqual([]);
     expect(reachesTestSupport(loaded)).toEqual([]);
