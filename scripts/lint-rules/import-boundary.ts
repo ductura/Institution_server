@@ -29,6 +29,9 @@ export const JSON_IMPORTS: Readonly<Record<string, string>> = Object.freeze({
   "server/contracts/routes/platform.ts": "./error-catalog.json",
   // DAN-1081: where a failed login ends, published as auth/sign-in-failure.json.
   "server/contracts/routes/auth.ts": "./sign-in-failure.json",
+  // SRV-V22-ISVU-PORT: the invented courses and people of the synthetic ISVU source,
+  // kept in JSON because server code may not hold text with non-ASCII letters.
+  "server/external/isvu/synthetic-isvu.ts": "./synthetic-isvu-data.json",
 });
 
 type Attribute = { key?: { name?: string; value?: unknown }; value?: { value?: unknown } };

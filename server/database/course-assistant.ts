@@ -1,4 +1,4 @@
-// SRV-ASIST-PREKIDAC (Ductus#2055, T4): migration 20261219360000. The switch
+// SRV-ASIST-PREKIDAC (Ductus#2055, T4): migration 20261219400000. The switch
 // "Asistent uključen" per course, on by default. A teacher of the course sets
 // it (app.course_assistant_switch) and reads it (app.course_assistant_switch_read);
 // a student of an assignment reads whether the institution has a published cost

@@ -26,6 +26,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   "external/email": ["settings", "log", "metrics"],
   "external/assistant": ["domain"],
   "external/assistant-tools": ["domain"],
+  "external/isvu": [],
   traffic: ["settings", "log", "metrics"],
   session: ["settings", "log", "metrics", "domain", "database", "external/srce-auth"],
   roles: ["settings", "log", "metrics", "domain", "contracts", "database"],

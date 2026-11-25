@@ -3,6 +3,8 @@
 import type { OperationId, Operations, SharedErrorCode } from "./types.ts";
 
 export const ROUTE_TABLE = {
+  "analysis.catalogue.get": { method: "GET", path: "/api/v1/analysis/catalogue", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
+  "analysis.runs.post": { method: "POST", path: "/api/v1/analysis/runs", body: "application/json", headers: ["cache-control"], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input","unknown_analysis_version"],"503":["unavailable"]} },
   "auth.backchannel-logout.post": { method: "POST", path: "/api/v1/auth/backchannel-logout", body: "application/x-www-form-urlencoded", headers: [], errors: {"400":["invalid_logout_token"],"503":["unavailable"]} },
   "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, headers: ["location","set-cookie"], errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, headers: ["location","set-cookie"], errors: {"503":["unavailable"]} },

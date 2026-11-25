@@ -564,6 +564,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "student",
     },
   },
+  // SRV-V15-UGOVOR: the stateless analysis.
+  "analysis.catalogue.get": { request: { path: "/api/v1/analysis/catalogue", as: "student" } },
+  "analysis.runs.post": {
+    request: {
+      path: "/api/v1/analysis/runs",
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: {
+        analysisId: "descriptive",
+        analysisVersion: "1.0.0",
+        variables: ["sati"],
+        columns: [{ name: "sati", kind: "numeric" }],
+        rows: [[1], [2], [null], [4]],
+      },
+    },
+  },
   // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
   "institution.thesis-forms.get": {
     request: { path: "/api/v1/institution/thesis-forms", as: "student" },

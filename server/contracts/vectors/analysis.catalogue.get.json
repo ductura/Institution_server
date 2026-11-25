@@ -1,0 +1,117 @@
+{
+  "route": "analysis.catalogue.get",
+  "vectors": [
+    {
+      "name": "catalogue",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "limits": {
+            "maxRows": 500,
+            "maxColumns": 12,
+            "maxCellLength": 64,
+            "maxBodyBytes": 131072
+          },
+          "analyses": [
+            {
+              "id": "descriptive",
+              "version": "1.0.0",
+              "variables": {
+                "kind": "numeric",
+                "min": 1,
+                "max": 12
+              }
+            },
+            {
+              "id": "frequencies",
+              "version": "1.0.0",
+              "variables": {
+                "kind": "any",
+                "min": 1,
+                "max": 12
+              }
+            },
+            {
+              "id": "correlation",
+              "version": "1.0.0",
+              "variables": {
+                "kind": "numeric",
+                "min": 2,
+                "max": 12
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000601"
+        }
+      }
+    },
+    {
+      "name": "off",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000000602"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000603"
+        }
+      }
+    }
+  ]
+}

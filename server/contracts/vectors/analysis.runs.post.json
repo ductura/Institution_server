@@ -1,0 +1,1000 @@
+{
+  "route": "analysis.runs.post",
+  "vectors": [
+    {
+      "name": "descriptive",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "datasetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "resultSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2",
+          "rowCount": 4,
+          "result": {
+            "kind": "descriptive",
+            "columns": [
+              {
+                "name": "sati",
+                "n": 4,
+                "missing": 0,
+                "mean": 5,
+                "sd": 2.581989,
+                "median": 5,
+                "min": 2,
+                "q1": 3.5,
+                "q3": 6.5,
+                "max": 8
+              },
+              {
+                "name": "ocjena",
+                "n": 3,
+                "missing": 1,
+                "mean": 3.666667,
+                "sd": 0.763763,
+                "median": 3.5,
+                "min": 3,
+                "q1": 3.25,
+                "q3": 4,
+                "max": 4.5
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "frequencies",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "frequencies",
+          "analysisVersion": "1.0.0",
+          "variables": ["smjer"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "analysisId": "frequencies",
+          "analysisVersion": "1.0.0",
+          "datasetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "resultSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2",
+          "rowCount": 4,
+          "result": {
+            "kind": "frequencies",
+            "columns": [
+              {
+                "name": "smjer",
+                "n": 4,
+                "missing": 0,
+                "values": [
+                  {
+                    "value": "A",
+                    "count": 2,
+                    "share": 0.5
+                  },
+                  {
+                    "value": "B",
+                    "count": 2,
+                    "share": 0.5
+                  }
+                ],
+                "otherCount": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "correlation",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "correlation",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "analysisId": "correlation",
+          "analysisVersion": "1.0.0",
+          "datasetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "resultSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2",
+          "rowCount": 4,
+          "result": {
+            "kind": "correlation",
+            "pairs": [
+              {
+                "a": "sati",
+                "b": "ocjena",
+                "n": 3,
+                "r": 0.981981
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "correlation-too-few-pairs",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "correlation",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3],
+            [4, 3.5],
+            [6, null],
+            [8, null]
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "analysisId": "correlation",
+          "analysisVersion": "1.0.0",
+          "datasetSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "resultSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2",
+          "rowCount": 4,
+          "result": {
+            "kind": "correlation",
+            "pairs": [
+              {
+                "a": "sati",
+                "b": "ocjena",
+                "n": 2,
+                "r": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown-variable",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["nema"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000501"
+        }
+      }
+    },
+    {
+      "name": "wrong-kind",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["smjer"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000502"
+        }
+      }
+    },
+    {
+      "name": "unknown-field",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati"],
+          "identitet": "x",
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000503"
+        }
+      }
+    },
+    {
+      "name": "unknown-version",
+      "kind": "error",
+      "code": "unknown_analysis_version",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "0.0.1",
+          "variables": ["sati"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "unknown_analysis_version",
+          "code": "unknown_analysis_version",
+          "messageKey": "errors.unknownAnalysisVersion",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000504"
+        }
+      }
+    },
+    {
+      "name": "origin-missing",
+      "kind": "error",
+      "code": "origin_missing",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_missing",
+          "code": "origin_missing",
+          "messageKey": "errors.originMissing",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000505"
+        }
+      }
+    },
+    {
+      "name": "origin-mismatch",
+      "kind": "error",
+      "code": "origin_mismatch",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://drugo.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_mismatch",
+          "code": "origin_mismatch",
+          "messageKey": "errors.originMismatch",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000506"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "cross_site",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "cross-site",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "cross_site",
+          "code": "cross_site",
+          "messageKey": "errors.crossSite",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000507"
+        }
+      }
+    },
+    {
+      "name": "body-too-large",
+      "kind": "error",
+      "code": "body_too_large",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "1025"
+        },
+        "rawBody": "{\"analysisId\":\"descriptive\",\"analysisVersion\":\"1.0.0\",\"variables\":[\"sati\",\"ocjena\"],\"dataset\":{\"columns\":[{\"name\":\"sati\",\"kind\":\"numeric\"},{\"name\":\"ocjena\",\"kind\":\"numeric\"},{\"name\":\"smjer\",\"kind\":\"category\"}],\"rows\":[[2,3,\"A\"],[4,3.5,\"B\"],[6,4.5,\"A\"],[8,null,\"B\"]]}}"
+      },
+      "response": {
+        "status": 413,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_too_large",
+          "code": "body_too_large",
+          "messageKey": "errors.bodyTooLarge",
+          "status": 413,
+          "requestId": "00000000-0000-4000-8000-000000000508"
+        }
+      }
+    },
+    {
+      "name": "body-timeout",
+      "kind": "error",
+      "code": "body_timeout",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "15"
+        },
+        "rawBody": "{\"analysisId\":\"descr"
+      },
+      "response": {
+        "status": 408,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_timeout",
+          "code": "body_timeout",
+          "messageKey": "errors.bodyTimeout",
+          "status": 408,
+          "requestId": "00000000-0000-4000-8000-000000000509"
+        }
+      }
+    },
+    {
+      "name": "content-length-invalid",
+      "kind": "error",
+      "code": "content_length_invalid",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "-1"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_invalid",
+          "code": "content_length_invalid",
+          "messageKey": "errors.contentLengthInvalid",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000000050a"
+        }
+      }
+    },
+    {
+      "name": "content-length-mismatch",
+      "kind": "error",
+      "code": "content_length_mismatch",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "1"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_mismatch",
+          "code": "content_length_mismatch",
+          "messageKey": "errors.contentLengthMismatch",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000000050b"
+        }
+      }
+    },
+    {
+      "name": "body-stream-error",
+      "kind": "error",
+      "code": "body_stream_error",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "15"
+        },
+        "rawBody": "{\"analysisId\":\"descr"
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_stream_error",
+          "code": "body_stream_error",
+          "messageKey": "errors.bodyStreamError",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000000050c"
+        }
+      }
+    },
+    {
+      "name": "unsupported-media-type",
+      "kind": "error",
+      "code": "unsupported_media_type",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "text/plain"
+        },
+        "rawBody": "{\"analysisId\":\"descriptive\",\"analysisVersion\":\"1.0.0\",\"variables\":[\"sati\",\"ocjena\"],\"dataset\":{\"columns\":[{\"name\":\"sati\",\"kind\":\"numeric\"},{\"name\":\"ocjena\",\"kind\":\"numeric\"},{\"name\":\"smjer\",\"kind\":\"category\"}],\"rows\":[[2,3,\"A\"],[4,3.5,\"B\"],[6,4.5,\"A\"],[8,null,\"B\"]]}}"
+      },
+      "response": {
+        "status": 415,
+        "contentType": "application/json",
+        "body": {
+          "error": "unsupported_media_type",
+          "code": "unsupported_media_type",
+          "messageKey": "errors.unsupportedMediaType",
+          "status": 415,
+          "requestId": "00000000-0000-4000-8000-00000000050d"
+        }
+      }
+    },
+    {
+      "name": "invalid-json",
+      "kind": "error",
+      "code": "invalid_json",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "rawBody": "{\"analysisId\":\"descr"
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_json",
+          "code": "invalid_json",
+          "messageKey": "errors.invalidJson",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-00000000050e"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000000050f"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000000510"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "analysisId": "descriptive",
+          "analysisVersion": "1.0.0",
+          "variables": ["sati", "ocjena"],
+          "columns": [
+            {
+              "name": "sati",
+              "kind": "numeric"
+            },
+            {
+              "name": "ocjena",
+              "kind": "numeric"
+            },
+            {
+              "name": "smjer",
+              "kind": "category"
+            }
+          ],
+          "rows": [
+            [2, 3, "A"],
+            [4, 3.5, "B"],
+            [6, 4.5, "A"],
+            [8, null, "B"]
+          ]
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000511"
+        }
+      }
+    }
+  ]
+}

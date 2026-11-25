@@ -23,6 +23,8 @@ export * from "./work-team/index.ts";
 export * from "./assistant-match/index.ts";
 export * from "./retention/index.ts";
 export { zagrebWall, type ZagrebWall } from "./time/index.ts";
+// SRV-V13-UGOVOR-SLAJD: the canonical document of a slides work (docs/contracts/slides-v1.md).
+export * from "./slides/index.ts";
 // SRV-1308: the student data export lists the access log by day, as the student reads it.
 export { accessLogDaysOf, type AccessLogDay } from "./privacy/index.ts";
 // Both document and evidence name a `SourceId` (Ductus keeps them in separate

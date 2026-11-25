@@ -377,6 +377,8 @@ describe("route inventory", () => {
       "student.peer-review-work.get: app/api/student/peer-review/tasks/[taskId]/work/route.ts is not in the inventory",
       "student.peer-review.post: app/api/student/peer-review/tasks/[taskId]/review/route.ts is not in the inventory",
       "student.peer-reviews-received.get: app/api/student/assignments/[assignmentId]/peer-review/received/route.ts is not in the inventory",
+      "analysis.catalogue.get: app/api/analysis/catalogue/route.ts is not in the inventory",
+      "analysis.runs.post: app/api/analysis/runs/route.ts is not in the inventory",
       "ops.events.get: app/api/ops/events/route.ts is not in the inventory",
       "institution.assignment-late-submission.put: app/api/institution/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",
       "student.assignment-late-submission.get: app/api/student/assignments/[assignmentId]/late-submission/route.ts is not in the inventory",

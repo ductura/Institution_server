@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(5066);
+SELECT plan(5081);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1834,6 +1834,45 @@ FROM (VALUES
   ('vesna', 'false'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
   ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
 ) AS c (actor, result);
+
+-- 1i3. SRV-V13-MIG-VRSTA: the kind of document of an assignment
+-- (institution.assignment.document_kind, evidence.document.document_kind).
+-- Read like the rest of the assignment, written by nobody at runtime; a
+-- foreign assignment is no row at all. The work rows are in
+-- 046-evidence-open-work.sql.
+SELECT is(
+  pg_temp.ask(c.actor, $q$ SELECT coalesce((SELECT a.document_kind FROM institution.assignment a WHERE a.id = {z1}), 'no row') $q$),
+  c.result, format('SRV-V13-MIG-VRSTA: %s reads the document kind of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'text'), ('marko', 'no row'), ('iva', 'no row'), ('ana', 'text'),
+  ('dora', 'text'), ('tomo', 'no row'), ('petra', 'no row'), ('boris', 'no row')
+) AS c (actor, result);
+SELECT ok(pg_temp.ask(c.actor, $q$ UPDATE institution.assignment SET document_kind = 'slides' WHERE id = {z1} $q$)
+    LIKE '42501: permission denied%',
+  format('SRV-V13-MIG-VRSTA: %s cannot set the document kind of Z1', c.actor))
+FROM (VALUES ('vesna'), ('iva')) AS c (actor);
+SELECT is(
+  (SELECT a.attnotnull::text || ' ' || pg_get_expr(d.adbin, d.adrelid) || ' ' || pg_get_constraintdef(k.oid)
+     FROM pg_attribute a
+     JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+     JOIN pg_constraint k ON k.conrelid = a.attrelid AND k.conname = t.constraint_name
+    WHERE a.attrelid = t.relation::regclass AND a.attname = 'document_kind'),
+  $$true 'text'::text CHECK ((document_kind = ANY (ARRAY['text'::text, 'slides'::text])))$$,
+  format('SRV-V13-MIG-VRSTA: %s.document_kind is text or slides, never null, text by default', t.relation))
+FROM (VALUES ('institution.assignment', 'assignment_document_kind_check'),
+             ('evidence.document', 'document_document_kind_check')) AS t (relation, constraint_name);
+SELECT ok(NOT has_column_privilege('ductus_app', 'evidence.document'::regclass, 'document_kind', 'INSERT,UPDATE')
+    AND NOT has_column_privilege('ductus_app', 'institution.assignment'::regclass, 'document_kind', 'INSERT,UPDATE'),
+  'SRV-V13-MIG-VRSTA: the application role cannot write a document kind of an assignment or of a work');
+SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
+    AND has_function_privilege('ductus_evidence', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE'),
+  'SRV-V13-MIG-VRSTA: app.assignment_document_kind is a definer bridge for the evidence role only')
+  FROM pg_proc p WHERE p.oid = 'app.assignment_document_kind(uuid)'::regprocedure;
+SELECT is(app.assignment_document_kind(pg_temp.id('z1')) || ' ' || app.assignment_document_kind(gen_random_uuid()),
+  'text text', 'SRV-V13-MIG-VRSTA: the bridge answers text for a text assignment and for an unknown one');
 
 -- 1i2a. SRV-NF4-KASNA-POLJE: whether a submission after the deadline is
 -- allowed (institution.assignment.late_submission_allowed) is set only by the

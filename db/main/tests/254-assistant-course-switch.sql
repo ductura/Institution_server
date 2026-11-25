@@ -1,5 +1,5 @@
 -- SRV-ASIST-PREKIDAC (Ductus#2055, T4): the switch "Asistent uključen" per
--- course (20261219360000). Only a teacher of the course sets and reads it; it is
+-- course (20261219400000). Only a teacher of the course sets and reads it; it is
 -- on by default; every change leaves an append-only audit row in the same call.
 -- A student of the assignment reads the availability: the institution has a
 -- published cost configuration (the same test as begin_request's ai_disabled,
