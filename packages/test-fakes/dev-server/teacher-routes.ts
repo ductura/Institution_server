@@ -576,6 +576,54 @@ export const TEACHER_HANDLERS: Handlers = {
       body: { extension, existingSubmissionsUnchanged: false },
     };
   },
+  // SRV-NF4-IZNIMKA-ZAPIS: the late-submission exception of one student. A
+  // record is never changed or removed; a time must be later than now, than the
+  // deadline in force for the student and than the student's earlier exception.
+  "teacher.late-exceptions.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null) return { error: "not_found" };
+    const exceptions = state.lateExceptions
+      .filter((exception) => exception.assignmentId === assignment.id)
+      .map(({ assignmentId: _, ...exception }) => ({
+        ...exception,
+        reasonId: exception.createdBy === account?.id ? exception.reasonId : null,
+      }));
+    return { status: 200, body: { exceptions } };
+  },
+  "teacher.late-exception.post": ({ state, account, params, body, now }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null || account === null) return { error: "not_found" };
+    const studentId = body.studentId.toLowerCase();
+    if (!studentsOf(state, account, assignment).includes(studentId)) return { error: "not_found" };
+    const floor = [
+      now.toISOString(),
+      new Date(assignment.content.dueAt).toISOString(),
+      ...state.deadlineExtensions
+        .filter(
+          (extension) =>
+            extension.assignmentId === assignment.id &&
+            (extension.studentId === null || extension.studentId === studentId),
+        )
+        .map((extension) => extension.dueAt),
+      ...state.lateExceptions
+        .filter(
+          (exception) =>
+            exception.assignmentId === assignment.id && exception.studentId === studentId,
+        )
+        .map((exception) => exception.untilAt),
+    ].reduce((latest, value) => (value > latest ? value : latest));
+    if (body.untilAt <= floor) return { error: "invalid_input" };
+    const exception = {
+      id: randomUUID(),
+      studentId,
+      untilAt: body.untilAt,
+      reasonId: body.reasonId,
+      createdBy: account.id,
+      createdAt: now.toISOString(),
+    };
+    state.lateExceptions.push({ assignmentId: assignment.id, ...exception });
+    return { status: 201, body: { exception } };
+  },
   // SRV-1109: the Merlin roster from the fake submissions; a fingerprint is of
   // a stand-in text, since the fake renders no files.
   "teacher.merlin-roster.get": ({ state, account, params }) => {

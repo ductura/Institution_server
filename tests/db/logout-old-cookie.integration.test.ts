@@ -1843,6 +1843,28 @@ const SESSION_ROUTES = {
     body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
     live: 404,
   },
+  // SRV-NF4-IZNIMKA-ZAPIS: a live session that teaches or studies no such assignment gets 404.
+  "teacher.late-exceptions.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/late-submission-exceptions`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.late-exception.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/late-submission-exceptions`,
+    body: () => ({
+      studentId: randomUUID(),
+      untilAt: "2030-01-01T12:00:00.000Z",
+      reasonId: "agreement",
+    }),
+    live: 404,
+  },
+  "student.late-exceptions.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/late-submission-exceptions`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.deadline-history.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/deadline-extensions`,

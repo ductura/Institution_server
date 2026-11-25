@@ -180,7 +180,8 @@ describe("fake server over HTTP", () => {
     // SRV-V19-RECENZIJA-UGOVOR: peer-review.round.put, peer-review.allocate.post, peer-review.review-withdrawal.post and student.peer-review.post five each.
     // SRV-V19-GRUPA-UGOVOR: four mutating team routes five each.
     // SRV-NF4-KASNA-POLJE: institution.assignment-late-submission.put five.
-    expect(VECTORS.length - overHttp.length).toBe(786);
+    // SRV-NF4-IZNIMKA-ZAPIS: teacher.late-exception.post five.
+    expect(VECTORS.length - overHttp.length).toBe(791);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

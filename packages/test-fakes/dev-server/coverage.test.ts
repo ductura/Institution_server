@@ -2286,6 +2286,27 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.late-exceptions.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.late-exception.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "nastavnik",
+      body: { studentId: IDS.student, untilAt: "2030-01-01T12:00:00.000Z", reasonId: "agreement" },
+    },
+  },
+  "student.late-exceptions.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission-exceptions`,
+      as: "student",
+      method: "GET",
+    },
+  },
   // SRV-1903: the student submits, then withdraws before the deadline.
   "student.submission-withdrawal.post": {
     before: [commit("izmisljena-transakcija-1", 0), SUBMIT],
