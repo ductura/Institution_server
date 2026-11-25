@@ -103,6 +103,7 @@ const withoutRequestId = (body: unknown) =>
   Object.fromEntries(
     Object.entries(body as Record<string, unknown>).filter(([k]) => k !== "requestId"),
   );
+const NO_SETUP = { externalToolsAllowed: false, aiSummaryOnly: false };
 const tokenOf = (v: Vector) => v.request.headers.cookie!.slice("__Host-ductus_session=".length);
 
 describe.each([
@@ -170,7 +171,7 @@ describe("the arguments of the port", () => {
     const course = v.request.params.courseId!;
     const path = `/api/v1/institution/courses/${course.toUpperCase()}/assignments`;
     expect((await send(path, upper)).status).toBe(201);
-    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content, false]]);
+    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content, false, NO_SETUP]]);
   });
 
   it.each([
@@ -187,7 +188,59 @@ describe("the arguments of the port", () => {
     const body = { ...(v.request.body as Record<string, unknown>), isPractice };
     const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
     expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(status);
-    expect(calls.map((args) => args.at(-1))).toEqual(status === 201 ? [isPractice] : []);
+    expect(calls.map((args) => args[5])).toEqual(status === 201 ? [isPractice] : []);
+  });
+
+  // UGOVORI-API zs-2/zs-3 (INT-32: the teacher's form sends them and was 422).
+  const setupCase = (extra: Record<string, unknown>, policy?: string) => {
+    const v = CREATE.find((x) => x.kind === "success")!;
+    const base = v.request.body as Record<string, unknown>;
+    const body: Record<string, unknown> = {
+      ...base,
+      ...(policy === undefined ? {} : { aiPolicy: policy, aiPurposes: [] }),
+      ...extra,
+    };
+    return { v, body };
+  };
+  it.each([
+    [{ externalToolsAllowed: true }, { externalToolsAllowed: true, aiSummaryOnly: false }],
+    [{ externalToolsAllowed: false }, NO_SETUP],
+    [{ aiSummaryOnly: true }, { externalToolsAllowed: false, aiSummaryOnly: true }],
+    [
+      { externalToolsAllowed: true, aiSummaryOnly: true, groupIds: [] },
+      { externalToolsAllowed: true, aiSummaryOnly: true },
+    ],
+  ])("create: %j is 201 and the port gets the rules %j", async (extra, setup) => {
+    const { v, body } = setupCase(extra, "partially_allowed");
+    createAnswer = () => ({ status: "created", id: v.response.body.id as string });
+    await start(v.request.headers.origin!);
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(201);
+    const setupKeys = new Set(["requestKey", "externalToolsAllowed", "aiSummaryOnly", "groupIds"]);
+    const content = Object.fromEntries(Object.entries(body).filter(([k]) => !setupKeys.has(k)));
+    expect(calls).toEqual([
+      ["create", tokenOf(v), v.request.params.courseId, body.requestKey, content, false, setup],
+    ]);
+  });
+
+  it.each([
+    ["externalToolsAllowed null", { externalToolsAllowed: null }, undefined],
+    ['externalToolsAllowed "true"', { externalToolsAllowed: "true" }, undefined],
+    ["aiSummaryOnly 1", { aiSummaryOnly: 1 }, undefined],
+    ["aiSummaryOnly under a prohibited policy", { aiSummaryOnly: true }, "prohibited"],
+    [
+      "aiSummaryOnly with a purpose",
+      { aiSummaryOnly: true, aiPolicy: "partially_allowed", aiPurposes: ["proofreading"] },
+      undefined,
+    ],
+    ["a group, not stored yet", { groupIds: ["00000000-0000-4000-8000-00000000a601"] }, undefined],
+    ["groupIds that is not an array", { groupIds: {} }, undefined],
+  ])("create: %s is 422 before the port", async (_name, extra, policy) => {
+    const { v, body } = setupCase(extra, policy);
+    await start(v.request.headers.origin!);
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(422);
+    expect(calls).toEqual([]);
   });
 
   it("create: no key, or a key that is not a UUID, is 422 before the port", async () => {
