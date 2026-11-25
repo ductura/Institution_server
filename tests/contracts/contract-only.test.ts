@@ -76,7 +76,6 @@ import {
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
   createAssignmentCodeTestsRoutesFor,
-  createQuestionnaireResponsesRoutesFor,
   createQuestionnaireRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createWorkRubricRoutesFor,

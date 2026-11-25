@@ -109,7 +109,7 @@ function sameOrigin(request: IncomingMessage): boolean {
 
 type Answers = { answers: { questionId: string; value: unknown }[] };
 
-/** The write handler of both POST routes: guard, id, body, contract, then `store`. */
+/** The write handler of both POST routes: guard, body, contract, then `store`. */
 function writeRoute(
   contract: typeof SUBMIT,
   store: (token: string, id: string, answers: Answers["answers"]) => Promise<void>,
