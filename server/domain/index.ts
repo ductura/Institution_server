@@ -17,6 +17,8 @@ export * from "./export-snapshot/index.ts";
 export * from "./provenance-share/index.ts";
 // SRV-V19-DNEVNIK-RUTE: the digest and the input checks of the practice journal.
 export * from "./practice-journal/index.ts";
+// SRV-V19-GRUPA-RUTE: order of team members and assembly of the contribution.
+export * from "./work-team/index.ts";
 // SRV-1230: the deterministic match with an answer of the assistant.
 export * from "./assistant-match/index.ts";
 export * from "./retention/index.ts";

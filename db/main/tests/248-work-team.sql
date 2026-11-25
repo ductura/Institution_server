@@ -190,6 +190,25 @@ SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member(
 SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'add') $$, (SELECT team FROM made))), 'ok', 'a second member fits the team');
 SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'remove') $$, (SELECT team FROM made))), 'ok', 'and is removed again');
 
+-- A student who withdrew from the course stays a member of the team until removed:
+-- the teacher can remove them (20261219330000), and then they are gone from the
+-- list and from the places of the team.
+SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'add') $$, (SELECT team FROM made))), 'ok', 'Boris joins the teacher''s team');
+UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('boris');
+SELECT is(pg_temp.ask('vesna', format($$ SELECT count(*) FROM app.teacher_teams({z1}) WHERE team_id = %L AND student_id = {boris} $$, (SELECT team FROM made))), '1',
+  'a withdrawn student is still listed as a member of the team');
+SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'add') $$, pg_temp.team_of('dora'))), 'ZD404',
+  'a withdrawn student is not added to a team');
+SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'remove') $$, pg_temp.team_of('dora'))), 'ZD404',
+  'removing a withdrawn student from a team they are not in reads 404');
+SELECT is(pg_temp.code('tomo', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'remove') $$, (SELECT team FROM made))), 'ZD404',
+  'a teacher of another course cannot remove them');
+SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'remove') $$, (SELECT team FROM made))), 'ok',
+  'the teacher removes a member who withdrew from the course');
+SELECT is(pg_temp.ask('vesna', format($$ SELECT count(*) FROM app.teacher_teams({z1}) WHERE student_id = {boris} $$)), '0',
+  'the withdrawn student is gone from the teams and is not listed as unassigned');
+UPDATE institution.course_member SET member_to = NULL WHERE user_id = pg_temp.id('boris');
+
 -- Who may add: not a student, not the other teachers, not another institution; closed input.
 SELECT is(pg_temp.code(a.name, format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'add') $$, (SELECT team FROM made))), 'ZD404',
   a.name || ' does not add to a team of Z1')
@@ -257,7 +276,7 @@ SELECT is(pg_temp.ask_as('ductus_identity', 'anon', $$ TRUNCATE institution.assi
 SELECT is((SELECT count(*)::integer FROM institution.work_team_member_event e
             WHERE e.actor_role = 'student' AND e.actor_id <> e.student_id), 0, 'a student acted only on themselves');
 SELECT is((SELECT count(*)::integer FROM institution.work_team_member_event e
-            WHERE e.actor_role = 'teacher' AND e.actor_id = pg_temp.id('vesna')), 6, 'the teacher''s events carry the teacher');
+            WHERE e.actor_role = 'teacher' AND e.actor_id = pg_temp.id('vesna')), 8, 'the teacher''s events carry the teacher');
 SELECT throws_ok(
   format($$ INSERT INTO institution.work_team_member_event (institution_id, assignment_id, team_id, student_id, action, actor_id, actor_role)
             VALUES (%L, %L, %L, %L, 'join', %L, 'student') $$,

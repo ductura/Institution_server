@@ -61,6 +61,7 @@ import {
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
+  createWorkTeamRoutesFor,
   createThesisRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -260,6 +261,18 @@ const SRV_V19_DNEVNIK = [
   "practice.entries.post",
   "practice.signoffs.post",
   "practice.signoffs.get",
+];
+// SRV-V19-GRUPA-RUTE: the nine routes of the work teams.
+const SRV_V19_GRUPA = [
+  "institution.assignment-team-setting.put",
+  "institution.assignment-team-setting.get",
+  "student.work-team.get",
+  "student.work-team.post",
+  "teacher.work-teams.get",
+  "teacher.work-teams.post",
+  "teacher.work-team-member.post",
+  "student.work-team-contribution.get",
+  "teacher.work-team-contribution.get",
 ];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
@@ -619,6 +632,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createPracticeJournalRoutesFor(databases.main)",
     ids: SRV_V19_DNEVNIK,
     routes: () => createPracticeJournalRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createWorkTeamRoutesFor(databases.main)",
+    ids: SRV_V19_GRUPA,
+    routes: () => createWorkTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createThesisRoutesFor(databases.main)",
@@ -1070,6 +1088,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_1408,
       ...SRV_1413,
       ...SRV_V19_DNEVNIK,
+      ...SRV_V19_GRUPA,
       ...SRV_MENTOR_2,
       "live.document.get",
       "live.document.put",

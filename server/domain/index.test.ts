@@ -88,6 +88,7 @@ describe("server/domain imports nothing outside itself", () => {
       "sync",
       "text",
       "time",
+      "work-team",
     ]);
   });
 
