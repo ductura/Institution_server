@@ -365,6 +365,13 @@ export type Operations = {
     success: { status: 200; body: { "importId": string; "source": "merlin" | "isvu"; "expiresAt": string; "counts": { "new": number; "alreadyEnrolled": number; "unsuitable": number }; "rows": ({ "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "new"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "already_enrolled"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "unsuitable"; "reason": "invalid_identifier" | "missing_name" | "duplicate" | "unknown_account" | "ineligible_account" | "name_mismatch" | "removed" | "course_teacher" })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "not_found" | "unavailable" | "roster_columns_missing" | "roster_too_many_rows" | "roster_malformed";
   };
+  "institution.student-data-export-students.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "exports": ({ "exportId": string; "studentId": string; "state": "requested" | "approved" | "ready" | "downloaded" | "expired" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "institution.student-data-exports-approve.post": {
     params: { "exportId": string };
     query: undefined;
@@ -1048,7 +1055,7 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabledCheckIds": (string)[]; "lektaProfileId": string | null }; headers: {  } };
+    success: { status: 200; body: { "enabledCheckIds": (string)[]; "lektaProfileId": string | null; "citationStyle"?: "fpzg" | "apa" | "chicago" | "ieee" | "vancouver" | "fusnote" }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.work-sources.delete": {
@@ -1177,6 +1184,13 @@ export type Operations = {
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
   };
+  "teacher.comment-bank-entry.put": {
+    params: { "entryId": string };
+    query: undefined;
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise"; "label"?: string | null };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "teacher.comment-bank.delete": {
     params: { "entryId": string };
     query: undefined;
@@ -1188,13 +1202,13 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "createdAt": string })[] }; headers: {  } };
+    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "label"?: string | null; "createdAt": string })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "teacher.comment-bank.post": {
     params: undefined;
     query: undefined;
-    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise" };
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise"; "label"?: string | null };
     success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };

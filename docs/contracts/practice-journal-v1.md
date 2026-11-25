@@ -1,6 +1,6 @@
 # Dnevnik stručne prakse v1
 
-Zadatak: SRV-V19-DNEVNIK-UGOVOR `v19-dnevnik-ugovor` (Ductus#2055, nalog c.7146962118; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 1, nalazi V19-1 do V19-4). Status: **aditivno, unatrag kompatibilno** (API 1.117.0). Ovo je samo ugovor: baza (`SRV-V19-DNEVNIK-BAZA`) i rute (`SRV-V19-DNEVNIK-RUTE`) dolaze kasnije, pa rute još nisu montirane. Lažni dev server ih već odgovara izmišljenim podacima.
+Zadatak: SRV-V19-DNEVNIK-UGOVOR `v19-dnevnik-ugovor` (Ductus#2055, nalog c.7146962118; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 1, nalazi V19-1 do V19-4). Status: **aditivno, unatrag kompatibilno** (API 1.117.0). Baza je `SRV-V19-DNEVNIK-BAZA`, a rute su montirane sa `SRV-V19-DNEVNIK-RUTE` (`server/http/practice-journal/`). Lažni dev server ih odgovara izmišljenim podacima.
 
 ## Zašto
 
@@ -78,4 +78,4 @@ Tekstovi su u `locales/hr.ts` i `locales/en.ts` pod `errors`.
 - pravnu snagu potpisa i potrebu za potpisom voditelja prakse u organizaciji (OP-V19-1);
 - ocjenu, bodove i bilo kakvu sankciju (ne postoje);
 - obavijest o potpisu (vrste obavijesti su zatvorene; nova vrsta lomi ugovor, V19-12);
-- tablice, RLS i migracije (`SRV-V19-DNEVNIK-BAZA`, `20261219100000_practice_journal.sql`) i rute na poslužitelju (`SRV-V19-DNEVNIK-RUTE`).
+- tablice, RLS i migracije (`SRV-V19-DNEVNIK-BAZA`, `20261219100000_practice_journal.sql`); rute su `SRV-V19-DNEVNIK-RUTE`.

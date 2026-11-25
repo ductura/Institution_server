@@ -89,10 +89,16 @@ describe("createTeacherNotes: templates", () => {
       id: TEMPLATE,
       createdAt: "2026-11-21T09:00:00.000Z",
     });
-    expect(create.calls[0]!.values).toEqual(["Dodajte stranicu u navod.", "must"]);
+    expect(create.calls[0]!.values).toEqual(["Dodajte stranicu u navod.", "must", null]);
+
+    const labelled = scripted([{ id: TEMPLATE, createdAt: AT }]);
+    await labelled.port.createTemplate("t", "Dodajte stranicu u navod.", "must", "Navod");
+    expect(labelled.calls[0]!.text).toContain("create_comment_template($1, $2, $3)");
+    expect(labelled.calls[0]!.values).toEqual(["Dodajte stranicu u navod.", "must", "Navod"]);
 
     const list = scripted([
-      { templateId: TEMPLATE, kind: "praise", body: "Dobro.", createdAt: AT },
+      { templateId: TEMPLATE, kind: "praise", body: "Dobro.", label: "Pohvala", createdAt: AT },
+      { templateId: NOTE, kind: "q", body: "Zašto?", label: null, createdAt: AT },
     ]);
     expect(await list.port.listTemplates("t")).toEqual({
       status: "ok",
@@ -101,6 +107,14 @@ describe("createTeacherNotes: templates", () => {
           templateId: TEMPLATE,
           kind: "praise",
           body: "Dobro.",
+          label: "Pohvala",
+          createdAt: "2026-11-21T09:00:00.000Z",
+        },
+        {
+          templateId: NOTE,
+          kind: "q",
+          body: "Zašto?",
+          label: null,
           createdAt: "2026-11-21T09:00:00.000Z",
         },
       ],
@@ -110,6 +124,30 @@ describe("createTeacherNotes: templates", () => {
     const remove = scripted([{}]);
     expect(await remove.port.deleteTemplate("t", TEMPLATE)).toEqual({ status: "deleted" });
     expect(remove.calls[0]!.text).toBe("SELECT collaboration.delete_comment_template($1::uuid)");
+  });
+});
+
+describe("createTeacherNotes: editing a template", () => {
+  it("sends id, text, kind and label to the RPC under the caller's token", async () => {
+    const run = scripted([{}]);
+    expect(await run.port.updateTemplate("t", TEMPLATE, "Novi tekst.", "sugg", null)).toEqual({
+      status: "updated",
+    });
+    expect(run.tokens).toEqual(["t"]);
+    expect(run.calls[0]!.text).toBe(
+      "SELECT collaboration.update_comment_template($1::uuid, $2, $3, $4)",
+    );
+    expect(run.calls[0]!.values).toEqual([TEMPLATE, "Novi tekst.", "sugg", null]);
+  });
+
+  it.each([
+    ["ZD401", "unauthenticated"],
+    ["ZD403", "not_found"],
+    ["ZD422", "invalid"],
+    ["XX000", "unavailable"],
+  ])("maps %s to %s", async (code, status) => {
+    const run = scripted([], dbError(code));
+    expect(await run.port.updateTemplate("t", TEMPLATE, "x", "q", "Oznaka")).toEqual({ status });
   });
 });
 
@@ -160,7 +198,11 @@ describe("createTeacherNotes: refusals", () => {
   it("is unavailable for a listed row of an unexpected shape", async () => {
     const note = scripted([{ noteId: NOTE, body: "x", anchor: [1], createdAt: AT }]);
     expect(await note.port.listNotes("t", "doc-a")).toEqual({ status: "unavailable" });
-    const template = scripted([{ templateId: TEMPLATE, kind: "ocjena", body: "x", createdAt: AT }]);
+    const template = scripted([
+      { templateId: TEMPLATE, kind: "ocjena", body: "x", label: null, createdAt: AT },
+    ]);
     expect(await template.port.listTemplates("t")).toEqual({ status: "unavailable" });
+    const unlabelled = scripted([{ templateId: TEMPLATE, kind: "q", body: "x", createdAt: AT }]);
+    expect(await unlabelled.port.listTemplates("t")).toEqual({ status: "unavailable" });
   });
 });
