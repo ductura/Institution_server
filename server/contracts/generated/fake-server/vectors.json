@@ -36027,7 +36027,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.139.0",
+        "apiVersion": "1.140.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -36043,7 +36043,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.139.0",
+        "apiVersion": "1.140.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -43892,6 +43892,112 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000906"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-assistant-requests.get",
+    "name": "limited",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "limit": 20,
+        "used": 3
+      }
+    }
+  },
+  {
+    "route": "student.assignment-assistant-requests.get",
+    "name": "unlimited",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "limit": null,
+        "used": 0
+      }
+    }
+  },
+  {
+    "route": "student.assignment-assistant-requests.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000256a401"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-assistant-requests.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000256a402"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-assistant-requests.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000256a403"
       }
     }
   },

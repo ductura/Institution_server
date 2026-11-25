@@ -7,6 +7,10 @@
 // refusal (ZD403, not_found) is not_found, the same as for a course or an
 // assignment that does not exist, and an id that is not a lowercase uuid is
 // never sent. A row the port cannot vouch for throws, so the route answers 503.
+//
+// SRV-ASIST-BROJAC (Ductus#2055 T2): migration 20261219450000. A student of the
+// assignment reads the daily request limit of the institution (null: none) and
+// today's requests that were not refused (app.my_assistant_requests).
 
 import type { WithActor } from "./with-actor.ts";
 
@@ -18,6 +22,10 @@ export type AssistantAvailability =
   | { readonly status: "read"; readonly available: boolean }
   | { readonly status: "unauthorized" | "not_found" };
 
+export type AssistantRequestCount =
+  | { readonly status: "read"; readonly limit: number | null; readonly used: number }
+  | { readonly status: "unauthorized" | "not_found" };
+
 export type CourseAssistantPort = {
   /** A teacher of the course sets it; the state in force again changes nothing. */
   set(token: string, courseId: string, enabled: boolean): Promise<CourseAssistantSwitch>;
@@ -25,14 +33,23 @@ export type CourseAssistantPort = {
   read(token: string, courseId: string): Promise<CourseAssistantSwitch>;
   /** A student of the assignment: a published cost configuration and the course's switch on. */
   available(token: string, assignmentId: string): Promise<AssistantAvailability>;
+  /** A student of the assignment: the daily request limit and today's requests. */
+  requests(token: string, assignmentId: string): Promise<AssistantRequestCount>;
 };
 
 const SET_SQL = `SELECT enabled FROM app.course_assistant_switch($1::uuid, $2::boolean)`;
 const READ_SQL = `SELECT enabled FROM app.course_assistant_switch_read($1::uuid)`;
 const AVAILABLE_SQL = `SELECT outcome, available FROM app.my_assistant_available($1::uuid)`;
+const REQUESTS_SQL = `SELECT outcome, request_limit AS "limit", used FROM app.my_assistant_requests($1::uuid)`;
 const LOWER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
-type Row = { outcome?: unknown; enabled?: unknown; available?: unknown };
+type Row = {
+  outcome?: unknown;
+  enabled?: unknown;
+  available?: unknown;
+  limit?: unknown;
+  used?: unknown;
+};
 
 function onlyRow(rows: readonly Row[]): Row {
   const row = rows.length === 1 ? rows[0] : undefined;
@@ -42,6 +59,12 @@ function onlyRow(rows: readonly Row[]): Row {
 
 function booleanOf(value: unknown): boolean {
   if (typeof value !== "boolean") throw new Error("Invalid course assistant response");
+  return value;
+}
+
+function countOf(value: unknown, minimum: number): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < minimum)
+    throw new Error("Invalid course assistant response");
   return value;
 }
 
@@ -102,6 +125,24 @@ export function createCourseAssistantPort(withActor: WithActor): CourseAssistant
         }),
       );
       // The function raises no ZD422; one would be a database it cannot vouch for.
+      if (result.status === "invalid_input") throw new Error("Invalid course assistant response");
+      return result;
+    },
+    async requests(token, assignmentId) {
+      if (!LOWER_UUID.test(assignmentId)) return { status: "not_found" };
+      const result = await refused(() =>
+        withActor(token, async (tx) => {
+          const row = onlyRow((await tx.query<Row>(REQUESTS_SQL, [assignmentId])).rows);
+          if (row.outcome === "not_found" && row.limit === null && row.used === null)
+            return { status: "not_found" as const };
+          if (row.outcome !== "found") throw new Error("Invalid course assistant response");
+          return {
+            status: "read" as const,
+            limit: row.limit === null ? null : countOf(row.limit, 1),
+            used: countOf(row.used, 0),
+          };
+        }),
+      );
       if (result.status === "invalid_input") throw new Error("Invalid course assistant response");
       return result;
     },
