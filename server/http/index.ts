@@ -208,6 +208,11 @@ export {
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export {
+  createQuestionnaireResponsesRoutes,
+  createQuestionnaireResponsesRoutesFor,
+  type QuestionnaireResponsesPort,
+} from "./questionnaire-responses.ts";
+export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
 } from "./declaration-question.ts";

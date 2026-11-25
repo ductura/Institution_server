@@ -582,6 +582,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
   },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE (Ductus#2058; val 18, V18-1): a student answers an open questionnaire once; a teacher enters a sheet by hand.
+  "app/api/student/questionnaires/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/responses/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/teacher/questionnaires/[id]/responses/manual/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
     methods: ["GET", "PUT"],
