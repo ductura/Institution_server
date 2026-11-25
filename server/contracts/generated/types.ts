@@ -2080,6 +2080,13 @@ export type Operations = {
     success: { status: 200; body: { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdf"; "reportHash": null; "docxBase64": string; "noticeKey": "workExport.plainPdf" } | { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdfa-2u"; "reportHash": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "work.export-sheet-csv.get": {
+    params: { "documentId": string };
+    query: { "sheet"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "content-disposition"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.export.get": {
     params: { "documentId": string };
     query: { "format": "docx" | "pdf"; "versionId"?: string };

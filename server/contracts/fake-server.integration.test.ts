@@ -46,6 +46,7 @@ function send(
           // A JPEG or DOCX answer (SRV-1102, SRV-1310) is compared in Base64, as the vector writes it.
           body: Buffer.concat(chunks).toString(
             res.headers["content-type"] === "image/jpeg" ||
+              res.headers["content-type"] === "text/csv" ||
               String(res.headers["content-type"]).startsWith(
                 "application/vnd.openxmlformats-officedocument.",
               )
