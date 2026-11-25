@@ -38,6 +38,7 @@ import {
   createPeerReviewRoutesFor,
   createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
+  createThesisTopicRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
@@ -1068,6 +1069,24 @@ const SESSION_ROUTES = {
     method: "PUT",
     path: "/api/v1/works/izmisljeni-rad-0001/thesis-stage",
     body: () => ({ stage: "submitted_to_office" }),
+    live: 404,
+  },
+  // SRV-V16-TEMA-PRIJEDLOG: a live session with no part in any thesis reads 404 on all three.
+  "work.thesis-topic.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.thesis-topic.put": {
+    method: "PUT",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic",
+    body: () => ({ title: "Izmišljena tema rada" }),
+    live: 404,
+  },
+  "work.thesis-topic-decision.post": {
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic/decision",
+    body: () => ({ version: 1, decision: "approved" }),
     live: 404,
   },
   "student.assignment-work.get": {
@@ -2604,6 +2623,7 @@ const FACTORIES = [
   "createPeerReviewRoutesFor",
   "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
+  "createThesisTopicRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
@@ -2749,6 +2769,7 @@ const MOUNTED = [
   ...createPeerReviewRoutesFor(databases.main),
   ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
+  ...createThesisTopicRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),

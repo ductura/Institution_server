@@ -98,6 +98,13 @@ export {
   WorkThesisFormInput,
   thesisRoutes,
 } from "./thesis.ts";
+export {
+  THESIS_TOPIC_DECISIONS,
+  THESIS_TOPIC_STATES,
+  ThesisTopicDecisionInput,
+  ThesisTopicInput,
+  thesisTopicRoutes,
+} from "./thesis-topic.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export {
