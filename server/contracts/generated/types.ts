@@ -1055,7 +1055,7 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "enabledCheckIds": (string)[]; "lektaProfileId": string | null }; headers: {  } };
+    success: { status: 200; body: { "enabledCheckIds": (string)[]; "lektaProfileId": string | null; "citationStyle"?: "fpzg" | "apa" | "chicago" | "ieee" | "vancouver" | "fusnote" }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.work-sources.delete": {

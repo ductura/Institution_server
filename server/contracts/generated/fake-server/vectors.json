@@ -48371,7 +48371,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": "agr-diplomski"
+        "lektaProfileId": "agr-diplomski",
+        "citationStyle": "apa"
       }
     }
   },
@@ -48401,7 +48402,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": null
+        "lektaProfileId": null,
+        "citationStyle": "fpzg"
       }
     }
   },
