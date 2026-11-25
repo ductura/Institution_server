@@ -119,6 +119,8 @@ SELECT bag_eq(
             ('app.assignment_submissions(uuid)'), ('app.teacher_assignment_names(uuid)'),
             ('app.attach_submission_receipt(uuid,text,jsonb)'), ('app.read_submission_receipt(uuid)'),
             ('app.student_workspace()'),
+            -- INT-31 (Ductus#2055): the work beside each mentored assignment.
+            ('app.student_mentored_workspace()'),
             -- SRV-9B (✓ C-6): the public check of a receipt, with or without a session.
             ('app.public_receipt_verification(uuid,text)'),
             ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
