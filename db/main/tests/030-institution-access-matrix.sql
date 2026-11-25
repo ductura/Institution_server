@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4131);
+SELECT plan(4139);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1636,6 +1636,17 @@ SELECT is(
 FROM (VALUES
   ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
   ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
+) AS c (actor, result);
+-- 1i2b. SRV-NF4-KASNA-PROVEDBA: request_submission reads the field through
+-- app.student_late_submission_allowed, as the evidence role, only for a
+-- student of the assignment; null for everyone else. The rest is in
+-- 249-late-submission-enforcement.sql.
+SELECT is(
+  coalesce(pg_temp.ask_as('ductus_evidence', c.actor, 'SELECT app.student_late_submission_allowed({z1})::text'), 'null'),
+  c.result, format('SRV-NF4-KASNA-PROVEDBA: %s reads late submission of Z1 through the bridge: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', 'true'), ('dora', 'true'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
+  ('tomo', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
 
 -- 1i3. SRV-IZJAVA-PITANJE: the teacher's question with the declaration
