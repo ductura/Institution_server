@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.119.0",
+    "version": "1.120.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -71666,7 +71666,7 @@
     "/api/v1/student/assignments/{assignmentId}/text-check-config": {
       "get": {
         "operationId": "student.text-check-config.get",
-        "summary": "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none) and its citation style (citationStyle, fpzg when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
+        "summary": "The text checks the caller's institution turns on (enabledCheckIds, in the order of the prototype) and its Lekta profile (lektaProfileId, null when the institution has set none). The answer holds no content of any work. An inaccessible, unknown or malformed assignment id returns 404.",
         "x-access": "student_enrolled",
         "x-inventory": "app/api/student/assignments/[assignmentId]/text-check-config/route.ts",
         "parameters": [
@@ -71690,8 +71690,7 @@
                   "type": "object",
                   "required": [
                     "enabledCheckIds",
-                    "lektaProfileId",
-                    "citationStyle"
+                    "lektaProfileId"
                   ],
                   "properties": {
                     "enabledCheckIds": {
@@ -71716,6 +71715,7 @@
                       ]
                     },
                     "citationStyle": {
+                      "description": "The citation style of the caller's institution (catalogue key citation.style); fpzg when the institution has set none. Always sent.",
                       "anyOf": [
                         {
                           "const": "fpzg",
