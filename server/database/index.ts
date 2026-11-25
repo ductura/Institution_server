@@ -452,6 +452,12 @@ export {
   type RubricCriterion,
 } from "./assignment-rubric/index.ts";
 export {
+  createAssignmentCodeTests,
+  type AssignmentCodeTestsRevision,
+  type AssignmentCodeTestsStore,
+  type StoredCodeTest,
+} from "./assignment-code-tests/index.ts";
+export {
   createWorkRubric,
   type WorkRubricLevel,
   type WorkRubricMark,

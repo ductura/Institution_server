@@ -1,0 +1,99 @@
+{
+  "id": "croatian-frequencies",
+  "description": "Croatian letters in category values and column names; ties ordered by the Croatian collation.",
+  "request": {
+    "analysisId": "frequencies",
+    "analysisVersion": "1.0.0",
+    "variables": ["grad", "boja"],
+    "columns": [
+      {
+        "name": "grad",
+        "kind": "category"
+      },
+      {
+        "name": "boja",
+        "kind": "category"
+      }
+    ],
+    "rows": [
+      ["Šibenik", "žuta"],
+      ["Čakovec", "crvena"],
+      ["Đakovo", "žuta"],
+      ["Ćuprija", "crvena"],
+      ["Zagreb", "žuta"],
+      ["Čakovec", "đurđica"],
+      ["Šibenik", null],
+      ["Zagreb", "crvena"],
+      ["Čakovec", "žuta"],
+      [null, "crvena"]
+    ]
+  },
+  "expected": {
+    "analysisId": "frequencies",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "d594255a28e963726f9365daaca4381ea6448f0bcc5dc33fe197b70d1f6449e2",
+    "resultSha256": "24b1dd41dc1ca06586f633baca9390d4b4722ace435164a38aa51e19979f8d68",
+    "rowCount": 10,
+    "result": {
+      "kind": "frequencies",
+      "columns": [
+        {
+          "name": "grad",
+          "n": 9,
+          "missing": 1,
+          "values": [
+            {
+              "value": "Čakovec",
+              "count": 3,
+              "share": 0.333333
+            },
+            {
+              "value": "Šibenik",
+              "count": 2,
+              "share": 0.222222
+            },
+            {
+              "value": "Zagreb",
+              "count": 2,
+              "share": 0.222222
+            },
+            {
+              "value": "Ćuprija",
+              "count": 1,
+              "share": 0.111111
+            },
+            {
+              "value": "Đakovo",
+              "count": 1,
+              "share": 0.111111
+            }
+          ],
+          "otherCount": 0
+        },
+        {
+          "name": "boja",
+          "n": 9,
+          "missing": 1,
+          "values": [
+            {
+              "value": "crvena",
+              "count": 4,
+              "share": 0.444444
+            },
+            {
+              "value": "žuta",
+              "count": 4,
+              "share": 0.444444
+            },
+            {
+              "value": "đurđica",
+              "count": 1,
+              "share": 0.111111
+            }
+          ],
+          "otherCount": 0
+        }
+      ]
+    }
+  }
+}

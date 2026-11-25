@@ -95,6 +95,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["invalid_ai_policy", "errors.invalidAiPolicy"],
   ["invalid_ai_purposes", "errors.invalidAiPurposes"],
   ["invalid_evidence_profile", "errors.invalidEvidenceProfile"],
+  ["invalid_code_tests", "errors.invalidCodeTests"],
 ]);
 
 /** The message key of a code; throws for a code the table does not have. */

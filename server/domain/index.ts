@@ -31,6 +31,8 @@ export * from "./questionnaire/index.ts";
 export * from "./qualitative-coding/index.ts";
 // SRV-V13-UGOVOR-SLAJD: the canonical document of a slides work (docs/contracts/slides-v1.md).
 export * from "./slides/index.ts";
+// SRV-V15-IZVRSITELJ: the statistical analysis of val 15 (stateless, deterministic).
+export * from "./analysis/index.ts";
 // SRV-1308: the student data export lists the access log by day, as the student reads it.
 export { accessLogDaysOf, type AccessLogDay } from "./privacy/index.ts";
 // Both document and evidence name a `SourceId` (Ductus keeps them in separate

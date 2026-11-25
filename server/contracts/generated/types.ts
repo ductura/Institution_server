@@ -904,6 +904,13 @@ export type Operations = {
     success: { status: 200; body: { "assistantEnabled": boolean }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "student.assignment-code-tests.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "revisionNo": number; "language": "javascript"; "tests": ({ "id": string; "title": string; "input": unknown; "expected": unknown })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.assignment-format-rules.get": {
     params: { "assignmentId": string };
     query: { [key: string]: unknown };
@@ -1281,6 +1288,20 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "access": "allowed" | "denied"; "scope": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "teacher.assignment-code-tests.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "revisionNo": number; "language": "javascript"; "tests": ({ "id": string; "title": string; "input": unknown; "expected": unknown })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.assignment-code-tests.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "language": "javascript"; "tests": ({ "id": string; "title": string; "input": unknown; "expected": unknown })[] };
+    success: { status: 200; body: { "revisionNo": number; "language": "javascript"; "tests": ({ "id": string; "title": string; "input": unknown; "expected": unknown })[] }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_code_tests" | "unavailable";
   };
   "teacher.assignment-copy.post": {
     params: { "assignmentId": string };

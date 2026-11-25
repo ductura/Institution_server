@@ -12,7 +12,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // route: a new member of an existing route is a major release of
 // @ductura/contracts (scripts/release/README.md, QA #92). Access comes only
 // from the relation (C-23). Database: app.course_assistant_switch,
-// app.course_assistant_switch_read, app.my_assistant_available (20261219400000).
+// app.course_assistant_switch_read, app.my_assistant_available (20261219440000).
 
 const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",

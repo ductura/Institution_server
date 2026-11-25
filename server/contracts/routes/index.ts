@@ -155,6 +155,12 @@ export {
   RUBRIC_MAX_CRITERIA,
 } from "./assignment-rubric.ts";
 export {
+  AssignmentCodeTestsInput,
+  assignmentCodeTestsRoutes,
+  CODE_TESTS_MAX,
+  CODE_TESTS_MAX_BYTES,
+} from "./assignment-code-tests.ts";
+export {
   courseAggregateGet,
   CourseAggregateParams,
   type CourseAggregate,

@@ -1463,6 +1463,24 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.assignment-rubric.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/rubric`, as: "student" },
   },
+  "teacher.assignment-code-tests.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/code-tests`, as: "nastavnik" },
+  },
+  "teacher.assignment-code-tests.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/code-tests`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: {
+        language: "javascript",
+        tests: [{ id: "zbroj", title: "Izmišljeni zbroj", input: [1, 2], expected: 3 }],
+      },
+    },
+  },
+  "student.assignment-code-tests.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/code-tests`, as: "student" },
+  },
   "institution.milestone-template.get": {
     request: { path: "/api/v1/institution/milestone-template", as: "administrator" },
   },

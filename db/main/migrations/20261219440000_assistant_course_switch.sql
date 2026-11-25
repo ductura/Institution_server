@@ -70,7 +70,7 @@ CREATE POLICY assistant_course_switch_event_owner ON audit.assistant_course_swit
 
 -- (b): the latest service version has a cap, and the latest version of the
 -- institution has every limit and the reservation. Exactly the condition under
--- which assistant.begin_request does not answer ai_disabled; 254 checks both
+-- which assistant.begin_request does not answer ai_disabled; 255 checks both
 -- agree. Called only by the functions below, never by a role, with a course
 -- the caller already found in the actor's institution; the institution is the
 -- course's, never a parameter (U1).

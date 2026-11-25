@@ -903,6 +903,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
   },
+  // SRV-V21-KOD-TESTOVI-RUTA (Ductus#2058, val 21): the code tests of an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/code-tests/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7168911312",
+  },
+  "app/api/student/assignments/[assignmentId]/code-tests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7168911312",
+  },
   // SRV-V17-RUBRIC-LEVEL (Ductus#2055, val 17): the teacher's mark of a level per rubric criterion on a work; Ductus has no such route.
   "app/api/teacher/works/[documentId]/rubric/route.ts": {
     methods: ["GET"],
