@@ -9,6 +9,7 @@ import { normalizeDocument } from "./normalize.ts";
 import type { CanonicalDocumentV3, CanonicalDocumentV4 } from "./schema.ts";
 import { textBlocksOf } from "./text-blocks.ts";
 import { validateVersionedDocument } from "./validate.ts";
+import { verifyVersionedDocumentSnapshot } from "./snapshot.ts";
 import { documentWordCount } from "./word-count.ts";
 
 // The consumers on document v4 (docs/contracts/document-schema-v4.md §11,
@@ -17,7 +18,9 @@ import { documentWordCount } from "./word-count.ts";
 
 const VECTORS = JSON.parse(
   readFileSync(new URL("./golden-vectors-v4.json", import.meta.url), "utf8"),
-) as { documentsV4: { name: string; value: CanonicalDocumentV4 }[] };
+) as {
+  documentsV4: { name: string; value: CanonicalDocumentV4; utf8Hex: string; sha256: string }[];
+};
 const EVERY = VECTORS.documentsV4[0]!.value;
 const copy = () => structuredClone(EVERY);
 
@@ -190,5 +193,40 @@ describe("normalize and equality (§11)", () => {
     const v4: CanonicalDocumentV4 = { ...v3, schemaVersion: 4 };
     expect(documentsEqual(v3, v4)).toBe(false);
     expect(contentEqual(v4, v3)).toBe(false);
+  });
+});
+
+describe("numbered list item orderedItem (§2.2, §11)", () => {
+  const LIST = VECTORS.documentsV4.find((vector) => vector.name === "v4-numbered-list-runs")!;
+  const rendering = { style, orphanMark: "[?]", viaJoiner: ", cit. prema " };
+
+  it("is stored as its exact JCS bytes and reads back identical", async () => {
+    const bytes = Buffer.from(LIST.utf8Hex, "hex");
+    const stored = await verifyVersionedDocumentSnapshot(bytes);
+    expect(stored).toMatchObject({ ok: true, sha256: LIST.sha256 });
+    if (!stored.ok) return;
+    expect(stored.document).toStrictEqual(LIST.value);
+    // Reopened: the stored text is saved again and gives the same bytes and hash.
+    const again = await verifyVersionedDocumentSnapshot(new TextEncoder().encode(stored.text));
+    expect(again).toMatchObject({ ok: true, text: stored.text, sha256: LIST.sha256 });
+  });
+
+  it("gives text blocks in order and counts its words", () => {
+    expect(textBlocksOf(LIST.value, rendering)).toStrictEqual([
+      { kind: "heading", text: "Izmišljeni koraci" },
+      { kind: "paragraph", text: "Prvi izmišljeni korak." },
+      { kind: "paragraph", text: "Drugi korak." },
+      { kind: "paragraph", text: "Odlomak prekida popis." },
+      { kind: "paragraph", text: "" },
+    ]);
+    // 2 + 3 + 2 + 3 words; the empty item adds none.
+    expect(documentWordCount(LIST.value)).toBe(10);
+  });
+
+  it("is normalized without change and is never equal to a bullet item", () => {
+    expect(normalizeDocument(LIST.value)).toStrictEqual(LIST.value);
+    const bullet = structuredClone(LIST.value);
+    bullet.nodes[1] = { ...bullet.nodes[1]!, type: "bulletItem" } as never;
+    expect(documentsEqual(LIST.value, bullet)).toBe(false);
   });
 });
