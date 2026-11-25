@@ -35,7 +35,7 @@ pnpm dev:lazni-server   # lažni dev server iz @ductura/test-fakes (samo lokalni
 pnpm release:check      # provjera izdanja (release:stage, release:tag i release:tarball su dijelovi tog tijeka)
 ```
 
-Pregled okoline za produkciju je u [docs/OPERATIONS.md](docs/OPERATIONS.md), postavljanje u [docs/DEPLOY.md](docs/DEPLOY.md) i [docs/STAGING.md](docs/STAGING.md). Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 78 (`EXIT_CONFIGURATION`) i retkom `startup.refused` koji imenuje varijablu, nikad vrijednost (`server/config`). Server pri pokretanju otvara glavnu bazu kroz `server/database` (prijava `APP_DATABASE_URL`).
+Pregled okoline za produkciju je u [docs/OPERATIONS.md](docs/OPERATIONS.md), postavljanje u [docs/DEPLOY.md](docs/DEPLOY.md) i [docs/STAGING.md](docs/STAGING.md). Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 78 (`EXIT_CONFIGURATION`) i retkom `startup.refused` koji imenuje varijablu, nikad vrijednost (`server/config`). Baza se pri pokretanju ne otvara: `server/database` se spaja pri prvom upitu, jedan pool po bazi (`main`, `logs`, `legal`), pa baza koja ne radi ruši samo vlastite pozive (prijava `APP_DATABASE_URL`).
 
 ### Lokalni računi
 
@@ -123,7 +123,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 - `scope` razvrstava promjene (`scripts/ci/scope.ts`, pravila u [scripts/ci/README.md](scripts/ci/README.md)).
 - `checks` („Provjere i testovi”) ima pet grana (`provjere`, `1/4` do `4/4`). Grana `provjere` pokreće statičke provjere (tipovi, knjiga migracija, lint, formatiranje, test jednakosti, probno izdanje, zaštita ugovora, slike), a četiri grane dijele vitest projekte unit i integration po datotekama (`vitest --shard`); svojstveni testovi rade na granama 3/4 i 4/4.
 - `database` („PostgreSQL i pgTAP”) ima tri grane (`shard: [1, 2, 3]`). Podiže PostgreSQL 17 nativno iz PGDG repoa, bez Dockera, primjenjuje migracije kroz `scripts/db/migrate-locked.ts` i dijeli po datotekama projekte `database` i `integration-pg` te pgTAP matricu (`pnpm test:db:native`).
-- `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`.
+- `ci-ok` je jedini zbirni status. PR prema `main` u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Push i PR prema drugoj grani (npr. `migracija/kopija-ductus-backend`) uvijek rade puni profil.
 
 Akcije su prikvačene na puni SHA. Uz `ci.yml` postoje `engineering-gate.yml`, `release.yml`, `publish.yml`, `sbom.yml`, `verapdf.yml` i `docx-provenance-spike.yml`.
 
