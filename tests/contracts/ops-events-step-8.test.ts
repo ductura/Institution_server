@@ -77,6 +77,7 @@ import {
   createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createNotificationsRoutesFor,
   createOperatorDenialLog,
   createOriginCompositionRoutesFor,
@@ -563,6 +564,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createAssignmentRubricRoutesFor", () => createAssignmentRubricRoutesFor(STAND_IN)],
   ["createWorkTemplateRoutesFor", () => createWorkTemplateRoutesFor(STAND_IN)],
   ["createAssignmentTemplateRoutesFor", () => createAssignmentTemplateRoutesFor(STAND_IN)],
+  ["createFormatRulesRoutesFor", () => createFormatRulesRoutesFor(STAND_IN)],
   ["createReturnForRevisionRoutesFor", () => createReturnForRevisionRoutesFor(STAND_IN)],
   ["createAcknowledgmentRouteFor", () => [createAcknowledgmentRouteFor(STAND_IN)]],
   [

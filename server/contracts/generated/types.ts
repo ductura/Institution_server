@@ -848,6 +848,13 @@ export type Operations = {
     success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.assignment-format-rules.get": {
+    params: { "assignmentId": string };
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "wordMin": number | null; "wordMax": number | null; "minSources": number; "requiredSections": (string)[]; "citationStyle": "fpzg"; "font": string | null; "size": number | null; "spacing": number | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "student.assignment-late-submission.get": {
     params: { "assignmentId": string };
     query: undefined;
