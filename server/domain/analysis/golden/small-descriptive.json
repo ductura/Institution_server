@@ -1,0 +1,62 @@
+{
+  "id": "small-descriptive",
+  "description": "A small invented set, two numeric columns.",
+  "request": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "variables": ["sati", "bodovi"],
+    "columns": [
+      {
+        "name": "sati",
+        "kind": "numeric"
+      },
+      {
+        "name": "bodovi",
+        "kind": "numeric"
+      }
+    ],
+    "rows": [
+      [1, 10],
+      [2, 12],
+      [3, 15],
+      [4, 15],
+      [5, 20]
+    ]
+  },
+  "expected": {
+    "analysisId": "descriptive",
+    "analysisVersion": "1.0.0",
+    "datasetSha256": "39abf391f864f36788b3c842354f674098110792d834b57f431ae662c978e116",
+    "resultSha256": "ce191710ca14b3974dc9b1e2f0b9f08c8cf4e2aea789de2221575ee2aab9c3af",
+    "rowCount": 5,
+    "result": {
+      "kind": "descriptive",
+      "columns": [
+        {
+          "name": "sati",
+          "n": 5,
+          "missing": 0,
+          "mean": 3,
+          "sd": 1.581139,
+          "median": 3,
+          "min": 1,
+          "q1": 2,
+          "q3": 4,
+          "max": 5
+        },
+        {
+          "name": "bodovi",
+          "n": 5,
+          "missing": 0,
+          "mean": 14.4,
+          "sd": 3.781534,
+          "median": 15,
+          "min": 10,
+          "q1": 12,
+          "q3": 15,
+          "max": 20
+        }
+      ]
+    }
+  }
+}
