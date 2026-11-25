@@ -185,6 +185,19 @@ export const studentAssignmentWorkGet = defineRoute({
           closed({
             assignmentId: LowerUuid,
             workState: oneOf(["not_started", "in_progress", "submitted"]),
+            // SRV-NF4-IZNIMKA-PREDAJA (NF-4, NZ-5 B). Optional only because a new
+            // required field breaks clients (server/contracts/breaking.ts), and the
+            // summary stays as it was for the same reason.
+            lateException: Type.Optional(
+              Type.Object(
+                { untilAt: Instant },
+                {
+                  additionalProperties: false,
+                  description:
+                    "The caller's own latest late-submission exception on the assignment: the teacher's record that this student may still submit until untilAt although the deadline has passed, even when late submission is not allowed (a submission then is still after the deadline). Absent when the caller has none; sent also after untilAt, so a client compares untilAt with the time. Another student's exception is never in the answer.",
+                },
+              ),
+            ),
           }),
         ),
       }),

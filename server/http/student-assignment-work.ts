@@ -59,7 +59,10 @@ function assignmentWorkResponse(read: unknown): AssignmentWorkResponse {
   if (typeof BODY !== "object" || !Value.Check(BODY, body)) return { status: 503 };
 
   // Keep serialization from consulting an inherited toJSON on the checked snapshot.
-  for (const item of body.assignments) Object.setPrototypeOf(item, null);
+  for (const item of body.assignments) {
+    if (item.lateException !== undefined) Object.setPrototypeOf(item.lateException, null);
+    Object.setPrototypeOf(item, null);
+  }
   Object.setPrototypeOf(list, null);
   Object.setPrototypeOf(body, null);
   return { status: 200, body };
