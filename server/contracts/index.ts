@@ -65,6 +65,7 @@ import {
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
   assignmentRubricRoutes,
+  assignmentCodeTestsRoutes,
   workRubricRoutes,
   teacherSourcesRoutes,
   teacherWorkRoutes,
@@ -200,6 +201,12 @@ export {
   RUBRIC_LEVELS,
   RUBRIC_MAX_CRITERIA,
 } from "./routes/index.ts";
+export {
+  AssignmentCodeTestsInput,
+  assignmentCodeTestsRoutes,
+  CODE_TESTS_MAX,
+  CODE_TESTS_MAX_BYTES,
+} from "./routes/index.ts";
 export { workRubricRoutes } from "./routes/index.ts";
 export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
@@ -293,6 +300,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...originThresholdsRoutes,
   ...teacherWorkingCriteriaRoutes,
   ...assignmentRubricRoutes,
+  ...assignmentCodeTestsRoutes,
   ...workRubricRoutes,
   courseAggregateGet,
   pilotMetricsGet,

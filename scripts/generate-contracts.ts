@@ -45,6 +45,8 @@ const plain = (schema: TSchema): unknown => JSON.parse(JSON.stringify(schema));
 function ts(schema: Schema): string {
   if (schema.const !== undefined) return JSON.stringify(schema.const);
   if (Array.isArray(schema.anyOf)) return (schema.anyOf as Schema[]).map(ts).join(" | ");
+  // Any JSON value (Type.Unknown, SRV-V21-KOD-TESTOVI-RUTA): the input and expected value of a code test.
+  if (Object.keys(schema).length === 0) return "unknown";
   switch (schema.type) {
     case "string":
       // A multipart file part (SRV-1102): the client sends a Blob.
