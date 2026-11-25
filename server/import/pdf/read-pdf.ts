@@ -1,4 +1,11 @@
-import { PDFArray, PDFDict, PDFDocument, PDFName, PDFStream, type PDFObject } from "pdf-lib";
+import {
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFStream,
+  type PDFObject,
+} from "@cantoo/pdf-lib";
 import { getResolvedPDFJS, type getDocumentProxy } from "unpdf";
 
 import type { ImportReadLimitsV1, ImportReadRejectCode } from "../../contracts/index.ts";

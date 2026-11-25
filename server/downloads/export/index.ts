@@ -16,3 +16,4 @@ export {
   type SheetXlsxInput,
 } from "./sheet-xlsx.ts";
 export { writeZip, type ZipEntry } from "./zip.ts";
+export { plainDecimal, renderSheetCsv, renderSheetCsvOfText, type SheetCsv } from "./sheet-csv.ts";

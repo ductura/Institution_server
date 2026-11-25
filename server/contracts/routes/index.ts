@@ -24,6 +24,7 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { workExportSheetCsvRoutes } from "./work-export-sheet-csv.ts";
 export { workExportSheetXlsxRoutes } from "./work-export-sheet-xlsx.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";

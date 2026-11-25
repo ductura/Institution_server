@@ -756,6 +756,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
   },
+  // SRV-V14-SHEET-CSV (val 14, docs/nalazi/val14-razlika.md decision 6): the CSV of one sheet of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/csv/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
+  },
   // SRV-V14-SHEET-XLSX (val 14 decision 6, Ductus#2058 c.7173654855): the .xlsx of a saved version of a spreadsheet work; Ductus has no such route.
   "app/api/works/[documentId]/export/xlsx/route.ts": {
     methods: ["GET"],

@@ -291,6 +291,7 @@ describe("route inventory", () => {
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
       "work.restore.post: app/api/works/[documentId]/restores/route.ts is not in the inventory",
       "work.export.get: app/api/works/[documentId]/export/route.ts is not in the inventory",
+      "work.export-sheet-csv.get: app/api/works/[documentId]/export/csv/route.ts is not in the inventory",
       "work.export-sheet-xlsx.get: app/api/works/[documentId]/export/xlsx/route.ts is not in the inventory",
       "student.portable-record.get: app/api/student/submissions/[submissionId]/portable-record/route.ts is not in the inventory",
       "student.submission-package-link.post: app/api/student/submissions/[submissionId]/package-link/route.ts is not in the inventory",

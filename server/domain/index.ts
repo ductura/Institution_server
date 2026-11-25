@@ -40,18 +40,17 @@ export { accessLogDaysOf, type AccessLogDay } from "./privacy/index.ts";
 // source of an evidence basis. The explicit exports settle which is which.
 export type { SourceId } from "./document/index.ts";
 export type { SourceId as EvidenceSourceId } from "./evidence/index.ts";
-// SRV-V14-SHEET-XLSX: the sheet document and its formula computer, read by the .xlsx export.
+// SRV-V14-SHEET-CSV: the spreadsheet document and its formula computer, for the CSV export.
 export {
-  columnLabel,
+  computeSheet,
+  formatCellRef,
   parseCellRef,
-  sheetDigest,
+  roundResult,
   validateSheetDocument,
+  type ComputedCell,
   type Sheet,
   type SheetDocument,
 } from "./sheet/index.ts";
-export {
-  computeSheet,
-  parseFormula,
-  type ComputedCell,
-  type FormulaNode,
-} from "./sheet/formula/index.ts";
+// SRV-V14-SHEET-XLSX: what the .xlsx export reads beyond the CSV export: the column letter, the digest and the parser.
+export { columnLabel, sheetDigest } from "./sheet/index.ts";
+export { parseFormula, type FormulaNode } from "./sheet/formula/index.ts";
