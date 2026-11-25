@@ -208,3 +208,13 @@ export {
   practicePlacementsPost,
   practiceSignoffsPost,
 } from "./practice-journal.ts";
+export {
+  PEER_REVIEW_ALLOCATIONS_MAX,
+  PEER_REVIEW_CRITERIA_MAX,
+  PEER_REVIEW_MIN_SUBMISSIONS,
+  PEER_REVIEW_PER_STUDENT,
+  peerReviewMinSubmissions,
+  peerReviewRoundPut,
+  peerReviewRoutes,
+  studentPeerReviewPost,
+} from "./peer-review.ts";

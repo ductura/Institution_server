@@ -617,6 +617,41 @@ export type Operations = {
     success: { status: 200; body: { "asOf": string; "minimumGroup": 5; "submissions": { "recorded": 0 | number | null; "notRecorded": 0 | number | null }; "receipts": { "issued": 0 | number | null; "pending": 0 | number | null }; "helpRequests": { "total": 0 | number | null; "saveProblems": 0 | number | null }; "receiptTime": { "p50Ms": number | null; "p95Ms": number | null } }; headers: {  } };
     errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
   };
+  "peer-review.allocate.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 201; body: { "allocated": number }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "too_few_submissions" | "already_allocated";
+  };
+  "peer-review.review-withdrawal.post": {
+    params: { "assignmentId": string; "reviewId": string };
+    query: undefined;
+    body: { "reason": string };
+    success: { status: 201; body: { "reviewId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
+  };
+  "peer-review.round.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[]; "allocatedAt": string | null } | null; "state": "none" | "not_allocated" | "allocated" | "open" | "closed"; "submittedWorks": number; "minSubmissions": number }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "peer-review.round.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[] };
+    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[]; "allocatedAt": string | null } }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "already_allocated";
+  };
+  "peer-review.teacher-overview.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "allocations": ({ "reviewId": string | null; "reviewer": { "id": string; "givenName": string; "familyName": string }; "author": { "id": string; "givenName": string; "familyName": string }; "state": "pending" | "submitted" | "withdrawn" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "platform.health.get": {
     params: undefined;
     query: undefined;
@@ -917,6 +952,34 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null; "purposeCatalogVersion"?: number }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.peer-review-tasks.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "disabled" | "none" | "open" | "closed"; "tasks": ({ "taskId": string; "state": "pending" | "submitted"; "dueAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.peer-review-work.get": {
+    params: { "taskId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "criteria": ({ "key": string; "label": string })[]; "document": { "revision": number; "blocks": ({ "kind": "paragraph" | "heading" | "quote" | "list_item"; "text": string })[] } }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.peer-review.post": {
+    params: { "taskId": string };
+    query: undefined;
+    body: { "byCriterion": ({ "key": string; "text": string })[]; "general"?: string };
+    success: { status: 201; body: { "reviewId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "closed" | "already_reviewed";
+  };
+  "student.peer-reviews-received.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "reviews": ({ "reviewId": string; "byCriterion": ({ "key": string; "label": string; "text": string })[]; "general": string | null; "submittedAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.portable-record.get": {
     params: { "submissionId": string };

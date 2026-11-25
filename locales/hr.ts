@@ -2060,6 +2060,11 @@ export const hr = {
     practiceAssignment: "Probni zadatak nema ocjenu.",
     placementClosed: "Datum zapisa nije unutar razdoblja prakse.",
     nothingToSign: "Do odabranog datuma nema zapisa za potpis.",
+    alreadyAllocated: "Recenzije su već dodijeljene, pa se krug više ne može mijenjati.",
+    alreadyReviewed: "Recenzija ovog rada je već napisana.",
+    closed: "Rok za ovu radnju je istekao.",
+    tooFewSubmissions:
+      "Predanih radova je premalo da bi recenzija ostala anonimna. Pričekajte više predaja.",
     alreadySubmitted: "Rad je već predan, pa se izjava više ne može mijenjati.",
     attachmentStale: "Priloženi razgovor se u međuvremenu promijenio. Priložite ga ponovno.",
     attachmentsTooLarge: "Prilozi izjave zajedno su preveliki.",
