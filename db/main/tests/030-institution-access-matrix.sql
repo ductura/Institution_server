@@ -2137,7 +2137,7 @@ SELECT is(app.assignment_document_kind(pg_temp.id('z1')) || ' ' || app.assignmen
   'text text', 'SRV-V13-MIG-VRSTA: the bridge answers text for a text assignment and for an unknown one');
 
 -- 1i3a. SRV-V14-KIND: 'spreadsheet' is a third kind. The application role
--- cannot set it; set as the table owner (inside this rolled-back transaction)
+-- cannot write it; written by the table owner (inside this rolled-back transaction)
 -- it is read like any other kind: by the student and teacher of Z1 only, and
 -- a foreign assignment is no row at all (the same as 404 on the wire). A name
 -- outside the three is refused by the CHECK.
