@@ -1171,6 +1171,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/student/assignment-submissions", as: "student" },
   },
   "student.assignments.get": { request: { path: "/api/v1/student/assignments", as: "student" } },
+  "student.mentored-assignments.get": {
+    request: { path: "/api/v1/student/mentored-assignments", as: "student" },
+  },
   "student-work.start.post": {
     request: {
       path: `/api/v1/assignments/${IDS.assignment}/start`,

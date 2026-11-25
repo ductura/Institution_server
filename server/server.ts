@@ -34,6 +34,7 @@ import {
   createStudentNoticeRouteFor,
   createStudentConversationsRouteFor,
   createStudentAssignmentsRouteFor,
+  createStudentMentoredAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
   createStudentWriteRoutesFor,
   createStudentNotesRoutesFor,
@@ -99,6 +100,7 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createAssignmentGradeRouteFor,
   excludePracticeAssignment,
   createInstitutionGroupRoutesFor,
@@ -318,6 +320,8 @@ async function main(): Promise<void> {
       createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
+      // Whether the course has a current enrolment code (Ductus#2028 c.7019844365).
+      createEnrollmentCodeStateRouteFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
       createAssignmentCurrentVersionRouteFor(databases.main),
@@ -440,6 +444,8 @@ async function main(): Promise<void> {
       // Faza 3 readiness: the student's assignment list (DAN-803), own access log
       // (DAN-904), enrolment by code and notice read (SRV-02), over the main database.
       createStudentAssignmentsRouteFor(databases.main),
+      // INT-31: the assignments of the student's open mentorships (a thesis has no course).
+      createStudentMentoredAssignmentsRouteFor(databases.main),
       createStudentAccessLogRouteFor(databases.main),
       ...createStudentWriteRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).

@@ -12,6 +12,7 @@ import {
   AREA_NAMES,
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createRosterImportRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createAssignmentGradeRouteFor,
@@ -74,6 +75,7 @@ import {
   createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
   createStudentAssignmentsRouteFor,
+  createStudentMentoredAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
   createStudentConversationsRouteFor,
   createStudentWriteRoutesFor,
@@ -1004,6 +1006,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // INT-31: the assignments of the caller's open mentorships; none here, so an empty list.
+  "student.mentored-assignments.get": {
+    method: "GET",
+    path: "/api/v1/student/mentored-assignments",
+    body: () => undefined,
+    live: 200,
+  },
   "student.access-log.get": {
     method: "GET",
     path: `/api/v1/student/works/${randomUUID()}/access-log`,
@@ -1739,6 +1748,13 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
+  // INT-32: the course's code state; the account teaches no course, so it is 404.
+  "institution.enrollment-code-state.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/enrollment-code/state`,
+    body: () => undefined,
+    live: 404,
+  },
   // Ductus#2028 (w1119o): the student and version routes on the same front.
   // The account teaches no course or assignment: each RPC refuses with 403.
   "institution.student-removal.post": {
@@ -2316,6 +2332,7 @@ const FACTORIES = [
   "createProblemReportRouteFor",
   "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createEnrollmentCodeStateRouteFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
   "createAssignmentGradeRouteFor",
@@ -2380,6 +2397,7 @@ const FACTORIES = [
   "createReceiptPdfRoutesFor",
   "createStudentNoticeRouteFor",
   "createStudentAssignmentsRouteFor",
+  "createStudentMentoredAssignmentsRouteFor",
   "createStudentAccessLogRouteFor",
   "createStudentWriteRoutesFor",
   "createMeRouteFor",
@@ -2452,6 +2470,7 @@ const MOUNTED = [
   createProblemReportRouteFor(databases.main),
   createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  createEnrollmentCodeStateRouteFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
   createAssignmentGradeRouteFor(databases.main),
@@ -2517,6 +2536,7 @@ const MOUNTED = [
   ...createReceiptPdfRoutesFor(databases.main, ORIGIN),
   createStudentNoticeRouteFor(databases.main),
   createStudentAssignmentsRouteFor(databases.main),
+  createStudentMentoredAssignmentsRouteFor(databases.main),
   createStudentAccessLogRouteFor(databases.main),
   ...createStudentWriteRoutesFor(databases.main),
   createMeRouteFor(databases.main),

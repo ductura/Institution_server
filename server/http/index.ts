@@ -345,6 +345,7 @@ export {
   createInstitutionAssignmentRoutesFor,
 } from "./institution-assignments.ts";
 export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
+export { createEnrollmentCodeStateRouteFor } from "./enrollment-code-state.ts";
 export { createAssignmentGradeRouteFor, excludePracticeAssignment } from "./assignments/index.ts";
 export {
   createTeacherAccessRoute,
@@ -361,6 +362,8 @@ export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-re
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,
+  createStudentMentoredAssignmentsRoute,
+  createStudentMentoredAssignmentsRouteFor,
 } from "./student-assignments.ts";
 export {
   createStudentWriteRoutes,

@@ -1,0 +1,100 @@
+{
+  "route": "student.mentored-assignments.get",
+  "vectors": [
+    {
+      "name": "ready",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentorskih-radova-00000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignments": [
+            {
+              "id": "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f01",
+              "mentorshipId": "3e4f5a6b-7c8d-4e9f-8a1b-2c3d4e5f6a01",
+              "title": "Završni rad: izmišljena tema",
+              "dueAt": "2027-06-15T21:59:00.000Z",
+              "noticeFirst": false,
+              "workType": "bachelor_thesis",
+              "mentor": {
+                "id": "4f5a6b7c-8d9e-4f0a-9b2c-3d4e5f6a7b01",
+                "givenName": "Izmišljena",
+                "familyName": "Mentorica"
+              },
+              "extendedDueAt": null
+            },
+            {
+              "id": "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f02",
+              "mentorshipId": "3e4f5a6b-7c8d-4e9f-8a1b-2c3d4e5f6a02",
+              "title": "Diplomski rad: izmišljena tema",
+              "dueAt": "2027-09-15T21:59:00.000Z",
+              "noticeFirst": true,
+              "workType": "master_thesis",
+              "mentor": null,
+              "extendedDueAt": "2027-09-30T21:59:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready-empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentorskih-radova-00000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignments": []
+        }
+      }
+    },
+    {
+      "name": "signed-out",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentorskih-radova-00000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    }
+  ]
+}
