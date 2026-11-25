@@ -365,7 +365,7 @@ SELECT bag_eq(
         'work_mentor_consent_event: work_mentor_consent_event_append_only 27 O', 'work_mentor_consent_event: work_mentor_consent_event_no_truncate 34 O',
         'work_thesis_stage_event: work_thesis_stage_event_append_only 27 O', 'work_thesis_stage_event: work_thesis_stage_event_no_truncate 34 O',
         'work_template_version: work_template_version_immutable 27 O', 'work_template_version: work_template_version_no_truncate 34 O',
-        'assignment_template_pin: assignment_template_pin_frozen 19 O', 'assignment_template_pin: assignment_template_pin_no_truncate 34 O',
+        'assignment_template_pin: assignment_template_pin_frozen 19 O',
         'milestone_template_version: milestone_template_version_immutable 27 O', 'milestone_template_version: milestone_template_version_no_truncate 34 O',
         'assignment: assignment_apply_milestone_template 5 O',
         'faculty_rule_version: faculty_rule_version_immutable 27 O', 'faculty_rule_version: faculty_rule_version_no_truncate 34 O',

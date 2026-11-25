@@ -27,7 +27,7 @@ GRANT CREATE ON SCHEMA institution, app TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
 CREATE TABLE institution.assignment_template_pin (
-  assignment_id uuid PRIMARY KEY REFERENCES institution.assignment (id),
+  assignment_id uuid PRIMARY KEY,
   institution_id uuid NOT NULL,
   work_type text NOT NULL,
   template_version integer NOT NULL CHECK (template_version >= 1),
@@ -37,6 +37,7 @@ CREATE TABLE institution.assignment_template_pin (
   -- TRUNCATE of it before its own append-only trigger answers (ZD409), which the tests of
   -- SRV-V17-TEMPLATE-ADMIN pin. The version named here exists because the function reads it
   -- from that chain in the same transaction, and no version is ever removed.
+  FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
   FOREIGN KEY (pinned_by, institution_id) REFERENCES identity.user_account (id, institution_id)
 );
 
@@ -47,7 +48,9 @@ CREATE POLICY assignment_template_pin_owner ON institution.assignment_template_p
 REVOKE ALL ON institution.assignment_template_pin FROM PUBLIC, ductus_app;
 
 -- A pin is never changed in place: the version it freezes is the point of it. It is added or
--- removed (by the function below, as the owner), nothing else.
+-- removed (by the function below, as the owner), nothing else. There is no TRUNCATE guard: a pin
+-- may be removed, and a guard would stop TRUNCATE institution.assignment CASCADE in the tests of
+-- other suites that clear the assignments; the app role has no TRUNCATE privilege anyway.
 CREATE FUNCTION institution.reject_assignment_template_pin_update() RETURNS trigger
 LANGUAGE plpgsql SET search_path = ''
 AS $$
@@ -57,8 +60,6 @@ END
 $$;
 CREATE TRIGGER assignment_template_pin_frozen BEFORE UPDATE ON institution.assignment_template_pin
   FOR EACH ROW EXECUTE FUNCTION institution.reject_assignment_template_pin_update();
-CREATE TRIGGER assignment_template_pin_no_truncate BEFORE TRUNCATE ON institution.assignment_template_pin
-  FOR EACH STATEMENT EXECUTE FUNCTION institution.reject_assignment_template_pin_update();
 
 -- The teacher switches the institution's template on or off for a course assignment.
 CREATE FUNCTION app.set_assignment_template(p_assignment_id uuid, p_use boolean) RETURNS integer

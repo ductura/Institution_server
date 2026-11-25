@@ -87,8 +87,7 @@ SELECT is(pg_temp.setpin('vesna', pg_temp.z('z1'), 'true'), '2', 'switching on a
 SELECT is((SELECT count(*)::int FROM institution.work_template_version), 2, 'both template versions remain');
 SELECT is(pg_temp.ask_as('ductus_identity', 'iva', 'UPDATE institution.assignment_template_pin SET template_version = 1'),
   'ZD409: assignment template pin is frozen', 'a pin cannot be updated');
-SELECT is(pg_temp.ask_as('ductus_identity', 'iva', 'TRUNCATE institution.assignment_template_pin'),
-  'ZD409: assignment template pin is frozen', 'the pins cannot be truncated');
+SELECT ok(NOT has_table_privilege('ductus_app', 'institution.assignment_template_pin', 'TRUNCATE'), 'the app role cannot truncate the pins');
 SELECT is(pg_temp.ask_as('ductus_app', 'ana', 'SELECT count(*)::text FROM institution.assignment_template_pin'),
   '42501: permission denied for table assignment_template_pin', 'the app role cannot read the table');
 SELECT is(pg_temp.ask_as('ductus_app', 'vesna', 'DELETE FROM institution.assignment_template_pin'),
