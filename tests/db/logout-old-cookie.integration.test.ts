@@ -2354,6 +2354,19 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-ASIST-LIMIT-ADMIN: the administrator's request limit; not an administrator, so 403.
+  "institution.assistant-request-limit.get": {
+    method: "GET",
+    path: "/api/v1/institution/assistant/request-limit",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.assistant-request-limit.put": {
+    method: "PUT",
+    path: "/api/v1/institution/assistant/request-limit",
+    body: () => ({ expectedVersion: 0, limit: 5 }),
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",

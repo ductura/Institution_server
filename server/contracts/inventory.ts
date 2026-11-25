@@ -577,6 +577,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
   },
+  // SRV-ASIST-LIMIT-ADMIN (Ductus#2055 T2, approved 25. 11.): the administrator's request limit.
+  "app/api/institution/assistant/request-limit/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
     methods: ["GET", "PUT"],

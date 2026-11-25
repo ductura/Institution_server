@@ -145,6 +145,79 @@ describe("createCourseAssistantPort", () => {
     await expect(port.requests(TOKEN, ID)).rejects.toThrow();
   });
 
+  // SRV-ASIST-LIMIT-ADMIN: the administrator's request limit.
+  it("reads the request limit of the institution through its RPC", async () => {
+    const { port, sent } = portOver(() => [{ version: 3, limit: 20 }]);
+    expect(await port.readLimit(TOKEN)).toEqual({ status: "read", version: 3, limit: 20 });
+    expect(sent).toEqual([
+      [expect.stringContaining('request_limit AS "limit" FROM assistant.read_request_limit()'), []],
+    ]);
+    const none = portOver(() => [{ version: 0, limit: null }]).port;
+    expect(await none.readLimit(TOKEN)).toEqual({ status: "read", version: 0, limit: null });
+  });
+
+  it.each([5, null])("sets the request limit %s on the version seen", async (limit) => {
+    const { port, sent } = portOver(() => [{ version: 4 }]);
+    expect(await port.setLimit(TOKEN, 3, limit)).toEqual({ status: "read", version: 4, limit });
+    expect(sent).toEqual([
+      [
+        expect.stringContaining("assistant.set_request_limit($1::integer, $2::integer)"),
+        [3, limit],
+      ],
+    ]);
+  });
+
+  it.each([
+    ["ZD401", "unauthorized"],
+    ["ZD403", "forbidden"],
+    ["ZD409", "conflict"],
+    ["ZD422", "invalid_input"],
+  ])("a refusal %s of setting the limit is %s", async (code, status) => {
+    const { port } = portOver(() => refusal(code));
+    expect(await port.setLimit(TOKEN, 0, 5)).toEqual({ status });
+  });
+
+  it.each([
+    ["ZD401", "unauthorized"],
+    ["ZD403", "forbidden"],
+  ])("a refusal %s of reading the limit is %s", async (code, status) => {
+    const { port } = portOver(() => refusal(code));
+    expect(await port.readLimit(TOKEN)).toEqual({ status });
+  });
+
+  it.each(["ZD409", "ZD422"])(
+    "a %s on reading the limit is a database it cannot vouch for",
+    async (code) => {
+      const { port } = portOver(() => refusal(code));
+      await expect(port.readLimit(TOKEN)).rejects.toThrow();
+    },
+  );
+
+  it.each([
+    [-1, 5],
+    [1.5, 5],
+    [0, 0],
+    [0, 2.5],
+  ])("version %s and limit %s are never sent", async (version, limit) => {
+    const { port, sent } = portOver(() => [{ version: 1 }]);
+    expect(await port.setLimit(TOKEN, version, limit)).toEqual({ status: "invalid_input" });
+    expect(sent).toEqual([]);
+  });
+
+  it.each([
+    ["a limit of 0", [{ version: 1, limit: 0 }]],
+    ["a negative version", [{ version: -1, limit: 5 }]],
+    ["a version as text", [{ version: "1", limit: 5 }]],
+    ["no row", []],
+  ])("a request limit with %s is thrown", async (_name, rows) => {
+    const { port } = portOver(() => rows);
+    await expect(port.readLimit(TOKEN)).rejects.toThrow();
+  });
+
+  it("a set that answers version 0 is thrown", async () => {
+    const { port } = portOver(() => [{ version: 0 }]);
+    await expect(port.setLimit(TOKEN, 0, 5)).rejects.toThrow();
+  });
   it("another error is thrown as it came", async () => {
     const { port } = portOver(() => new Error("izmisljeni kvar"));
     await expect(port.set(TOKEN, ID, true)).rejects.toThrow("izmisljeni kvar");

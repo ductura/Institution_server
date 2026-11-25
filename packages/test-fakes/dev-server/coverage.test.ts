@@ -2120,6 +2120,17 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "institution.assistant-request-limit.get": {
+    request: { path: "/api/v1/institution/assistant/request-limit", as: "administrator" },
+  },
+  "institution.assistant-request-limit.put": {
+    request: {
+      path: "/api/v1/institution/assistant/request-limit",
+      as: "administrator",
+      method: "PUT",
+      body: { expectedVersion: 0, limit: 5 },
+    },
+  },
   "institution.faculty-rules.get": {
     request: { path: "/api/v1/institution/faculty-rules", as: "administrator" },
   },

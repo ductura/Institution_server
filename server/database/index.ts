@@ -587,6 +587,7 @@ export {
   createCourseAssistantPort,
   type AssistantAvailability,
   type AssistantRequestCount,
+  type AssistantRequestLimit,
   type CourseAssistantPort,
   type CourseAssistantSwitch,
 } from "./course-assistant.ts";

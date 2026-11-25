@@ -11,12 +11,16 @@
 // GET /api/v1/student/assignments/{assignmentId}/assistant/requests
 // (SRV-ASIST-BROJAC, student.assignment-assistant-requests.get): the same
 // student reads the daily request limit and today's requests, {limit, used}.
+// GET and PUT /api/v1/institution/assistant/request-limit (SRV-ASIST-LIMIT-ADMIN,
+// institution.assistant-request-limit.get and .put): an administrator reads and
+// sets that limit of the own institution as {version, limit}; anyone else 403.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
 import {
+  type AssistantRequestLimit,
   createCourseAssistantPort,
   type CourseAssistantPort,
   type WithActor,
@@ -45,6 +49,8 @@ const READ = contractOf("teacher.course-assistant.get");
 const SET = contractOf("teacher.course-assistant.put");
 const AVAILABLE = contractOf("student.assignment-assistant.get");
 const REQUESTS = contractOf("student.assignment-assistant-requests.get");
+const LIMIT_READ = contractOf("institution.assistant-request-limit.get");
+const LIMIT_SET = contractOf("institution.assistant-request-limit.put");
 
 const idOf = (segment: string | undefined) =>
   segment !== undefined && UUID.test(segment) ? segment.toLowerCase() : null;
@@ -59,6 +65,33 @@ function send(response: ServerResponse, { contract, body }: typeof READ, result:
   if (result.status === "invalid_input") return sendProblem(response, 422, "invalid_input");
   if (result.status !== "read") return sendProblem(response, 404, "not_found");
   if (Value.Check(body, result.answer)) return sendJson(response, 200, result.answer);
+  reportServerError(
+    "route",
+    new Error("answer outside the contract"),
+    requestIdOf(response),
+    contract.id,
+  );
+  sendProblem(response, 503, "unavailable");
+}
+
+/** The administrator's limit on the wire: 401, 403, 409, 422, else the checked answer. */
+function sendLimit(
+  response: ServerResponse,
+  { contract, body }: typeof READ,
+  result: AssistantRequestLimit,
+): void {
+  switch (result.status) {
+    case "unauthorized":
+      return sendProblem(response, 401, "unauthorized");
+    case "forbidden":
+      return sendProblem(response, 403, "forbidden");
+    case "conflict":
+      return sendProblem(response, 409, "conflict");
+    case "invalid_input":
+      return sendProblem(response, 422, "invalid_input");
+  }
+  const answer = { version: result.version, limit: result.limit };
+  if (Value.Check(body, answer)) return sendJson(response, 200, answer);
   reportServerError(
     "route",
     new Error("answer outside the contract"),
@@ -192,11 +225,54 @@ export function createCourseAssistantRoutes({
         });
       },
     },
+    {
+      contract: LIMIT_READ.contract,
+      async handle(request, response) {
+        if (!sameOrigin(request)) return sendProblem(response, 403, "forbidden");
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        await guarded(response, LIMIT_READ.contract.id, async () =>
+          sendLimit(response, LIMIT_READ, await port.readLimit(token)),
+        );
+      },
+    },
+    {
+      contract: LIMIT_SET.contract,
+      async handle(request, response) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return refuse(response, 401, "unauthorized");
+        const types = request.headersDistinct["content-type"];
+        if (
+          types?.length !== 1 ||
+          types[0]?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+        ) {
+          return refuse(response, 415, "unsupported_media_type");
+        }
+        const raw = await readBodyWithLimit(
+          request,
+          LIMIT_SET.contract.request.maxBodyBytes!,
+          BODY_TIMEOUT_MS,
+        );
+        if (!raw.ok) return refuse(response, raw.status, raw.reason);
+        const json = parseJson(raw.bytes);
+        if (!json.ok) return sendProblem(response, 400, "invalid_json");
+        if (!Value.Check(LIMIT_SET.contract.request.body!, json.value)) {
+          return sendProblem(response, 422, "invalid_input");
+        }
+        const { expectedVersion, limit } = json.value as {
+          expectedVersion: number;
+          limit: number | null;
+        };
+        await guarded(response, LIMIT_SET.contract.id, async () =>
+          sendLimit(response, LIMIT_SET, await port.setLimit(token, expectedVersion, limit)),
+        );
+      },
+    },
   ];
 }
 
 /**
- * The four routes over main's application withActor. (a) is the provider the
+ * The six routes over main's application withActor. (a) is the provider the
  * production request route has (PRODUCTION_ASSISTANT_PROVIDER), so the two
  * never disagree.
  */

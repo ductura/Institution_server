@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(5971);
+SELECT plan(5983);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2033,6 +2033,20 @@ SELECT is_empty(
 SELECT ok((SELECT p.prosecdef AND has_function_privilege('ductus_app', 'app.my_assistant_requests(uuid)', 'EXECUTE')
              FROM pg_proc p WHERE p.oid = 'app.my_assistant_requests(uuid)'::regprocedure),
   'SRV-ASIST-BROJAC: the web role calls the reader, SECURITY DEFINER');
+
+-- 1i3h. SRV-ASIST-LIMIT-ADMIN: only an administrator reads (and sets) the
+-- request limit of the own institution; everyone else is refused. The rest is
+-- in 257-assistant-request-limit-admin.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT ''read'' FROM assistant.read_request_limit()'), 1, 5), c.result,
+  format('SRV-ASIST-LIMIT-ADMIN: %s reads the request limit: %s', c.actor, c.result))
+FROM (VALUES ('iva', 'read'), ('lea', 'read'), ('ana', 'ZD403'), ('dora', 'ZD403'), ('vesna', 'ZD403'),
+             ('marko', 'ZD403'), ('boris', 'ZD403'), ('nina', 'ZD403'), ('tomo', 'ZD403'), ('petra', 'ZD403'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT ok((SELECT bool_and(p.prosecdef AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')) FROM pg_proc p
+            WHERE p.oid IN ('assistant.read_request_limit()'::regprocedure,
+                            'assistant.set_request_limit(integer,integer)'::regprocedure)),
+  'SRV-ASIST-LIMIT-ADMIN: the web role calls both, SECURITY DEFINER');
 
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was

@@ -9,6 +9,9 @@ import { type Account, teachesCourse, type State } from "./state.ts";
 import { studentAssignments } from "./student-routes.ts";
 
 const OFF = new WeakMap<State, Set<string>>();
+const LIMIT = new WeakMap<State, { version: number; limit: number | null }>();
+const limitOf = (state: State) => LIMIT.get(state) ?? { version: 0, limit: null };
+const isAdmin = (account: Account): boolean => account.roles.includes("institution_admin");
 
 function offOf(state: State): Set<string> {
   let set = OFF.get(state);
@@ -55,5 +58,20 @@ export const COURSE_ASSISTANT_HANDLERS: Handlers = {
     );
     if (assignment === undefined) return { error: "not_found" };
     return { status: 200, body: { limit: null, used: 0 } };
+  },
+  // SRV-ASIST-LIMIT-ADMIN: the administrator's request limit, per fake state.
+  "institution.assistant-request-limit.get": ({ state, account }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (!isAdmin(account)) return { error: "forbidden" };
+    return { status: 200, body: limitOf(state) };
+  },
+  "institution.assistant-request-limit.put": ({ state, account, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (!isAdmin(account)) return { error: "forbidden" };
+    const current = limitOf(state);
+    if (body.expectedVersion !== current.version) return { error: "conflict" };
+    const made = { version: current.version + 1, limit: body.limit };
+    LIMIT.set(state, made);
+    return { status: 200, body: made };
   },
 };
