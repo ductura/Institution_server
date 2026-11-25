@@ -157,6 +157,8 @@ describe("route inventory", () => {
       "teacher.assignment-rubric.get: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "teacher.assignment-rubric.put: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "student.assignment-rubric.get: app/api/student/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
+      "teacher.work-rubric.get: app/api/teacher/works/[documentId]/rubric/route.ts is not in the inventory",
+      "teacher.work-rubric-mark.put: app/api/teacher/works/[documentId]/rubric/[criterionId]/route.ts is not in the inventory",
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
       "ops.pilot-metrics.get: app/api/ops/pilot-metrics/route.ts is not in the inventory",
       "institution.retention.get: app/api/institution/retention/route.ts is not in the inventory",

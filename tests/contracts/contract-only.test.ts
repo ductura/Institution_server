@@ -72,6 +72,7 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
   createFormatRulesRoutesFor,
@@ -700,6 +701,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createAssignmentRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createWorkRubricRoutesFor(databases.main)",
+    ids: ["teacher.work-rubric.get", "teacher.work-rubric-mark.put"],
+    routes: () => createWorkRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createWorkTemplateRoutesFor(databases.main)",
     ids: ["institution.work-template.get", "institution.work-template.put"],
     routes: () => createWorkTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -1085,6 +1091,8 @@ describe("routes the entry point mounts itself", () => {
       "teacher.assignment-rubric.get",
       "teacher.assignment-rubric.put",
       "student.assignment-rubric.get",
+      "teacher.work-rubric.get",
+      "teacher.work-rubric-mark.put",
       "institution.work-template.get",
       "institution.work-template.put",
       "teacher.assignment-template.put",

@@ -37,6 +37,17 @@ function assignmentOf(
   return ok ? assignment : null;
 }
 
+/** The version and criterion ids a work's marks are bound to: the latest stored rubric, else version 0 and the six default criteria. */
+export function latestRubricIds(
+  state: State,
+  assignmentId: string,
+): { version: number; ids: string[] } {
+  const latest = rubrics.get(state.assignments)?.get(assignmentId);
+  return latest === undefined
+    ? { version: 0, ids: [...IDS] }
+    : { version: latest.version, ids: latest.criteria.map((criterion) => criterion.id) };
+}
+
 const blank = (text: string): boolean => text.trim() === "";
 
 export const ASSIGNMENT_RUBRIC_HANDLERS: Handlers = {

@@ -119,7 +119,7 @@ const CRITERIA = [
 type CriterionValue = { assessment: 0 | 1 | 2 | null; note: string | null };
 const WORKING_CRITERIA = new WeakMap<State, Map<string, CriterionValue>>();
 
-function taughtWork(state: State, account: Account | null, documentId: string): boolean {
+export function taughtWork(state: State, account: Account | null, documentId: string): boolean {
   const work = state.works.find((w) => w.documentId === documentId);
   if (work === undefined || account === null) return false;
   const assignment = taught(state, account, work.assignmentId);

@@ -2112,6 +2112,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assessment: 1, note: "Izmišljena napomena." },
     },
   },
+  "teacher.work-rubric.get": {
+    request: { path: `/api/v1/teacher/works/${IDS.document}/rubric`, as: "nastavnik" },
+  },
+  "teacher.work-rubric-mark.put": {
+    request: {
+      path: `/api/v1/teacher/works/${IDS.document}/rubric/sources`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { level: 1, note: "Izmišljena napomena." },
+    },
+  },
   "teacher.mentorship.get": {
     request: { path: `/api/v1/teacher/mentorships/${IDS.mentorship}`, as: "nastavnik" },
   },
