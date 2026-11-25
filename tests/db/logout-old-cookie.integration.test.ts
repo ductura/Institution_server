@@ -560,6 +560,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V14-SHEET-XLSX: the .xlsx of a work it may not read is 404, as a missing work.
+  "work.export-sheet-xlsx.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/xlsx`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
   "student.portable-record.get": {
     method: "GET",

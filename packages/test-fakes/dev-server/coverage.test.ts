@@ -1909,6 +1909,29 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
   },
+  "work.export-sheet-xlsx.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    // The fake keeps one text; the scenario stores an invented spreadsheet as the saved version.
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      if (work === undefined) throw new Error("no work");
+      const sheet = {
+        schemaVersion: 1,
+        kind: "spreadsheet",
+        sheets: [
+          {
+            id: "00000000-0000-4000-8000-0000000000a1",
+            name: "Demo",
+            rows: 3,
+            columns: 2,
+            cells: { A1: { value: 2 }, A2: { value: null, formula: "=A1*2" } },
+          },
+        ],
+      };
+      work.document = Buffer.from(JSON.stringify(sheet)).toString("base64");
+    },
+    request: { path: `/api/v1/works/${IDS.document}/export/xlsx`, as: "nastavnik" },
+  },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
