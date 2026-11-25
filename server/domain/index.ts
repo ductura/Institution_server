@@ -19,10 +19,14 @@ export * from "./provenance-share/index.ts";
 export * from "./practice-journal/index.ts";
 // SRV-V19-GRUPA-RUTE: order of team members and assembly of the contribution.
 export * from "./work-team/index.ts";
+// SRV-V19-RECENZIJA-RUTE: the anonymous answers of the peer review.
+export * from "./peer-review/index.ts";
 // SRV-1230: the deterministic match with an answer of the assistant.
 export * from "./assistant-match/index.ts";
 export * from "./retention/index.ts";
 export { zagrebWall, type ZagrebWall } from "./time/index.ts";
+// SRV-V18-UPITNIK-BAZA: the definition, the answers and the export of a questionnaire.
+export * from "./questionnaire/index.ts";
 // SRV-V13-UGOVOR-SLAJD: the canonical document of a slides work (docs/contracts/slides-v1.md).
 export * from "./slides/index.ts";
 // SRV-1308: the student data export lists the access log by day, as the student reads it.

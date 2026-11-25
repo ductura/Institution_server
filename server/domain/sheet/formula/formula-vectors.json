@@ -1,0 +1,2761 @@
+{
+  "vectorSchema": "ductus-formula-vectors-v1",
+  "about": [
+    "Formula computer vectors for the spreadsheet document v1 (SRV-V14-SHEET-FORMULAS, val 14 decision 3). All data is invented.",
+    "Expected values were worked out by hand from the rules in README.md, never produced by running the code. The web repository keeps the same file byte for byte.",
+    "cells: A1 reference to {value} or {formula}; rows and columns default to 200 and 26. expect: n number, t text, e error code."
+  ],
+  "vectors": [
+    {
+      "name": "arithmetic =1+2*3",
+      "cells": {
+        "Z1": {
+          "formula": "=1+2*3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 7
+        }
+      }
+    },
+    {
+      "name": "arithmetic =(1+2)*3",
+      "cells": {
+        "Z1": {
+          "formula": "=(1+2)*3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 9
+        }
+      }
+    },
+    {
+      "name": "arithmetic =10/4",
+      "cells": {
+        "Z1": {
+          "formula": "=10/4"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 2.5
+        }
+      }
+    },
+    {
+      "name": "arithmetic =-2*-3",
+      "cells": {
+        "Z1": {
+          "formula": "=-2*-3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 6
+        }
+      }
+    },
+    {
+      "name": "arithmetic =--5",
+      "cells": {
+        "Z1": {
+          "formula": "=--5"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 5
+        }
+      }
+    },
+    {
+      "name": "arithmetic =2-3-4",
+      "cells": {
+        "Z1": {
+          "formula": "=2-3-4"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": -5
+        }
+      }
+    },
+    {
+      "name": "arithmetic =8/4/2",
+      "cells": {
+        "Z1": {
+          "formula": "=8/4/2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "arithmetic =+4",
+      "cells": {
+        "Z1": {
+          "formula": "=+4"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 4
+        }
+      }
+    },
+    {
+      "name": "arithmetic = 1 +\t2 ",
+      "cells": {
+        "Z1": {
+          "formula": "= 1 +\t2 "
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "arithmetic =.5+1",
+      "cells": {
+        "Z1": {
+          "formula": "=.5+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1.5
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =0.1+0.2",
+      "cells": {
+        "Z1": {
+          "formula": "=0.1+0.2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0.3
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =0.1*3",
+      "cells": {
+        "Z1": {
+          "formula": "=0.1*3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0.3
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =1/3",
+      "cells": {
+        "Z1": {
+          "formula": "=1/3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0.333333333333333
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =2/3",
+      "cells": {
+        "Z1": {
+          "formula": "=2/3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0.666666666666667
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =0*-1",
+      "cells": {
+        "Z1": {
+          "formula": "=0*-1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "result 15 digits =-0",
+      "cells": {
+        "Z1": {
+          "formula": "=-0"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(2.675,2)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(2.675,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 2.68
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(1.005,2)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(1.005,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1.01
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(-2.5,0)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(-2.5,0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": -3
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(2.5,0)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(2.5,0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(0.5,0)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(0.5,0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(0.4,0)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(0.4,0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(-0.4,0)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(-0.4,0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(1234.5678,-2)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(1234.5678,-2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1200
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(14.5,-1)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(14.5,-1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 10
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(15,-1)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(15,-1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 20
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(0.05,1)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(0.05,1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0.1
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(1.25,1)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(1.25,1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1.3
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(5,1.9)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(5,1.9)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 5
+        }
+      }
+    },
+    {
+      "name": "round =ROUND(7,-5)",
+      "cells": {
+        "Z1": {
+          "formula": "=ROUND(7,-5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(A1:A5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A1:A5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 7
+        }
+      }
+    },
+    {
+      "name": "cells =AVERAGE(A1:A5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=AVERAGE(A1:A5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 2.33333333333333
+        }
+      }
+    },
+    {
+      "name": "cells =MIN(A1:A5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MIN(A1:A5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "cells =MAX(A1:A5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MAX(A1:A5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 4
+        }
+      }
+    },
+    {
+      "name": "cells =COUNT(A1:A5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=COUNT(A1:A5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(A1:A2,10)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A1:A2,10)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 13
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(A3)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A3)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(\"3\",4)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(\"3\",4)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 7
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(\"x\")",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(\"x\")"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "cells =AVERAGE(A3:A4)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=AVERAGE(A3:A4)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "cells =MIN(A3:A4)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MIN(A3:A4)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "cells =MAX(A3:A4)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MAX(A3:A4)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "cells =COUNT(A1:A5,\"7\",A3)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=COUNT(A1:A5,\"7\",A3)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 4
+        }
+      }
+    },
+    {
+      "name": "cells =ABS(-3.5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=ABS(-3.5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3.5
+        }
+      }
+    },
+    {
+      "name": "cells =SUM()",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM()"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "cells =MAX(1,5,3)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MAX(1,5,3)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 5
+        }
+      }
+    },
+    {
+      "name": "cells =MIN(-1,\"2\")",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MIN(-1,\"2\")"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": -1
+        }
+      }
+    },
+    {
+      "name": "cells =MAX()",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=MAX()"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(A2:A1)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A2:A1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "cells =SUM(A1:A1)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A1:A1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "cells =sum(a1:a2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=sum(a1:a2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "cells =a1+a2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=a1+a2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 3
+        }
+      }
+    },
+    {
+      "name": "cells =A3",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "t": "abc"
+        }
+      }
+    },
+    {
+      "name": "cells =A4",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A4"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "cells =A1+A2*A5",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A1+A2*A5"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 9
+        }
+      }
+    },
+    {
+      "name": "error =1/0",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1/0"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "error =A4/1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A4/1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "error =1/A4",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1/A4"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "error =A3+1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A3+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =AA1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=AA1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#REF!"
+        }
+      }
+    },
+    {
+      "name": "error =A0",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A0"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#REF!"
+        }
+      }
+    },
+    {
+      "name": "error =B500",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=B500"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#REF!"
+        }
+      }
+    },
+    {
+      "name": "error =FOO(1)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=FOO(1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#NAME?"
+        }
+      }
+    },
+    {
+      "name": "error =FOO",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=FOO"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#NAME?"
+        }
+      }
+    },
+    {
+      "name": "error =1+",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1+"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =(1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=(1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =1 2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1 2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =A1:B",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A1:B"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =1.",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1."
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =1.5.2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1.5.2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =SUM(A1:Z400)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A1:Z400)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#REF!"
+        }
+      }
+    },
+    {
+      "name": "error =SUM(A1:Z200,A1:Z200)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(A1:Z200,A1:Z200)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =Sheet2!A1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=Sheet2!A1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =1e3",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1e3"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =ROUND(1)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=ROUND(1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =ABS(1,2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=ABS(1,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =IF(1)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(1)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =A1:A2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A1:A2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =A1:A2+1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A1:A2+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =ABS(A1:A2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=ABS(A1:A2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "="
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "error =SUM(1,)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=SUM(1,)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "overflow is not a number",
+      "cells": {
+        "A1": {
+          "value": 1e308
+        },
+        "B1": {
+          "formula": "=A1*10"
+        },
+        "C1": {
+          "formula": "=A1+A1"
+        },
+        "D1": {
+          "formula": "=-A1*10"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#VALUE!"
+        },
+        "C1": {
+          "e": "#VALUE!"
+        },
+        "D1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "errors travel",
+      "cells": {
+        "C1": {
+          "formula": "=1/0"
+        },
+        "C2": {
+          "formula": "=C1+1"
+        },
+        "C3": {
+          "formula": "=SUM(C1:C2)"
+        },
+        "C4": {
+          "formula": "=COUNT(C1:C2)"
+        },
+        "C5": {
+          "formula": "=MAX(C1,1)"
+        },
+        "C6": {
+          "formula": "=C3+A9"
+        }
+      },
+      "expect": {
+        "C1": {
+          "e": "#DIV/0!"
+        },
+        "C2": {
+          "e": "#DIV/0!"
+        },
+        "C3": {
+          "e": "#DIV/0!"
+        },
+        "C4": {
+          "n": 0
+        },
+        "C5": {
+          "e": "#DIV/0!"
+        },
+        "C6": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "if =IF(1,5,1/0)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(1,5,1/0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 5
+        }
+      }
+    },
+    {
+      "name": "if =IF(0,5,1/0)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(0,5,1/0)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "if =IF(0,5)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(0,5)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "if =IF(\"a\",1,2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(\"a\",1,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "if =IF(A4,1,2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(A4,1,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 2
+        }
+      }
+    },
+    {
+      "name": "if =IF(A1>=1,\"yes\",\"no\")",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(A1>=1,\"yes\",\"no\")"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "t": "yes"
+        }
+      }
+    },
+    {
+      "name": "if =IF(A1>1,1,IF(A1=1,10,20))",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(A1>1,1,IF(A1=1,10,20))"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 10
+        }
+      }
+    },
+    {
+      "name": "if =IF(1/0,1,2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(1/0,1,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "if =IF(0.5,1,2)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=IF(0.5,1,2)"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =1<2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1<2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =2<=1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=2<=1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "compare =1<>1",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1<>1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "compare =2>=2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=2>=2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =3>2",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=3>2"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"a\"<\"b\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"a\"<\"b\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"a\"=\"a\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"a\"=\"a\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"a\"=\"A\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"a\"=\"A\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "compare =1=\"1\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1=\"1\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "compare =1<>\"1\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=1<>\"1\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =A4=0",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A4=0"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =A4=\"\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A4=\"\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =A3=\"abc\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=A3=\"abc\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"\u00e9\"<\"z\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"\u00e9\"<\"z\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "name": "compare =\"\ud83d\ude00\">\"\uffff\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"\ud83d\ude00\">\"\uffff\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"ab\"<\"abc\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"ab\"<\"abc\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare =\"\"<\"a\"",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "value": 2
+        },
+        "A3": {
+          "value": "abc"
+        },
+        "A5": {
+          "value": 4
+        },
+        "Z1": {
+          "formula": "=\"\"<\"a\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "name": "compare number with text",
+      "cells": {
+        "Z1": {
+          "formula": "=1<\"a\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "text with doubled quote",
+      "cells": {
+        "Z1": {
+          "formula": "=\"a\"\"b\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "t": "a\"b"
+        }
+      }
+    },
+    {
+      "name": "text literal",
+      "cells": {
+        "Z1": {
+          "formula": "=\"x\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "t": "x"
+        }
+      }
+    },
+    {
+      "name": "numeric text in a cell",
+      "cells": {
+        "A5": {
+          "value": "12"
+        },
+        "Z1": {
+          "formula": "=A5+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": 13
+        }
+      }
+    },
+    {
+      "name": "exponent text is not a number",
+      "cells": {
+        "A5": {
+          "value": "1e3"
+        },
+        "Z1": {
+          "formula": "=A5+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "padded text is not a number",
+      "cells": {
+        "Z1": {
+          "formula": "=\"  5\"+1"
+        }
+      },
+      "expect": {
+        "Z1": {
+          "e": "#VALUE!"
+        }
+      }
+    },
+    {
+      "name": "sign on numeric text",
+      "cells": {
+        "Z1": {
+          "formula": "=-\"3\""
+        }
+      },
+      "expect": {
+        "Z1": {
+          "n": -3
+        }
+      }
+    },
+    {
+      "name": "chain in any key order",
+      "cells": {
+        "A4": {
+          "formula": "=A3+A1"
+        },
+        "A3": {
+          "formula": "=A2*A2"
+        },
+        "A2": {
+          "formula": "=A1*A1"
+        },
+        "A1": {
+          "value": 2
+        }
+      },
+      "expect": {
+        "A2": {
+          "n": 4
+        },
+        "A3": {
+          "n": 16
+        },
+        "A4": {
+          "n": 18
+        }
+      }
+    },
+    {
+      "name": "cycle of two",
+      "cells": {
+        "A1": {
+          "formula": "=B1"
+        },
+        "B1": {
+          "formula": "=A1"
+        },
+        "C1": {
+          "formula": "=A1+1"
+        },
+        "D1": {
+          "value": 5
+        }
+      },
+      "expect": {
+        "A1": {
+          "e": "#CIRC!"
+        },
+        "B1": {
+          "e": "#CIRC!"
+        },
+        "C1": {
+          "e": "#CIRC!"
+        }
+      }
+    },
+    {
+      "name": "cell reads itself",
+      "cells": {
+        "A1": {
+          "formula": "=A1"
+        }
+      },
+      "expect": {
+        "A1": {
+          "e": "#CIRC!"
+        }
+      }
+    },
+    {
+      "name": "range covers its own cell",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "A2": {
+          "formula": "=SUM(A1:A3)"
+        },
+        "A3": {
+          "value": 2
+        }
+      },
+      "expect": {
+        "A2": {
+          "e": "#CIRC!"
+        }
+      }
+    },
+    {
+      "name": "cycle is seen in an unchosen branch",
+      "cells": {
+        "A1": {
+          "formula": "=IF(1,5,B1)"
+        },
+        "B1": {
+          "formula": "=A1"
+        }
+      },
+      "expect": {
+        "A1": {
+          "e": "#CIRC!"
+        },
+        "B1": {
+          "e": "#CIRC!"
+        }
+      }
+    },
+    {
+      "name": "cycle hidden behind COUNT is still a cycle",
+      "cells": {
+        "A1": {
+          "formula": "=COUNT(B1)"
+        },
+        "B1": {
+          "formula": "=A1+1"
+        }
+      },
+      "expect": {
+        "A1": {
+          "e": "#CIRC!"
+        },
+        "B1": {
+          "e": "#CIRC!"
+        }
+      }
+    },
+    {
+      "name": "cycle of three leaves outsiders alone",
+      "cells": {
+        "A1": {
+          "formula": "=B1"
+        },
+        "B1": {
+          "formula": "=C1"
+        },
+        "C1": {
+          "formula": "=A1"
+        },
+        "D1": {
+          "formula": "=1+1"
+        },
+        "E1": {
+          "formula": "=D1*2"
+        }
+      },
+      "expect": {
+        "A1": {
+          "e": "#CIRC!"
+        },
+        "B1": {
+          "e": "#CIRC!"
+        },
+        "C1": {
+          "e": "#CIRC!"
+        },
+        "D1": {
+          "n": 2
+        },
+        "E1": {
+          "n": 4
+        }
+      }
+    },
+    {
+      "name": "outside the sheet is #REF! (no cycle)",
+      "cells": {
+        "A1": {
+          "value": 1
+        },
+        "B1": {
+          "formula": "=A4"
+        },
+        "C1": {
+          "formula": "=SUM(A1:D1)"
+        },
+        "A3": {
+          "formula": "=D1"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#REF!"
+        },
+        "C1": {
+          "e": "#REF!"
+        },
+        "A3": {
+          "e": "#REF!"
+        }
+      },
+      "rows": 3,
+      "columns": 3
+    },
+    {
+      "name": "left error wins over right error (arithmetic)",
+      "cells": {
+        "A1": {
+          "formula": "=1/0"
+        },
+        "B1": {
+          "formula": "=A1+AA1"
+        },
+        "C1": {
+          "formula": "=AA1+A1"
+        },
+        "D1": {
+          "formula": "=A1*FOO(1)"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#DIV/0!"
+        },
+        "C1": {
+          "e": "#REF!"
+        },
+        "D1": {
+          "e": "#DIV/0!"
+        }
+      }
+    },
+    {
+      "name": "left error wins over right error (comparison)",
+      "cells": {
+        "A1": {
+          "formula": "=1/0"
+        },
+        "B1": {
+          "formula": "=A1=AA1"
+        },
+        "C1": {
+          "formula": "=AA1<A1"
+        }
+      },
+      "expect": {
+        "B1": {
+          "e": "#DIV/0!"
+        },
+        "C1": {
+          "e": "#REF!"
+        }
+      }
+    }
+  ]
+}

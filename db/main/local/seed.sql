@@ -224,3 +224,78 @@ BEGIN
   RESET ROLE;
 END
 $demo$;
+
+-- SRV-V18-UPITNIK-BAZA (val 18): an invented questionnaire in the seminar of
+-- demo-fakultet, made, opened and filled by hand by demo-teacher through the
+-- functions the application calls (as the block above). Twelve invented sheets
+-- carry no person; nothing here is a real answer. A rerun adds nothing: the
+-- block is skipped when the questionnaire exists. One DO block is one
+-- transaction; the session it opens is closed at its end.
+DO $questionnaire$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_course constant text := 'Izmišljeni seminar iz ekologije grada';
+  c_title constant text := 'Izmišljeno istraživanje: navike kompostiranja';
+  c_questions constant jsonb := $q$[
+    {"kind": "single", "text": "Kompostirate li otpad iz kućanstva?", "options": [{"code": "da", "label": "Da"}, {"code": "ne", "label": "Ne"}, {"code": "ponekad", "label": "Ponekad"}]},
+    {"kind": "multiple", "text": "Što stavljate u kompost?", "options": [{"code": "voce", "label": "Ostatke voća"}, {"code": "povrce", "label": "Ostatke povrća"}, {"code": "lisce", "label": "Lišće"}, {"code": "kava", "label": "Talog kave"}]},
+    {"kind": "scale", "text": "Koliko vam je kompostiranje naporno? (1 nimalo, 5 jako)", "scale": {"min": 1, "max": 5}},
+    {"kind": "number", "text": "Koliko kilograma otpada mjesečno kompostirate?"},
+    {"kind": "single", "text": "Imate li vrt?", "options": [{"code": "da", "label": "Da"}, {"code": "ne", "label": "Ne"}]},
+    {"kind": "scale", "text": "Koliko vam je važno smanjiti otpad? (1 nimalo, 5 jako)", "scale": {"min": 1, "max": 5}},
+    {"kind": "number", "text": "Koliko osoba živi u vašem kućanstvu?"},
+    {"kind": "text", "text": "Što bi vam olakšalo kompostiranje?"}
+  ]$q$;
+  v_institution uuid;
+  v_token text;
+  v_teacher uuid;
+  v_course uuid;
+  v_id uuid;
+  v_ids uuid[];
+  v_n integer;
+  v_answers jsonb;
+BEGIN
+  SELECT id INTO STRICT v_institution FROM identity.institution
+   WHERE slug = 'demo-fakultet' AND aai_home_org = c_home_org;
+  SELECT c.id INTO v_course FROM institution.course c
+   WHERE c.institution_id = v_institution AND c.name = c_course LIMIT 1;
+  IF v_course IS NULL OR EXISTS (SELECT 1 FROM institution.questionnaire q WHERE q.title = c_title) THEN
+    RETURN;
+  END IF;
+
+  v_token := rtrim(translate(encode(
+    sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())), 'base64'), '+/', '-_'), '=');
+  SET LOCAL ROLE ductus_auth;
+  PERFORM identity.open_session(c_issuer, 'demo-teacher', 'demo-teacher@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_token, 'UTF8')), 'Petar', 'Kranjčec', true);
+  RESET ROLE;
+
+  SET LOCAL ROLE ductus_app;
+  PERFORM set_config('app.session_token', v_token, true);
+  v_id := app.create_questionnaire(v_course, c_title, c_questions);
+  PERFORM app.set_questionnaire_state(v_id, 'open');
+  SELECT array_agg(q.question_id ORDER BY q.ord) INTO v_ids FROM app.teacher_questionnaire(v_id) q;
+  FOR v_n IN 1 .. 12 LOOP
+    v_answers := jsonb_build_array(
+      jsonb_build_object('questionId', v_ids[1], 'value', (ARRAY['da', 'ne', 'ponekad'])[1 + v_n % 3]),
+      jsonb_build_object('questionId', v_ids[2], 'value',
+        CASE v_n % 3 WHEN 0 THEN '["voce", "povrce"]'::jsonb WHEN 1 THEN '["lisce"]'::jsonb ELSE '["voce", "kava"]'::jsonb END),
+      jsonb_build_object('questionId', v_ids[3], 'value', 1 + v_n % 5),
+      jsonb_build_object('questionId', v_ids[4], 'value', 2 + (v_n % 4) * 1.5),
+      jsonb_build_object('questionId', v_ids[5], 'value', CASE WHEN v_n % 2 = 0 THEN 'da' ELSE 'ne' END),
+      jsonb_build_object('questionId', v_ids[6], 'value', 1 + (v_n * 2) % 5),
+      jsonb_build_object('questionId', v_ids[7], 'value', 1 + v_n % 4));
+    -- Every third sheet leaves the free text empty, as people do.
+    IF v_n % 3 <> 0 THEN
+      v_answers := v_answers || jsonb_build_array(jsonb_build_object(
+        'questionId', v_ids[8], 'value', 'Izmišljena primjedba broj ' || v_n));
+    END IF;
+    PERFORM app.manual_questionnaire_response(v_id, v_answers);
+  END LOOP;
+  PERFORM set_config('app.session_token', v_token, true);
+  PERFORM identity.close_current_session();
+  PERFORM set_config('app.session_token', '', true);
+  RESET ROLE;
+END
+$questionnaire$;
