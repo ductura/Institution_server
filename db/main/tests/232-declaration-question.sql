@@ -12,7 +12,7 @@ SET LOCAL lc_messages TO 'C';
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
 \ir fixtures/mentorship.inc
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
-SELECT plan(74);
+SELECT plan(80);
 
 CREATE TEMP TABLE demo_conversation (
   conversation_id uuid PRIMARY KEY,
@@ -74,6 +74,13 @@ LANGUAGE sql AS $$
   SELECT pg_temp.ask(p_actor, format(
     'SELECT coalesce(question->>''text'', ''-'') || '' | '' || coalesce(answer->>''text'', ''-'')
        FROM app.teacher_declaration_answer(%L, %L)', pg_temp.id(p_assignment), pg_temp.id(p_student)))
+$$;
+-- The raw answer a teacher reads: NULL as the word, so an object of nulls is told apart.
+CREATE FUNCTION pg_temp.teacher_answer(p_actor text, p_student text, p_assignment text DEFAULT 'z1') RETURNS text
+LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format(
+    'SELECT coalesce(answer::text, ''NULL'') FROM app.teacher_declaration_answer(%L, %L)',
+    pg_temp.id(p_assignment), pg_temp.id(p_student)))
 $$;
 CREATE FUNCTION pg_temp.submit() RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask('ana', format('SELECT outcome FROM app.request_submission(%L, %s)', 'doc-a', 1))
@@ -203,6 +210,20 @@ SELECT is(pg_temp.teacher('anon', 'ana'), 'ZD401: not authenticated', 'without a
 SELECT is(pg_temp.teacher('vesna', 'tomo'), 'ZD403: forbidden', 'a student outside the course is refused');
 SELECT is(pg_temp.openings(), 1::bigint, 'no refused read is written');
 ROLLBACK TO SAVEPOINT bound;
+
+-- 4b. Bound without an answer while a question is in force: the teacher reads
+-- the answer as null, not as an object of nulls (INT-32, SRV-IZJAVA-ODGOVOR-NULL).
+SAVEPOINT bound_unanswered;
+SELECT is(pg_temp.answer('ana', 0, true, 'null'::jsonb) #>> '{statement,state}', 'confirmed',
+  'the student confirms without answering the question');
+SELECT is(pg_temp.submit(), 'requested', 'and requests the submission');
+SELECT is(pg_temp.record(), 'recorded', 'the submission is recorded');
+SELECT is(pg_temp.read('ana', '{statement,state}'), 'bound', 'the declaration is bound');
+SELECT is(pg_temp.teacher_answer('vesna', 'ana'), 'NULL',
+  'the teacher of the assignment reads no answer as null');
+SELECT is(pg_temp.teacher('vesna', 'ana'), 'Koji ti je izvor najviše pomogao? | -',
+  'and the question in force with it');
+ROLLBACK TO SAVEPOINT bound_unanswered;
 
 SELECT is(pg_temp.teacher('marko', 'ana', 'zm1'), 'Mentorsko pitanje? | -',
   'the mentor reads the question of the mentored work, no answer yet');
