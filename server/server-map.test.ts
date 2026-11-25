@@ -28,6 +28,8 @@ const REQUIRED_AREAS = [
   // SRV-1201 (Ductus ai-request-v1, M9.0-S2 step 1): the AI assistant port's adapter.
   "external/assistant",
   "external/assistant-tools",
+  // SRV-V22-ISVU-PORT (val 22): the ISVU source port and its synthetic adapter.
+  "external/isvu",
   "database",
   "log",
   "metrics",
