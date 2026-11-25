@@ -27,11 +27,21 @@ function pearson(xs: readonly number[], ys: readonly number[]): number | null {
   const n = xs.length;
   if (n < CORRELATION_MIN_PAIRS) return null;
   const order = xs.map((_, i) => i).sort((i, j) => xs[i]! - xs[j]! || ys[i]! - ys[j]!);
-  const x = order.map((i) => xs[i]!);
-  const y = order.map((i) => ys[i]!);
+  // Values are shifted by the smallest one first (translation invariance): a
+  // large offset with a small spread would otherwise lose the spread in the sums.
+  const x0 = xs[order[0]!]!;
+  let y0 = ys[0]!;
+  let yMax = y0;
+  for (const value of ys) {
+    if (value < y0) y0 = value;
+    if (value > yMax) yMax = value;
+  }
+  const x = order.map((i) => xs[i]! - x0);
+  const y = order.map((i) => ys[i]! - y0);
   // An exactly constant column has no variance; checked on the values, not on
-  // the deviations, so rounding of the mean cannot fake a variance.
-  if (x[0] === x[n - 1] || Math.min(...y) === Math.max(...y)) return null;
+  // the deviations, so rounding of the mean cannot fake a variance. Plain loops:
+  // no spread of a long column into a call.
+  if (xs[order[n - 1]!] === x0 || yMax === y0) return null;
   let sumX = 0;
   let sumY = 0;
   for (let i = 0; i < n; i += 1) {

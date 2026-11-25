@@ -86,6 +86,20 @@ describe("correlatePair", () => {
     expect(correlatePair(huge, col("y", [1, 2, 4])).r).toBeNull();
   });
 
+  it("is invariant under translation of a column", () => {
+    const a = col("a", [1e15, 1e15 + 0.125, 1e15 + 0.25]);
+    expect(correlatePair(a, col("b", [0, 0.125, 0.25])).r).toBe(1);
+  });
+
+  it("handles very long columns without a call-stack error", () => {
+    const n = 200_000;
+    const xs = Array.from({ length: n }, (_, i) => i);
+    const ys = Array.from({ length: n }, (_, i) => (i % 7) + i);
+    const p = correlatePair(col("x", xs), col("y", ys));
+    expect(p.n).toBe(n);
+    expect(p.r).toBeGreaterThan(0.99);
+  });
+
   it("rounds to 6 decimals", () => {
     const r = correlatePair(col("x", [1, 2, 3, 4]), col("y", [1, 3, 2, 5])).r!;
     expect(r).toBe(Math.round(r * 1e6) / 1e6);
