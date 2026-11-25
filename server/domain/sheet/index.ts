@@ -29,3 +29,5 @@ export {
   type SheetValidationCode,
   type SheetValidationError,
 } from "./validate.ts";
+// The formula computer, so that the domain index re-exports one file (SRV-V14-SHEET-CSV).
+export { computeSheet, type ComputedCell } from "./formula/index.ts";

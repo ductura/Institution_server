@@ -53,6 +53,7 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -386,6 +387,8 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      // SRV-V14-SHEET-CSV: the CSV of one sheet of a spreadsheet work, the same readers as the DOCX.
+      createSheetCsvRouteFor(databases.main),
       // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
       createPortableRecordRouteFor(databases.main, APP_ORIGIN),
       // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.

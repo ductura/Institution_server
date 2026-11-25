@@ -40,3 +40,12 @@ export { accessLogDaysOf, type AccessLogDay } from "./privacy/index.ts";
 // source of an evidence basis. The explicit exports settle which is which.
 export type { SourceId } from "./document/index.ts";
 export type { SourceId as EvidenceSourceId } from "./evidence/index.ts";
+// SRV-V14-SHEET-CSV: the spreadsheet document and its formula computer, for the CSV export.
+export {
+  computeSheet,
+  parseCellRef,
+  validateSheetDocument,
+  type ComputedCell,
+  type Sheet,
+  type SheetDocument,
+} from "./sheet/index.ts";
