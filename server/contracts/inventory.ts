@@ -832,6 +832,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
   },
+  // SRV-V17-FORMAT-RULES (val 17): the format rules of an assignment for the check before submission; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/format-rules/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7149374472",
+  },
   // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
   "app/api/works/[documentId]/return-for-revision/route.ts": {
     methods: ["POST"],

@@ -11,7 +11,7 @@ type Frozen = NonNullable<ReturnType<typeof latestWorkTemplate>>;
 // Keyed by the State object, which the reset (POST /__lazni/ponovno) keeps, so the pins are
 // cleared with the templates: a pin whose template is gone would answer a version nobody has.
 const pins = new WeakMap<State["milestoneProgress"], Map<string, Frozen>>();
-const pinsOf = (state: State): Map<string, Frozen> => {
+export const pinsOf = (state: State): Map<string, Frozen> => {
   let all = pins.get(state.milestoneProgress);
   if (all === undefined) pins.set(state.milestoneProgress, (all = new Map()));
   return all;

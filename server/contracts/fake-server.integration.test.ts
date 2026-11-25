@@ -152,6 +152,7 @@ describe("fake server over HTTP", () => {
     // SRV-1530: work.interview-* have eight framing vectors in all (the bodies of five mutations).
     // SRV-V17-TEMPLATE-ADMIN: five framing vectors for the work template PUT.
     // SRV-V17-TEMPLATE-ASSIGN: five framing vectors for the assignment template PUT.
+    // SRV-V17-FORMAT-RULES: a GET, so no framing vectors.
     // SRV-1606: five framing vectors for work.return-for-revision.post.
     // SRV-1230: work.assistant-match.post five.
     // PIL-P1-RITAM-SRV: work.input-rhythm.post, .delete and teacher.input-rhythm.put five each.
