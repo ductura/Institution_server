@@ -66,6 +66,7 @@ import {
   teacherWorkingCriteriaRoutes,
   assignmentRubricRoutes,
   assignmentCodeTestsRoutes,
+  questionnaireRoutes,
   workRubricRoutes,
   teacherSourcesRoutes,
   teacherWorkRoutes,
@@ -209,6 +210,11 @@ export {
   CODE_TESTS_MAX,
   CODE_TESTS_MAX_BYTES,
 } from "./routes/index.ts";
+export {
+  questionnaireRoutes,
+  QuestionnaireInput,
+  QUESTIONNAIRE_MAX_BYTES,
+} from "./routes/index.ts";
 export { workRubricRoutes } from "./routes/index.ts";
 export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
@@ -303,6 +309,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkingCriteriaRoutes,
   ...assignmentRubricRoutes,
   ...assignmentCodeTestsRoutes,
+  ...questionnaireRoutes,
   ...workRubricRoutes,
   courseAggregateGet,
   pilotMetricsGet,

@@ -1632,6 +1632,41 @@ export type Operations = {
     success: { status: 200; body: { "rows": ({ "familyName": string; "givenName": string; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": string; "givenName": string; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string } | { "familyName": null; "givenName": null; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": null; "givenName": null; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string })[]; "extensionReasons": ({ "studentId": string | null; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.questionnaire-state.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "state": "open" | "closed" };
+    success: { status: 200; body: { "id": string; "state": "open" | "closed" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable" | "conflict";
+  };
+  "teacher.questionnaire.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "id": string; "courseId": string; "title": string; "state": "draft" | "open" | "closed"; "questions": ({ "id": string; "order": number; "kind": "single" | "multiple" | "scale" | "number" | "text"; "text": string; "options": ({ "code": string; "label": string })[] | null; "scale": { "min": number; "max": number } | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.questionnaire.patch": {
+    params: { "id": string };
+    query: undefined;
+    body: { "title": string; "questions": ({ "kind": "single" | "multiple" | "scale" | "number" | "text"; "text": string; "options"?: (unknown)[]; "scale"?: unknown })[] };
+    success: { status: 200; body: { "id": string; "courseId": string; "title": string; "state": "draft" | "open" | "closed"; "questions": ({ "id": string; "order": number; "kind": "single" | "multiple" | "scale" | "number" | "text"; "text": string; "options": ({ "code": string; "label": string })[] | null; "scale": { "min": number; "max": number } | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable" | "conflict";
+  };
+  "teacher.questionnaires.get": {
+    params: { "courseId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "questionnaires": ({ "id": string; "title": string; "state": "draft" | "open" | "closed"; "createdOn": string; "questionCount": number; "responseCount": number })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.questionnaires.post": {
+    params: { "courseId": string };
+    query: undefined;
+    body: { "title": string; "questions": ({ "kind": "single" | "multiple" | "scale" | "number" | "text"; "text": string; "options"?: (unknown)[]; "scale"?: unknown })[] };
+    success: { status: 201; body: { "id": string; "courseId": string; "title": string; "state": "draft" | "open" | "closed"; "questions": ({ "id": string; "order": number; "kind": "single" | "multiple" | "scale" | "number" | "text"; "text": string; "options": ({ "code": string; "label": string })[] | null; "scale": { "min": number; "max": number } | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "teacher.receipt-pdf.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;

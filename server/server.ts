@@ -127,6 +127,7 @@ import {
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
   createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -363,6 +364,8 @@ async function main(): Promise<void> {
       ...createAssignmentRubricRoutesFor(databases.main),
       // SRV-V21-KOD-TESTOVI-RUTA: the code tests of an assignment (teacher writes, both read).
       ...createAssignmentCodeTestsRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-AUTOR: the questionnaires of a course (teacher makes, edits a draft, opens, closes).
+      ...createQuestionnaireRoutesFor(databases.main),
       // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
       ...createWorkRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
