@@ -1,6 +1,6 @@
 # Gradivo za kvalitativno kodiranje v1
 
-Zadatak: SRV-V18-KODIRANJE-GRADIVO `srv-v18-kodiranje-gradivo` (Ductus#2058, nalog c.7173076650; val 18, WEB `docs/nalazi/val18-razlika.md` §5 t. 6, nalazi V18-3, V18-7 i V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.145.0). Ovisi o SRV-V18-KODIRANJE-BAZA (migracija `20261219390000_qualitative_coding.sql`; RPC-ovi `app.create_qual_material`, `app.qual_materials`, `app.qual_material`, `app.delete_qual_material`). Nova migracija nije potrebna.
+Zadatak: SRV-V18-KODIRANJE-GRADIVO `srv-v18-kodiranje-gradivo` (Ductus#2058, nalog c.7173076650; val 18, WEB `docs/nalazi/val18-razlika.md` §5 t. 6, nalazi V18-3, V18-7 i V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.146.0). Ovisi o SRV-V18-KODIRANJE-BAZA (migracija `20261219390000_qualitative_coding.sql`; RPC-ovi `app.create_qual_material`, `app.qual_materials`, `app.qual_material`, `app.delete_qual_material`). Nova migracija nije potrebna.
 
 ## Zašto
 

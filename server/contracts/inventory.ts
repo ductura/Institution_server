@@ -465,6 +465,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK (Ductus#2058 c.7173077456, val 18): the codebook of a student's own qualitative coding; Ductus has no such route.
+  "app/api/student/qual/codes/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
+  "app/api/student/qual/codes/[id]/route.ts": {
+    methods: ["PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
   // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055 c.7149250861, val 19): anonymous peer review among students; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts": {
     methods: ["GET", "PUT"],
