@@ -18,6 +18,7 @@ import {
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
+import { fakeQualCodeId } from "./qualitative-codes-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
@@ -456,6 +457,16 @@ const PEER_ALLOCATE: Step = {
   headers: ORIGIN,
 };
 const PEER_TASK = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+const QUAL_CODE_NAME = "Izmišljeni kod odnosa";
+const QUAL_CODES = "/api/v1/student/qual/codes";
+const QUAL_CODE = `${QUAL_CODES}/${fakeQualCodeId(IDS.student, QUAL_CODE_NAME)}`;
+const QUAL_CREATE: Step = {
+  path: QUAL_CODES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { name: QUAL_CODE_NAME, description: "Izmišljeni opis." },
+};
 const PEER_REVIEW: Step = {
   path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/review`,
   as: "student",
@@ -563,6 +574,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/received`,
       as: "student",
     },
+  },
+  // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own coding.
+  "student.qual-codes.get": { before: [QUAL_CREATE], request: { path: QUAL_CODES, as: "student" } },
+  "student.qual-codes.post": { request: QUAL_CREATE },
+  "student.qual-code.patch": {
+    before: [QUAL_CREATE],
+    request: {
+      path: QUAL_CODE,
+      as: "student",
+      method: "PATCH",
+      headers: ORIGIN,
+      body: { description: "Izmišljeni novi opis." },
+    },
+  },
+  "student.qual-code.delete": {
+    before: [QUAL_CREATE],
+    request: { path: QUAL_CODE, as: "student", method: "DELETE", headers: ORIGIN },
   },
   // SRV-V15-UGOVOR: the stateless analysis.
   "analysis.catalogue.get": { request: { path: "/api/v1/analysis/catalogue", as: "student" } },
