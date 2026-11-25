@@ -284,7 +284,7 @@ export function parseSlideStep(raw: unknown): SlideStepParse {
  * most `MAX_SLIDE_STEPS_BYTES` of UTF-8. One bad step refuses the whole array.
  */
 export function parseSlideSteps(raw: unknown): SlideStepsParse {
-  if (!Array.isArray(raw)) return { ok: false, error: "not_an_object" };
+  if (!Array.isArray(raw)) return { ok: false, error: "step_invalid" };
   if (raw.length < 1) return { ok: false, error: "step_invalid" };
   if (raw.length > MAX_SLIDE_STEPS_PER_EVENT) return { ok: false, error: "too_many_steps" };
   for (let index = 0; index < raw.length; index += 1) {

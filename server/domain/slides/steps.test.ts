@@ -703,4 +703,31 @@ describe("applySlideSteps", () => {
       2 * 1024 * 1024,
     );
   });
+
+  it("refuses a move to the slide's own place, like a text edit that changes nothing", () => {
+    expect(
+      applySlideStep(slidesRevisionZeroDocument(), { type: "slideMove", slideId: S1, toIndex: 0 }),
+    ).toEqual({
+      ok: false,
+      error: "no_change",
+    });
+  });
+
+  it("counts a block's index after taking out the block with the same id", () => {
+    const doc = ok([
+      { type: "blockSet", slideId: S1, index: 0, block: heading },
+      { type: "blockSet", slideId: S1, index: 1, block: paragraph },
+    ]);
+    // two blocks, one is the replaced one: index 2 is past the end after removal
+    expect(
+      applySlideStep(doc, { type: "blockSet", slideId: S1, index: 2, block: paragraph }),
+    ).toEqual({
+      ok: false,
+      error: "index_out_of_range",
+    });
+  });
+
+  it("names a non-array input as step_invalid", () => {
+    expect(parseSlideSteps({})).toEqual({ ok: false, error: "step_invalid" });
+  });
 });

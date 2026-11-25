@@ -72,6 +72,7 @@ function mutate(doc: SlidesDocument, step: SlideStep): Fail | null {
     }
     case "slideMove": {
       if (step.toIndex >= slides.length) return fail("index_out_of_range");
+      if (step.toIndex === at) return fail("no_change");
       slides.splice(at, 1);
       slides.splice(step.toIndex, 0, slide);
       return null;
@@ -85,6 +86,7 @@ function mutate(doc: SlidesDocument, step: SlideStep): Fail | null {
     }
     case "blockSet": {
       const old = slide.blocks.findIndex((block) => block.id === step.block.id);
+      // `index` counts the blocks after the one with the same id (if any) is taken out.
       if (old !== -1) slide.blocks.splice(old, 1);
       if (step.index > slide.blocks.length) return fail("index_out_of_range");
       slide.blocks.splice(step.index, 0, step.block);

@@ -178,6 +178,9 @@ describe("slide steps, properties", () => {
           expect(twice).toEqual({ ok: false, error: "slide_not_found" });
         } else if (step.type === "blockRemove") {
           expect(twice).toEqual({ ok: false, error: "block_not_found" });
+        } else if (step.type === "slideMove") {
+          // a move to where the slide already is changes nothing and is refused
+          expect(twice).toEqual({ ok: false, error: "no_change" });
         } else if (step.type === "textEdit") {
           // an insert at the same place makes more text, never a silent no-op
           expect(twice.ok && twice.doc).not.toEqual(once.doc);
