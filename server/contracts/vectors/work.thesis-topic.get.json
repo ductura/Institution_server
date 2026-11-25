@@ -1,0 +1,241 @@
+{
+  "route": "work.thesis-topic.get",
+  "vectors": [
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "none",
+          "current": null,
+          "decision": null,
+          "history": []
+        }
+      }
+    },
+    {
+      "name": "proposed",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "proposed",
+          "current": {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          },
+          "decision": null,
+          "history": [
+            {
+              "version": 1,
+              "title": "Izmišljena tema o pamćenju",
+              "summary": "",
+              "proposedAt": "2026-11-24T09:00:00.000Z"
+            },
+            {
+              "version": 2,
+              "title": "Izmišljena tema o pamćenju radne memorije",
+              "summary": "Izmišljeni kratak opis istraživanja.",
+              "proposedAt": "2026-11-24T10:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "returned",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "returned",
+          "current": {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          },
+          "decision": {
+            "version": 2,
+            "decision": "returned",
+            "comment": "Izmišljeni komentar: suzite temu.",
+            "decidedAt": "2026-11-24T11:00:00.000Z",
+            "decidedByPart": "mentor"
+          },
+          "history": [
+            {
+              "version": 1,
+              "title": "Izmišljena tema o pamćenju",
+              "summary": "",
+              "proposedAt": "2026-11-24T09:00:00.000Z"
+            },
+            {
+              "version": 2,
+              "title": "Izmišljena tema o pamćenju radne memorije",
+              "summary": "Izmišljeni kratak opis istraživanja.",
+              "proposedAt": "2026-11-24T10:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "approved",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "approved",
+          "current": {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          },
+          "decision": {
+            "version": 2,
+            "decision": "approved",
+            "comment": null,
+            "decidedAt": "2026-11-24T11:00:00.000Z",
+            "decidedByPart": "mentor"
+          },
+          "history": [
+            {
+              "version": 1,
+              "title": "Izmišljena tema o pamćenju",
+              "summary": "",
+              "proposedAt": "2026-11-24T09:00:00.000Z"
+            },
+            {
+              "version": 2,
+              "title": "Izmišljena tema o pamćenju radne memorije",
+              "summary": "Izmišljeni kratak opis istraživanja.",
+              "proposedAt": "2026-11-24T10:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000247001"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-tudi"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000247002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000247003"
+        }
+      }
+    }
+  ]
+}
