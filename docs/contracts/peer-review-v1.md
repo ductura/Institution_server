@@ -1,6 +1,6 @@
 # Anonimna recenzija među studentima v1
 
-Zadatak: SRV-V19-RECENZIJA-UGOVOR `v19-recenzija-ugovor` (Ductus#2055, nalog c.7149250861; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 10, nalazi V19-9 do V19-11). Status: **aditivno, unatrag kompatibilno** (API 1.128.0). Ovo je samo ugovor: baza (`SRV-V19-RECENZIJA-BAZA`, `20261219200000_peer_review.sql`) i rute (`SRV-V19-RECENZIJA-RUTE`) dolaze kasnije, pa rute još nisu montirane. Lažni dev server ih već odgovara izmišljenim podacima.
+Zadatak: SRV-V19-RECENZIJA-UGOVOR `v19-recenzija-ugovor` (Ductus#2055, nalog c.7149250861; val 19, `docs/nalazi/val19-razlika.md` u WEB repou, §5 zadatak 10, nalazi V19-9 do V19-11). Status: **aditivno, unatrag kompatibilno** (API 1.129.0). Ovo je samo ugovor: baza (`SRV-V19-RECENZIJA-BAZA`, `20261219280000_peer_review.sql`) i rute (`SRV-V19-RECENZIJA-RUTE`) dolaze kasnije, pa rute još nisu montirane. Lažni dev server ih već odgovara izmišljenim podacima.
 
 ## Zašto
 
