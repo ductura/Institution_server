@@ -21,12 +21,12 @@ SELECT ok(NOT has_function_privilege(r, f, 'EXECUTE'), r || ' cannot call ' || f
   FROM (VALUES ('ductus_worker'), ('ductus_evidence'), ('public')) AS x(r)
   CROSS JOIN unnest(ARRAY['app.read_work_thesis_topic(text)', 'app.read_work_thesis_topic_history(text)',
     'app.set_work_thesis_topic(text,text,text)', 'app.decide_work_thesis_topic(text,integer,text,text)',
-    'institution.thesis_topic_now(uuid,text)']) AS f;
+    'institution.thesis_topic_now(text)']) AS f;
 SELECT ok(has_function_privilege('ductus_app', f, 'EXECUTE'), 'the web role calls ' || f)
   FROM unnest(ARRAY['app.read_work_thesis_topic(text)', 'app.read_work_thesis_topic_history(text)',
     'app.set_work_thesis_topic(text,text,text)', 'app.decide_work_thesis_topic(text,integer,text,text)']) AS f;
-SELECT ok(NOT has_function_privilege('ductus_app', 'institution.thesis_topic_now(uuid,text)', 'EXECUTE'),
-  'the web role does not call the internal reader (it takes the institution as an argument)');
+SELECT ok(NOT has_function_privilege('ductus_app', 'institution.thesis_topic_now(text)', 'EXECUTE'),
+  'the web role does not call the internal reader (an internal helper)');
 
 CREATE FUNCTION pg_temp.mdoc() RETURNS text LANGUAGE sql STABLE AS $$
   SELECT d.id FROM evidence.document d JOIN evidence.project p ON p.id = d.project_id

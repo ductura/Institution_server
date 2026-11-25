@@ -91,10 +91,10 @@ BEGIN
 END
 $$;
 
--- The topic in force of one work of the caller's institution: the state, the
--- newest version and the decision on that version. Internal: the callers have
--- already passed thesis_work_context.
-CREATE FUNCTION institution.thesis_topic_now(p_institution_id uuid, p_document_id text)
+-- The topic in force of one work of the caller's institution (the session's,
+-- never an argument): the state, the newest version and the decision on that
+-- version. Internal: the callers have already passed thesis_work_context.
+CREATE FUNCTION institution.thesis_topic_now(p_document_id text)
 RETURNS TABLE (
   state text, version integer, title text, summary text, proposed_at timestamptz,
   decision text, decision_comment text, decided_at timestamptz
@@ -106,11 +106,13 @@ AS $$
     FROM (SELECT 1) one
     LEFT JOIN LATERAL (
       SELECT x.* FROM institution.work_thesis_topic_version x
-       WHERE x.institution_id = p_institution_id AND x.document_id = p_document_id
+       WHERE x.institution_id = (SELECT a.institution_id FROM app.current_actor() a)
+         AND x.document_id = p_document_id
        ORDER BY x.version DESC LIMIT 1) v ON true
     LEFT JOIN LATERAL (
       SELECT y.* FROM institution.work_thesis_topic_decision y
-       WHERE y.institution_id = p_institution_id AND y.document_id = p_document_id AND y.version = v.version
+       WHERE y.institution_id = (SELECT a.institution_id FROM app.current_actor() a)
+         AND y.document_id = p_document_id AND y.version = v.version
        ORDER BY y.seq DESC LIMIT 1) d ON true
 $$;
 
@@ -125,7 +127,7 @@ DECLARE
   v_ctx record;
 BEGIN
   SELECT * INTO v_ctx FROM institution.thesis_work_context(p_document_id);
-  RETURN QUERY SELECT * FROM institution.thesis_topic_now(v_ctx.o_institution_id, p_document_id);
+  RETURN QUERY SELECT * FROM institution.thesis_topic_now(p_document_id);
 END
 $$;
 
@@ -169,7 +171,7 @@ BEGIN
   END IF;
   PERFORM pg_advisory_xact_lock(
     hashtextextended('work_thesis_topic:' || v_ctx.o_institution_id || ':' || p_document_id, 0));
-  SELECT * INTO v_now FROM institution.thesis_topic_now(v_ctx.o_institution_id, p_document_id);
+  SELECT * INTO v_now FROM institution.thesis_topic_now(p_document_id);
   IF v_now.state = 'approved' THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
@@ -182,7 +184,7 @@ BEGIN
     VALUES (v_ctx.o_institution_id, p_document_id, coalesce(v_now.version, 0) + 1, p_title, v_summary,
             v_ctx.o_user_id);
   END IF;
-  RETURN QUERY SELECT * FROM institution.thesis_topic_now(v_ctx.o_institution_id, p_document_id);
+  RETURN QUERY SELECT * FROM institution.thesis_topic_now(p_document_id);
 END
 $$;
 
@@ -211,7 +213,7 @@ BEGIN
   END IF;
   PERFORM pg_advisory_xact_lock(
     hashtextextended('work_thesis_topic:' || v_ctx.o_institution_id || ':' || p_document_id, 0));
-  SELECT * INTO v_now FROM institution.thesis_topic_now(v_ctx.o_institution_id, p_document_id);
+  SELECT * INTO v_now FROM institution.thesis_topic_now(p_document_id);
   IF v_now.version IS DISTINCT FROM p_version
      OR v_now.state = 'returned'
      OR (v_now.state = 'approved' AND p_decision <> 'returned') THEN
@@ -220,11 +222,11 @@ BEGIN
   INSERT INTO institution.work_thesis_topic_decision
     (institution_id, document_id, version, decision, comment, decided_by)
   VALUES (v_ctx.o_institution_id, p_document_id, p_version, p_decision, p_comment, v_ctx.o_user_id);
-  RETURN QUERY SELECT * FROM institution.thesis_topic_now(v_ctx.o_institution_id, p_document_id);
+  RETURN QUERY SELECT * FROM institution.thesis_topic_now(p_document_id);
 END
 $$;
 
-REVOKE ALL ON FUNCTION institution.thesis_topic_now(uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION institution.thesis_topic_now(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.read_work_thesis_topic(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.read_work_thesis_topic_history(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION app.set_work_thesis_topic(text, text, text) FROM PUBLIC;
@@ -243,7 +245,7 @@ DROP FUNCTION app.decide_work_thesis_topic(text, integer, text, text);
 DROP FUNCTION app.set_work_thesis_topic(text, text, text);
 DROP FUNCTION app.read_work_thesis_topic_history(text);
 DROP FUNCTION app.read_work_thesis_topic(text);
-DROP FUNCTION institution.thesis_topic_now(uuid, text);
+DROP FUNCTION institution.thesis_topic_now(text);
 DROP TABLE institution.work_thesis_topic_decision;
 DROP TABLE institution.work_thesis_topic_version;
 SET LOCAL ROLE ductus_migrator;

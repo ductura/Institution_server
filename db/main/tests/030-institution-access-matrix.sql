@@ -696,7 +696,7 @@ SELECT bag_eq(
     'is_code_tests(p_tests jsonb)',
     'assignment_code_tests_role(p_assignment_id uuid)',
     'thesis_setting_now()',
-    'thesis_topic_now(p_institution_id uuid, p_document_id text)',
+    'thesis_topic_now(p_document_id text)',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
     'reject_assignment_rubric_change()',
