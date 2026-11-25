@@ -1,6 +1,6 @@
 # Šifrarnik kvalitativnog kodiranja v1
 
-Zadatak: SRV-V18-KODIRANJE-SIFRARNIK `srv-v18-kodiranje-sifrarnik` (Ductus#2058, nalog c.7173077456; val 18, `docs/nalazi/val18-razlika.md` u WEB repou, §5 zadatak 7, nalazi V18-3, V18-7 do V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.143.0). Baza, domena i adapter su `SRV-V18-KODIRANJE-BAZA` (migracija `20261219390000_qualitative_coding.sql`, `server/database/qualitative-coding.ts`); rute su montirane iz `server/http/qualitative-codes.ts` (`createQualitativeCodesRoutesFor(databases.main)`). Lažni dev server ih odgovara izmišljenim podacima.
+Zadatak: SRV-V18-KODIRANJE-SIFRARNIK `srv-v18-kodiranje-sifrarnik` (Ductus#2058, nalog c.7173077456; val 18, `docs/nalazi/val18-razlika.md` u WEB repou, §5 zadatak 7, nalazi V18-3, V18-7 do V18-9). Status: **aditivno, unatrag kompatibilno** (API 1.144.0). Baza, domena i adapter su `SRV-V18-KODIRANJE-BAZA` (migracija `20261219390000_qualitative_coding.sql`, `server/database/qualitative-coding.ts`); rute su montirane iz `server/http/qualitative-codes.ts` (`createQualitativeCodesRoutesFor(databases.main)`). Lažni dev server ih odgovara izmišljenim podacima.
 
 ## Načela
 
