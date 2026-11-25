@@ -1,4 +1,4 @@
--- SRV-V17-RUBRIC-DEF (Ductus#2055, val 17): the rubric of an assignment (20261219160000).
+-- SRV-V17-RUBRIC-DEF (Ductus#2055, val 17): the rubric of an assignment (20261219165000).
 -- Personas of institution.inc and mentorship.inc, all invented: Vesna teaches K1 (assignment z1)
 -- whose students are Ana and Dora; Marko teaches K2 and mentors Ana's master thesis (zm1);
 -- Petra teaches K3 of fak-b, Tomo studies there; Iva administers fak-a. The access matrix:
