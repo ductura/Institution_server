@@ -24,6 +24,17 @@ export type AssignmentContent = {
   readonly wordMax: number | null;
 };
 
+/**
+ * The teacher's rules fixed on creation (UGOVORI-API zs-3): outside tools and
+ * the AI assistant that only summarises. Absent in the body is false.
+ */
+export type AssignmentSetup = {
+  readonly externalToolsAllowed: boolean;
+  readonly aiSummaryOnly: boolean;
+};
+
+const NO_SETUP: AssignmentSetup = { externalToolsAllowed: false, aiSummaryOnly: false };
+
 /** ZD401, ZD403, ZD409 (the same key with other content), ZD422 by name. */
 export type AssignmentCreateOutcome =
   | { readonly status: "created"; readonly id: string }
@@ -43,6 +54,7 @@ export type InstitutionAssignments = {
     requestKey: string,
     content: AssignmentContent,
     isPractice?: boolean,
+    setup?: AssignmentSetup,
   ): Promise<AssignmentCreateOutcome>;
   publishVersion(
     token: string,
@@ -54,7 +66,8 @@ export type InstitutionAssignments = {
 
 const CREATE_SQL = `SELECT institution.create_assignment(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
-  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, 1, $14::boolean
+  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, 1, $14::boolean,
+  $15::boolean, $16::boolean
 ) AS id`;
 const PUBLISH_SQL = `SELECT institution.publish_assignment_version(
   $1::uuid, $2::integer, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
@@ -90,12 +103,26 @@ const contentParams = (c: AssignmentContent): unknown[] => [
 
 export function createInstitutionAssignments(withActor: WithActor): InstitutionAssignments {
   return {
-    async createAssignment(token, courseId, requestKey, content, isPractice = false) {
+    async createAssignment(
+      token,
+      courseId,
+      requestKey,
+      content,
+      isPractice = false,
+      setup = NO_SETUP,
+    ) {
       const readId = (rows: unknown) => {
         const id = single(rows, "id");
         return typeof id === "string" && UUID.test(id) ? id.toLowerCase() : null;
       };
-      const params = [courseId, requestKey, ...contentParams(content), isPractice];
+      const params = [
+        courseId,
+        requestKey,
+        ...contentParams(content),
+        isPractice,
+        setup.externalToolsAllowed,
+        setup.aiSummaryOnly,
+      ];
       const outcome = await call(
         withActor,
         token,
