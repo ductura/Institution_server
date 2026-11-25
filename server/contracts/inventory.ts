@@ -929,6 +929,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-NF7-IZVOZ-STUDENT (Ductus#2055): the person and state of each export beside the list; Ductus has no such route.
+  "app/api/institution/student-data-export-students/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   "app/api/institution/student-data-exports/[exportId]/approve/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052",
