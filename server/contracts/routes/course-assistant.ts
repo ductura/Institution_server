@@ -19,6 +19,12 @@ import { MUTATION_GUARD } from "./shared.ts";
 // never an amount (SRV-1809). A new route for the same reason. Over the limit,
 // the request route answers its existing budget_exceeded. Database:
 // app.my_assistant_requests (20261219450000).
+//
+// SRV-ASIST-LIMIT-ADMIN (Ductus#2055, approved 25. 11.): the administrator of an
+// institution reads and sets that limit for the own institution, the value the
+// operator sets with assistant.publish_request_limit. New routes for the same
+// reason; no new error codes. Database: assistant.read_request_limit,
+// assistant.set_request_limit (20261220100000).
 
 const Uuid = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -31,6 +37,16 @@ const Requests = closed({
   limit: Type.Union([Type.Integer({ minimum: 1, maximum: MAX_INT }), Type.Null()]),
   used: Type.Integer({ minimum: 0, maximum: MAX_INT }),
 });
+const RequestLimit = closed({
+  version: Type.Integer({ minimum: 0, maximum: MAX_INT }),
+  limit: Type.Union([Type.Integer({ minimum: 1, maximum: MAX_INT }), Type.Null()]),
+});
+const RequestLimitInput = closed({
+  expectedVersion: Type.Integer({ minimum: 0, maximum: MAX_INT - 1 }),
+  limit: Type.Union([Type.Integer({ minimum: 1, maximum: MAX_INT }), Type.Null()]),
+});
+const LIMIT_PATH = "/api/v1/institution/assistant/request-limit";
+const LIMIT_INVENTORY = "app/api/institution/assistant/request-limit/route.ts";
 const COURSE_INVENTORY = "app/api/teacher/courses/[courseId]/assistant/route.ts";
 
 const READ_ERRORS = [
@@ -104,9 +120,50 @@ export const studentAssignmentAssistantRequestsGet = defineRoute({
   errors: READ_ERRORS,
 });
 
+export const institutionAssistantRequestLimitGet = defineRoute({
+  id: "institution.assistant-request-limit.get",
+  method: "GET",
+  path: LIMIT_PATH,
+  inventory: LIMIT_INVENTORY,
+  access: "institution_admin",
+  request: {},
+  summary:
+    "An administrator of the institution reads the daily number of assistant requests per student and assignment of the own institution, as {version, limit}: version is the latest version of the institution's cost configuration (0 when none), limit null when none is set. A number of requests, never an amount. A teacher, a student and an account without a confirmed role are 403.",
+  responses: [{ status: 200, description: "the request limit in force", body: RequestLimit }],
+  errors: [error(401, "unauthorized"), error(403, "forbidden"), error(503, "unavailable")],
+});
+
+export const institutionAssistantRequestLimitPut = defineRoute({
+  id: "institution.assistant-request-limit.put",
+  method: "PUT",
+  path: LIMIT_PATH,
+  inventory: LIMIT_INVENTORY,
+  access: "institution_admin",
+  summary:
+    "Only an administrator of the institution sets the daily number of assistant requests per student and assignment of the own institution: exactly {expectedVersion, limit}, limit a positive integer or null to remove it. expectedVersion is the latest version the administrator saw (0 when none); another version added in between is 409 conflict, and the same change sent again returns the version it made. Every other value of the cost configuration stays. Answers 200 with {version, limit} in force. The new version is recorded in the audit trail in the same transaction. A body that is not exactly this is 422. A teacher, a student and an account without a confirmed role are 403. The institution and the author come from the session, never from the body.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 256,
+    body: RequestLimitInput,
+  },
+  responses: [{ status: 200, description: "the request limit in force", body: RequestLimit }],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(403, "forbidden"),
+    error(422, "invalid_input"),
+    error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const courseAssistantRoutes = [
   teacherCourseAssistantGet,
   teacherCourseAssistantPut,
   studentAssignmentAssistantGet,
   studentAssignmentAssistantRequestsGet,
+  institutionAssistantRequestLimitGet,
+  institutionAssistantRequestLimitPut,
 ] as const;

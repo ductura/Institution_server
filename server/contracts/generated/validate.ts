@@ -418,6 +418,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.assistant-request-limit.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483646 &&
+      value['expectedVersion'] >= 0 &&
+      (((typeof value['limit'] === 'number' && Number.isInteger(value['limit'])) && value['limit'] <= 2147483647 && value['limit'] >= 1) || ((value['limit'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "institution.assistant-setting.get:query": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

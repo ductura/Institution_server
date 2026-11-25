@@ -11,6 +11,11 @@
 // SRV-ASIST-BROJAC (Ductus#2055 T2): migration 20261219450000. A student of the
 // assignment reads the daily request limit of the institution (null: none) and
 // today's requests that were not refused (app.my_assistant_requests).
+//
+// SRV-ASIST-LIMIT-ADMIN: migration 20261220100000. An administrator reads and
+// sets that limit of the own institution on the version seen
+// (assistant.read_request_limit, assistant.set_request_limit); ZD403 is
+// forbidden here, ZD409 conflict, the codes publish_cost_config has.
 
 import type { WithActor } from "./with-actor.ts";
 
@@ -26,6 +31,10 @@ export type AssistantRequestCount =
   | { readonly status: "read"; readonly limit: number | null; readonly used: number }
   | { readonly status: "unauthorized" | "not_found" };
 
+export type AssistantRequestLimit =
+  | { readonly status: "read"; readonly version: number; readonly limit: number | null }
+  | { readonly status: "unauthorized" | "forbidden" | "conflict" | "invalid_input" };
+
 export type CourseAssistantPort = {
   /** A teacher of the course sets it; the state in force again changes nothing. */
   set(token: string, courseId: string, enabled: boolean): Promise<CourseAssistantSwitch>;
@@ -35,12 +44,22 @@ export type CourseAssistantPort = {
   available(token: string, assignmentId: string): Promise<AssistantAvailability>;
   /** A student of the assignment: the daily request limit and today's requests. */
   requests(token: string, assignmentId: string): Promise<AssistantRequestCount>;
+  /** An administrator: the request limit of the own institution and its version. */
+  readLimit(token: string): Promise<AssistantRequestLimit>;
+  /** An administrator sets it on the version seen; null removes it. */
+  setLimit(
+    token: string,
+    expectedVersion: number,
+    limit: number | null,
+  ): Promise<AssistantRequestLimit>;
 };
 
 const SET_SQL = `SELECT enabled FROM app.course_assistant_switch($1::uuid, $2::boolean)`;
 const READ_SQL = `SELECT enabled FROM app.course_assistant_switch_read($1::uuid)`;
 const AVAILABLE_SQL = `SELECT outcome, available FROM app.my_assistant_available($1::uuid)`;
 const REQUESTS_SQL = `SELECT outcome, request_limit AS "limit", used FROM app.my_assistant_requests($1::uuid)`;
+const READ_LIMIT_SQL = `SELECT version_no AS version, request_limit AS "limit" FROM assistant.read_request_limit()`;
+const SET_LIMIT_SQL = `SELECT assistant.set_request_limit($1::integer, $2::integer) AS version`;
 const LOWER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 type Row = {
@@ -49,7 +68,32 @@ type Row = {
   available?: unknown;
   limit?: unknown;
   used?: unknown;
+  version?: unknown;
 };
+
+/** A refusal of the administrator's functions: the codes publish_cost_config has. */
+function limitRefusalOf(error: unknown) {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === "ZD401") return { status: "unauthorized" } as const;
+  if (code === "ZD403") return { status: "forbidden" } as const;
+  if (code === "ZD409") return { status: "conflict" } as const;
+  if (code === "ZD422") return { status: "invalid_input" } as const;
+  return undefined;
+}
+
+async function limitRefused(
+  run: () => Promise<AssistantRequestLimit>,
+): Promise<AssistantRequestLimit> {
+  try {
+    return await run();
+  } catch (error) {
+    const refusal = limitRefusalOf(error);
+    if (refusal !== undefined) return refusal;
+    throw error;
+  }
+}
+
+const limitOf = (value: unknown) => (value === null ? null : countOf(value, 1));
 
 function onlyRow(rows: readonly Row[]): Row {
   const row = rows.length === 1 ? rows[0] : undefined;
@@ -145,6 +189,37 @@ export function createCourseAssistantPort(withActor: WithActor): CourseAssistant
       );
       if (result.status === "invalid_input") throw new Error("Invalid course assistant response");
       return result;
+    },
+    async readLimit(token) {
+      const result = await limitRefused(() =>
+        withActor(token, async (tx) => {
+          const row = onlyRow((await tx.query<Row>(READ_LIMIT_SQL, [])).rows);
+          return {
+            status: "read" as const,
+            version: countOf(row.version, 0),
+            limit: limitOf(row.limit),
+          };
+        }),
+      );
+      // A read raises no ZD409 or ZD422; one would be a database it cannot vouch for.
+      if (result.status === "conflict" || result.status === "invalid_input")
+        throw new Error("Invalid course assistant response");
+      return result;
+    },
+    async setLimit(token, expectedVersion, limit) {
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0)
+        return { status: "invalid_input" };
+      if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1))
+        return { status: "invalid_input" };
+      return limitRefused(() =>
+        withActor(token, async (tx) => {
+          const version = countOf(
+            onlyRow((await tx.query<Row>(SET_LIMIT_SQL, [expectedVersion, limit])).rows).version,
+            1,
+          );
+          return { status: "read" as const, version, limit };
+        }),
+      );
     },
   };
 }

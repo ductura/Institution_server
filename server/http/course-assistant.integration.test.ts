@@ -26,6 +26,8 @@ async function start(providerPresent = true): Promise<string> {
     set: (...args: unknown[]) => (calls.push(["set", ...args]), reply()),
     available: (...args: unknown[]) => (calls.push(["available", ...args]), reply()),
     requests: (...args: unknown[]) => (calls.push(["requests", ...args]), reply()),
+    readLimit: (...args: unknown[]) => (calls.push(["readLimit", ...args]), reply()),
+    setLimit: (...args: unknown[]) => (calls.push(["setLimit", ...args]), reply()),
   } as unknown as CourseAssistantPort;
   running = await startServer({
     host: "127.0.0.1",
@@ -206,6 +208,81 @@ describe("student.assignment-assistant-requests.get", () => {
   it("a malformed assignment, no session and a cross-site read reach no port", async () => {
     const base = await start();
     expect((await get(base, "/student/assignments/nije-uuid/assistant/requests")).status).toBe(404);
+    expect((await get(base, path, null)).status).toBe(401);
+    const cross = await fetch(`${base}${path}`, {
+      headers: { cookie: COOKIE, "sec-fetch-site": "cross-site" },
+    });
+    expect(cross.status).toBe(403);
+    expect(calls).toEqual([]);
+  });
+});
+
+// SRV-ASIST-LIMIT-ADMIN: the administrator's request limit of the institution.
+describe("institution.assistant-request-limit", () => {
+  const path = "/institution/assistant/request-limit";
+  const TOKEN = "izmisljeni-token-nastavnika-000000000000001";
+
+  it.each([
+    [3, 20],
+    [0, null],
+  ])("reads version %s and limit %s as they are", async (version, limit) => {
+    const base = await start();
+    reply = async () => ({ status: "read", version, limit });
+    const response = await get(base, path);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ version, limit });
+    expect(calls).toEqual([["readLimit", TOKEN]]);
+  });
+
+  it.each([5, null])("sets limit %s on the version seen", async (limit) => {
+    const base = await start();
+    reply = async () => ({ status: "read", version: 4, limit });
+    const response = await put(base, path, JSON.stringify({ expectedVersion: 3, limit }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ version: 4, limit });
+    expect(calls).toEqual([["setLimit", TOKEN, 3, limit]]);
+  });
+
+  it.each([
+    ["forbidden", 403],
+    ["unauthorized", 401],
+    ["conflict", 409],
+    ["invalid_input", 422],
+  ])("a refusal %s of the port is %s", async (status, code) => {
+    const base = await start();
+    reply = async () => ({ status });
+    expect((await get(base, path)).status).toBe(code);
+    expect((await put(base, path, '{"expectedVersion":0,"limit":5}')).status).toBe(code);
+  });
+
+  it.each([
+    ["a limit of 0", '{"expectedVersion":0,"limit":0}'],
+    ["a fractional limit", '{"expectedVersion":0,"limit":1.5}'],
+    ["a negative version", '{"expectedVersion":-1,"limit":5}'],
+    ["no version", '{"limit":5}'],
+    ["no limit key", '{"expectedVersion":0}'],
+    ["an institution in the body", '{"expectedVersion":0,"limit":5,"institutionId":"x"}'],
+    ["a limit as text", '{"expectedVersion":0,"limit":"5"}'],
+  ])("%s is 422 before the port", async (_name, body) => {
+    const base = await start();
+    expect((await put(base, path, body)).status).toBe(422);
+    expect(calls).toEqual([]);
+  });
+
+  it("an answer outside the contract or a failing port is 503", async () => {
+    const base = await start();
+    reply = async () => ({ status: "read", version: 1, limit: 0 });
+    expect((await get(base, path)).status).toBe(503);
+    reply = async () => ({ status: "read", version: -1, limit: 5 });
+    expect((await put(base, path, '{"expectedVersion":0,"limit":5}')).status).toBe(503);
+    reply = async () => {
+      throw new Error("izmisljeni kvar");
+    };
+    expect((await get(base, path)).status).toBe(503);
+  });
+
+  it("no session and a cross-site read reach no port", async () => {
+    const base = await start();
     expect((await get(base, path, null)).status).toBe(401);
     const cross = await fetch(`${base}${path}`, {
       headers: { cookie: COOKIE, "sec-fetch-site": "cross-site" },
