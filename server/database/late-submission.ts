@@ -1,5 +1,5 @@
 // SRV-NF4-KASNA-POLJE (Ductus#2055, orchestrator decision A): migration
-// 20261219110000. Whether a submission after the deadline of an assignment is
+// 20261219121000. Whether a submission after the deadline of an assignment is
 // allowed. The teacher of the assignment sets it
 // (institution.set_late_submission_allowed); a student of its course reads it
 // (app.my_assignment_late_submission). Who asks comes only from the session

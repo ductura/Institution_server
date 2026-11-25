@@ -25579,6 +25579,885 @@
     }
   },
   {
+    "route": "institution.work-template.get",
+    "name": "history",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "current": {
+          "version": 2,
+          "effectiveFrom": "2026-12-05T10:00:00.000Z",
+          "titlePage": [
+            "title",
+            "author",
+            "mentor"
+          ],
+          "sections": [
+            {
+              "title": "Uvod",
+              "hint": "Predstavite temu i pitanje rada."
+            },
+            {
+              "title": "Zaključak",
+              "hint": ""
+            }
+          ],
+          "citationStyle": "fpzg"
+        },
+        "versions": [
+          {
+            "version": 1,
+            "effectiveFrom": "2026-12-01T10:00:00.000Z",
+            "titlePage": [
+              "title",
+              "author"
+            ],
+            "sections": [
+              {
+                "title": "Uvod",
+                "hint": ""
+              }
+            ],
+            "citationStyle": "fpzg"
+          },
+          {
+            "version": 2,
+            "effectiveFrom": "2026-12-05T10:00:00.000Z",
+            "titlePage": [
+              "title",
+              "author",
+              "mentor"
+            ],
+            "sections": [
+              {
+                "title": "Uvod",
+                "hint": "Predstavite temu i pitanje rada."
+              },
+              {
+                "title": "Zaključak",
+                "hint": ""
+              }
+            ],
+            "citationStyle": "fpzg"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.get",
+    "name": "no-version-yet",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "current": null,
+        "versions": []
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000001710016"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "sec-fetch-site": "cross-site"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710017"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.get",
+    "name": "invalid-input",
+    "request": {
+      "query": {
+        "groupId": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000001710018"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000001710019"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "replaced",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "version": 2,
+        "effectiveFrom": "2026-12-05T10:00:00.000Z",
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710001"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://drugi.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710002"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710003"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "65537"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000001710004"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\"",
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000001710005"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710006"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "1"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710007"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      },
+      "rawBody": "{\"title\"",
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710008"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000001710009"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000001710010"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\"",
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000001710011"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000001710012"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "title"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000001710013"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000001710014"
+      }
+    }
+  },
+  {
+    "route": "institution.work-template.put",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "titlePage": [
+          "title",
+          "author",
+          "mentor"
+        ],
+        "sections": [
+          {
+            "title": "Uvod",
+            "hint": "Predstavite temu i pitanje rada."
+          },
+          {
+            "title": "Zaključak",
+            "hint": ""
+          }
+        ],
+        "citationStyle": "fpzg"
+      },
+      "params": {
+        "workType": "seminar_paper"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000001710015"
+      }
+    }
+  },
+  {
     "route": "institution.work-work-language.get",
     "name": "follows-assignment",
     "request": {
@@ -31549,7 +32428,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.120.0",
+        "apiVersion": "1.122.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -31565,7 +32444,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.120.0",
+        "apiVersion": "1.122.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -47984,7 +48863,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": "agr-diplomski"
+        "lektaProfileId": "agr-diplomski",
+        "citationStyle": "apa"
       }
     }
   },
@@ -48014,7 +48894,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": null
+        "lektaProfileId": null,
+        "citationStyle": "fpzg"
       }
     }
   },

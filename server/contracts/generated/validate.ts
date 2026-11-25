@@ -996,6 +996,42 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "institution.work-template.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.work-template.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.work-template.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.work-template.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483646 &&
+      value['expectedVersion'] >= 0 &&
+      Array.isArray(value['titlePage']) &&
+      value['titlePage'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'title')) || ((value === 'author')) || ((value === 'mentor')) || ((value === 'course')) || ((value === 'date')))))) { return false }; return true; })(value['titlePage']) &&
+      Array.isArray(value['sections']) &&
+      value['sections'].length <= 30 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['title'] === 'string') && value['title'].length <= 120 && value['title'].length >= 1 && (typeof value['hint'] === 'string') && value['hint'].length <= 400 && value['hint'].length >= 0 && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['sections']) &&
+      (value['citationStyle'] === 'fpzg') &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }),
   "institution.work-work-language.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   const local1 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
