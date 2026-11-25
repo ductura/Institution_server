@@ -29,8 +29,10 @@ export async function buildServer(
     target: "node24",
     external: ["pg-native"],
     // CommonJS dependencies (pg) call require; an ES module has none of its own.
+    // esbuild does not see the banner, so its import is aliased: a bundled ES module
+    // that imports createRequire itself (fflate's node entry) must not collide with it.
     banner: {
-      js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+      js: 'import { createRequire as __bannerCreateRequire } from "node:module"; const require = __bannerCreateRequire(import.meta.url);',
     },
     logLevel: "warning",
   };

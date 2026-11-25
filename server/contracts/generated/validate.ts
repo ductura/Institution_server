@@ -1979,6 +1979,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length >= 1 &&
       (value['name'] !== undefined ? ((typeof value['name'] === 'string') && local0.test(value['name'])) : true) &&
       (value['description'] !== undefined ? ((typeof value['description'] === 'string') && local1.test(value['description'])) : true) &&
       (value['order'] !== undefined ? ((typeof value['order'] === 'number' && Number.isInteger(value['order'])) && value['order'] <= 200 && value['order'] >= 1) : true) &&
@@ -4021,6 +4022,27 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       value['documentId'].length <= 512 &&
       value['documentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.export-sheet-csv.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.export-sheet-csv.get:query": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['sheet'] !== undefined ? ((typeof value['sheet'] === 'string') && local0.test(value['sheet'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['sheet'].includes(key))
     )
   }
   })(),
