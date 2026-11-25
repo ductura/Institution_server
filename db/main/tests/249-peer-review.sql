@@ -556,5 +556,27 @@ SELECT is((SELECT count(*)::integer FROM information_schema.columns
             WHERE table_schema = 'institution' AND table_name LIKE 'peer\_review%'
               AND column_name ~* '(score|grade|points|rank|rating|mark)'), 0, 'no column of the review holds a score, grade, points, rank or rating');
 
+-- Every allocated work withdrawn by its author: the tasks leave, the state of the round stays, the work reads 404.
+SET LOCAL ROLE ductus_evidence;
+INSERT INTO evidence.signing_key
+  (key_id, key_version, evidence_domain_id, institution_id, purpose, algorithm, key_base64url, valid_from)
+VALUES ('key-pr', '1', '00000000-0000-4000-8000-0000000000d1', pg_temp.id('fak_a'), 'receipt', 'Ed25519',
+  'MCowBQYDK2VwAyEA' || translate(rtrim(encode(decode(repeat('11', 32), 'hex'), 'base64'), '='), '+/', '-_'),
+  date_trunc('minute', now()) - interval '1 day');
+RESET ROLE;
+-- The record as the evidence owner writes it (the signing flow itself is tested in 205-submission-withdrawal.sql).
+SET LOCAL ROLE ductus_evidence;
+INSERT INTO evidence.submission_withdrawal (id, submission_id, institution_id, principal_id, assignment_id, withdrawn_at, due_at,
+                                            key_id, key_version, signed_at, receipt_payload, payload_digest_sha256)
+SELECT gen_random_uuid(), s.id, s.institution_id, s.principal_id, s.assignment_id, now() - interval '30 minutes',
+       (SELECT z1_due FROM due), 'key-pr', '1', now() - interval '30 minutes' + interval '1 second', 'withdrawn ' || s.id,
+       encode(sha256(convert_to('withdrawn ' || s.id, 'UTF8')), 'hex')
+  FROM evidence.submission s WHERE s.assignment_id = pg_temp.id('z1');
+RESET ROLE;
+SELECT is(pg_temp.tasks_line('dora'), 'open', 'with every allocated work withdrawn the student still reads the state of the round');
+SELECT is(pg_temp.ask('dora', $$ SELECT count(*) FROM app.peer_review_tasks({z1}) WHERE task_id IS NOT NULL $$), '0', 'and no task');
+SELECT is(pg_temp.code('dora', format('SELECT 1 FROM app.peer_review_work(%L)', (SELECT t1 FROM probe))), 'ZD404', 'a withdrawn work reads 404');
+SELECT is(pg_temp.round_line('vesna'), 'open|0|5|2|t', 'the teacher sees no submitted work left');
+
 SELECT * FROM finish();
 ROLLBACK;

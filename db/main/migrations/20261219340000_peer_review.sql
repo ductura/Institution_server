@@ -469,6 +469,10 @@ BEGIN
      WHERE a.round_id = v_round.id AND a.reviewer_id = v_ctx.o_user_id
        AND a.author_work_ref IN (SELECT w.submission_id FROM app.peer_review_submitted(p_assignment_id) w)
      ORDER BY a.id;
+  -- Every allocated work withdrawn: still the state of the round, with no task.
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT v_state, NULL::uuid, NULL::text, NULL::timestamptz;
+  END IF;
 END
 $$;
 
@@ -700,12 +704,12 @@ DROP FUNCTION app.peer_review_tasks(uuid);
 DROP FUNCTION app.allocate_peer_review(uuid);
 DROP FUNCTION app.peer_review_round(uuid);
 DROP FUNCTION app.set_peer_review_round(uuid, timestamptz, timestamptz, integer, jsonb);
+DROP FUNCTION institution.peer_review_round_of(uuid);
 DROP TABLE institution.peer_review_withdrawal;
 DROP TABLE institution.peer_review;
 DROP TABLE institution.peer_review_allocation;
 DROP TABLE institution.peer_review_round;
 DROP FUNCTION institution.peer_review_allocated(uuid);
-DROP FUNCTION institution.peer_review_round_of(uuid);
 DROP FUNCTION institution.peer_review_lock(uuid);
 DROP FUNCTION institution.peer_review_context(uuid, text);
 DROP FUNCTION institution.peer_review_pairs(uuid, uuid[], integer);
