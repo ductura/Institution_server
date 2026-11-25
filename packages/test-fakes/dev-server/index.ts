@@ -15,6 +15,7 @@ import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
 import { MENTORSHIP_CONSULTATION_HANDLERS } from "./mentorship-consultation-routes.ts";
 import { KEY_DATES_HANDLERS } from "./key-dates.ts";
 import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
+import { WORK_TEAM_HANDLERS } from "./work-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -121,6 +122,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTORSHIP_CONSULTATION_HANDLERS,
   ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
+  ...WORK_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...THESIS_HANDLERS,

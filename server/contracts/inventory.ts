@@ -117,6 +117,31 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
   },
+  // SRV-V19-GRUPA-UGOVOR (Ductus#2055, val 19): work teams on an assignment; Ductus has no such route.
+  "app/api/institution/assignments/[assignmentId]/team-setting/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/student/assignments/[assignmentId]/team/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/student/assignments/[assignmentId]/team/contribution/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/[teamId]/members/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
+  "app/api/teacher/assignments/[assignmentId]/teams/[teamId]/contribution/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147669559",
+  },
   "app/api/courses/[id]/team/view/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7076689558",
