@@ -34,7 +34,7 @@ describe("classifyDiff: path to jobs", () => {
   });
 
   it.each([
-    ["server/access.ts"],
+    ["server/server.ts"],
     ["db/tests/00-environment.sql"],
     ["db/tests/README.md.sql"],
     ["package.json"],
@@ -54,8 +54,8 @@ describe("classifyDiff: path to jobs", () => {
   });
 
   it("one code file among documents needs the full profile", () => {
-    expect(classifyDiff(record("docs/PLAN.md") + record("server/app.ts"))).toBe("full");
-    expect(classifyDiff(record("server/app.ts") + record("README.md"))).toBe("full");
+    expect(classifyDiff(record("docs/PLAN.md") + record("server/server.ts"))).toBe("full");
+    expect(classifyDiff(record("server/server.ts") + record("README.md"))).toBe("full");
   });
 });
 
@@ -159,7 +159,7 @@ describe("ciProfile on real commits", () => {
   git("init", "-q");
   const base = commit("README.md", "a\n");
   const docs = commit("docs/PLAN.md", "b\n");
-  const code = commit("server/app.ts", "c\n");
+  const code = commit("server/server.ts", "c\n");
   const pr = (baseSha: string, headSha: string, baseRef = "main") =>
     ciProfile({ eventName: "pull_request", baseRef, baseSha, headSha, cwd: dir });
 

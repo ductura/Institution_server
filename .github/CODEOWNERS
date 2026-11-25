@@ -24,7 +24,7 @@
 /db/**/migrations/ @danielrisavi77-create
 /db/**/tests/ @danielrisavi77-create
 
-# Transitional, until server.ts and server/http replace them (docs/server-map.md).
+# Removed transitional files (DAN-775, DAN-1537): a file back at these paths needs the owner.
 /server/index.ts @danielrisavi77-create
 /server/app.ts @danielrisavi77-create
 /server/access.ts @danielrisavi77-create
