@@ -23,7 +23,7 @@
             "opensAt": "2026-04-06T08:00:00.000Z",
             "dueAt": "2026-04-13T20:00:00.000Z",
             "reviewsPerStudent": 2,
-            "criteria": [
+            "rubrics": [
               {
                 "key": "argument",
                 "label": "Jasnoća argumenta"

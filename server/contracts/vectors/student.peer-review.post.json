@@ -15,7 +15,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -57,7 +57,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -101,7 +101,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -145,7 +145,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -189,7 +189,7 @@
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
-        "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+        "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
       },
       "response": {
         "status": 413,
@@ -213,12 +213,12 @@
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
-          "content-length": "189"
+          "content-length": "186"
         },
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
-        "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+        "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
       },
       "response": {
         "status": 408,
@@ -248,7 +248,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -287,13 +287,13 @@
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
-          "content-length": "239"
+          "content-length": "236"
         },
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -332,12 +332,12 @@
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
-          "content-length": "189"
+          "content-length": "186"
         },
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
-        "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+        "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
       },
       "response": {
         "status": 400,
@@ -365,7 +365,7 @@
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
-        "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+        "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
       },
       "response": {
         "status": 415,
@@ -393,7 +393,7 @@
         "params": {
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
-        "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\""
+        "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\""
       },
       "response": {
         "status": 400,
@@ -421,7 +421,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -465,7 +465,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b1ff"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -509,7 +509,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -539,7 +539,7 @@
       }
     },
     {
-      "name": "no-criteria",
+      "name": "no-rubrics",
       "kind": "error",
       "code": "invalid_input",
       "request": {
@@ -553,7 +553,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": []
+          "byRubric": []
         }
       },
       "response": {
@@ -583,7 +583,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": " \n"
@@ -618,7 +618,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -653,7 +653,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -697,7 +697,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "Argument 1",
               "text": "Tekst."
@@ -732,7 +732,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "a‮b"
@@ -767,7 +767,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -812,7 +812,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."
@@ -856,7 +856,7 @@
           "taskId": "00000000-0000-4000-8000-00000000b101"
         },
         "body": {
-          "byCriterion": [
+          "byRubric": [
             {
               "key": "argument",
               "text": "Argument je jasan."

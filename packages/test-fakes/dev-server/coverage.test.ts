@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
@@ -416,6 +417,34 @@ const PRACTICE_ENTRY: Step = {
   headers: ORIGIN,
   body: { date: "2026-03-09", hours: 4, text: "Izmisljen opis rada u izmisljenoj organizaciji." },
 };
+// SRV-V19-RECENZIJA-UGOVOR: an open round of one review and one rubric, allocated.
+const PEER = `/api/v1/teacher/assignments/${IDS.assignment}/peer-review`;
+const PEER_ROUND: Step = {
+  path: PEER,
+  as: "nastavnik",
+  method: "PUT",
+  headers: ORIGIN,
+  body: {
+    opensAt: new Date(Date.now() - 3_600_000).toISOString(),
+    dueAt: new Date(Date.now() + 86_400_000).toISOString(),
+    reviewsPerStudent: 1,
+    rubrics: [{ key: "argument", label: "Jasnoca argumenta" }],
+  },
+};
+const PEER_ALLOCATE: Step = {
+  path: `${PEER}/allocations`,
+  as: "nastavnik",
+  method: "POST",
+  headers: ORIGIN,
+};
+const PEER_TASK = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+const PEER_REVIEW: Step = {
+  path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/review`,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { byRubric: [{ key: "argument", text: "Izmisljena recenzija." }] },
+};
 const REQUEST_MENTORSHIP: Step = {
   path: MENTORSHIP_REQUESTS,
   as: "student",
@@ -479,6 +508,43 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "practice.signoffs.get": {
     request: { path: `${PRACTICE_PLACEMENT}/signoffs`, as: "nastavnik" },
+  },
+  // SRV-V19-RECENZIJA-UGOVOR: the anonymous peer review; the demo students count as submitted.
+  "peer-review.round.put": { request: PEER_ROUND },
+  "peer-review.round.get": { before: [PEER_ROUND], request: { path: PEER, as: "nastavnik" } },
+  "peer-review.allocate.post": { before: [PEER_ROUND], request: PEER_ALLOCATE },
+  "peer-review.teacher-overview.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: { path: `${PEER}/overview`, as: "nastavnik" },
+  },
+  "peer-review.review-withdrawal.post": {
+    before: [PEER_ROUND, PEER_ALLOCATE, PEER_REVIEW],
+    request: {
+      path: `${PEER}/reviews/${fakePeerReviewId(PEER_TASK)}/withdrawal`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { reason: "Izmisljen razlog povlacenja." },
+    },
+  },
+  "student.peer-review-tasks.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/tasks`,
+      as: "student",
+    },
+  },
+  "student.peer-review-work.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: { path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/work`, as: "student" },
+  },
+  "student.peer-review.post": { before: [PEER_ROUND, PEER_ALLOCATE], request: PEER_REVIEW },
+  "student.peer-reviews-received.get": {
+    before: [PEER_ROUND, PEER_ALLOCATE],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/received`,
+      as: "student",
+    },
   },
   // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
   "institution.thesis-forms.get": {

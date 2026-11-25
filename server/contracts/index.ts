@@ -166,6 +166,8 @@ export {
   thesisRoutes,
   practiceJournalRoutes,
   peerReviewRoutes,
+  peerReviewMinSubmissions,
+  PEER_REVIEW_MIN_SUBMISSIONS,
 } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };

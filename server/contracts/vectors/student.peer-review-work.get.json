@@ -19,7 +19,7 @@
           "cache-control": "no-store"
         },
         "body": {
-          "criteria": [
+          "rubrics": [
             {
               "key": "argument",
               "label": "Jasnoća argumenta"

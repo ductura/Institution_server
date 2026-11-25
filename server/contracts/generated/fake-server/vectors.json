@@ -31069,7 +31069,7 @@
           "opensAt": "2026-04-06T08:00:00.000Z",
           "dueAt": "2026-04-13T20:00:00.000Z",
           "reviewsPerStudent": 2,
-          "criteria": [
+          "rubrics": [
             {
               "key": "argument",
               "label": "Jasnoća argumenta"
@@ -31201,7 +31201,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31228,7 +31228,7 @@
           "opensAt": "2026-04-06T08:00:00.000Z",
           "dueAt": "2026-04-13T20:00:00.000Z",
           "reviewsPerStudent": 2,
-          "criteria": [
+          "rubrics": [
             {
               "key": "argument",
               "label": "Jasnoća argumenta"
@@ -31264,7 +31264,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31309,7 +31309,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31354,7 +31354,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31396,7 +31396,7 @@
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
       },
-      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"criteria\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
+      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"rubrics\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
     },
     "response": {
       "status": 413,
@@ -31419,12 +31419,12 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "247"
+        "content-length": "246"
       },
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
       },
-      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"criteria\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
+      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"rubrics\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
     },
     "response": {
       "status": 408,
@@ -31456,7 +31456,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31493,7 +31493,7 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "297"
+        "content-length": "296"
       },
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
@@ -31502,7 +31502,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31539,12 +31539,12 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "247"
+        "content-length": "246"
       },
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
       },
-      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"criteria\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
+      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"rubrics\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
     },
     "response": {
       "status": 400,
@@ -31571,7 +31571,7 @@
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
       },
-      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"criteria\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
+      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"rubrics\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]}"
     },
     "response": {
       "status": 415,
@@ -31598,7 +31598,7 @@
       "params": {
         "assignmentId": "a5000000-0000-4000-8000-000000000001"
       },
-      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"criteria\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]"
+      "rawBody": "{\"opensAt\":\"2026-04-06T08:00:00.000Z\",\"dueAt\":\"2026-04-13T20:00:00.000Z\",\"reviewsPerStudent\":2,\"rubrics\":[{\"key\":\"argument\",\"label\":\"Jasnoća argumenta\"},{\"key\":\"izvori\",\"label\":\"Korištenje izvora\"},{\"key\":\"struktura\",\"label\":\"Struktura rada\"}]"
     },
     "response": {
       "status": 400,
@@ -31628,7 +31628,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31673,7 +31673,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31718,7 +31718,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31763,7 +31763,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31809,7 +31809,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 0,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31854,7 +31854,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 4,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -31884,7 +31884,7 @@
   },
   {
     "route": "peer-review.round.put",
-    "name": "no-criteria",
+    "name": "no-rubrics",
     "request": {
       "headers": {
         "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001",
@@ -31899,7 +31899,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": []
+        "rubrics": []
       }
     },
     "response": {
@@ -31916,7 +31916,7 @@
   },
   {
     "route": "peer-review.round.put",
-    "name": "seven-criteria",
+    "name": "seven-rubrics",
     "request": {
       "headers": {
         "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001",
@@ -31931,7 +31931,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "k0",
             "label": "Kriterij 0"
@@ -31992,7 +31992,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "Argument 1",
             "label": "Jasnoća"
@@ -32029,7 +32029,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": " "
@@ -32066,7 +32066,7 @@
         "opensAt": "2026-04-06",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -32111,7 +32111,7 @@
         "opensAt": "2026-04-14T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -32156,7 +32156,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -32197,7 +32197,7 @@
         "opensAt": "2026-04-06T08:00:00.000Z",
         "dueAt": "2026-04-13T20:00:00.000Z",
         "reviewsPerStudent": 2,
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -45502,7 +45502,7 @@
         "cache-control": "no-store"
       },
       "body": {
-        "criteria": [
+        "rubrics": [
           {
             "key": "argument",
             "label": "Jasnoća argumenta"
@@ -45621,7 +45621,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45662,7 +45662,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45705,7 +45705,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45748,7 +45748,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45791,7 +45791,7 @@
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
-      "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+      "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
     },
     "response": {
       "status": 413,
@@ -45814,12 +45814,12 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "189"
+        "content-length": "186"
       },
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
-      "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+      "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
     },
     "response": {
       "status": 408,
@@ -45848,7 +45848,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45886,13 +45886,13 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "239"
+        "content-length": "236"
       },
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -45930,12 +45930,12 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "content-length": "189"
+        "content-length": "186"
       },
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
-      "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+      "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
     },
     "response": {
       "status": 400,
@@ -45962,7 +45962,7 @@
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
-      "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
+      "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\"}"
     },
     "response": {
       "status": 415,
@@ -45989,7 +45989,7 @@
       "params": {
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
-      "rawBody": "{\"byCriterion\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\""
+      "rawBody": "{\"byRubric\":[{\"key\":\"argument\",\"text\":\"Argument je jasan.\"},{\"key\":\"izvori\",\"text\":\"Izvori su navedeni.\"},{\"key\":\"struktura\",\"text\":\"Struktura je logična.\"}],\"general\":\"Zanimljiv rad.\""
     },
     "response": {
       "status": 400,
@@ -46016,7 +46016,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46059,7 +46059,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b1ff"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46102,7 +46102,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46133,7 +46133,7 @@
   },
   {
     "route": "student.peer-review.post",
-    "name": "no-criteria",
+    "name": "no-rubrics",
     "request": {
       "headers": {
         "cookie": "__Host-ductus_session=izmisljeni-token-studenta-recenzija-000000001",
@@ -46145,7 +46145,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": []
+        "byRubric": []
       }
     },
     "response": {
@@ -46174,7 +46174,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": " \n"
@@ -46208,7 +46208,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -46242,7 +46242,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46285,7 +46285,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "Argument 1",
             "text": "Tekst."
@@ -46319,7 +46319,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "a‮b"
@@ -46353,7 +46353,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46397,7 +46397,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46440,7 +46440,7 @@
         "taskId": "00000000-0000-4000-8000-00000000b101"
       },
       "body": {
-        "byCriterion": [
+        "byRubric": [
           {
             "key": "argument",
             "text": "Argument je jasan."
@@ -46490,7 +46490,7 @@
         "reviews": [
           {
             "reviewId": "00000000-0000-4000-8000-00000000b201",
-            "byCriterion": [
+            "byRubric": [
               {
                 "key": "argument",
                 "label": "Jasnoća argumenta",

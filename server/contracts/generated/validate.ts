@@ -1232,10 +1232,10 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['dueAt'] === 'string') &&
       local1.test(value['dueAt']) &&
       (((value['reviewsPerStudent'] === 1)) || ((value['reviewsPerStudent'] === 2)) || ((value['reviewsPerStudent'] === 3))) &&
-      Array.isArray(value['criteria']) &&
-      value['criteria'].length <= 6 &&
-      value['criteria'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['key'] === 'string') && local2.test(value['key']) && (typeof value['label'] === 'string') && local3.test(value['label']) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['criteria']) &&
+      Array.isArray(value['rubrics']) &&
+      value['rubrics'].length <= 6 &&
+      value['rubrics'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['key'] === 'string') && local2.test(value['key']) && (typeof value['label'] === 'string') && local3.test(value['label']) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['rubrics']) &&
       Object.getOwnPropertyNames(value).length === 4
     )
   }
@@ -1711,12 +1711,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
-      Array.isArray(value['byCriterion']) &&
-      value['byCriterion'].length <= 6 &&
-      value['byCriterion'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['key'] === 'string') && local0.test(value['key']) && (typeof value['text'] === 'string') && local1.test(value['text']) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['byCriterion']) &&
+      Array.isArray(value['byRubric']) &&
+      value['byRubric'].length <= 6 &&
+      value['byRubric'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['key'] === 'string') && local0.test(value['key']) && (typeof value['text'] === 'string') && local1.test(value['text']) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['byRubric']) &&
       (value['general'] !== undefined ? ((typeof value['general'] === 'string') && local2.test(value['general'])) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['byCriterion', 'general'].includes(key))
+      Object.getOwnPropertyNames(value).every(key => ['byRubric', 'general'].includes(key))
     )
   }
   })(),

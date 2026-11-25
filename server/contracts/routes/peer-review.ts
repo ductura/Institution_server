@@ -1,10 +1,10 @@
 // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055; val 19, docs/nalazi/val19-razlika.md
 // §5 task 10): the contract of an anonymous peer review among students that the
 // teacher opens and runs. The teacher sets one round per assignment (when it
-// opens and closes, how many reviews each student writes, up to six criteria),
+// opens and closes, how many reviews each student writes, up to six rubrics),
 // and allocates it once, deterministically, among the students who have
 // submitted. A student then reads one allocated work without any trace of its
-// author, writes one review of it by criterion, and later reads the reviews of
+// author, writes one review of it by rubric, and later reads the reviews of
 // their own work without any trace of the reviewer. The teacher sees both ends
 // and may withdraw a review with a reason. Nothing here is a grade, a score or a
 // rank, nothing enters a grade or its export, and nothing sanctions a student.
@@ -28,8 +28,8 @@ const Instant = Type.String({
 
 /** Reviews each student writes: 1 to 3 (a closed list, so a validator needs no arithmetic). */
 export const PEER_REVIEW_PER_STUDENT = [1, 2, 3] as const;
-/** The most criteria of a round. */
-export const PEER_REVIEW_CRITERIA_MAX = 6;
+/** The most rubrics of a round. */
+export const PEER_REVIEW_RUBRICS_MAX = 6;
 /** The most allocations one overview lists (3 reviews each for 1000 students). */
 export const PEER_REVIEW_ALLOCATIONS_MAX = 3000;
 /** The most tasks one student has in a round (the most reviews per student). */
@@ -57,7 +57,7 @@ const BODY_CHAR = `[^\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e
 const ReviewText = Type.String({
   pattern: `^(?=[\\s\\S]*[^ \\t\\r\\n])(?:${CODE_POINT}|${BODY_CHAR}){1,4000}${END}`,
 });
-/** One line of 1 to 120 code points: the label of a criterion. */
+/** One line of 1 to 120 code points: the label of a rubric. */
 const Label = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069\\uD800-\\uDFFF]){1,120}(?<!\\s)${END}`,
 });
@@ -69,15 +69,15 @@ const Reason = Type.String({
 const PersonName = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,100}(?<!\\s)${END}`,
 });
-/** The key of a criterion: a short word, unique within the round (the database checks that). */
-const CriterionKey = Type.String({ pattern: `^[a-z][a-z0-9-]{0,39}${END}` });
+/** The key of a rubric: a short word, unique within the round (the database checks that). */
+const RubricKey = Type.String({ pattern: `^[a-z][a-z0-9-]{0,39}${END}` });
 
 const PerStudent = Type.Union(PEER_REVIEW_PER_STUDENT.map((n) => Type.Literal(n)));
-const Criterion = closed({ key: CriterionKey, label: Label });
-const Criteria = Type.Array(Criterion, { minItems: 1, maxItems: PEER_REVIEW_CRITERIA_MAX });
-const ByCriterion = Type.Array(closed({ key: CriterionKey, text: ReviewText }), {
+const Rubric = closed({ key: RubricKey, label: Label });
+const Rubrics = Type.Array(Rubric, { minItems: 1, maxItems: PEER_REVIEW_RUBRICS_MAX });
+const ByRubric = Type.Array(closed({ key: RubricKey, text: ReviewText }), {
   minItems: 1,
-  maxItems: PEER_REVIEW_CRITERIA_MAX,
+  maxItems: PEER_REVIEW_RUBRICS_MAX,
 });
 const Person = closed({ id: Id, givenName: PersonName, familyName: PersonName });
 
@@ -90,7 +90,7 @@ const Round = closed({
   opensAt: Instant,
   dueAt: Instant,
   reviewsPerStudent: PerStudent,
-  criteria: Criteria,
+  rubrics: Rubrics,
   /** When the round was allocated, or null before. */
   allocatedAt: Type.Union([Instant, Type.Null()]),
 });
@@ -140,14 +140,14 @@ export const peerReviewRoundPut = defineRoute({
   inventory: "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts",
   access: "course_teacher",
   summary:
-    "The teacher of the assignment sets its round of peer review: opensAt before dueAt, reviewsPerStudent 1 to 3 and 1 to 6 criteria, each a key (a short lowercase word, unique in the round) and a one-line label of 1 to 120 code points. There is at most one round per assignment; setting it again replaces it only while it is not allocated, after that it is 409 already_allocated. opensAt not before dueAt and repeated keys are 422 invalid_input. No criterion is a grade or carries points. An inaccessible, unknown or malformed assignment reads 404.",
+    "The teacher of the assignment sets its round of peer review: opensAt before dueAt, reviewsPerStudent 1 to 3 and 1 to 6 rubrics, each a key (a short lowercase word, unique in the round) and a one-line label of 1 to 120 code points. There is at most one round per assignment; setting it again replaces it only while it is not allocated, after that it is 409 already_allocated. opensAt not before dueAt and repeated keys are 422 invalid_input. No rubric is a grade or carries points. An inaccessible, unknown or malformed assignment reads 404.",
   request: {
     params: AssignmentParams,
     body: closed({
       opensAt: Instant,
       dueAt: Instant,
       reviewsPerStudent: PerStudent,
-      criteria: Criteria,
+      rubrics: Rubrics,
     }),
     contentType: "application/json",
     maxBodyBytes: 8192,
@@ -312,14 +312,14 @@ export const studentPeerReviewWorkGet = defineRoute({
   inventory: "app/api/student/peer-review/tasks/[taskId]/work/route.ts",
   access: "student",
   summary:
-    "The submitted work the task is for, as its allocated reviewer reads it, and the criteria to review it by. Anonymous: the answer has no field of any person, of the work, of the assignment or of the course, and the document is only the text of the submitted revision as blocks of a kind and a text: the title page, the signature and the metadata of the blocks (authors, timestamps, ids, marks) are not part of it. It is read only while the round is open and only by the student the task is allocated to; before opening, after the deadline, or by anyone else (the author included) it reads 404, the same as an unknown or malformed task. A text the author wrote about themselves in the body of the work is the author's own and is not looked for.",
+    "The submitted work the task is for, as its allocated reviewer reads it, and the rubrics to review it by. Anonymous: the answer has no field of any person, of the work, of the assignment or of the course, and the document is only the text of the submitted revision as blocks of a kind and a text: the title page, the signature and the metadata of the blocks (authors, timestamps, ids, marks) are not part of it. It is read only while the round is open and only by the student the task is allocated to; before opening, after the deadline, or by anyone else (the author included) it reads 404, the same as an unknown or malformed task. A text the author wrote about themselves in the body of the work is the author's own and is not looked for.",
   request: { params: TaskParams },
   responses: [
     {
       status: 200,
-      description: "the criteria and the anonymised work",
+      description: "the rubrics and the anonymised work",
       body: closed({
-        criteria: Criteria,
+        rubrics: Rubrics,
         document: closed({
           revision: Type.Integer({ minimum: 1 }),
           blocks: Type.Array(Block, { maxItems: PEER_REVIEW_BLOCKS_MAX }),
@@ -338,10 +338,10 @@ export const studentPeerReviewPost = defineRoute({
   inventory: "app/api/student/peer-review/tasks/[taskId]/review/route.ts",
   access: "student",
   summary:
-    "The allocated reviewer writes the review of the task's work: one text of 1 to 4000 code points for each criterion of the round (exactly those keys, once each, else 422 invalid_input) and an optional general comment of up to 4000 code points. It is written once and only added: it cannot be changed or removed by the student. After the deadline it is 409 closed; a second one for the same task is 409 already_reviewed. A task that is not the caller's, an unknown or a malformed one reads 404, as does one of a round that is not yet open. There is no score and no rating.",
+    "The allocated reviewer writes the review of the task's work: one text of 1 to 4000 code points for each rubric of the round (exactly those keys, once each, else 422 invalid_input) and an optional general comment of up to 4000 code points. It is written once and only added: it cannot be changed or removed by the student. After the deadline it is 409 closed; a second one for the same task is 409 already_reviewed. A task that is not the caller's, an unknown or a malformed one reads 404, as does one of a round that is not yet open. There is no score and no rating.",
   request: {
     params: TaskParams,
-    body: closed({ byCriterion: ByCriterion, general: Type.Optional(ReviewText) }),
+    body: closed({ byRubric: ByRubric, general: Type.Optional(ReviewText) }),
     contentType: "application/json",
     maxBodyBytes: 65_536,
   },
@@ -363,7 +363,7 @@ export const studentPeerReviewsReceivedGet = defineRoute({
   inventory: "app/api/student/assignments/[assignmentId]/peer-review/received/route.ts",
   access: "student_enrolled",
   summary:
-    "The reviews of the caller's own work in the round, oldest first, then reviewId. Anonymous: no field of the reviewer, of the allocation or of the task, and a withdrawn review is not listed (the teacher keeps it). Each item carries the criteria it answers by key and label (as the round had them) and the optional general comment. Nothing is summed, scored or ranked. Without a round, or with no review yet, the list is empty; another's, an unknown and a malformed assignment read 404.",
+    "The reviews of the caller's own work in the round, oldest first, then reviewId. Anonymous: no field of the reviewer, of the allocation or of the task, and a withdrawn review is not listed (the teacher keeps it). Each item carries the rubrics it answers by key and label (as the round had them) and the optional general comment. Nothing is summed, scored or ranked. Without a round, or with no review yet, the list is empty; another's, an unknown and a malformed assignment read 404.",
   request: { params: AssignmentParams },
   responses: [
     {
@@ -373,9 +373,9 @@ export const studentPeerReviewsReceivedGet = defineRoute({
         reviews: Type.Array(
           closed({
             reviewId: Id,
-            byCriterion: Type.Array(closed({ key: CriterionKey, label: Label, text: ReviewText }), {
+            byRubric: Type.Array(closed({ key: RubricKey, label: Label, text: ReviewText }), {
               minItems: 1,
-              maxItems: PEER_REVIEW_CRITERIA_MAX,
+              maxItems: PEER_REVIEW_RUBRICS_MAX,
             }),
             general: Type.Union([ReviewText, Type.Null()]),
             submittedAt: Instant,

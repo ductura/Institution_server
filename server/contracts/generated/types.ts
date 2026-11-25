@@ -635,14 +635,14 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[]; "allocatedAt": string | null } | null; "state": "none" | "not_allocated" | "allocated" | "open" | "closed"; "submittedWorks": number; "minSubmissions": number }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "rubrics": ({ "key": string; "label": string })[]; "allocatedAt": string | null } | null; "state": "none" | "not_allocated" | "allocated" | "open" | "closed"; "submittedWorks": number; "minSubmissions": number }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "peer-review.round.put": {
     params: { "assignmentId": string };
     query: undefined;
-    body: { "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[] };
-    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "criteria": ({ "key": string; "label": string })[]; "allocatedAt": string | null } }; headers: { "cache-control"?: string } };
+    body: { "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "rubrics": ({ "key": string; "label": string })[] };
+    success: { status: 200; body: { "round": { "roundId": string; "opensAt": string; "dueAt": string; "reviewsPerStudent": 1 | 2 | 3; "rubrics": ({ "key": string; "label": string })[]; "allocatedAt": string | null } }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "already_allocated";
   };
   "peer-review.teacher-overview.get": {
@@ -964,13 +964,13 @@ export type Operations = {
     params: { "taskId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "criteria": ({ "key": string; "label": string })[]; "document": { "revision": number; "blocks": ({ "kind": "paragraph" | "heading" | "quote" | "list_item"; "text": string })[] } }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "rubrics": ({ "key": string; "label": string })[]; "document": { "revision": number; "blocks": ({ "kind": "paragraph" | "heading" | "quote" | "list_item"; "text": string })[] } }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.peer-review.post": {
     params: { "taskId": string };
     query: undefined;
-    body: { "byCriterion": ({ "key": string; "text": string })[]; "general"?: string };
+    body: { "byRubric": ({ "key": string; "text": string })[]; "general"?: string };
     success: { status: 201; body: { "reviewId": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "closed" | "already_reviewed";
   };
@@ -978,7 +978,7 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "reviews": ({ "reviewId": string; "byCriterion": ({ "key": string; "label": string; "text": string })[]; "general": string | null; "submittedAt": string })[] }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "reviews": ({ "reviewId": string; "byRubric": ({ "key": string; "label": string; "text": string })[]; "general": string | null; "submittedAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.portable-record.get": {

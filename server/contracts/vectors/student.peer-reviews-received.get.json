@@ -22,7 +22,7 @@
           "reviews": [
             {
               "reviewId": "00000000-0000-4000-8000-00000000b201",
-              "byCriterion": [
+              "byRubric": [
                 {
                   "key": "argument",
                   "label": "Jasnoća argumenta",

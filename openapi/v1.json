@@ -45156,7 +45156,7 @@
                             "opensAt",
                             "dueAt",
                             "reviewsPerStudent",
-                            "criteria",
+                            "rubrics",
                             "allocatedAt"
                           ],
                           "properties": {
@@ -45188,7 +45188,7 @@
                                 }
                               ]
                             },
-                            "criteria": {
+                            "rubrics": {
                               "minItems": 1,
                               "maxItems": 6,
                               "type": "array",
@@ -45395,7 +45395,7 @@
       },
       "put": {
         "operationId": "peer-review.round.put",
-        "summary": "The teacher of the assignment sets its round of peer review: opensAt before dueAt, reviewsPerStudent 1 to 3 and 1 to 6 criteria, each a key (a short lowercase word, unique in the round) and a one-line label of 1 to 120 code points. There is at most one round per assignment; setting it again replaces it only while it is not allocated, after that it is 409 already_allocated. opensAt not before dueAt and repeated keys are 422 invalid_input. No criterion is a grade or carries points. An inaccessible, unknown or malformed assignment reads 404.",
+        "summary": "The teacher of the assignment sets its round of peer review: opensAt before dueAt, reviewsPerStudent 1 to 3 and 1 to 6 rubrics, each a key (a short lowercase word, unique in the round) and a one-line label of 1 to 120 code points. There is at most one round per assignment; setting it again replaces it only while it is not allocated, after that it is 409 already_allocated. opensAt not before dueAt and repeated keys are 422 invalid_input. No rubric is a grade or carries points. An inaccessible, unknown or malformed assignment reads 404.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts",
         "parameters": [
@@ -45420,7 +45420,7 @@
                   "opensAt",
                   "dueAt",
                   "reviewsPerStudent",
-                  "criteria"
+                  "rubrics"
                 ],
                 "properties": {
                   "opensAt": {
@@ -45447,7 +45447,7 @@
                       }
                     ]
                   },
-                  "criteria": {
+                  "rubrics": {
                     "minItems": 1,
                     "maxItems": 6,
                     "type": "array",
@@ -45503,7 +45503,7 @@
                         "opensAt",
                         "dueAt",
                         "reviewsPerStudent",
-                        "criteria",
+                        "rubrics",
                         "allocatedAt"
                       ],
                       "properties": {
@@ -45535,7 +45535,7 @@
                             }
                           ]
                         },
-                        "criteria": {
+                        "rubrics": {
                           "minItems": 1,
                           "maxItems": 6,
                           "type": "array",
@@ -67101,7 +67101,7 @@
     "/api/v1/student/peer-review/tasks/{taskId}/work": {
       "get": {
         "operationId": "student.peer-review-work.get",
-        "summary": "The submitted work the task is for, as its allocated reviewer reads it, and the criteria to review it by. Anonymous: the answer has no field of any person, of the work, of the assignment or of the course, and the document is only the text of the submitted revision as blocks of a kind and a text: the title page, the signature and the metadata of the blocks (authors, timestamps, ids, marks) are not part of it. It is read only while the round is open and only by the student the task is allocated to; before opening, after the deadline, or by anyone else (the author included) it reads 404, the same as an unknown or malformed task. A text the author wrote about themselves in the body of the work is the author's own and is not looked for.",
+        "summary": "The submitted work the task is for, as its allocated reviewer reads it, and the rubrics to review it by. Anonymous: the answer has no field of any person, of the work, of the assignment or of the course, and the document is only the text of the submitted revision as blocks of a kind and a text: the title page, the signature and the metadata of the blocks (authors, timestamps, ids, marks) are not part of it. It is read only while the round is open and only by the student the task is allocated to; before opening, after the deadline, or by anyone else (the author included) it reads 404, the same as an unknown or malformed task. A text the author wrote about themselves in the body of the work is the author's own and is not looked for.",
         "x-access": "student",
         "x-inventory": "app/api/student/peer-review/tasks/[taskId]/work/route.ts",
         "parameters": [
@@ -67117,7 +67117,7 @@
         ],
         "responses": {
           "200": {
-            "description": "the criteria and the anonymised work",
+            "description": "the rubrics and the anonymised work",
             "headers": {
               "cache-control": {
                 "schema": {
@@ -67131,11 +67131,11 @@
                   "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "criteria",
+                    "rubrics",
                     "document"
                   ],
                   "properties": {
-                    "criteria": {
+                    "rubrics": {
                       "minItems": 1,
                       "maxItems": 6,
                       "type": "array",
@@ -67346,7 +67346,7 @@
     "/api/v1/student/peer-review/tasks/{taskId}/review": {
       "post": {
         "operationId": "student.peer-review.post",
-        "summary": "The allocated reviewer writes the review of the task's work: one text of 1 to 4000 code points for each criterion of the round (exactly those keys, once each, else 422 invalid_input) and an optional general comment of up to 4000 code points. It is written once and only added: it cannot be changed or removed by the student. After the deadline it is 409 closed; a second one for the same task is 409 already_reviewed. A task that is not the caller's, an unknown or a malformed one reads 404, as does one of a round that is not yet open. There is no score and no rating.",
+        "summary": "The allocated reviewer writes the review of the task's work: one text of 1 to 4000 code points for each rubric of the round (exactly those keys, once each, else 422 invalid_input) and an optional general comment of up to 4000 code points. It is written once and only added: it cannot be changed or removed by the student. After the deadline it is 409 closed; a second one for the same task is 409 already_reviewed. A task that is not the caller's, an unknown or a malformed one reads 404, as does one of a round that is not yet open. There is no score and no rating.",
         "x-access": "student",
         "x-inventory": "app/api/student/peer-review/tasks/[taskId]/review/route.ts",
         "parameters": [
@@ -67368,10 +67368,10 @@
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "byCriterion"
+                  "byRubric"
                 ],
                 "properties": {
-                  "byCriterion": {
+                  "byRubric": {
                     "minItems": 1,
                     "maxItems": 6,
                     "type": "array",
@@ -68066,7 +68066,7 @@
     "/api/v1/student/assignments/{assignmentId}/peer-review/received": {
       "get": {
         "operationId": "student.peer-reviews-received.get",
-        "summary": "The reviews of the caller's own work in the round, oldest first, then reviewId. Anonymous: no field of the reviewer, of the allocation or of the task, and a withdrawn review is not listed (the teacher keeps it). Each item carries the criteria it answers by key and label (as the round had them) and the optional general comment. Nothing is summed, scored or ranked. Without a round, or with no review yet, the list is empty; another's, an unknown and a malformed assignment read 404.",
+        "summary": "The reviews of the caller's own work in the round, oldest first, then reviewId. Anonymous: no field of the reviewer, of the allocation or of the task, and a withdrawn review is not listed (the teacher keeps it). Each item carries the rubrics it answers by key and label (as the round had them) and the optional general comment. Nothing is summed, scored or ranked. Without a round, or with no review yet, the list is empty; another's, an unknown and a malformed assignment read 404.",
         "x-access": "student_enrolled",
         "x-inventory": "app/api/student/assignments/[assignmentId]/peer-review/received/route.ts",
         "parameters": [
@@ -68107,7 +68107,7 @@
                         "type": "object",
                         "required": [
                           "reviewId",
-                          "byCriterion",
+                          "byRubric",
                           "general",
                           "submittedAt"
                         ],
@@ -68116,7 +68116,7 @@
                             "pattern": "^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}(?![\\s\\S])",
                             "type": "string"
                           },
-                          "byCriterion": {
+                          "byRubric": {
                             "minItems": 1,
                             "maxItems": 6,
                             "type": "array",
