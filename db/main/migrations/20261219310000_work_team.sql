@@ -489,6 +489,10 @@ BEGIN
   SELECT m.team_id INTO v_current
     FROM institution.work_team_members_now(p_assignment_id) m
    WHERE m.student_id = p_student_id;
+  -- Teams off: neither an addition nor a removal (work-team-v1.md).
+  IF NOT v_ctx.o_enabled THEN
+    RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
+  END IF;
   IF p_action = 'remove' THEN
     IF v_current IS DISTINCT FROM p_team_id THEN
       RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
@@ -501,7 +505,7 @@ BEGIN
     VALUES (v_ctx.o_institution_id, p_assignment_id, p_team_id, p_student_id, 'leave', v_ctx.o_user_id, 'teacher');
     RETURN;
   END IF;
-  IF NOT v_ctx.o_enabled OR v_current IS NOT NULL
+  IF v_current IS NOT NULL
      OR (SELECT count(*) FROM institution.work_team_members_now(p_assignment_id) m
           WHERE m.team_id = p_team_id) >= v_ctx.o_max_size THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';

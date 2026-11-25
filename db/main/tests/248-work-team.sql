@@ -234,6 +234,8 @@ SELECT is(pg_temp.code('boris', $$ SELECT 1 FROM app.team_action({z1}, 'leave', 
 SELECT is(pg_temp.set_setting('vesna', 'false', '2', '3', '''teacher_assigned'''), 'ok', 'Vesna turns teams off again');
 SELECT is(pg_temp.state('dora'), 'disabled teacher_assigned', 'with teams off the students see no teams');
 SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {boris}, 'add') $$, (SELECT team FROM made))), 'ZD409', 'nobody is added while teams are off');
+SELECT is(pg_temp.code('vesna', format($$ SELECT 1 FROM app.teacher_team_member({z1}, %L, {ana}, 'remove') $$, (SELECT team FROM made))), 'ZD409', 'nobody is removed while teams are off');
+SELECT is(pg_temp.team_of('ana') = (SELECT team FROM made), true, 'Ana is still in her team');
 
 -- The record: only added. The owner cannot change or remove it either.
 SELECT is(pg_temp.ask_as('ductus_identity', 'anon', format($$ UPDATE %s SET created_at = now() RETURNING 1 $$, 'institution.work_team')),
