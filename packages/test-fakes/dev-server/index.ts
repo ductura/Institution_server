@@ -38,6 +38,7 @@ import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { EVENT_DISPUTE_HANDLERS } from "./event-dispute-routes.ts";
 import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { PRACTICE_HANDLERS } from "./practice-routes.ts";
+import { ANALYSIS_HANDLERS } from "./analysis-routes.ts";
 import { PEER_REVIEW_HANDLERS } from "./peer-review-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
@@ -132,6 +133,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...PEER_REVIEW_HANDLERS,
+  ...ANALYSIS_HANDLERS,
   ...THESIS_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,

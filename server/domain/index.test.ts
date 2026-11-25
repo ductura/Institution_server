@@ -85,6 +85,7 @@ describe("server/domain imports nothing outside itself", () => {
       "retention",
       "settings",
       "sheet",
+      "slides",
       "support",
       "sync",
       "text",

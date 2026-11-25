@@ -99,6 +99,7 @@ import {
   thesisRoutes,
   practiceJournalRoutes,
   peerReviewRoutes,
+  analysisRoutes,
   consultationRecordsRoutes,
   eventDisputesRoutes,
   facultyRulesRoutes,
@@ -182,6 +183,9 @@ export {
   thesisRoutes,
   practiceJournalRoutes,
   peerReviewRoutes,
+  analysisRoutes,
+  ANALYSIS_IDS,
+  ANALYSIS_LIMITS,
   peerReviewMinSubmissions,
   PEER_REVIEW_MIN_SUBMISSIONS,
 } from "./routes/index.ts";
@@ -362,6 +366,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...thesisRoutes,
   ...practiceJournalRoutes,
   ...peerReviewRoutes,
+  ...analysisRoutes,
   ...opsRoutes,
   ...lateSubmissionRoutes,
 ];

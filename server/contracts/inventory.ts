@@ -315,6 +315,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
   },
+  // INT-31 (Ductus#2055): Ductus has no mentored-work list; the set is that
+  // of app.lock_student_assignment's mentorship branch.
+  "app/api/student/mentored-assignments/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7140530208",
+  },
   // SRV-NF1-PREDANO (Ductus#2055 c.7145546227, NF-1 P-6): when each own submission was
   // confirmed, for the same set of assignments; Ductus has no such route.
   "app/api/student/assignment-submissions/route.ts": {
@@ -491,6 +497,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/peer-review/received/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7149250861",
+  },
+  // SRV-V15-UGOVOR (Ductus#2055 c.7163756092, val 15): a small calculation in the request, no stored dataset; Ductus has no such route.
+  "app/api/analysis/catalogue/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7163756092",
+  },
+  "app/api/analysis/runs/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7163756092",
   },
   // SRV-MENTOR-2 (NF-6, MK-12 and MK-14): thesis forms, mentor consent, stage after submission.
   "app/api/institution/thesis-forms/route.ts": {
@@ -1105,7 +1120,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "institution.enrollment-code-state.get",
   "ops.events.get",
 ];
 
