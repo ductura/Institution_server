@@ -19,6 +19,8 @@ export * from "./provenance-share/index.ts";
 export * from "./practice-journal/index.ts";
 // SRV-V19-GRUPA-RUTE: order of team members and assembly of the contribution.
 export * from "./work-team/index.ts";
+// SRV-V19-RECENZIJA-RUTE: the anonymous answers of the peer review.
+export * from "./peer-review/index.ts";
 // SRV-1230: the deterministic match with an answer of the assistant.
 export * from "./assistant-match/index.ts";
 export * from "./retention/index.ts";
