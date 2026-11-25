@@ -13,9 +13,7 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { createTestDatabase, type TestDatabase } from "../../../test-support/database/index.ts";
 import { createTeacherDeclarationReader, type WithActor } from "../../database/index.ts";
 
-import { createDatabases } from "../databases.ts";
-import { createLayers } from "../pipeline.ts";
-import { type Running, startServer } from "../start.ts";
+import { createDatabases, createLayers, type Running, startServer } from "../index.ts";
 import { createTeacherDeclarationRoute } from "./index.ts";
 
 const FIXTURES = new URL("../../../db/main/tests/fixtures/", import.meta.url);
