@@ -1,6 +1,6 @@
 // SRV-V18-UPITNIK-BAZA (Ductus#2055; val 18): the adapter of the questionnaires.
 // Every call is one withActor transaction with the app.* RPCs of migration
-// 20261219370000 (questionnaire): the client never writes a table. Who may do
+// 20261219380000 (questionnaire): the client never writes a table. Who may do
 // what is decided by the RPCs from the relation (teacher of the course, student
 // enrolled in it), never from a role alone; another's, an unknown, a malformed
 // and (for a student) a not open questionnaire all come back as ZD404. The

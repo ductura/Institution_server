@@ -1,5 +1,5 @@
 // SRV-V18-UPITNIK-BAZA: the definition of a questionnaire (migration
-// 20261219370000_questionnaire.sql, same rules). Pure functions, no I/O.
+// 20261219380000_questionnaire.sql, same rules). Pure functions, no I/O.
 export const QUESTION_KINDS = ["single", "multiple", "scale", "number", "text"] as const;
 export type QuestionKind = (typeof QUESTION_KINDS)[number];
 export const QUESTIONNAIRE_STATES = ["draft", "open", "closed"] as const;
