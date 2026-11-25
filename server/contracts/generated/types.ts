@@ -652,6 +652,48 @@ export type Operations = {
     success: { status: 200; body: { "checkedAt": string; "components": { "writing": "radi" | "ne_radi" | "nije_ukljuceno"; "submission": "radi" | "ne_radi" | "nije_ukljuceno"; "mentorView": "radi" | "ne_radi" | "nije_ukljuceno" }; "maintenanceWindows"?: ({ "startsAt": string; "endsAt": string })[] }; headers: {  } };
     errorCode: "unavailable";
   };
+  "practice.entries.get": {
+    params: { "placementId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "entries": ({ "entryId": string; "date": string; "hours": 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5 | 5.5 | 6 | 6.5 | 7 | 7.5 | 8 | 8.5 | 9 | 9.5 | 10 | 10.5 | 11 | 11.5 | 12; "text": string; "correctsEntryId": string | null; "createdAt": string })[]; "signoffs": ({ "signoffId": string; "throughDate": string; "entryCount": number; "entriesSha256": string; "comment": string | null; "signedAt": string; "mentor": { "id": string; "givenName": string; "familyName": string } })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "practice.entries.post": {
+    params: { "placementId": string };
+    query: undefined;
+    body: { "date": string; "hours": 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5 | 5.5 | 6 | 6.5 | 7 | 7.5 | 8 | 8.5 | 9 | 9.5 | 10 | 10.5 | 11 | 11.5 | 12; "text": string; "correctsEntryId"?: string };
+    success: { status: 201; body: { "entryId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "placement_closed" | "conflict";
+  };
+  "practice.placements.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "placements": ({ "placementId": string; "mentorshipId": string; "organisationName": string; "startsOn": string; "endsOn": string; "entryCount": number; "signedThrough": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "practice.placements.post": {
+    params: undefined;
+    query: undefined;
+    body: { "mentorshipId": string; "organisationName": string; "startsOn": string; "endsOn": string };
+    success: { status: 201; body: { "placementId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "practice.signoffs.get": {
+    params: { "placementId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "signoffs": ({ "signoffId": string; "throughDate": string; "entryCount": number; "entriesSha256": string; "comment": string | null; "signedAt": string; "mentor": { "id": string; "givenName": string; "familyName": string } })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "practice.signoffs.post": {
+    params: { "placementId": string };
+    query: undefined;
+    body: { "throughDate": string; "comment"?: string };
+    success: { status: 201; body: { "signoffId": string; "entryCount": number; "entriesSha256": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "nothing_to_sign";
+  };
   "profile.interface-locale.get": {
     params: undefined;
     query: undefined;
@@ -1092,6 +1134,13 @@ export type Operations = {
     body: { "requestKey": string; "courseId": string; "opensAt"?: string; "dueAt"?: string };
     success: { status: 201; body: { "id": string; "versionNo": 1 }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
+  "teacher.assignment-follow-up.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "students": ({ "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": string; "noticeVersionNo": number; "revisionState": "open" | "responded" | "closed" | "withdrawn"; "revisionChangedAt": string; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": string; "noticeVersionNo": number; "revisionState": null; "revisionChangedAt": null; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": null; "noticeVersionNo": null; "revisionState": "open" | "responded" | "closed" | "withdrawn"; "revisionChangedAt": string; "openRevisionCount": number } | { "studentId": string; "noticeReadAt": string | null; "noticeAcknowledgedAt": null; "noticeVersionNo": null; "revisionState": null; "revisionChangedAt": null; "openRevisionCount": number })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "teacher.assignment-grade.get": {
     params: { "assignmentId": string };

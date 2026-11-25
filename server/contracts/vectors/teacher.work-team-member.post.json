@@ -88,7 +88,7 @@
           "code": "origin_missing",
           "messageKey": "errors.originMissing",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-000000007139"
+          "requestId": "00000000-0000-4000-8000-000000007140"
         }
       }
     },
@@ -120,7 +120,7 @@
           "code": "origin_mismatch",
           "messageKey": "errors.originMismatch",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-00000000713a"
+          "requestId": "00000000-0000-4000-8000-000000007141"
         }
       }
     },
@@ -152,7 +152,7 @@
           "code": "cross_site",
           "messageKey": "errors.crossSite",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-00000000713b"
+          "requestId": "00000000-0000-4000-8000-000000007142"
         }
       }
     },
@@ -182,7 +182,7 @@
           "code": "body_too_large",
           "messageKey": "errors.bodyTooLarge",
           "status": 413,
-          "requestId": "00000000-0000-4000-8000-00000000713c"
+          "requestId": "00000000-0000-4000-8000-000000007143"
         }
       }
     },
@@ -212,7 +212,7 @@
           "code": "body_timeout",
           "messageKey": "errors.bodyTimeout",
           "status": 408,
-          "requestId": "00000000-0000-4000-8000-00000000713d"
+          "requestId": "00000000-0000-4000-8000-000000007144"
         }
       }
     },
@@ -245,7 +245,7 @@
           "code": "content_length_invalid",
           "messageKey": "errors.contentLengthInvalid",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-00000000713e"
+          "requestId": "00000000-0000-4000-8000-000000007145"
         }
       }
     },
@@ -278,7 +278,7 @@
           "code": "content_length_mismatch",
           "messageKey": "errors.contentLengthMismatch",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-00000000713f"
+          "requestId": "00000000-0000-4000-8000-000000007146"
         }
       }
     },
@@ -308,7 +308,7 @@
           "code": "body_stream_error",
           "messageKey": "errors.bodyStreamError",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-000000007140"
+          "requestId": "00000000-0000-4000-8000-000000007147"
         }
       }
     },
@@ -339,7 +339,7 @@
           "code": "unauthorized",
           "messageKey": "errors.unauthorized",
           "status": 401,
-          "requestId": "00000000-0000-4000-8000-000000007141"
+          "requestId": "00000000-0000-4000-8000-000000007148"
         }
       }
     },
@@ -371,7 +371,7 @@
           "code": "not_found",
           "messageKey": "errors.notFound",
           "status": 404,
-          "requestId": "00000000-0000-4000-8000-000000007142"
+          "requestId": "00000000-0000-4000-8000-000000007149"
         }
       }
     },
@@ -403,7 +403,7 @@
           "code": "unavailable",
           "messageKey": "errors.unavailable",
           "status": 503,
-          "requestId": "00000000-0000-4000-8000-000000007143"
+          "requestId": "00000000-0000-4000-8000-00000000714a"
         }
       }
     },
@@ -432,7 +432,7 @@
           "code": "unsupported_media_type",
           "messageKey": "errors.unsupportedMediaType",
           "status": 415,
-          "requestId": "00000000-0000-4000-8000-000000007144"
+          "requestId": "00000000-0000-4000-8000-00000000714b"
         }
       }
     },
@@ -461,7 +461,7 @@
           "code": "invalid_json",
           "messageKey": "errors.invalidJson",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-000000007145"
+          "requestId": "00000000-0000-4000-8000-00000000714c"
         }
       }
     },
@@ -494,7 +494,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007146"
+          "requestId": "00000000-0000-4000-8000-00000000714d"
         }
       }
     },
@@ -526,7 +526,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007147"
+          "requestId": "00000000-0000-4000-8000-00000000714e"
         }
       }
     },
@@ -558,7 +558,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007148"
+          "requestId": "00000000-0000-4000-8000-00000000714f"
         }
       }
     },
@@ -590,7 +590,103 @@
           "code": "conflict",
           "messageKey": "errors.conflict",
           "status": 409,
-          "requestId": "00000000-0000-4000-8000-000000007149"
+          "requestId": "00000000-0000-4000-8000-000000007150"
+        }
+      }
+    },
+    {
+      "name": "team-above-maximum",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnik-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101",
+          "teamId": "00000000-0000-4000-8000-00000000b201"
+        },
+        "body": {
+          "studentId": "00000000-0000-4000-8000-00000000b302",
+          "action": "add"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-000000007151"
+        }
+      }
+    },
+    {
+      "name": "remove-after-own-part-submitted",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnik-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101",
+          "teamId": "00000000-0000-4000-8000-00000000b201"
+        },
+        "body": {
+          "studentId": "00000000-0000-4000-8000-00000000b302",
+          "action": "remove"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-000000007152"
+        }
+      }
+    },
+    {
+      "name": "student-not-enrolled",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnik-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101",
+          "teamId": "00000000-0000-4000-8000-00000000b201"
+        },
+        "body": {
+          "studentId": "00000000-0000-4000-8000-00000000b102",
+          "action": "add"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000007153"
         }
       }
     }

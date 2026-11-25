@@ -141,7 +141,7 @@
           "code": "origin_missing",
           "messageKey": "errors.originMissing",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-000000007118"
+          "requestId": "00000000-0000-4000-8000-000000007119"
         }
       }
     },
@@ -172,7 +172,7 @@
           "code": "origin_mismatch",
           "messageKey": "errors.originMismatch",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-000000007119"
+          "requestId": "00000000-0000-4000-8000-00000000711a"
         }
       }
     },
@@ -203,7 +203,7 @@
           "code": "cross_site",
           "messageKey": "errors.crossSite",
           "status": 403,
-          "requestId": "00000000-0000-4000-8000-00000000711a"
+          "requestId": "00000000-0000-4000-8000-00000000711b"
         }
       }
     },
@@ -232,7 +232,7 @@
           "code": "body_too_large",
           "messageKey": "errors.bodyTooLarge",
           "status": 413,
-          "requestId": "00000000-0000-4000-8000-00000000711b"
+          "requestId": "00000000-0000-4000-8000-00000000711c"
         }
       }
     },
@@ -261,7 +261,7 @@
           "code": "body_timeout",
           "messageKey": "errors.bodyTimeout",
           "status": 408,
-          "requestId": "00000000-0000-4000-8000-00000000711c"
+          "requestId": "00000000-0000-4000-8000-00000000711d"
         }
       }
     },
@@ -293,7 +293,7 @@
           "code": "content_length_invalid",
           "messageKey": "errors.contentLengthInvalid",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-00000000711d"
+          "requestId": "00000000-0000-4000-8000-00000000711e"
         }
       }
     },
@@ -325,7 +325,7 @@
           "code": "content_length_mismatch",
           "messageKey": "errors.contentLengthMismatch",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-00000000711e"
+          "requestId": "00000000-0000-4000-8000-00000000711f"
         }
       }
     },
@@ -354,7 +354,7 @@
           "code": "body_stream_error",
           "messageKey": "errors.bodyStreamError",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-00000000711f"
+          "requestId": "00000000-0000-4000-8000-000000007120"
         }
       }
     },
@@ -384,7 +384,7 @@
           "code": "unauthorized",
           "messageKey": "errors.unauthorized",
           "status": 401,
-          "requestId": "00000000-0000-4000-8000-000000007120"
+          "requestId": "00000000-0000-4000-8000-000000007121"
         }
       }
     },
@@ -415,7 +415,7 @@
           "code": "not_found",
           "messageKey": "errors.notFound",
           "status": 404,
-          "requestId": "00000000-0000-4000-8000-000000007121"
+          "requestId": "00000000-0000-4000-8000-000000007122"
         }
       }
     },
@@ -446,7 +446,7 @@
           "code": "unavailable",
           "messageKey": "errors.unavailable",
           "status": 503,
-          "requestId": "00000000-0000-4000-8000-000000007122"
+          "requestId": "00000000-0000-4000-8000-000000007123"
         }
       }
     },
@@ -474,7 +474,7 @@
           "code": "unsupported_media_type",
           "messageKey": "errors.unsupportedMediaType",
           "status": 415,
-          "requestId": "00000000-0000-4000-8000-000000007123"
+          "requestId": "00000000-0000-4000-8000-000000007124"
         }
       }
     },
@@ -502,7 +502,7 @@
           "code": "invalid_json",
           "messageKey": "errors.invalidJson",
           "status": 400,
-          "requestId": "00000000-0000-4000-8000-000000007124"
+          "requestId": "00000000-0000-4000-8000-000000007125"
         }
       }
     },
@@ -533,7 +533,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007125"
+          "requestId": "00000000-0000-4000-8000-000000007126"
         }
       }
     },
@@ -563,7 +563,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007126"
+          "requestId": "00000000-0000-4000-8000-000000007127"
         }
       }
     },
@@ -594,7 +594,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007127"
+          "requestId": "00000000-0000-4000-8000-000000007128"
         }
       }
     },
@@ -624,7 +624,7 @@
           "code": "invalid_input",
           "messageKey": "errors.invalidInput",
           "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000007128"
+          "requestId": "00000000-0000-4000-8000-000000007129"
         }
       }
     },
@@ -655,7 +655,190 @@
           "code": "conflict",
           "messageKey": "errors.conflict",
           "status": 409,
-          "requestId": "00000000-0000-4000-8000-000000007129"
+          "requestId": "00000000-0000-4000-8000-00000000712a"
+        }
+      }
+    },
+    {
+      "name": "second-team-on-assignment",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "create"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-00000000712b"
+        }
+      }
+    },
+    {
+      "name": "teacher-forms-the-teams",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "join",
+          "teamId": "00000000-0000-4000-8000-00000000b201"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-00000000712c"
+        }
+      }
+    },
+    {
+      "name": "leave-without-team",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "leave"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-00000000712d"
+        }
+      }
+    },
+    {
+      "name": "leave-after-own-part-submitted",
+      "kind": "error",
+      "code": "conflict",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "leave"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": "conflict",
+          "code": "conflict",
+          "messageKey": "errors.conflict",
+          "status": 409,
+          "requestId": "00000000-0000-4000-8000-00000000712e"
+        }
+      }
+    },
+    {
+      "name": "join-empty-team",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "join",
+          "teamId": "00000000-0000-4000-8000-00000000b202"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-00000000712f"
+        }
+      }
+    },
+    {
+      "name": "join-unknown-team",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        },
+        "body": {
+          "action": "join",
+          "teamId": "00000000-0000-4000-8000-00000000b102"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000007130"
         }
       }
     }

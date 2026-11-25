@@ -213,3 +213,12 @@ export {
   workAccessGet,
 } from "./access-log.ts";
 export { IDENTITY_CHECKS, studentDataExportRoutes } from "./student-data-export.ts";
+export {
+  PRACTICE_ENTRIES_MAX,
+  PRACTICE_PLACEMENTS_MAX,
+  PRACTICE_SIGNOFFS_MAX,
+  practiceEntriesPost,
+  practiceJournalRoutes,
+  practicePlacementsPost,
+  practiceSignoffsPost,
+} from "./practice-journal.ts";

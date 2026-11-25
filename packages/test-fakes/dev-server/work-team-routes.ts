@@ -166,6 +166,7 @@ export const WORK_TEAM_HANDLERS: Handlers = {
       (t) => t.assignmentId === id && t.memberIds.includes(account.id),
     );
     if (body.action === "leave") {
+      // Either formation: a student may leave a team until their own part is submitted.
       if (own === undefined || workState(state, id, account.id) === "submitted")
         return { error: "conflict" };
       own.memberIds = own.memberIds.filter((m) => m !== account.id);
@@ -182,7 +183,8 @@ export const WORK_TEAM_HANDLERS: Handlers = {
         const team = records.teams.find(
           (t) => t.teamId === body.teamId.toLowerCase() && t.assignmentId === id,
         );
-        if (team === undefined) return { error: "not_found" };
+        // An empty team is not open to students (openTeams hides it): it reads as unknown.
+        if (team === undefined || team.memberIds.length === 0) return { error: "not_found" };
         if (team.memberIds.length >= setting.maxSize) return { error: "conflict" };
         team.memberIds.push(account.id);
       }

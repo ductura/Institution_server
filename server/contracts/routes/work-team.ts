@@ -199,7 +199,7 @@ export const studentWorkTeamPost = defineRoute({
   inventory: "app/api/student/assignments/[assignmentId]/team/route.ts",
   access: "student_enrolled",
   summary:
-    "The student creates a team and becomes its first member (create), joins an open team by teamId (join) or leaves their team (leave); the answer is the state afterwards, as student.work-team.get gives it. create and join are allowed only when the students form the teams. teamId is required for join and refused for create and leave. A team above maxSize, a second team on the same assignment, a call while the teacher forms the teams and leaving after the student's own part was submitted are 409 conflict. A team that is another's or unknown reads 404. Teams are never deleted.",
+    "The student creates a team and becomes its first member (create), joins an open team by teamId (join) or leaves their team (leave); the answer is the state afterwards, as student.work-team.get gives it. create and join are allowed only when the students form the teams; leave is allowed in either formation (a team the teacher formed can be left, and only the teacher adds the student again). teamId is required for join and refused for create and leave. 409 conflict: a team above maxSize, a second team on the same assignment, create or join while the teacher forms the teams or while teams are off, leave without a team, and leave after the student's own part was submitted. A team that is another's, unknown or still empty reads 404 (a student sees an open team only with a member in it). A malformed assignment id in the path is 404; a malformed teamId or action in the body is 422 invalid_input. Teams are never deleted.",
   request: {
     params: AssignmentParams,
     body: Type.Union([
@@ -288,7 +288,7 @@ export const teacherWorkTeamMemberPost = defineRoute({
   inventory: "app/api/teacher/assignments/[assignmentId]/teams/[teamId]/members/route.ts",
   access: "course_teacher",
   summary:
-    "The teacher adds an enrolled student to the team or removes one from it. Each is added to the record of the team and nothing is deleted. A student already in a team, a team above maxSize, teams off and removing a student whose own part was submitted are 409 conflict. A student not enrolled, a team of another assignment, unknown or malformed ids read 404.",
+    "The teacher adds an enrolled student to the team or removes one from it. Each is added to the record of the team and nothing is deleted. A student already in a team, a team above maxSize, teams off and removing a student whose own part was submitted are 409 conflict. A student not enrolled, a team of another assignment or an unknown id reads 404; a malformed id in the path is 404, a malformed studentId in the body is 422 invalid_input.",
   request: {
     params: TeamParams,
     body: closed({

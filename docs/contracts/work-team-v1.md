@@ -1,6 +1,6 @@
 # Timovi na zadatku i doprinos v1
 
-**Status: PRIJEDLOG ugovora (samo ugovor, bez baze i ruta).** SRV-V19-GRUPA-UGOVOR `v19-grupa-ugovor`, `Risk: standard`. Izvor: `docs/nalazi/val19-razlika.md` §5 zadatak 6 (WEB #642), nalog na Ductus#2055 (c.7147669559). Baza dolazi u SRV-V19-GRUPA-BAZA, rukovatelji u SRV-V19-GRUPA-RUTE; do tada su rute `CONTRACT_ONLY` i rade nad lažnim serverom.
+**Status: PRIJEDLOG ugovora (samo ugovor, bez baze i ruta).** SRV-V19-GRUPA-UGOVOR `v19-grupa-ugovor`, `Risk: standard`. Izvor: `docs/nalazi/val19-razlika.md` §5 zadatak 6 (WEB #642), nalog na Ductus#2055 (c.7147669559). Baza dolazi u SRV-V19-GRUPA-BAZA, rukovatelji u SRV-V19-GRUPA-RUTE; do tada rute postoje samo u ugovoru i rade nad lažnim serverom (nisu na popisu `CONTRACT_ONLY`).
 
 Ugovor određuje timove studenata na zadatku (postavka nastavnika, osnivanje, pridruživanje, napuštanje, dodavanje i uklanjanje člana) i prikaz doprinosa iz zabilježenih događaja (Ustav C-6 (a), napomena P-B). Svaki član radi vlastiti dio rada; zajedničkog dokumenta nema (OP-V19-3).
 
@@ -37,13 +37,13 @@ Ugovor određuje timove studenata na zadatku (postavka nastavnika, osnivanje, pr
 - `none`: student nije u timu; nosi `formation` i `openTeams` (`[{teamId, memberCount}]`, samo timovi sa slobodnim mjestom kad studenti sami biraju, inače prazno). **Bez imena**: student vidi imena samo članova vlastitog tima;
 - `member`: `team: {teamId, members:[{givenName, familyName}]}`, članovi abecedno po prezimenu pa imenu.
 
-`student.work-team.post` tijelo je `{action: "create"}`, `{action: "join", teamId}` ili `{action: "leave"}`; odgovor je stanje nakon radnje, kao `get`. 409 `conflict`: tim iznad `maxSize`, drugi tim na istom zadatku, `create` ili `join` dok timove oblikuje nastavnik, napuštanje nakon što je student predao svoj dio. Tuđi ili nepoznat tim je 404. Tim se nikad ne briše.
+`student.work-team.post` tijelo je `{action: "create"}`, `{action: "join", teamId}` ili `{action: "leave"}`; odgovor je stanje nakon radnje, kao `get`. 409 `conflict`: tim iznad `maxSize`, drugi tim na istom zadatku, `create` ili `join` dok timove oblikuje nastavnik ili su timovi isključeni, `leave` bez tima i `leave` nakon što je student predao svoj dio. `leave` je dopušten uz oba načina oblikovanja (tim koji je složio nastavnik student smije napustiti, a ponovno ga dodaje samo nastavnik). Tuđi, nepoznat i još prazan tim je 404 (student otvoren tim vidi tek kad u njemu netko jest). Tim se nikad ne briše.
 
 ### Nastavnik
 
 `teacher.work-teams.get` vraća `{teams:[{teamId, members:[{studentId, givenName, familyName, workState}]}], unassigned:[{studentId, givenName, familyName}]}`. Članovi i nedodijeljeni studenti idu po prezimenu, imenu pa `studentId`; timovi po prvom članu pa `teamId`. `workState` je činjenica: `not_started`, `in_progress` ili `submitted`.
 
-`teacher.work-teams.post` stvara prazan tim (201 `{teamId}`); bez te rute `teacher_assigned` ne bi bio upotrebljiv (vidi Pretpostavke). Uz isključene timove 409 `conflict`. `teacher.work-team-member.post` tijelo `{studentId, action: "add" | "remove"}`, odgovor `{updated: true}`. 409 `conflict`: student je već u timu, tim iznad `maxSize`, timovi isključeni, uklanjanje studenta koji je predao svoj dio. Student koji nije upisan na kolegij, tim drugog zadatka i neispravni id-evi su 404.
+`teacher.work-teams.post` stvara prazan tim (201 `{teamId}`); bez te rute `teacher_assigned` ne bi bio upotrebljiv (vidi Pretpostavke). Uz isključene timove 409 `conflict`. `teacher.work-team-member.post` tijelo `{studentId, action: "add" | "remove"}`, odgovor `{updated: true}`. 409 `conflict`: student je već u timu, tim iznad `maxSize`, timovi isključeni, uklanjanje studenta koji je predao svoj dio. Student koji nije upisan na kolegij, tim drugog zadatka i nepoznat id je 404.
 
 ## Doprinos
 
@@ -55,6 +55,8 @@ Isto tijelo za studenta i nastavnika (bajt-jednako, student vidi isto što nasta
 `categories` ima točno pet zapisa u stalnom redu iz `provenance-share-v1.md` §1.2: `written`, `ai_transferred`, `pasted`, `imported`, `unattributed`. Članovi su uvijek abecedno, **nikad po iznosu**. Nema polja `share`, ranga, usporedbe, prosjeka, praga ni boje. Napomena je obvezno polje (P-B). Polje ne nosi nijedna druga ruta (popisi, izvoz, paket, obavijesti); to provjerava `server/contracts/work-team.test.ts` nad ugovorom, a nad rukovateljima SRV-V19-GRUPA-RUTE.
 
 ## Zajednička pravila ruta
+
+Neispravan id u putanji je 404 (isti kao tuđe i nepoznato, C-23); neispravan id ili vrijednost u tijelu (`studentId`, `teamId`, `action`, veličine) je 422 `invalid_input`. `minSize` veći od `maxSize` shema ne izražava, pa ga provodi rukovatelj kao 422 (vektor `min-above-max`).
 
 401 `unauthorized`, 404 `not_found` (isti za tuđe, nepoznato i neispravno, C-23), 503 `unavailable`; mutacije `MUTATION_GUARD`, 415, 400 `invalid_json`, 422 `invalid_input`. Odgovori nose `cache-control: no-store`. Nema nove vrste obavijesti, nijednog novog koda greške ni izmjene postojećeg ugovora.
 
