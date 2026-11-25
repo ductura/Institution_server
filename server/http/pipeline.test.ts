@@ -8,6 +8,7 @@ import { Duplex } from "node:stream";
 import { describe, expect, it } from "vitest";
 
 import type { LogWriter } from "../log/index.ts";
+import { parseAllowedNetworks, type RateLimiter } from "../traffic/index.ts";
 
 import {
   type App,
@@ -317,6 +318,45 @@ describe("step 5, the traffic record", () => {
     const response = await runWith(write as unknown as LogWriter);
     expect(response.statusCode).toBe(204);
     expect(response.writableEnded).toBe(true);
+  });
+
+  it("records a request refused by the IP rules in step 3", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    request.url = "/api/v1/ops/ip-rules";
+    const layers = createLayers({
+      expectedOrigin: null,
+      trafficLog: write,
+      allowedNetworks: () => parseAllowedNetworks("203.0.113.0/24")!,
+    });
+    let app = 0;
+    await createPipeline(layers, async () => void (app += 1))(request, response);
+    response.emit("close");
+    expect([response.statusCode, app]).toEqual([403, 0]);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(403);
+  });
+
+  it("records a request refused by the rate limit in step 4", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    const rateLimiter = {
+      check: () => ({ allowed: false, bucket: "per_address", retryAfter: 5 }),
+    } as unknown as RateLimiter;
+    const layers = createLayers({ expectedOrigin: null, trafficLog: write, rateLimiter });
+    await createPipeline(layers, async () => undefined)(request, response);
+    response.emit("close");
+    expect(response.statusCode).toBe(429);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(429);
   });
 
   it("records nothing, and still answers, without a writer", async () => {

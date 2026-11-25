@@ -14,6 +14,7 @@ import {
   NO_ALLOWED_NETWORKS,
   NO_TRUSTED_PROXIES,
   type RateLimiter,
+  type TrafficRecorder,
   type TrustedProxies,
 } from "../traffic/index.ts";
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
@@ -132,18 +133,37 @@ export function trafficLogFor(logs: {
  * write are fire and forget, and a throw here is caught again so the layer
  * always answers "next".
  */
-function trafficRecordLayer(write: LogWriter | undefined): Layer {
-  if (write === undefined) return async () => "next";
-  const recorder = createTrafficRecorder({ write, routeOf: trafficRouteOf, requestIdOf });
+function trafficRecordLayer(recorder: TrafficRecorder | undefined): Layer {
   return async (request, response) => {
-    try {
-      recorder.arm(request, response);
-    } catch {
-      // A record that cannot be armed never stops a request.
-    }
+    armTraffic(recorder, request, response);
     return "next";
   };
 }
+
+/** Arms the recorder, once per response; it never throws. */
+function armTraffic(
+  recorder: TrafficRecorder | undefined,
+  request: IncomingMessage,
+  response: ServerResponse,
+): void {
+  try {
+    recorder?.arm(request, response);
+  } catch {
+    // A record that cannot be armed never stops a request.
+  }
+}
+
+/**
+ * Steps 3 and 4 may refuse before step 5 runs, and a refusal is recorded too
+ * (docs/server-map.md §3): they arm the same recorder first, and the second
+ * arm of step 5 does nothing.
+ */
+const armedBefore =
+  (recorder: TrafficRecorder | undefined, layer: Layer): Layer =>
+  async (request, response) => {
+    armTraffic(recorder, request, response);
+    return layer(request, response);
+  };
 
 /**
  * Without trustedProxies (TRUSTED_PROXIES) X-Forwarded-For is never read and
@@ -169,14 +189,24 @@ export function createLayers(options: {
   readonly trafficLog?: LogWriter;
 }): Layers {
   const denials = options.operatorDenialLog ?? createOperatorDenialLog();
+  const recorder =
+    options.trafficLog === undefined
+      ? undefined
+      : createTrafficRecorder({ write: options.trafficLog, routeOf: trafficRouteOf, requestIdOf });
   return Object.freeze({
     clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
-    ipRules: ipRulesLayer(options.allowedNetworks ?? (() => NO_ALLOWED_NETWORKS), denials),
-    rateLimit: rateLimitLayer(
-      options.rateLimiter ?? defaultRateLimiter(),
-      ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
+    ipRules: armedBefore(
+      recorder,
+      ipRulesLayer(options.allowedNetworks ?? (() => NO_ALLOWED_NETWORKS), denials),
     ),
-    trafficRecord: trafficRecordLayer(options.trafficLog),
+    rateLimit: armedBefore(
+      recorder,
+      rateLimitLayer(
+        options.rateLimiter ?? defaultRateLimiter(),
+        ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
+      ),
+    ),
+    trafficRecord: trafficRecordLayer(recorder),
     securityHeaders: securityHeadersLayer,
     originCheck: originLayer(options.expectedOrigin),
     operatorPolicy: operatorPolicyLayer(
