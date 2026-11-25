@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(5960);
+SELECT plan(5971);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2011,6 +2011,28 @@ SELECT ok((SELECT bool_and(p.prosecdef AND has_function_privilege('ductus_app', 
                'app.my_assistant_available(uuid)', 'app.assistant_cost_published(uuid)', 'app.course_assistant_on(uuid)']) f
              JOIN pg_proc p ON p.oid = f::regprocedure),
   'SRV-ASIST-PREKIDAC: the web role calls the three RPCs, not the two workers; all SECURITY DEFINER');
+
+-- 1i3g. SRV-ASIST-BROJAC: the daily request limit; only the students of Z1 read
+-- {limit, used}, everyone else is refused; the operator procedure and its
+-- workers belong to no role. The rest is in 256-assistant-request-limit.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT outcome FROM app.my_assistant_requests({z1})'), 1, 9), c.result,
+  format('SRV-ASIST-BROJAC: %s reads the request count of Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
+             ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')) AS c (actor, result);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname <> 'ductus_identity'
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['assistant.publish_request_limit(uuid,integer,integer,text)', 'assistant.requests_today(uuid,uuid)',
+       'assistant.write_config_version_requests(uuid,integer,bigint,text,bigint,bigint,bigint,integer,uuid,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-ASIST-BROJAC: the operator procedure and the workers belong to no role but the owner'
+);
+SELECT ok((SELECT p.prosecdef AND has_function_privilege('ductus_app', 'app.my_assistant_requests(uuid)', 'EXECUTE')
+             FROM pg_proc p WHERE p.oid = 'app.my_assistant_requests(uuid)'::regprocedure),
+  'SRV-ASIST-BROJAC: the web role calls the reader, SECURITY DEFINER');
 
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was

@@ -25,6 +25,7 @@ async function start(providerPresent = true): Promise<string> {
     read: (...args: unknown[]) => (calls.push(["read", ...args]), reply()),
     set: (...args: unknown[]) => (calls.push(["set", ...args]), reply()),
     available: (...args: unknown[]) => (calls.push(["available", ...args]), reply()),
+    requests: (...args: unknown[]) => (calls.push(["requests", ...args]), reply()),
   } as unknown as CourseAssistantPort;
   running = await startServer({
     host: "127.0.0.1",
@@ -156,6 +157,56 @@ describe("student.assignment-assistant.get", () => {
   it("a malformed assignment is 404 and reaches no port; a cross-site read is 403", async () => {
     const base = await start();
     expect((await get(base, "/student/assignments/nije-uuid/assistant")).status).toBe(404);
+    const cross = await fetch(`${base}${path}`, {
+      headers: { cookie: COOKIE, "sec-fetch-site": "cross-site" },
+    });
+    expect(cross.status).toBe(403);
+    expect(calls).toEqual([]);
+  });
+});
+
+// SRV-ASIST-BROJAC: the daily request count of a student.
+describe("student.assignment-assistant-requests.get", () => {
+  const path = `/student/assignments/${ASSIGNMENT}/assistant/requests`;
+
+  it.each([
+    [20, 3],
+    [null, 0],
+  ])("limit %s and used %s are answered as they are", async (limit, used) => {
+    const base = await start(false);
+    reply = async () => ({ status: "read", limit, used });
+    const response = await get(base, path);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ limit, used });
+    expect(calls).toEqual([
+      ["requests", "izmisljeni-token-nastavnika-000000000000001", ASSIGNMENT],
+    ]);
+  });
+
+  it("a refusal is 404, a lost session 401", async () => {
+    const base = await start();
+    reply = async () => ({ status: "not_found" });
+    expect((await get(base, path)).status).toBe(404);
+    reply = async () => ({ status: "unauthorized" });
+    expect((await get(base, path)).status).toBe(401);
+  });
+
+  it("an answer outside the contract or a failing port is 503", async () => {
+    const base = await start();
+    reply = async () => ({ status: "read", limit: 0, used: 1 });
+    expect((await get(base, path)).status).toBe(503);
+    reply = async () => ({ status: "read", limit: 5, used: -1 });
+    expect((await get(base, path)).status).toBe(503);
+    reply = async () => {
+      throw new Error("izmisljeni kvar");
+    };
+    expect((await get(base, path)).status).toBe(503);
+  });
+
+  it("a malformed assignment, no session and a cross-site read reach no port", async () => {
+    const base = await start();
+    expect((await get(base, "/student/assignments/nije-uuid/assistant/requests")).status).toBe(404);
+    expect((await get(base, path, null)).status).toBe(401);
     const cross = await fetch(`${base}${path}`, {
       headers: { cookie: COOKIE, "sec-fetch-site": "cross-site" },
     });
