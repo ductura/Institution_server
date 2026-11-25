@@ -362,6 +362,11 @@ ALTER TABLE institution.assignment_rubric_version DISABLE TRIGGER assignment_rub
 ALTER TABLE institution.assignment_team_setting DISABLE TRIGGER assignment_team_setting_no_truncate;
 ALTER TABLE institution.work_team DISABLE TRIGGER work_team_no_truncate;
 ALTER TABLE institution.work_team_member_event DISABLE TRIGGER work_team_member_event_no_truncate;
+-- The anonymous peer review of an assignment (SRV-V19-RECENZIJA-BAZA) references the assignment; it is append only.
+ALTER TABLE institution.peer_review_round DISABLE TRIGGER peer_review_round_no_truncate;
+ALTER TABLE institution.peer_review_allocation DISABLE TRIGGER peer_review_allocation_no_truncate;
+ALTER TABLE institution.peer_review DISABLE TRIGGER peer_review_no_truncate;
+ALTER TABLE institution.peer_review_withdrawal DISABLE TRIGGER peer_review_withdrawal_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
