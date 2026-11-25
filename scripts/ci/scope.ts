@@ -69,13 +69,17 @@ export type ScopeInput = {
 
 const FULL_SHA = /^[a-f0-9]{40}$/;
 
+// CI-BRZINA: the protected branches a pull request may target and still be
+// docs: main and the migration base the work currently merges into.
+export const DOCS_BASES: ReadonlySet<string> = new Set(["main", "migracija/kopija-ductus-backend"]);
+
 /**
- * The profile of one CI run. Only a pull request into main can be docs; pushes
+ * The profile of one CI run. Only a pull request into a DOCS_BASES branch can be docs; pushes
  * and stacked pull requests run everything. Immutable commits are compared,
  * never the live file list of a moving pull request.
  */
 export function ciProfile(input: ScopeInput): Profile {
-  if (input.eventName !== "pull_request" || input.baseRef !== "main") return "full";
+  if (input.eventName !== "pull_request" || !DOCS_BASES.has(input.baseRef ?? "")) return "full";
   const { baseSha, headSha } = input;
   if (!baseSha || !headSha || !FULL_SHA.test(baseSha) || !FULL_SHA.test(headSha)) {
     throw new Error("CI scope needs full commit SHAs");
