@@ -141,12 +141,12 @@ describe("sheetXlsxBytes", () => {
     expect(strings).toContain('count="5" uniqueCount="4"');
   });
 
-  it("writes a cell of a circular formula as #CIRC!", () => {
+  it("writes a cell of a circular formula as #REF!, an error value a reader knows", () => {
     const doc = structuredClone(DOC);
     doc.sheets[0]!.cells.A1 = { value: null, formula: "=B1" };
     doc.sheets[0]!.cells.B1 = { value: null, formula: "=A1" };
     const sheet = unzip(sheetXlsxBytes(doc)).get("xl/worksheets/sheet1.xml") ?? "";
-    expect(sheet).toContain('<c r="A1" t="e"><f>B1</f><v>#CIRC!</v></c>');
+    expect(sheet).toContain('<c r="A1" t="e"><f>B1</f><v>#REF!</v></c>');
   });
 });
 

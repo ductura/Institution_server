@@ -124,6 +124,15 @@ class SharedStrings {
   }
 }
 
+/**
+ * The error values OOXML knows. The server's own #CIRC! (a cycle) is not one of them, and
+ * a reader may call a file with it damaged, so it is written as #REF!, the nearest known error.
+ */
+function fileErrorCode(code: string | undefined): string {
+  if (code === undefined) return "#VALUE!";
+  return code === "#CIRC!" ? "#REF!" : code;
+}
+
 function formulaResultCell(ref: string, formula: string, result: ComputedCell | undefined): string {
   // A formula the server does not compute (an unknown function such as WEBSERVICE, a
   // reference outside the grid, bad syntax) is never written as a formula: a reader
@@ -134,7 +143,7 @@ function formulaResultCell(ref: string, formula: string, result: ComputedCell | 
       ? `<f>${escapeXml(formulaForFile(formula))}</f>`
       : "";
   if (result === undefined || result.type === "error") {
-    return `<c r="${ref}" t="e">${f}<v>${escapeXml(result?.code ?? "#VALUE!")}</v></c>`;
+    return `<c r="${ref}" t="e">${f}<v>${escapeXml(fileErrorCode(result?.code))}</v></c>`;
   }
   if (result.type === "text") {
     return `<c r="${ref}" t="str">${f}<v>${xstring(result.value)}</v></c>`;
