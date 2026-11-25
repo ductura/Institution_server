@@ -225,3 +225,35 @@ describe("the vectors of the error codes", () => {
     expect((off.response.body as { code: string }).code).toBe("not_found");
   });
 });
+
+describe("the correlation vectors", () => {
+  it("state the n and the r the request gives (pairwise deletion, Pearson, 6 decimals)", () => {
+    const runs = vectors("analysis.runs.post").filter(
+      (v) => (v.response.body as { result?: { kind?: string } })?.result?.kind === "correlation",
+    );
+    expect(runs.length).toBeGreaterThan(1);
+    for (const v of runs) {
+      const body = v.request.body as typeof valid;
+      const [a, b] = body.variables as [string, string];
+      const at = (name: string) => body.columns.findIndex((c) => c.name === name);
+      const pairs = body.rows.flatMap((row) => {
+        const x = row[at(a)];
+        const y = row[at(b)];
+        return typeof x === "number" && typeof y === "number" ? [[x, y] as const] : [];
+      });
+      const n = pairs.length;
+      const mean = (i: 0 | 1) => pairs.reduce((s, p) => s + p[i], 0) / n;
+      const [ma, mb] = [mean(0), mean(1)];
+      const sab = pairs.reduce((s, p) => s + (p[0] - ma) * (p[1] - mb), 0);
+      const saa = pairs.reduce((s, p) => s + (p[0] - ma) ** 2, 0);
+      const sbb = pairs.reduce((s, p) => s + (p[1] - mb) ** 2, 0);
+      const r =
+        n < 3 || saa === 0 || sbb === 0
+          ? null
+          : Math.round((sab / Math.sqrt(saa * sbb)) * 1e6) / 1e6;
+      const pair = (v.response.body as { result: { pairs: { n: number; r: number | null }[] } })
+        .result.pairs[0]!;
+      expect({ name: v.name, n: pair.n, r: pair.r }).toEqual({ name: v.name, n, r });
+    }
+  });
+});

@@ -97,7 +97,12 @@ export const ANALYSIS_HANDLERS: Handlers = {
             .filter((c) => c !== null && c !== undefined);
           const counts = new Map<string, number>();
           for (const cell of cells) counts.set(String(cell), (counts.get(String(cell)) ?? 0) + 1);
-          const sorted = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "hr"));
+          const sorted = [...counts].sort(
+            (a, b) =>
+              b[1] - a[1] ||
+              a[0].localeCompare(b[0], "hr") ||
+              (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+          );
           return {
             name,
             n: cells.length,
