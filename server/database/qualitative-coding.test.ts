@@ -109,34 +109,59 @@ describe("qualitative coding store", () => {
     expect(seen[0]?.values).toEqual([ID, CODE, 2, 13, 17, "šuma", "Bilješka"]);
   });
 
-  it("builds the export in the order of the codebook, not of the passages' arrival", async () => {
+  it("builds the export from one statement, in the order of the codebook", async () => {
     seen.length = 0;
-    const row = (codeId: string, materialRank: number, quote: string) => ({
-      materialId: ID,
-      materialRank,
-      codeId,
-      paragraph: 0,
-      start: 0,
-      end: quote.length,
-      quote,
-      memo: null,
+    const seg = (codeId: string, materialRank: number, quote: string) => ({
+      kind: "segment",
+      item: {
+        materialId: ID,
+        materialRank,
+        codeId,
+        paragraph: 0,
+        start: 0,
+        end: quote.length,
+        quote,
+        memo: null,
+      },
+    });
+    const code = (id: string, name: string, order: number) => ({
+      kind: "code",
+      item: { id, name, description: "", order, segmentCount: 1 },
     });
     const store = createQualitativeCodingStore(
-      fake((text) =>
-        text.includes("qual_codes")
-          ? [
-              { id: "k1", name: "Kompost", description: "", order: 1, segmentCount: 1 },
-              { id: "k2", name: "Šuma", description: "", order: 2, segmentCount: 2 },
-            ]
-          : [row("k2", 1, "šuma"), row("k1", 1, "Prvi"), row("k2", 2, "šuti")],
-      ),
+      fake(() => [
+        code("k1", "Kompost", 1),
+        code("k2", "Šuma", 2),
+        seg("k2", 1, "šuma"),
+        seg("k1", 1, "Prvi"),
+        seg("k2", 2, "šuti"),
+      ]),
     );
     const result = await store.exportOf(TOKEN);
+    expect(calls()).toBe(1);
     expect(result.schema).toBe("qualitative-export-v1");
     expect(result.segments.map((segment) => segment.quote)).toEqual(["Prvi", "šuma", "šuti"]);
     expect(result.counts.map((count) => count.n)).toEqual([1, 2]);
     expect(seen.at(-1)?.values).toEqual([null]);
     await store.exportOf(TOKEN, ID);
     expect(seen.at(-1)?.values).toEqual([ID]);
+  });
+
+  it("answers a malformed id as ZD404 before a round trip, like an unknown one", async () => {
+    seen.length = 0;
+    const store = createQualitativeCodingStore(fake(() => []));
+    const bad = "nije-uuid";
+    await expect(store.readMaterial(TOKEN, bad)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.deleteMaterial(TOKEN, bad)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.updateCode(TOKEN, bad, "A")).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.moveCode(TOKEN, bad, 1)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.deleteCode(TOKEN, bad, true)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.listSegments(TOKEN, bad)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.deleteSegment(TOKEN, bad)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(store.exportOf(TOKEN, bad)).rejects.toMatchObject({ code: "ZD404" });
+    await expect(
+      store.createSegment(TOKEN, bad, CODE, { paragraph: 0, start: 0, end: 4, quote: "Prvi" }),
+    ).rejects.toMatchObject({ code: "ZD404" });
+    expect(calls()).toBe(0);
   });
 });

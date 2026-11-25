@@ -349,6 +349,7 @@ AS $$
 DECLARE
   v_ctx record;
   v_description text := coalesce(p_description, '');
+  v_changed integer;
 BEGIN
   SELECT * INTO v_ctx FROM institution.qual_code_context(p_id);
   IF NOT institution.qual_text_valid(p_name, 80, false)
@@ -357,9 +358,14 @@ BEGIN
   END IF;
   BEGIN
     UPDATE institution.qual_code SET name = p_name, description = v_description WHERE id = p_id;
+    GET DIAGNOSTICS v_changed = ROW_COUNT;
   EXCEPTION WHEN unique_violation THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END;
+  -- Deleted at the same time: the same refusal as for a code that is not there.
+  IF v_changed = 0 THEN
+    RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
+  END IF;
 END
 $$;
 
@@ -374,6 +380,8 @@ DECLARE
 BEGIN
   SELECT * INTO v_ctx FROM institution.qual_code_context(p_id);
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('qual_code:' || v_ctx.o_user_id, 0));
+  -- A delete at the same time may have finished while this waited for the lock.
+  PERFORM institution.qual_code_context(p_id);
   IF p_position IS NULL OR p_position < 1
      OR p_position > (SELECT count(*) FROM institution.qual_code c WHERE c.owner_id = v_ctx.o_user_id) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
@@ -403,6 +411,7 @@ DECLARE
 BEGIN
   SELECT * INTO v_ctx FROM institution.qual_code_context(p_id);
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('qual_code:' || v_ctx.o_user_id, 0));
+  PERFORM institution.qual_code_context(p_id);
   PERFORM 1 FROM institution.qual_code c WHERE c.id = p_id FOR UPDATE;
   SELECT count(*)::integer INTO v_removed FROM institution.qual_segment s WHERE s.code_id = p_id;
   IF v_removed > 0 AND p_confirm IS DISTINCT FROM true THEN

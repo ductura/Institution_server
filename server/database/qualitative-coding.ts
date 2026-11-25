@@ -72,13 +72,38 @@ const LIST_SEGMENTS = `SELECT id, code_id AS "codeId", paragraph, start_offset A
     quote, memo, to_char(created_on, 'YYYY-MM-DD') AS "createdOn"
   FROM app.qual_segments($1::uuid)`;
 const DELETE_SEGMENT = "SELECT app.delete_qual_segment($1::uuid)";
-const EXPORT_SEGMENTS = `SELECT material_id AS "materialId", material_rank AS "materialRank", code_id AS "codeId",
-    paragraph, start_offset AS start, end_offset AS "end", quote, memo
-  FROM app.qual_export_segments($1::uuid)`;
+const EXPORT_ALL = `SELECT 'code' AS kind,
+    jsonb_build_object('id', c.id, 'name', c.name, 'description', c.description, 'order', c.ord,
+                       'segmentCount', c.segment_count) AS item
+  FROM app.qual_codes() c
+  UNION ALL
+  SELECT 'segment', jsonb_build_object('materialId', s.material_id, 'materialRank', s.material_rank,
+    'codeId', s.code_id, 'paragraph', s.paragraph, 'start', s.start_offset, 'end', s.end_offset,
+    'quote', s.quote, 'memo', s.memo)
+  FROM app.qual_export_segments($1::uuid) s`;
+type ExportSegment = {
+  materialId: string;
+  materialRank: number;
+  codeId: string;
+  paragraph: number;
+  start: number;
+  end: number;
+  quote: string;
+  memo: string | null;
+};
+type ExportItem = QualCode | ExportSegment;
 
 /** The refusal the RPCs give for an input they would not accept, so a route answers 422 before a round trip. */
 function invalidInput(): never {
   throw Object.assign(new Error("invalid input"), { code: "ZD422" });
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+/** A malformed id is the same refusal as an unknown one (C-23), not a cast error from the database. */
+function idOf(value: string): string {
+  if (typeof value === "string" && UUID.test(value)) return value;
+  throw Object.assign(new Error("not found"), { code: "ZD404" });
 }
 
 const isPosition = (value: unknown): value is number => Number.isInteger(value);
@@ -114,14 +139,14 @@ export function createQualitativeCodingStore(withActor: WithActor) {
     /** ZD404 for a material that is not yours, unknown or malformed. */
     readMaterial: (token: string, id: string) =>
       withActor(token, async (tx) => {
-        const { rows } = await tx.query<QualMaterial>(READ_MATERIAL, [id]);
+        const { rows } = await tx.query<QualMaterial>(READ_MATERIAL, [idOf(id)]);
         if (rows.length !== 1 || !rows[0]) throw new Error("expected one material");
         return rows[0];
       }),
     /** Deletes a material with its passages. */
     deleteMaterial: (token: string, id: string) =>
       withActor(token, async (tx) => {
-        await tx.query(DELETE_MATERIAL, [id]);
+        await tx.query(DELETE_MATERIAL, [idOf(id)]);
       }),
     /** Adds a code to the end of the codebook (ZD409 for a name it already has, the case aside). */
     createCode: async (token: string, name: string, description = "") => {
@@ -134,14 +159,14 @@ export function createQualitativeCodingStore(withActor: WithActor) {
     updateCode: async (token: string, id: string, name: string, description = "") => {
       if (!isCodeName(name) || !isCodeDescription(description)) return invalidInput();
       return withActor(token, async (tx) => {
-        await tx.query(UPDATE_CODE, [id, name, description]);
+        await tx.query(UPDATE_CODE, [idOf(id), name, description]);
       });
     },
     /** Moves a code to a place (1 = first); the others keep their order. */
     moveCode: async (token: string, id: string, position: number) => {
       if (!isPosition(position) || position < 1) return invalidInput();
       return withActor(token, async (tx) => {
-        await tx.query(MOVE_CODE, [id, position]);
+        await tx.query(MOVE_CODE, [idOf(id), position]);
       });
     },
     /**
@@ -149,7 +174,8 @@ export function createQualitativeCodingStore(withActor: WithActor) {
      * unless `confirm` is true, and then they go with it. Returns how many went.
      */
     deleteCode: async (token: string, id: string, confirm: boolean) =>
-      (await one<{ removed: number }>(token, DELETE_CODE, [id, confirm === true], "count")).removed,
+      (await one<{ removed: number }>(token, DELETE_CODE, [idOf(id), confirm === true], "count"))
+        .removed,
     /** Marks a passage; the quote must be exactly the text it points at (ZD422 otherwise). */
     createSegment: async (
       token: string,
@@ -175,7 +201,7 @@ export function createQualitativeCodingStore(withActor: WithActor) {
         await one<{ id: string }>(
           token,
           CREATE_SEGMENT,
-          [materialId, codeId, paragraph, start, end, quote, memo],
+          [idOf(materialId), idOf(codeId), paragraph, start, end, quote, memo],
           "segment id",
         )
       ).id;
@@ -184,11 +210,11 @@ export function createQualitativeCodingStore(withActor: WithActor) {
     listSegments: (token: string, materialId: string) =>
       withActor(
         token,
-        async (tx) => (await tx.query<QualSegment>(LIST_SEGMENTS, [materialId])).rows,
+        async (tx) => (await tx.query<QualSegment>(LIST_SEGMENTS, [idOf(materialId)])).rows,
       ),
     deleteSegment: (token: string, id: string) =>
       withActor(token, async (tx) => {
-        await tx.query(DELETE_SEGMENT, [id]);
+        await tx.query(DELETE_SEGMENT, [idOf(id)]);
       }),
     /**
      * qualitative-export-v1 of one material or of all, read in one transaction
@@ -196,19 +222,17 @@ export function createQualitativeCodingStore(withActor: WithActor) {
      */
     exportOf: (token: string, materialId?: string) =>
       withActor(token, async (tx) => {
-        const codebook = (await tx.query<QualCode>(LIST_CODES, [])).rows;
-        const segments = (
-          await tx.query<{
-            materialId: string;
-            materialRank: number;
-            codeId: string;
-            paragraph: number;
-            start: number;
-            end: number;
-            quote: string;
-            memo: string | null;
-          }>(EXPORT_SEGMENTS, [materialId ?? null])
-        ).rows;
+        // One statement, so one snapshot: a code made, renamed or deleted in
+        // another tab cannot leave a passage without its code (the transaction is
+        // READ COMMITTED, so two statements would not agree).
+        const { rows } = await tx.query<{ kind: "code" | "segment"; item: ExportItem }>(
+          EXPORT_ALL,
+          [materialId === undefined ? null : idOf(materialId)],
+        );
+        const codebook = rows.flatMap((row) => (row.kind === "code" ? [row.item as QualCode] : []));
+        const segments = rows.flatMap((row) =>
+          row.kind === "segment" ? [row.item as ExportSegment] : [],
+        );
         return buildQualitativeExport(codebook, segments);
       }),
   };
