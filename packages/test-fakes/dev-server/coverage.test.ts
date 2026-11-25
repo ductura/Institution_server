@@ -18,6 +18,7 @@ import {
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
+import { fakeQualCodeId } from "./qualitative-codes-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { FAKE_QUESTIONNAIRE_ID } from "./questionnaire-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
@@ -457,6 +458,16 @@ const PEER_ALLOCATE: Step = {
   headers: ORIGIN,
 };
 const PEER_TASK = fakePeerTaskId(IDS.assignment, IDS.student, 1);
+const QUAL_CODE_NAME = "Izmišljeni kod odnosa";
+const QUAL_CODES = "/api/v1/student/qual/codes";
+const QUAL_CODE = `${QUAL_CODES}/${fakeQualCodeId(IDS.student, QUAL_CODE_NAME)}`;
+const QUAL_CREATE: Step = {
+  path: QUAL_CODES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { name: QUAL_CODE_NAME, description: "Izmišljeni opis." },
+};
 const PEER_REVIEW: Step = {
   path: `/api/v1/student/peer-review/tasks/${PEER_TASK}/review`,
   as: "student",
@@ -564,6 +575,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/student/assignments/${IDS.assignment}/peer-review/received`,
       as: "student",
     },
+  },
+  // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own coding.
+  "student.qual-codes.get": { before: [QUAL_CREATE], request: { path: QUAL_CODES, as: "student" } },
+  "student.qual-codes.post": { request: QUAL_CREATE },
+  "student.qual-code.patch": {
+    before: [QUAL_CREATE],
+    request: {
+      path: QUAL_CODE,
+      as: "student",
+      method: "PATCH",
+      headers: ORIGIN,
+      body: { description: "Izmišljeni novi opis." },
+    },
+  },
+  "student.qual-code.delete": {
+    before: [QUAL_CREATE],
+    request: { path: QUAL_CODE, as: "student", method: "DELETE", headers: ORIGIN },
   },
   // SRV-V15-UGOVOR: the stateless analysis.
   "analysis.catalogue.get": { request: { path: "/api/v1/analysis/catalogue", as: "student" } },
@@ -1957,6 +1985,33 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.export.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
+  },
+  // SRV-V14-SHEET-CSV: the work holds an invented spreadsheet, so the CSV is an answer, not a 404.
+  "work.export-sheet-csv.get": {
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      if (work === undefined) throw new Error("missing work fixture");
+      work.document = Buffer.from(
+        JSON.stringify({
+          schemaVersion: 1,
+          kind: "spreadsheet",
+          sheets: [
+            {
+              id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              name: "Demo",
+              rows: 10,
+              columns: 3,
+              cells: {
+                ["A1"]: { value: 2 },
+                ["B1"]: { value: 3 },
+                ["C1"]: { value: null, formula: "=A1+B1" },
+              },
+            },
+          ],
+        }),
+      ).toString("base64");
+    },
+    request: { path: `/api/v1/works/${IDS.document}/export/csv`, as: "nastavnik" },
   },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],

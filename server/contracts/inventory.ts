@@ -465,6 +465,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK (Ductus#2058 c.7173077456, val 18): the codebook of a student's own qualitative coding; Ductus has no such route.
+  "app/api/student/qual/codes/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
+  "app/api/student/qual/codes/[id]/route.ts": {
+    methods: ["PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
   // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055 c.7149250861, val 19): anonymous peer review among students; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts": {
     methods: ["GET", "PUT"],
@@ -760,6 +769,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/export/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
+  },
+  // SRV-V14-SHEET-CSV (val 14, docs/nalazi/val14-razlika.md decision 6): the CSV of one sheet of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/csv/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
   },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {

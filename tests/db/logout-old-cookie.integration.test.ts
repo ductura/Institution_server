@@ -36,6 +36,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createThesisCommitteeRoutesFor,
@@ -68,6 +69,7 @@ import {
   createWorkVersionsRouteFor,
   createRevisionRestoreRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -562,6 +564,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V14-SHEET-CSV: the CSV of a work it may not read is 404, as a missing work.
+  "work.export-sheet-csv.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/csv`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
   "student.portable-record.get": {
     method: "GET",
@@ -976,6 +985,31 @@ const SESSION_ROUTES = {
   "student.peer-reviews-received.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/peer-review/received`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V18-KODIRANJE-SIFRARNIK: a live session with no code of that id reads 404; the codebook itself is the caller's own.
+  "student.qual-codes.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/codes",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-codes.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/codes",
+    body: () => ({ name: "Izmišljeni kod nakon odjave" }),
+    live: 201,
+  },
+  "student.qual-code.patch": {
+    method: "PATCH",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => ({ name: "Izmišljeni novi naziv" }),
+    live: 404,
+  },
+  "student.qual-code.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
     body: () => undefined,
     live: 404,
   },
@@ -2536,6 +2570,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createSheetCsvRouteFor",
   "createPortableRecordRouteFor",
   "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
@@ -2554,6 +2589,7 @@ const FACTORIES = [
   "createPracticeJournalRoutesFor",
   "createWorkTeamRoutesFor",
   "createPeerReviewRoutesFor",
+  "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
   "createThesisTopicRoutesFor",
   "createThesisCommitteeRoutesFor",
@@ -2680,6 +2716,7 @@ const MOUNTED = [
   createWorkVersionsRouteFor(databases.main),
   createRevisionRestoreRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createSheetCsvRouteFor(databases.main),
   createPortableRecordRouteFor(databases.main, ORIGIN),
   ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
@@ -2698,6 +2735,7 @@ const MOUNTED = [
   ...createPracticeJournalRoutesFor(databases.main),
   ...createWorkTeamRoutesFor(databases.main),
   ...createPeerReviewRoutesFor(databases.main),
+  ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createThesisTopicRoutesFor(databases.main),
   ...createThesisCommitteeRoutesFor(databases.main),
@@ -2915,6 +2953,8 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
+  // The live session of student.qual-codes.post made a code of its own: it refers to user_account too.
+  await admin.query("DELETE FROM institution.qual_code WHERE institution_id = $1", [institution]);
   // user_preference and problem_report refer to user_account, so they go first.
   for (const table of [
     "user_preference",

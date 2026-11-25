@@ -1,5 +1,5 @@
 // SRV-V16-POVJERENSTVO-ZAPIS: the committee of a thesis as a list, only through
-// the app.* RPCs of 20261220120000_thesis_committee.sql. The RPCs decide who may
+// the app.* RPCs of 20261220130000_thesis_committee.sql. The RPCs decide who may
 // read and who may write and raise ZD401, ZD403, ZD404 or ZD422; this file only
 // maps rows to the contract shape. The list gives no right to read the work.
 import type { ActorTransaction as Tx, WithActor } from "../index.ts";

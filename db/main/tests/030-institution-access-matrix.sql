@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6241);
+SELECT plan(6257);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2133,8 +2133,8 @@ SELECT is(
      JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
      JOIN pg_constraint k ON k.conrelid = a.attrelid AND k.conname = t.constraint_name
     WHERE a.attrelid = t.relation::regclass AND a.attname = 'document_kind'),
-  $$true 'text'::text CHECK ((document_kind = ANY (ARRAY['text'::text, 'slides'::text])))$$,
-  format('SRV-V13-MIG-VRSTA: %s.document_kind is text or slides, never null, text by default', t.relation))
+  $$true 'text'::text CHECK ((document_kind = ANY (ARRAY['text'::text, 'slides'::text, 'spreadsheet'::text])))$$,
+  format('SRV-V13-MIG-VRSTA, SRV-V14-KIND: %s.document_kind is text, slides or spreadsheet, never null, text by default', t.relation))
 FROM (VALUES ('institution.assignment', 'assignment_document_kind_check'),
              ('evidence.document', 'document_document_kind_check')) AS t (relation, constraint_name);
 SELECT ok(NOT has_column_privilege('ductus_app', 'evidence.document'::regclass, 'document_kind', 'INSERT,UPDATE')
@@ -2149,6 +2149,31 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM pg_proc p WHERE p.oid = 'app.assignment_document_kind(uuid)'::regprocedure;
 SELECT is(app.assignment_document_kind(pg_temp.id('z1')) || ' ' || app.assignment_document_kind(gen_random_uuid()),
   'text text', 'SRV-V13-MIG-VRSTA: the bridge answers text for a text assignment and for an unknown one');
+
+-- 1i3a. SRV-V14-KIND: 'spreadsheet' is a third kind. The application role
+-- cannot write it; written by the table owner (inside this rolled-back transaction)
+-- it is read like any other kind: by the student and teacher of Z1 only, and
+-- a foreign assignment is no row at all (the same as 404 on the wire). A name
+-- outside the three is refused by the CHECK.
+SELECT ok(pg_temp.ask(c.actor, $q$ UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = {z1} $q$)
+    LIKE '42501: permission denied%',
+  format('SRV-V14-KIND: %s cannot set the spreadsheet kind of Z1', c.actor))
+FROM (VALUES ('vesna'), ('iva'), ('ana'), ('marko')) AS c (actor);
+SELECT throws_ok($q$ UPDATE institution.assignment SET document_kind = 'sheet' WHERE id = $q$ || quote_literal(pg_temp.id('z1')),
+  '23514', NULL, 'SRV-V14-KIND: a kind outside text, slides and spreadsheet is refused');
+SELECT lives_ok($q$ UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = $q$ || quote_literal(pg_temp.id('z1')),
+  'SRV-V14-KIND: the spreadsheet kind is accepted by the CHECK');
+SELECT is(
+  pg_temp.ask(c.actor, $q$ SELECT coalesce((SELECT a.document_kind FROM institution.assignment a WHERE a.id = {z1}), 'no row') $q$),
+  c.result, format('SRV-V14-KIND: %s reads the spreadsheet kind of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'spreadsheet'), ('marko', 'no row'), ('iva', 'no row'), ('ana', 'spreadsheet'),
+  ('dora', 'spreadsheet'), ('tomo', 'no row'), ('petra', 'no row'), ('boris', 'no row')
+) AS c (actor, result);
+SELECT is(app.assignment_document_kind(pg_temp.id('z1')), 'spreadsheet',
+  'SRV-V14-KIND: the bridge answers spreadsheet for a spreadsheet assignment');
+UPDATE institution.assignment SET document_kind = 'text' WHERE id = pg_temp.id('z1');
+SELECT is(app.assignment_document_kind(pg_temp.id('z1')), 'text', 'SRV-V14-KIND: and text again once restored');
 
 -- 1i2a. SRV-NF4-KASNA-POLJE: whether a submission after the deadline is
 -- allowed (institution.assignment.late_submission_allowed) is set only by the

@@ -39,7 +39,7 @@ describe("interview PDF", () => {
     expect(document.getTitle()).toBe(interviewPdfHr.title);
     expect(document.getPageCount()).toBe(1);
     expect(createHash("sha256").update(bytes).digest("hex")).toMatchInlineSnapshot(
-      `"d6f55447a6bacd6209061751512764f1568756383ac2a9825c67e7911b07eb45"`,
+      `"1a5092f1e1c9904017ca43755a9822b251138641027e0181e37d428918dffa46"`,
     );
   });
 

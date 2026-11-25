@@ -4,7 +4,7 @@
 // to read the work (that waits for U-1) and it does not touch the work grants.
 // Every change replaces the whole list and is only ever added, so the history
 // stays. Access is decided by the database (app.* RPCs in
-// 20261220120000_thesis_committee.sql): the student owner, the mentor and the
+// 20261220130000_thesis_committee.sql): the student owner, the mentor and the
 // administrator read; only the administrator writes.
 import { Type } from "@sinclair/typebox";
 

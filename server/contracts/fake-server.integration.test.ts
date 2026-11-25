@@ -46,6 +46,7 @@ function send(
           // A JPEG or DOCX answer (SRV-1102, SRV-1310) is compared in Base64, as the vector writes it.
           body: Buffer.concat(chunks).toString(
             res.headers["content-type"] === "image/jpeg" ||
+              res.headers["content-type"] === "text/csv" ||
               String(res.headers["content-type"]).startsWith(
                 "application/vnd.openxmlformats-officedocument.",
               )
@@ -188,7 +189,8 @@ describe("fake server over HTTP", () => {
     // SRV-V21-KOD-TESTOVI-RUTA: teacher.assignment-code-tests.put five.
     // SRV-ASIST-LIMIT-ADMIN: institution.assistant-request-limit.put five.
     // SRV-V18-UPITNIK-AUTOR: teacher.questionnaires.post, teacher.questionnaire.patch and teacher.questionnaire-state.post five each.
-    expect(VECTORS.length - overHttp.length).toBe(841);
+    // SRV-V18-KODIRANJE-SIFRARNIK: student.qual-codes.post, student.qual-code.patch and student.qual-code.delete five each.
+    expect(VECTORS.length - overHttp.length).toBe(856);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

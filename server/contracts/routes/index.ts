@@ -24,6 +24,7 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { workExportSheetCsvRoutes } from "./work-export-sheet-csv.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";
 export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
@@ -279,6 +280,16 @@ export {
   practicePlacementsPost,
   practiceSignoffsPost,
 } from "./practice-journal.ts";
+export {
+  QUAL_CODES_MAX,
+  QUAL_CODE_DESCRIPTION_MAX,
+  QUAL_CODE_NAME_MAX,
+  qualitativeCodesRoutes,
+  studentQualCodeDelete,
+  studentQualCodePatch,
+  studentQualCodesGet,
+  studentQualCodesPost,
+} from "./qualitative-codes.ts";
 export {
   PEER_REVIEW_ALLOCATIONS_MAX,
   PEER_REVIEW_RUBRICS_MAX,

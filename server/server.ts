@@ -53,6 +53,7 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -71,6 +72,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createThesisCommitteeRoutesFor,
@@ -391,6 +393,8 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      // SRV-V14-SHEET-CSV: the CSV of one sheet of a spreadsheet work, the same readers as the DOCX.
+      createSheetCsvRouteFor(databases.main),
       // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
       createPortableRecordRouteFor(databases.main, APP_ORIGIN),
       // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
@@ -421,6 +425,8 @@ async function main(): Promise<void> {
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
       ...createPeerReviewRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own qualitative coding.
+      ...createQualitativeCodesRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       // SRV-V16-TEMA-PRIJEDLOG: the student proposes the topic of a thesis, the mentor decides.

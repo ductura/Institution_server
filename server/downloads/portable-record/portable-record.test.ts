@@ -379,6 +379,13 @@ describe("the QR of the record's PDF (acceptance 3)", () => {
       for (const op of body.matchAll(square)) {
         squares.push(`${Number(op[1]).toFixed(2)},${Number(op[2]).toFixed(2)}`);
       }
+      // @cantoo/pdf-lib moves to the top-left corner, flips the y axis and draws the
+      // whole path; the module's bottom-left corner is then y minus the path height.
+      const flipped =
+        /1 0 0 1 (-?[\d.]+) (-?[\d.]+) cm\n1 0 0 1 0 0 cm\n1 0 0 1 0 0 cm\n1 0 0 -1 0 0 cm\n0 0 0 rg\n\[\] 0 d\n0 0 m\n([\d.]+) 0 l\n\3 ([\d.]+) l\n0 \4 l\nh\nf\n/g;
+      for (const op of body.matchAll(flipped)) {
+        squares.push(`${Number(op[1]).toFixed(2)},${(Number(op[2]) - Number(op[4])).toFixed(2)}`);
+      }
     }
     return squares;
   }
