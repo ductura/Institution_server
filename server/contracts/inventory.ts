@@ -845,6 +845,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146991992",
   },
+  // SRV-V17-RUBRIC-LEVEL (Ductus#2055, val 17): the teacher's mark of a level per rubric criterion on a work; Ductus has no such route.
+  "app/api/teacher/works/[documentId]/rubric/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153958168",
+  },
+  "app/api/teacher/works/[documentId]/rubric/[criterionId]/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7153958168",
+  },
   // SRV-1521 (Ductus#2052, N-15 etape): the template of milestones and the plan of one work; Ductus has no such route.
   "app/api/institution/milestone-template/route.ts": {
     methods: ["GET", "PUT"],

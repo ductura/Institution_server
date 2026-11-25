@@ -448,6 +448,14 @@ export {
   type RubricCriterion,
 } from "./assignment-rubric/index.ts";
 export {
+  createWorkRubric,
+  type WorkRubricLevel,
+  type WorkRubricMark,
+  type WorkRubricMarks,
+  type WorkRubricRefusal,
+  type WorkRubricStore,
+} from "./work-rubric/index.ts";
+export {
   createWorkTemplate,
   type WorkTemplate,
   type WorkTemplateContent,

@@ -23,8 +23,8 @@
 -- (collaboration.actor_role, decided on every call), and only the author reads the rows; another
 -- teacher of the same work does not. The student of the work, a teacher with no relation to it,
 -- another institution and an unknown work are the same ZD403. Errors carry no input: ZD401 no
--- session, ZD403 no relation, ZD422 invalid input (a criterion not in the latest version, a
--- level outside 0..2, a note that is not a short text).
+-- session, ZD403 no relation, ZD422 invalid input (a
+-- level outside 0..2, a note that is not a short text); a criterion not in the latest version is ZD403.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA collaboration TO ductus_identity;
@@ -132,8 +132,11 @@ BEGIN
   SELECT c.rubric_version INTO v_version
     FROM collaboration.rubric_criterion_ids(scope.assignment_id) c
    WHERE c.criterion_id = p_criterion_id;
-  IF v_version IS NULL
-     OR (p_level IS NOT NULL AND p_level NOT BETWEEN 0 AND 2)
+  IF v_version IS NULL THEN
+    -- Not a criterion of the latest rubric version: one answer with "no relation" (the HTTP 404).
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  IF (p_level IS NOT NULL AND p_level NOT BETWEEN 0 AND 2)
      OR (p_note IS NOT NULL AND NOT coalesce(collaboration.is_comment_body(p_note), false)) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;

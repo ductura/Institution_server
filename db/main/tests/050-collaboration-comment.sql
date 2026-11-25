@@ -100,6 +100,8 @@ SELECT bag_eq(
             ('collaboration.list_work_messages(text)'),
             ('collaboration.list_working_criteria(text)'),
             ('collaboration.save_working_criterion(text,text,smallint,text)'),
+            ('collaboration.list_work_rubric(text)'),
+            ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
             ('collaboration.reply_comment_draft(text,uuid,text)'),
             ('collaboration.list_comment_drafts(text)'),

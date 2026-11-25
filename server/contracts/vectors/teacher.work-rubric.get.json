@@ -1,0 +1,162 @@
+{
+  "route": "teacher.work-rubric.get",
+  "vectors": [
+    {
+      "name": "latest-version",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "rubricVersion": 1,
+          "marks": [
+            {
+              "criterionId": "tema",
+              "level": 2,
+              "note": "Izmišljena napomena o temi."
+            },
+            {
+              "criterionId": "izvori",
+              "level": null,
+              "note": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "default-criteria",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "rubricVersion": 0,
+          "marks": [
+            {
+              "criterionId": "topic",
+              "level": null,
+              "note": null
+            },
+            {
+              "criterionId": "structure",
+              "level": null,
+              "note": null
+            },
+            {
+              "criterionId": "sources",
+              "level": null,
+              "note": null
+            },
+            {
+              "criterionId": "method",
+              "level": null,
+              "note": null
+            },
+            {
+              "criterionId": "language",
+              "level": null,
+              "note": null
+            },
+            {
+              "criterionId": "formatting",
+              "level": null,
+              "note": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002010"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nema"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002011"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002012"
+        }
+      }
+    }
+  ]
+}
