@@ -77566,7 +77566,7 @@
     "/api/v1/student/qual/export": {
       "get": {
         "operationId": "student.qual-export.get",
-        "summary": "The caller's coding as qualitative-export-v1: the codebook (code, name, description) in its own order, the marked passages (material, code, place, quote, memo) in the order of the codebook, then of the materials in the order they were kept in, then of the text, and the count of passages per code and material in the same order. Never ordered by the count, with no 'most often' and no comparison of materials (V18-8). With the query materialId only that material's passages (and counts) are listed; a material that is not the caller's, an unknown and a malformed materialId are the same 404. The same coding gives the same bytes. Only the owner reads it; it is a description to be carried away, not a verdict.",
+        "summary": "The caller's coding as qualitative-export-v1: the codebook (code, name, description) in its own order, the marked passages (material, code, place, quote, memo) in the order of the codebook, then of the materials in the order they were kept in, then of the text, and the count of passages per code and material in the same order. Never ordered by the count, with no 'most often' and no comparison of materials (V18-8). With the query materialId only that material's passages (and counts) are listed; a material that is not the caller's, an unknown and a malformed materialId are the same 404; any other query, or materialId twice, is 422 invalid_input. The same coding gives the same bytes. Only the owner reads it; it is a description to be carried away, not a verdict.",
         "x-access": "student",
         "x-inventory": "app/api/student/qual/export/route.ts",
         "parameters": [
@@ -77791,6 +77791,42 @@
               }
             }
           },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "503": {
             "description": "unavailable",
             "content": {
@@ -77843,6 +77879,11 @@
             "status": 404,
             "code": "not_found",
             "key": "errors.not_found"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
           }
         ]
       }

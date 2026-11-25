@@ -152,9 +152,9 @@ export const studentQualExportGet = defineRoute({
   access: "student",
   request: { query: closed({ materialId: Type.Optional(Type.String({ maxLength: 64 })) }) },
   summary:
-    "The caller's coding as qualitative-export-v1: the codebook (code, name, description) in its own order, the marked passages (material, code, place, quote, memo) in the order of the codebook, then of the materials in the order they were kept in, then of the text, and the count of passages per code and material in the same order. Never ordered by the count, with no 'most often' and no comparison of materials (V18-8). With the query materialId only that material's passages (and counts) are listed; a material that is not the caller's, an unknown and a malformed materialId are the same 404. The same coding gives the same bytes. Only the owner reads it; it is a description to be carried away, not a verdict.",
+    "The caller's coding as qualitative-export-v1: the codebook (code, name, description) in its own order, the marked passages (material, code, place, quote, memo) in the order of the codebook, then of the materials in the order they were kept in, then of the text, and the count of passages per code and material in the same order. Never ordered by the count, with no 'most often' and no comparison of materials (V18-8). With the query materialId only that material's passages (and counts) are listed; a material that is not the caller's, an unknown and a malformed materialId are the same 404; any other query, or materialId twice, is 422 invalid_input. The same coding gives the same bytes. Only the owner reads it; it is a description to be carried away, not a verdict.",
   responses: [{ status: 200, description: "qualitative-export-v1", body: QualExport }],
-  errors: ID_ERRORS,
+  errors: [...ID_ERRORS, error(422, "invalid_input")],
 });
 
 export const qualitativeSegmentsRoutes = [

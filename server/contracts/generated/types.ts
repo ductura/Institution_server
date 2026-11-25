@@ -1154,7 +1154,7 @@ export type Operations = {
     query: { "materialId"?: string };
     body: undefined;
     success: { status: 200; body: { "schema": "qualitative-export-v1"; "codebook": ({ "code": string; "name": string; "description": string })[]; "segments": ({ "material": string; "code": string; "paragraph": number; "start": number; "end": number; "quote": string; "memo": string | null })[]; "counts": ({ "code": string; "material": string; "n": number })[] }; headers: {  } };
-    errorCode: "unauthorized" | "unavailable" | "not_found";
+    errorCode: "unauthorized" | "unavailable" | "not_found" | "invalid_input";
   };
   "student.qual-material.delete": {
     params: { "id": string };

@@ -16,7 +16,7 @@ import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
 import { createQualitativeCodingStore, type WithActor } from "../database/index.ts";
-import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
@@ -153,6 +153,8 @@ export function createQualitativeSegmentsRoutesFor(main: { withActor: WithActor 
           const created = await store.createSegment(token, id, codeId, anchor, memo ?? null);
           const segment = (await store.listSegments(token, id)).find((s) => s.id === created);
           sendChecked(response, CREATE, 201, segment);
+          // A long session of marking keeps the database session alive, as the codebook routes do.
+          void recordActivity(token, main.withActor).catch(() => undefined);
         });
       },
     },
@@ -167,6 +169,7 @@ export function createQualitativeSegmentsRoutesFor(main: { withActor: WithActor 
           await store.deleteSegment(token, id);
           response.writeHead(204, { "cache-control": "no-store" });
           response.end();
+          void recordActivity(token, main.withActor).catch(() => undefined);
         });
       },
     },

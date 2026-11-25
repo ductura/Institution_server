@@ -253,6 +253,30 @@
           "requestId": "00000000-0000-4000-8000-000000180226"
         }
       }
+    },
+    {
+      "name": "unknown-query",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        },
+        "query": {
+          "other": "1"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000180290"
+        }
+      }
     }
   ]
 }

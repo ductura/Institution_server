@@ -130,8 +130,10 @@ it("keeps a material for its owner only and refuses everyone else with 404", asy
       const removed = await call("DELETE", `${PATH}/${material.id}`, ANA);
       expect(removed.status).toBe(204);
       expect((await call("GET", `${PATH}/${material.id}`, ANA)).status).toBe(404);
+      // Only this material's passages: the local seed (db/main/local/seed.sql) keeps others in a shared database.
       const left = await db.query<{ n: number }>(
-        "SELECT count(*)::int AS n FROM institution.qual_segment",
+        "SELECT count(*)::int AS n FROM institution.qual_segment WHERE material_id = $1",
+        [material.id],
       );
       expect(left.rows[0]!.n).toBe(0);
 
