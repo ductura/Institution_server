@@ -23,3 +23,4 @@ export {
 export type { AdminTarget, Env, LocalEvidence, LocalSecrets, StackOptions } from "./config.ts";
 export { localLogins, provision } from "./database.ts";
 export { databaseUrl, LOCAL_DIR, parseFlags, startStack } from "./lokalno.ts";
+export { signInSession } from "./seed-predaja.ts";
