@@ -68,6 +68,7 @@ import {
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
+  createWorkTeamRoutesFor,
   createThesisRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
@@ -404,6 +405,7 @@ async function main(): Promise<void> {
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
       ...createPracticeJournalRoutesFor(databases.main),
+      ...createWorkTeamRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
