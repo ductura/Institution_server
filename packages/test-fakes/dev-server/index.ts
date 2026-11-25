@@ -48,6 +48,7 @@ import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
 import { ASSIGNMENT_TEMPLATE_HANDLERS } from "./assignment-template-routes.ts";
+import { FORMAT_RULES_HANDLERS } from "./format-rules-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
@@ -158,6 +159,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,
+  ...FORMAT_RULES_HANDLERS,
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...DECLARATION_REQUIRED_HANDLERS,

@@ -80,6 +80,7 @@ export {
   workTemplateRoutes,
 } from "./work-template.ts";
 export { AssignmentTemplateInput, assignmentTemplateRoutes } from "./assignment-template.ts";
+export { FormatRules, formatRulesRoutes, studentAssignmentFormatRulesGet } from "./format-rules.ts";
 export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,

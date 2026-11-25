@@ -123,6 +123,7 @@ import {
   createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createReturnForRevisionRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -354,6 +355,8 @@ async function main(): Promise<void> {
       ...createWorkTemplateRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ASSIGN: the work template frozen on an assignment.
       ...createAssignmentTemplateRoutesFor(databases.main),
+      // SRV-V17-FORMAT-RULES: the format rules of an assignment for the check before submission.
+      ...createFormatRulesRoutesFor(databases.main),
       // SRV-1606: the teacher returns the whole submitted work for revision.
       ...createReturnForRevisionRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).

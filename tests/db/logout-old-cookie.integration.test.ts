@@ -39,6 +39,7 @@ import {
   createAssignmentRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createReturnForRevisionRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -1083,6 +1084,13 @@ const SESSION_ROUTES = {
   "student.assignment-template.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/template`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V17-FORMAT-RULES: a live session that is no student of the assignment's course gets 404.
+  "student.assignment-format-rules.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/format-rules`,
     body: () => undefined,
     live: 404,
   },
@@ -2223,6 +2231,7 @@ const FACTORIES = [
   "createAssignmentRubricRoutesFor",
   "createWorkTemplateRoutesFor",
   "createAssignmentTemplateRoutesFor",
+  "createFormatRulesRoutesFor",
   "createReturnForRevisionRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
@@ -2355,6 +2364,7 @@ const MOUNTED = [
   ...createAssignmentRubricRoutesFor(databases.main),
   ...createWorkTemplateRoutesFor(databases.main),
   ...createAssignmentTemplateRoutesFor(databases.main),
+  ...createFormatRulesRoutesFor(databases.main),
   ...createReturnForRevisionRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
