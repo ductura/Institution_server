@@ -6,7 +6,7 @@
 // kind of origin, the notice), never a share or an order by an amount.
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
-import type { Account, Course, State } from "./state.ts";
+import { teachesCourse, type Account, type Course, type State } from "./state.ts";
 
 type Setting = Operations["institution.assignment-team-setting.put"]["body"];
 type Team = { teamId: string; assignmentId: string; memberIds: string[] };
@@ -39,13 +39,6 @@ function courseOf(state: State, assignmentId: string): Course | undefined {
   return assignment === undefined
     ? undefined
     : state.courses.find((course) => course.id === assignment.courseId);
-}
-
-function teachesCourse(account: Account, course: Course): boolean {
-  return (
-    account.roles.includes("teacher") &&
-    (course.holderId === account.id || course.teachingAssistants?.get(account.id) === true)
-  );
 }
 
 const nameOf = (state: State, id: string) => {
@@ -98,7 +91,7 @@ function studentState(state: State, assignmentId: string, studentId: string) {
       setting.formation === "student_choice"
         ? teams
             .filter((t) => t.memberIds.length > 0 && t.memberIds.length < setting.maxSize)
-            .map((t) => ({ teamId: t.teamId, memberCount: Math.max(2, t.memberIds.length) }))
+            .map((t) => ({ teamId: t.teamId, memberCount: t.memberIds.length }))
             .sort((a, b) => a.teamId.localeCompare(b.teamId))
         : [],
   };
@@ -106,7 +99,7 @@ function studentState(state: State, assignmentId: string, studentId: string) {
 
 function contribution(state: State, assignmentId: string, team: Team | undefined) {
   if (!settingOf(state, assignmentId).enabled) return { state: "disabled" as const };
-  if (team === undefined) return { state: "none" as const };
+  if (team === undefined || team.memberIds.length === 0) return { state: "none" as const };
   const ids = [...team.memberIds].sort(byName(state));
   if (ids.some((id) => workState(state, assignmentId, id) !== "submitted"))
     return { state: "pending" as const };
@@ -125,7 +118,7 @@ function contribution(state: State, assignmentId: string, team: Team | undefined
 
 const teacherTeam = (state: State, account: Account, assignmentId: string, teamId: string) => {
   const course = courseOf(state, assignmentId);
-  if (course === undefined || !teachesCourse(account, course)) return undefined;
+  if (course === undefined || !teachesCourse(course, account)) return undefined;
   return recordsOf(state).teams.find(
     (t) => t.teamId === teamId.toLowerCase() && t.assignmentId === assignmentId.toLowerCase(),
   );
@@ -135,7 +128,7 @@ export const WORK_TEAM_HANDLERS: Handlers = {
   "institution.assignment-team-setting.put": ({ state, account, params, body }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseOf(state, params.assignmentId);
-    if (course === undefined || !teachesCourse(account, course)) return { error: "not_found" };
+    if (course === undefined || !teachesCourse(course, account)) return { error: "not_found" };
     if (body.minSize > body.maxSize) return { error: "invalid_input" };
     const id = params.assignmentId.toLowerCase();
     const tooBig = recordsOf(state).teams.some(
@@ -148,7 +141,7 @@ export const WORK_TEAM_HANDLERS: Handlers = {
   "institution.assignment-team-setting.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseOf(state, params.assignmentId);
-    if (course === undefined || !teachesCourse(account, course)) return { error: "not_found" };
+    if (course === undefined || !teachesCourse(course, account)) return { error: "not_found" };
     return { status: 200, body: { ...settingOf(state, params.assignmentId.toLowerCase()) } };
   },
   "student.work-team.get": ({ state, account, params }) => {
@@ -199,7 +192,7 @@ export const WORK_TEAM_HANDLERS: Handlers = {
   "teacher.work-teams.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseOf(state, params.assignmentId);
-    if (course === undefined || !teachesCourse(account, course)) return { error: "not_found" };
+    if (course === undefined || !teachesCourse(course, account)) return { error: "not_found" };
     const id = params.assignmentId.toLowerCase();
     const teams = recordsOf(state).teams.filter((t) => t.assignmentId === id);
     const inTeam = new Set(teams.flatMap((t) => t.memberIds));
@@ -231,7 +224,7 @@ export const WORK_TEAM_HANDLERS: Handlers = {
   "teacher.work-teams.post": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseOf(state, params.assignmentId);
-    if (course === undefined || !teachesCourse(account, course)) return { error: "not_found" };
+    if (course === undefined || !teachesCourse(course, account)) return { error: "not_found" };
     const id = params.assignmentId.toLowerCase();
     if (!settingOf(state, id).enabled) return { error: "conflict" };
     const teamId = teamIdAt(recordsOf(state).teams.length + 1);

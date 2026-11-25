@@ -70386,7 +70386,7 @@
                                 "type": "string"
                               },
                               "memberCount": {
-                                "minimum": 2,
+                                "minimum": 1,
                                 "maximum": 6,
                                 "type": "integer"
                               }
@@ -70718,7 +70718,7 @@
                                 "type": "string"
                               },
                               "memberCount": {
-                                "minimum": 2,
+                                "minimum": 1,
                                 "maximum": 6,
                                 "type": "integer"
                               }

@@ -80,9 +80,15 @@ const StudentTeamState = Type.Union([
     state: Type.Literal("none"),
     formation: Formation,
     /** Teams with a free place the student may join; a team without names of members. Empty when the teacher forms the teams. */
-    openTeams: Type.Array(closed({ teamId: Id, memberCount: Size }), {
-      maxItems: WORK_TEAMS_MAX,
-    }),
+    openTeams: Type.Array(
+      closed({
+        teamId: Id,
+        memberCount: Type.Integer({ minimum: 1, maximum: WORK_TEAM_SIZE_MAX }),
+      }),
+      {
+        maxItems: WORK_TEAMS_MAX,
+      },
+    ),
   }),
   closed({ state: Type.Literal("member"), team: OwnTeam }),
 ]);
