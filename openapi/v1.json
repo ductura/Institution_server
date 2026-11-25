@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.120.0",
+    "version": "1.121.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -82122,7 +82122,7 @@
     "/api/v1/teacher/assignments/{assignmentId}/template": {
       "put": {
         "operationId": "teacher.assignment-template.put",
-        "summary": "A teacher of the assignment's course switches the institution's work template on or off for the assignment: exactly {useInstitutionTemplate}, at most 1 KiB, sent as application/json. true freezes the latest version of the institution's template for the assignment's work type on the assignment and answers {useInstitutionTemplate: true, version}; when a version is already frozen it stays and is answered (a later version is not taken over); when the institution has no template for the work type yet it is 409 conflict. false removes the pin and answers {useInstitutionTemplate: false, version: null}, also when there was none. Work that already began is not changed. An assignment the caller does not teach, a mentorship assignment, an unknown and a malformed id are the same 404 (C-23); a body outside the contract is 422 invalid_input. Success follows the database commit.",
+        "summary": "A teacher of the assignment's course switches the institution's work template on or off for the assignment: exactly {useInstitutionTemplate}, at most 1 KiB, sent as application/json. true freezes the latest version of the institution's template for the assignment's work type on the assignment and answers {useInstitutionTemplate: true, version}; when a version is already frozen it stays and is answered (a later version is not taken over); when the institution has no template for the work type yet it is 409 conflict. false removes the pin and answers {useInstitutionTemplate: false, version: null}, also when there was none. A version added to the institution's template later does not change a pin that is kept; switching off and on again takes the latest version, also after students began work. An assignment the caller does not teach, a mentorship assignment, an unknown and a malformed id are the same 404 (C-23); a body outside the contract is 422 invalid_input. Success follows the database commit.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/template/route.ts",
         "parameters": [
