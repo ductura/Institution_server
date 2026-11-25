@@ -14,6 +14,7 @@ import {
   studentWorkRoutes,
   keyDatesGet,
   teachingTeamRoutes,
+  workTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
   courseAggregateGet,
@@ -173,6 +174,7 @@ export {
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
+export { workTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
@@ -295,6 +297,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...studentWorkRoutes,
   keyDatesGet,
   ...teachingTeamRoutes,
+  ...workTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
   ...assistantRoutes,
