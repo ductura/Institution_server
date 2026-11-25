@@ -9,8 +9,18 @@
 import { INSTITUTIONS_FILE } from "./institutions-file.ts";
 
 export const INSTITUTIONS_FORMAT = "ductus-institutions-v1";
-/** The style catalogue of Ductus has one file, whose faculty is fpzg (D-83). */
-export const CITATION_STYLES: readonly string[] = ["fpzg"];
+/**
+ * The style IDs of the settings catalogue (`citation.style`, D-83), which stays
+ * the source: `server/citation-styles.test.ts` fails when the lists differ.
+ */
+export const CITATION_STYLES: readonly string[] = [
+  "fpzg",
+  "apa",
+  "chicago",
+  "ieee",
+  "vancouver",
+  "fusnote",
+];
 /** The `identity.institution.slug` CHECK, matched exactly. */
 const SLUG_RE = /^[a-z0-9-]{2,32}$/u;
 
