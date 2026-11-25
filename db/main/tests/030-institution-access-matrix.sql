@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4618);
+SELECT plan(4974);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -199,6 +199,8 @@ SELECT bag_eq(
         'practice_placement', 'practice_entry', 'practice_signoff',
         -- SRV-V19-GRUPA-BAZA: teams on an assignment; cells in 248-work-team.sql.
         'assignment_team_setting', 'work_team', 'work_team_member_event',
+        -- SRV-V19-RECENZIJA-BAZA: anonymous peer review; cells in 249-peer-review.sql.
+        'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
         'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
@@ -348,6 +350,10 @@ SELECT bag_eq(
     'assignment_team_setting: assignment_team_setting_owner ALL to ductus_identity',
     'work_team: work_team_owner ALL to ductus_identity',
     'work_team_member_event: work_team_member_event_owner ALL to ductus_identity',
+    'peer_review_round: peer_review_round_owner ALL to ductus_identity',
+    'peer_review_allocation: peer_review_allocation_owner ALL to ductus_identity',
+    'peer_review: peer_review_owner ALL to ductus_identity',
+    'peer_review_withdrawal: peer_review_withdrawal_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
     'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
@@ -408,6 +414,10 @@ SELECT bag_eq(
         'assignment_team_setting: assignment_team_setting_append_only 27 O', 'assignment_team_setting: assignment_team_setting_no_truncate 34 O',
         'work_team: work_team_append_only 27 O', 'work_team: work_team_no_truncate 34 O',
         'work_team_member_event: work_team_member_event_append_only 27 O', 'work_team_member_event: work_team_member_event_no_truncate 34 O',
+        'peer_review_round: peer_review_round_append_only 27 O', 'peer_review_round: peer_review_round_no_truncate 34 O',
+        'peer_review_allocation: peer_review_allocation_append_only 27 O', 'peer_review_allocation: peer_review_allocation_no_truncate 34 O',
+        'peer_review: peer_review_append_only 27 O', 'peer_review: peer_review_no_truncate 34 O',
+        'peer_review_withdrawal: peer_review_withdrawal_append_only 27 O', 'peer_review_withdrawal: peer_review_withdrawal_no_truncate 34 O',
         'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
         'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
@@ -615,6 +625,14 @@ SELECT bag_eq(
     'work_team_context(p_assignment_id uuid, p_part text, OUT o_user_id uuid, OUT o_institution_id uuid, OUT o_enabled boolean, OUT o_min_size integer, OUT o_max_size integer, OUT o_formation text)',
     'work_team_lock(p_assignment_id uuid)',
     'work_team_part_submitted(p_assignment_id uuid, p_student_id uuid)',
+    'peer_review_rubrics_valid(p_rubrics jsonb)',
+    'reject_peer_review_record_change()',
+    'peer_review_min_submissions(p_reviews_per_student integer)',
+    'peer_review_pairs(p_round_id uuid, p_students uuid[], p_reviews_per_student integer)',
+    'peer_review_context(p_assignment_id uuid, p_part text, OUT o_user_id uuid, OUT o_institution_id uuid, OUT o_course_id uuid)',
+    'peer_review_lock(p_assignment_id uuid)',
+    'peer_review_round_of(p_assignment_id uuid)',
+    'peer_review_allocated(p_round_id uuid)',
     'thesis_setting_now()',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
@@ -1665,6 +1683,61 @@ SELECT is(
 FROM (VALUES ('ana', 'ZD409'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('boris', 'ZD404'),
              ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
 
+-- 1i3b. SRV-V19-RECENZIJA-BAZA: anonymous peer review (institution.peer_review_round,
+-- peer_review_allocation, peer_review, peer_review_withdrawal) only through the app.* RPCs.
+-- The teachers of Z1 set the round, allocate, read the overview and withdraw; the students
+-- of Z1 read only their own tasks and the reviews of their own work; everyone else is the
+-- same refusal (ZD404: another course, another institution, no relation; an unknown task).
+-- The rest is in 249-peer-review.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT state FROM app.peer_review_round({z1})'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s reads the review round of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'none'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.set_peer_review_round({z1}, now(), now() + interval ''1 day'', 0, ''[]'')'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s sets the review round of Z1 (refused input, the relation first): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD422'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.peer_review_overview({z1})'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s reads the review overview of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '0'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.allocate_peer_review({z1})'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s allocates the review of Z1 (no round yet): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.withdraw_peer_review({z1}, gen_random_uuid(), ''Razlog.'')'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s withdraws a review of Z1 (an unknown one): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('ana', 'ZD404'), ('dora', 'ZD404'),
+             ('boris', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'),
+             ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT round_state FROM app.peer_review_tasks({z1})'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s reads the own review tasks of Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'none'), ('dora', 'none'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'),
+             ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.peer_reviews_received({z1})'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s reads the received reviews of Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', '0'), ('dora', '0'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'),
+             ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.peer_review_work(gen_random_uuid())'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s reads the work of an unknown review task: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'ZD404'), ('dora', 'ZD404'), ('boris', 'ZD404'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT 1 FROM app.add_peer_review(gen_random_uuid(), ''[]'', NULL)'), 1, 5), c.result,
+  format('SRV-V19-RECENZIJA-BAZA: %s writes a review of an unknown task: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'ZD404'), ('dora', 'ZD404'), ('boris', 'ZD404'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
+
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was
 -- extended in 1h); null for everyone else. The rest is in
@@ -1901,6 +1974,37 @@ SELECT is_empty(
   'SRV-V19-GRUPA-BAZA: only the identity role and its owner execute the part-state helper'
 );
 
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.set_peer_review_round(uuid,timestamp with time zone,timestamp with time zone,integer,jsonb)',
+       'app.peer_review_round(uuid)', 'app.allocate_peer_review(uuid)', 'app.peer_review_tasks(uuid)',
+       'app.peer_review_work(uuid)', 'app.add_peer_review(uuid,jsonb,text)', 'app.peer_reviews_received(uuid)',
+       'app.peer_review_overview(uuid)', 'app.withdraw_peer_review(uuid,uuid,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V19-RECENZIJA-BAZA: only ductus_app and the owner execute the review RPCs'
+);
+SELECT ok((SELECT bool_and(has_function_privilege('ductus_app', f, 'EXECUTE') AND p.prosecdef)
+             FROM unnest(ARRAY['app.set_peer_review_round(uuid,timestamp with time zone,timestamp with time zone,integer,jsonb)',
+       'app.peer_review_round(uuid)', 'app.allocate_peer_review(uuid)', 'app.peer_review_tasks(uuid)',
+       'app.peer_review_work(uuid)', 'app.add_peer_review(uuid,jsonb,text)', 'app.peer_reviews_received(uuid)',
+       'app.peer_review_overview(uuid)', 'app.withdraw_peer_review(uuid,uuid,text)']) f
+             JOIN pg_proc p ON p.oid = f::regprocedure),
+  'SRV-V19-RECENZIJA-BAZA: the web role calls the review RPCs, all SECURITY DEFINER');
+-- The helpers that read the submissions and the text from the evidence are the identity role's alone.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.peer_review_submitted(uuid)', 'app.peer_review_blocks(uuid,uuid)',
+                             'app.peer_review_document(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V19-RECENZIJA-BAZA: only the identity role and its owner execute the evidence helpers of the review'
+);
+
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
 CREATE FUNCTION pg_temp.probe(p_role text, p_actor text, p_table text, p_op text) RETURNS text
@@ -1945,13 +2049,13 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff',
-                        'assignment_team_setting', 'work_team', 'work_team_member_event'])
+                        'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
