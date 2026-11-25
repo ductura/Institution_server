@@ -131,7 +131,8 @@ it("keeps a material for its owner only and refuses everyone else with 404", asy
       expect(removed.status).toBe(204);
       expect((await call("GET", `${PATH}/${material.id}`, ANA)).status).toBe(404);
       const left = await db.query<{ n: number }>(
-        "SELECT count(*)::int AS n FROM institution.qual_segment",
+        "SELECT count(*)::int AS n FROM institution.qual_segment WHERE material_id = $1",
+        [material.id],
       );
       expect(left.rows[0]!.n).toBe(0);
 
