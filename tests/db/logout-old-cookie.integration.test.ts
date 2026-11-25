@@ -12,6 +12,7 @@ import {
   AREA_NAMES,
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
+  createEnrollmentCodeStateRouteFor,
   createRosterImportRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createAssignmentGradeRouteFor,
@@ -1719,6 +1720,13 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
+  // INT-32: the course's code state; the account teaches no course, so it is 404.
+  "institution.enrollment-code-state.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/enrollment-code/state`,
+    body: () => undefined,
+    live: 404,
+  },
   // Ductus#2028 (w1119o): the student and version routes on the same front.
   // The account teaches no course or assignment: each RPC refuses with 403.
   "institution.student-removal.post": {
@@ -2296,6 +2304,7 @@ const FACTORIES = [
   "createProblemReportRouteFor",
   "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createEnrollmentCodeStateRouteFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
   "createAssignmentGradeRouteFor",
@@ -2431,6 +2440,7 @@ const MOUNTED = [
   createProblemReportRouteFor(databases.main),
   createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  createEnrollmentCodeStateRouteFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
   createAssignmentGradeRouteFor(databases.main),

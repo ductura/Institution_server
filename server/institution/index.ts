@@ -22,6 +22,10 @@ export {
 } from "./assistant-setting.ts";
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
 export {
+  type EnrollmentCodeStateRead,
+  readEnrollmentCodeState,
+} from "./enrollment-code-state/index.ts";
+export {
   readAssignmentFollowUp,
   readAssignmentOverview,
   readTeacherRoster,
