@@ -83,10 +83,10 @@ describe("the two routes", () => {
     ]);
   });
 
-  it("raise the API to at least 1.135.0 and keep health on API_VERSION", () => {
+  it("raise the API to at least 1.136.0 and keep health on API_VERSION", () => {
     const [major, minor] = API_VERSION.split(".").map(Number);
     expect(major).toBe(1);
-    expect(minor).toBeGreaterThanOrEqual(135);
+    expect(minor).toBeGreaterThanOrEqual(136);
   });
 });
 
