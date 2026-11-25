@@ -28,6 +28,23 @@ describe("blocksOf", () => {
     ]);
   });
 
+  it("reads a numbered list item (v4 orderedItem) as a paragraph with its text", () => {
+    expect(
+      blocksOf(
+        doc([
+          { type: "orderedItem", id: ID, children: [text("Prva "), text("stavka")] },
+          { type: "orderedItem", id: ID, children: [] },
+          { type: "bulletItem", id: ID, children: [text("Natuknica")] },
+        ]),
+      ),
+    ).toStrictEqual([p("Prva stavka"), p(""), { kind: "bulletItem", text: "Natuknica" }]);
+  });
+
+  it("still refuses a numbered list item whose children are not inline nodes", () => {
+    expect(blocksOf(doc([{ type: "orderedItem", id: ID }]))).toBeNull();
+    expect(blocksOf(doc([{ type: "orderedItem", id: ID, children: ["x"] }]))).toBeNull();
+  });
+
   it("adds no character for an inline node that is not text", () => {
     expect(
       blocksOf(
@@ -54,6 +71,21 @@ describe("blocksOf", () => {
     ],
   ])("refuses %s", (_, canonical) => {
     expect(blocksOf(canonical)).toBeNull();
+  });
+});
+
+describe("diffBlocks on numbered list items", () => {
+  const items = (...values: string[]) =>
+    blocksOf(doc(values.map((v) => ({ type: "orderedItem", id: ID, children: [text(v)] }))))!;
+
+  it("shows a changed, inserted and removed item of a numbered list", () => {
+    expect(diffBlocks(items("A", "B", "C"), items("A", "X", "C", "D"))).toStrictEqual([
+      { ...p("A"), change: "unchanged" },
+      { ...p("B"), change: "removed" },
+      { ...p("X"), change: "added" },
+      { ...p("C"), change: "unchanged" },
+      { ...p("D"), change: "added" },
+    ]);
   });
 });
 

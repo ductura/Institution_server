@@ -19,6 +19,15 @@ export type CompareEntry = CompareBlock & { readonly change: CompareChange };
 
 const PLAIN = new Set(["paragraph", "bulletItem", "quote"]);
 
+/**
+ * A numbered list item (document v4 §2.2) is a text block like any other, but
+ * the wire contract of work.compare.get knows only the kinds above and a new
+ * kind would be a breaking change. It is therefore shown as a `paragraph`
+ * with its text, as the text reader does (text-blocks.ts); its number is its
+ * position in the run and is not text, so it is not part of the difference.
+ */
+const ORDERED_ITEM = "orderedItem";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -59,6 +68,8 @@ export function blocksOf(canonical: string): CompareBlock[] | null {
     if (node.type === "heading") {
       if (!Number.isSafeInteger(node.level)) return null;
       blocks.push({ kind: "heading", level: node.level as number, text });
+    } else if (node.type === ORDERED_ITEM) {
+      blocks.push({ kind: "paragraph", text });
     } else if (PLAIN.has(node.type)) {
       blocks.push({ kind: node.type as "paragraph" | "bulletItem" | "quote", text });
     } else {

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -108,3 +109,44 @@ it.each([
     expect(await response.text()).not.toContain("Izmišljeno.");
   },
 );
+
+// Save and reopen a document v4 with numbered lists (document-schema-v4 §2.2): the
+// stored snapshot is the golden vector's canonical text, the route verifies it
+// against its hash and gives it back byte for byte, and compares two revisions
+// of it. Before orderedItem was a block the verifier refused the snapshot.
+it("returns a stored document v4 with a numbered list identically and compares its revisions", async () => {
+  const { documentsV4 } = JSON.parse(
+    readFileSync(new URL("../../domain/document/golden-vectors-v4.json", import.meta.url), "utf8"),
+  ) as { documentsV4: { name: string; value: unknown; utf8Hex: string; sha256: string }[] };
+  const golden = documentsV4.find((d) => d.name === "v4-numbered-list-runs")!;
+  const stored = {
+    body: Buffer.from(golden.utf8Hex, "hex").toString("utf8"),
+    hash: golden.sha256,
+  };
+  // Same keys in the same order, so the edited text is still canonical.
+  const editedBody = stored.body.replace("Prvi izmišljeni korak.", "Prvi izmijenjeni korak.");
+  expect(editedBody).not.toBe(stored.body);
+  const editedStored = {
+    body: editedBody,
+    hash: createHash("sha256").update(editedBody).digest("hex"),
+  };
+  const read = vi
+    .fn<TimeMachineStore["read"]>()
+    .mockResolvedValueOnce({ status: "found", snapshots: [stored] })
+    .mockResolvedValueOnce({ status: "found", snapshots: [stored, editedStored] });
+  const get = await serve(read);
+  const reopened = (await (await get("3")).json()) as { revision: number; document: string };
+  expect(reopened.revision).toBe(3);
+  expect(reopened.document).toBe(stored.body);
+  expect(createHash("sha256").update(reopened.document).digest("hex")).toBe(golden.sha256);
+  expect(JSON.parse(reopened.document)).toStrictEqual(golden.value);
+
+  const compare = await get("3?compareFrom=2");
+  expect(compare.status).toBe(200);
+  const { blocks } = (await compare.json()) as { blocks: { change: string; text: string }[] };
+  expect(blocks.filter((b) => b.change !== "unchanged")).toStrictEqual([
+    { kind: "paragraph", text: "Prvi izmišljeni korak.", change: "removed" },
+    { kind: "paragraph", text: "Prvi izmijenjeni korak.", change: "added" },
+  ]);
+  expect(blocks).toHaveLength(6);
+});

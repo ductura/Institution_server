@@ -631,6 +631,26 @@ describe("createEvidenceService().commit by the version of the work, v4", () => 
     },
   );
 
+  it("refuses a numbered list nested in an item before anything is stored", async () => {
+    const text = canonicalizeJcs({
+      schemaVersion: 4,
+      sources: [],
+      nodes: [
+        {
+          type: "orderedItem",
+          id: "11111111-1111-4111-8111-111111111111",
+          children: [
+            { type: "orderedItem", id: "22222222-2222-4222-8222-222222222222", children: [] },
+          ],
+        },
+      ],
+    });
+    const { run, queries, payloads } = setup(CONTEXT_ROW, V1_ZERO, 4);
+    expect(await run(ending(text, V4_STEPS))).toEqual({ status: "invalid" });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+
   it("is unavailable, storing nothing, while the database names no v4 work", async () => {
     // A v4 revision 0 is not one of the hashes the database lane reads yet.
     const { run, queries, payloads } = setup(CONTEXT_ROW, REVISION_ZERO_V4_SHA256);

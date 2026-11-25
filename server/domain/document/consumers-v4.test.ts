@@ -17,7 +17,7 @@ import { documentWordCount } from "./word-count.ts";
 
 const VECTORS = JSON.parse(
   readFileSync(new URL("./golden-vectors-v4.json", import.meta.url), "utf8"),
-) as { documentsV4: { value: CanonicalDocumentV4 }[] };
+) as { documentsV4: { name: string; value: CanonicalDocumentV4 }[] };
 const EVERY = VECTORS.documentsV4[0]!.value;
 const copy = () => structuredClone(EVERY);
 
@@ -48,6 +48,44 @@ describe("validateVersionedDocument takes v4 (§10)", () => {
   it("accepts the golden v4 document as found and refuses it as v3", () => {
     expect(validateVersionedDocument(EVERY)).toEqual({ ok: true, doc: EVERY });
     expect(validateVersionedDocument({ ...EVERY, schemaVersion: 3 }).ok).toBe(false);
+  });
+});
+
+describe("numbered list items in the consumers (§2.2, §11)", () => {
+  // The golden document v4-numbered-list-runs: a heading, two items, a
+  // paragraph that ends the run, and an empty item. Without the block type
+  // in the schema the document is refused, so none of this is reachable.
+  const LIST = VECTORS.documentsV4.find((d) => d.name === "v4-numbered-list-runs")!.value;
+  const RENDERING = { style, orphanMark: "[?]", viaJoiner: ", cit. prema " };
+
+  it("is a document the versioned validator takes as found", () => {
+    expect(validateVersionedDocument(LIST)).toEqual({ ok: true, doc: LIST });
+  });
+
+  it("is read as text blocks in order, an item as a paragraph with its text, marks dropped", () => {
+    expect(textBlocksOf(LIST, RENDERING)).toStrictEqual([
+      { kind: "heading", text: "Izmišljeni koraci" },
+      { kind: "paragraph", text: "Prvi izmišljeni korak." },
+      { kind: "paragraph", text: "Drugi korak." },
+      { kind: "paragraph", text: "Odlomak prekida popis." },
+      { kind: "paragraph", text: "" },
+    ]);
+  });
+
+  it("counts the words of the items like those of any text block", () => {
+    // Heading 2, items 3 and 2, paragraph 3, the empty item none.
+    expect(documentWordCount(LIST)).toBe(10);
+    const longer = structuredClone(LIST);
+    (longer.nodes[1] as { children: { text: string }[] }).children[0]!.text += " Još tri riječi.";
+    expect(documentWordCount(longer)).toBe(13);
+  });
+
+  it("keeps the items through normalization and tells a changed item from an equal one", () => {
+    expect(normalizeDocument(LIST)).toEqual(LIST);
+    const changed = structuredClone(LIST);
+    (changed.nodes[2] as { children: { text: string }[] }).children[1]!.text = "drugačije.";
+    expect(documentsEqual(LIST, changed)).toBe(false);
+    expect(documentsEqual(LIST, structuredClone(LIST))).toBe(true);
   });
 });
 
