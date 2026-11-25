@@ -34,6 +34,7 @@ export { createQualitativeCodingStore, type QualCode } from "./qualitative-codin
 export { createWorkTeamStore, type ContributionSource } from "./work-team/index.ts";
 export { createPeerReviewStore } from "./peer-review/index.ts";
 export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
+export { createThesisTopicStore, type ThesisTopicStore } from "./thesis-topic/index.ts";
 export {
   createInstitutionConfigStore,
   facultyRulesProblems,

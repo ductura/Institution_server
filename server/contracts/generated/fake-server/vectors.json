@@ -117264,6 +117264,1739 @@
     }
   },
   {
+    "route": "work.thesis-topic-decision.post",
+    "name": "returned",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "returned",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": {
+          "version": 2,
+          "decision": "returned",
+          "comment": "Izmišljeni komentar: suzite temu.",
+          "decidedAt": "2026-11-24T11:00:00.000Z",
+          "decidedByPart": "mentor"
+        },
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "approved",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "approved"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "approved",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": {
+          "version": 2,
+          "decision": "approved",
+          "comment": null,
+          "decidedAt": "2026-11-24T11:00:00.000Z",
+          "decidedByPart": "mentor"
+        },
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "approved-with-comment",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "approved",
+        "comment": "Izmišljeno: dobra tema."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "approved",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": {
+          "version": 2,
+          "decision": "approved",
+          "comment": "Izmišljeno: dobra tema.",
+          "decidedAt": "2026-11-24T11:00:00.000Z",
+          "decidedByPart": "mentor"
+        },
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247029"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247030"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247031"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "4097"
+      },
+      "rawBody": "{\"version\":2,\"decision\":\"returned\",\"comment\":\"Izmišljeni komentar: suzite temu.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000247032"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "88"
+      },
+      "rawBody": "{\"version\":2,\"decision\":\"returned\",\"comment\":\"Izmišljeni komentar: suzite temu.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000247033"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247034"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "9999"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247035"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "88"
+      },
+      "rawBody": "{\"ti"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247036"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000247037"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-tudi"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000247038"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000247039"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"version\":2,\"decision\":\"returned\",\"comment\":\"Izmišljeni komentar: suzite temu.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247040"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247041"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"version\":2,\"decision\":\"returned\",\"comment\":\"Izmišljeni komentar: suzite temu.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000247042"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu.",
+        "extra": 1
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247043"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "return-without-comment",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247024"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "unknown-decision",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "graded"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247025"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "blank-comment",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "   "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247026"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "old-version",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 1,
+        "decision": "approved"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000247027"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic-decision.post",
+    "name": "already-returned",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "version": 2,
+        "decision": "returned",
+        "comment": "Izmišljeni komentar: suzite temu."
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000247028"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "none",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "none",
+        "current": null,
+        "decision": null,
+        "history": []
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "proposed",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "proposed",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": null,
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "returned",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "returned",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": {
+          "version": 2,
+          "decision": "returned",
+          "comment": "Izmišljeni komentar: suzite temu.",
+          "decidedAt": "2026-11-24T11:00:00.000Z",
+          "decidedByPart": "mentor"
+        },
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "approved",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "approved",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": {
+          "version": 2,
+          "decision": "approved",
+          "comment": null,
+          "decidedAt": "2026-11-24T11:00:00.000Z",
+          "decidedByPart": "mentor"
+        },
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000247001"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-tudi"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000247002"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000247003"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "proposed",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "proposed",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": null,
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "title-only",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "proposed",
+        "current": {
+          "version": 1,
+          "title": "Izmišljena tema o pamćenju",
+          "summary": "",
+          "proposedAt": "2026-11-24T09:00:00.000Z"
+        },
+        "decision": null,
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "again-after-return",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "proposed",
+        "current": {
+          "version": 2,
+          "title": "Izmišljena tema o pamćenju radne memorije",
+          "summary": "Izmišljeni kratak opis istraživanja.",
+          "proposedAt": "2026-11-24T10:00:00.000Z"
+        },
+        "decision": null,
+        "history": [
+          {
+            "version": 1,
+            "title": "Izmišljena tema o pamćenju",
+            "summary": "",
+            "proposedAt": "2026-11-24T09:00:00.000Z"
+          },
+          {
+            "version": 2,
+            "title": "Izmišljena tema o pamćenju radne memorije",
+            "summary": "Izmišljeni kratak opis istraživanja.",
+            "proposedAt": "2026-11-24T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247009"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247010"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247011"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "8193"
+      },
+      "rawBody": "{\"title\":\"Izmišljena tema o pamćenju radne memorije\",\"summary\":\"Izmišljeni kratak opis istraživanja.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000247012"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "88"
+      },
+      "rawBody": "{\"title\":\"Izmišljena tema o pamćenju radne memorije\",\"summary\":\"Izmišljeni kratak opis istraživanja.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000247013"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247014"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "9999"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247015"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "88"
+      },
+      "rawBody": "{\"ti"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247016"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000247017"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-tudi"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000247018"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000247019"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\":\"Izmišljena tema o pamćenju radne memorije\",\"summary\":\"Izmišljeni kratak opis istraživanja.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000247020"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000247021"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "text/plain",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "rawBody": "{\"title\":\"Izmišljena tema o pamćenju radne memorije\",\"summary\":\"Izmišljeni kratak opis istraživanja.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000247022"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja.",
+        "extra": 1
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247023"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "blank-title",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "   "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247004"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "title-too-long",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247005"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "summary-too-long",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Naslov",
+        "summary": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247006"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "missing-title",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "summary": "Samo opis."
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000247007"
+      }
+    }
+  },
+  {
+    "route": "work.thesis-topic.put",
+    "name": "approved-locks",
+    "request": {
+      "params": {
+        "documentId": "doc-izmisljeni-zavrsni-1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001",
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "body": {
+        "title": "Izmišljena tema o pamćenju radne memorije",
+        "summary": "Izmišljeni kratak opis istraživanja."
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000247008"
+      }
+    }
+  },
+  {
     "route": "work.version.get",
     "name": "snapshot",
     "request": {

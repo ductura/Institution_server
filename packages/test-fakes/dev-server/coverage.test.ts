@@ -676,6 +676,37 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { stage: "defense_scheduled", defenseAt: "2027-06-15T09:00:00Z" },
     },
   },
+  // SRV-V16-TEMA-PRIJEDLOG: the topic of a thesis, proposed by the student and decided by the mentor.
+  "work.thesis-topic.get": {
+    request: { path: `/api/v1/works/${IDS.document}/thesis-topic`, as: "student" },
+  },
+  "work.thesis-topic.put": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/thesis-topic`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { title: "Izmišljena tema rada", summary: "Izmišljeni kratak opis." },
+    },
+  },
+  "work.thesis-topic-decision.post": {
+    before: [
+      {
+        path: `/api/v1/works/${IDS.document}/thesis-topic`,
+        as: "student",
+        method: "PUT",
+        headers: ORIGIN,
+        body: { title: "Izmišljena tema rada" },
+      },
+    ],
+    request: {
+      path: `/api/v1/works/${IDS.document}/thesis-topic/decision`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { version: 1, decision: "approved" },
+    },
+  },
   "mentorship.request-approve.post": {
     before: [REQUEST_MENTORSHIP],
     request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },
