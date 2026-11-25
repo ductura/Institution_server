@@ -295,6 +295,7 @@ export {
   createLayers,
   createPipeline,
   PIPELINE_STEPS,
+  trafficLogFor,
   type App,
   type Layer,
   type Layers,

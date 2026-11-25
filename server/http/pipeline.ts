@@ -5,9 +5,12 @@
 // stops the request before the application.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { ROUTES } from "../contracts/index.ts";
+import { createLogWriter, type LogWriter } from "../log/index.ts";
 import {
   type AllowedNetworks,
   clientIpLayer,
+  createTrafficRecorder,
   NO_ALLOWED_NETWORKS,
   NO_TRUSTED_PROXIES,
   type RateLimiter,
@@ -26,6 +29,7 @@ import {
 } from "./operator-policy-layer.ts";
 import { defaultRateLimiter, type RateLimitLog, rateLimitLayer } from "./rate-limit-layer.ts";
 import { requestIdOf } from "./request-id.ts";
+import { routePath } from "./router.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
 
 export const PIPELINE_STEPS = Object.freeze([
@@ -79,8 +83,67 @@ function attached(request: IncomingMessage, response: ServerResponse): Promise<b
   });
 }
 
-/** Step 5 (traffic record) is empty until wave 5 fills it; it reads nothing. */
-const pass: Layer = async () => "next";
+const TEMPLATES: readonly (readonly string[])[] = ROUTES.map((route) => route.path.split("/"));
+const isParam = (segment: string): boolean => /^\{\w+\}$/u.test(segment);
+
+/**
+ * The contract path template of a request, or null when it is no route: the
+ * path is read as the router reads it (no query, no decoding) and a literal
+ * path wins over a template. Nothing else of the request is looked at.
+ */
+export function trafficRouteOf(request: IncomingMessage): string | null {
+  const path = routePath(request.url);
+  if (path === undefined) return null;
+  const sent = path.split("/");
+  const found = TEMPLATES.filter(
+    (template) =>
+      template.length === sent.length &&
+      template.every((segment, i) => segment === sent[i] || (isParam(segment) && sent[i] !== "")),
+  );
+  const best = found.find((template) => !template.some(isParam)) ?? found[0];
+  return best === undefined ? null : best.join("/");
+}
+
+/**
+ * The log service step 5 writes with: one row of log_entry per record, over
+ * the logs database port (ductus_logs_writer). It never throws, and a request
+ * never waits for it (server/log/writer.ts).
+ */
+export function trafficLogFor(logs: {
+  readonly query: (text: string, values: unknown[]) => unknown;
+}): LogWriter {
+  return createLogWriter({
+    routes: new Set(ROUTES.map((route) => route.path)),
+    store: {
+      append: (kind, payload) =>
+        logs.query("INSERT INTO public.log_entry (kind, payload) VALUES ($1, $2::jsonb)", [
+          kind,
+          JSON.stringify(payload),
+        ]),
+    },
+  });
+}
+
+/**
+ * Step 5 (traffic record, DAN-1536): arms the recorder of server/traffic for
+ * the request and goes on; the record is written when the response closes.
+ * Without a log writer nothing is recorded. A recorder that throws, or a
+ * writer that rejects or never settles, never changes the answer: arm and the
+ * write are fire and forget, and a throw here is caught again so the layer
+ * always answers "next".
+ */
+function trafficRecordLayer(write: LogWriter | undefined): Layer {
+  if (write === undefined) return async () => "next";
+  const recorder = createTrafficRecorder({ write, routeOf: trafficRouteOf, requestIdOf });
+  return async (request, response) => {
+    try {
+      recorder.arm(request, response);
+    } catch {
+      // A record that cannot be armed never stops a request.
+    }
+    return "next";
+  };
+}
 
 /**
  * Without trustedProxies (TRUSTED_PROXIES) X-Forwarded-For is never read and
@@ -102,6 +165,8 @@ export function createLayers(options: {
   readonly secondFactor?: SecondFactor;
   readonly operators?: OperatorList;
   readonly operatorDenialLog?: OperatorDenialLog;
+  /** The log writer step 5 records traffic with; without it nothing is recorded. */
+  readonly trafficLog?: LogWriter;
 }): Layers {
   const denials = options.operatorDenialLog ?? createOperatorDenialLog();
   return Object.freeze({
@@ -111,7 +176,7 @@ export function createLayers(options: {
       options.rateLimiter ?? defaultRateLimiter(),
       ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
     ),
-    trafficRecord: pass,
+    trafficRecord: trafficRecordLayer(options.trafficLog),
     securityHeaders: securityHeadersLayer,
     originCheck: originLayer(options.expectedOrigin),
     operatorPolicy: operatorPolicyLayer(

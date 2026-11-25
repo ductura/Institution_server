@@ -7,6 +7,8 @@ import { Duplex } from "node:stream";
 
 import { describe, expect, it } from "vitest";
 
+import type { LogWriter } from "../log/index.ts";
+
 import {
   type App,
   createLayers,
@@ -15,6 +17,7 @@ import {
   type Layers,
   PIPELINE_STEPS,
   type Step,
+  trafficRouteOf,
 } from "./pipeline.ts";
 import { SECURITY_HEADERS } from "./security-headers.ts";
 
@@ -245,5 +248,88 @@ describe("createLayers", () => {
     const post = exchange("POST");
     await pipeline(post.request, post.response);
     expect([post.response.statusCode, app]).toEqual([403, 1]);
+  });
+});
+
+// Step 5 (DAN-1536): the traffic record is written for every answered request
+// and never changes the answer.
+describe("step 5, the traffic record", () => {
+  const CANARY = "made-up-canary-1536";
+  type Written = { event: string; fields: Record<string, unknown> };
+  const ok = (): Promise<never> => Promise.resolve({ ok: true } as never);
+
+  async function runWith(trafficLog: LogWriter | undefined, url = "/api/v1/health", status = 204) {
+    const { request, response } = exchange("GET");
+    request.url = url;
+    request.headers.cookie = `session=${CANARY}`;
+    request.headers["x-forwarded-for"] = CANARY;
+    const app: App = async (_request, res) => {
+      res.statusCode = status;
+      res.end();
+    };
+    const layers = createLayers({
+      expectedOrigin: null,
+      ...(trafficLog === undefined ? {} : { trafficLog }),
+    });
+    await createPipeline(layers, app)(request, response);
+    response.emit("close");
+    return response;
+  }
+
+  it("writes one traffic.request for a success, with no body, cookie or query", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const response = await runWith(write, `/api/v1/health?token=${CANARY}`);
+    expect(response.statusCode).toBe(204);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.event).toBe("traffic.request");
+    expect(written[0]?.fields).toMatchObject({
+      method: "GET",
+      route: "/api/v1/health",
+      status: 204,
+    });
+    expect(JSON.stringify(written)).not.toContain(CANARY);
+  });
+
+  it("writes the record of an error answer with its status", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    await runWith(write, "/api/v1/health", 500);
+    expect(written[0]?.fields.status).toBe(500);
+  });
+
+  it.each([
+    [
+      "throws",
+      (): never => {
+        throw new Error(CANARY);
+      },
+    ],
+    ["rejects", () => Promise.reject(new Error(CANARY))],
+    ["never settles", () => new Promise<never>(() => undefined)],
+  ])("does not change the answer when the writer %s", async (_name, write) => {
+    const response = await runWith(write as unknown as LogWriter);
+    expect(response.statusCode).toBe(204);
+    expect(response.writableEnded).toBe(true);
+  });
+
+  it("records nothing, and still answers, without a writer", async () => {
+    expect((await runWith(undefined)).statusCode).toBe(204);
+  });
+
+  it("names a route by its template and anything else as none", () => {
+    const at = (url: string) => trafficRouteOf({ url } as IncomingMessage);
+    expect(at("/api/v1/health?x=1")).toBe("/api/v1/health");
+    expect(at("/api/v1/works/abc-123/access")).toBe("/api/v1/works/{documentId}/access");
+    expect(at("/api/v1/works//access")).toBeNull();
+    expect(at("/api/v1/nope")).toBeNull();
+    expect(at("/api/v1/../health")).toBeNull();
+    expect(at(undefined as unknown as string)).toBeNull();
   });
 });
