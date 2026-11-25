@@ -1446,6 +1446,39 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "teacher.assignment-template.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { useInstitutionTemplate: false },
+    },
+  },
+  "student.assignment-template.get": {
+    before: [
+      {
+        method: "PUT",
+        path: "/api/v1/institution/work-templates/seminar_paper",
+        as: "administrator",
+        headers: ORIGIN,
+        body: {
+          expectedVersion: 0,
+          titlePage: ["title", "author"],
+          sections: [{ title: "Uvod", hint: "" }],
+          citationStyle: "fpzg",
+        },
+      },
+      {
+        method: "PUT",
+        path: `/api/v1/teacher/assignments/${IDS.assignment}/template`,
+        as: "nastavnik",
+        headers: ORIGIN,
+        body: { useInstitutionTemplate: true },
+      },
+    ],
+    request: { path: `/api/v1/student/assignments/${IDS.assignment}/template`, as: "student" },
+  },
   "work.milestone-states.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestone-states`, as: "student" },
   },

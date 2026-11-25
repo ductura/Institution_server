@@ -867,6 +867,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146993897",
   },
+  // SRV-V17-TEMPLATE-ASSIGN (val 17): the work template frozen on an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/template/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
+  },
+  "app/api/student/assignments/[assignmentId]/template/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055:issuecomment-7147483503",
+  },
   // SRV-1606 (Ductus#2052, WEB-2155): the teacher returns the whole submitted work for revision.
   "app/api/works/[documentId]/return-for-revision/route.ts": {
     methods: ["POST"],
