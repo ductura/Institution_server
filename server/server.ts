@@ -72,6 +72,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createSourceLookupRouteFor,
@@ -423,6 +424,8 @@ async function main(): Promise<void> {
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
       ...createPeerReviewRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own qualitative coding.
+      ...createQualitativeCodesRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
       // SRV-V16-TEMA-PRIJEDLOG: the student proposes the topic of a thesis, the mentor decides.

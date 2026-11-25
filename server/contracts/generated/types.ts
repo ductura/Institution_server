@@ -1121,6 +1121,34 @@ export type Operations = {
     success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.qual-code.delete": {
+    params: { "id": string };
+    query: { "confirm"?: "true" };
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "not_found" | "invalid_input" | "conflict";
+  };
+  "student.qual-code.patch": {
+    params: { "id": string };
+    query: undefined;
+    body: { "name"?: string; "description"?: string; "order"?: number };
+    success: { status: 200; body: { "id": string; "name": string; "description": string; "order": number }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
+  };
+  "student.qual-codes.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "codes": ({ "id": string; "name": string; "description": string; "order": number })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "student.qual-codes.post": {
+    params: undefined;
+    query: undefined;
+    body: { "name": string; "description"?: string };
+    success: { status: 201; body: { "id": string; "name": string; "description": string; "order": number }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
+  };
   "student.receipt-pdf.get": {
     params: { "assignmentId": string };
     query: undefined;
