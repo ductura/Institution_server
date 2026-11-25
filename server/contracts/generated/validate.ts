@@ -1944,6 +1944,62 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.qual-code.delete:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-code.delete:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['confirm'] !== undefined ? ((value['confirm'] === 'true')) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['confirm'].includes(key))
+    )
+  }),
+  "student.qual-code.patch:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-code.patch:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,80}(?<!\s)(?![\s\S])/;
+  const local1 = /^(?:|(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,500}(?<!\s))(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length >= 1 &&
+      (value['name'] !== undefined ? ((typeof value['name'] === 'string') && local0.test(value['name'])) : true) &&
+      (value['description'] !== undefined ? ((typeof value['description'] === 'string') && local1.test(value['description'])) : true) &&
+      (value['order'] !== undefined ? ((typeof value['order'] === 'number' && Number.isInteger(value['order'])) && value['order'] <= 200 && value['order'] >= 1) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['name', 'description', 'order'].includes(key))
+    )
+  }
+  })(),
+  "student.qual-codes.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,80}(?<!\s)(?![\s\S])/;
+  const local1 = /^(?:|(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,500}(?<!\s))(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['name'] === 'string') &&
+      local0.test(value['name']) &&
+      (value['description'] !== undefined ? ((typeof value['description'] === 'string') && local1.test(value['description'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['name', 'description'].includes(key))
+    )
+  }
+  })(),
   "student.questionnaire-responses.post:params": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

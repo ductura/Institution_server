@@ -64,6 +64,7 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createLiveRoutesFor,
@@ -291,6 +292,13 @@ const SRV_V19_RECENZIJA = [
   "student.peer-review-work.get",
   "student.peer-review.post",
   "student.peer-reviews-received.get",
+];
+// SRV-V18-KODIRANJE-SIFRARNIK: the four routes of the codebook of qualitative coding.
+const SRV_V18_SIFRARNIK = [
+  "student.qual-codes.get",
+  "student.qual-codes.post",
+  "student.qual-code.patch",
+  "student.qual-code.delete",
 ];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
@@ -670,6 +678,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createPeerReviewRoutesFor(databases.main)",
     ids: SRV_V19_RECENZIJA,
     routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeCodesRoutesFor(databases.main)",
+    ids: SRV_V18_SIFRARNIK,
+    routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createThesisRoutesFor(databases.main)",
@@ -1160,6 +1173,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
       ...SRV_V19_RECENZIJA,
+      ...SRV_V18_SIFRARNIK,
       ...SRV_MENTOR_2,
       ...SRV_V16_TEMA,
       "live.document.get",
