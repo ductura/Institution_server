@@ -172,7 +172,8 @@ describe("fake server over HTTP", () => {
     // SRV-KARTA-RASPON-RUTA: work.origin-segments.post five.
     // SRV-V17-BANK-EDIT: teacher.comment-bank-entry.put five.
     // SRV-V19-DNEVNIK-UGOVOR: practice.placements.post, practice.entries.post and practice.signoffs.post five each.
-    expect(VECTORS.length - overHttp.length).toBe(721);
+    // SRV-V19-GRUPA-UGOVOR: four mutating team routes five each.
+    expect(VECTORS.length - overHttp.length).toBe(741);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
