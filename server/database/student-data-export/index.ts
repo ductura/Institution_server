@@ -17,6 +17,8 @@ export type StudentDataExportState = (typeof STATES)[number];
 
 export type StudentDataExportRow = {
   exportId: string;
+  /** Who the export is for (SRV-NF7-IZVOZ-STUDENT); only the students route sends it. */
+  studentId: string;
   state: StudentDataExportState;
   requestedAt: string;
   /** Null until the package is ready. */
@@ -74,6 +76,8 @@ function rowOf(row: Record<string, unknown>): StudentDataExportRow | undefined {
   if (
     typeof row.exportId !== "string" ||
     !UUID.test(row.exportId) ||
+    typeof row.studentId !== "string" ||
+    !UUID.test(row.studentId) ||
     !STATES.includes(row.state as StudentDataExportState) ||
     requestedAt === undefined ||
     expiresAt === undefined
@@ -82,6 +86,7 @@ function rowOf(row: Record<string, unknown>): StudentDataExportRow | undefined {
   }
   return {
     exportId: row.exportId,
+    studentId: row.studentId,
     state: row.state as StudentDataExportState,
     requestedAt,
     expiresAt,
@@ -136,8 +141,8 @@ export function createStudentDataExports(withActor: WithActor): StudentDataExpor
       try {
         rows = await ask(
           token,
-          `SELECT export_id::text AS "exportId", status AS "state", requested_at AS "requestedAt",
-                  expires_at AS "expiresAt"
+          `SELECT export_id::text AS "exportId", student_id::text AS "studentId", status AS "state",
+                  requested_at AS "requestedAt", expires_at AS "expiresAt"
              FROM app.student_data_exports()`,
           [],
         );
