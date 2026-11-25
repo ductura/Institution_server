@@ -41,14 +41,16 @@ const CONCURRENCY = (prefix: string) =>
 describe("concurrency", () => {
   it("cancels older pull request and migration base runs, never main", () => {
     const verapdf = readFileSync(resolve(ROOT, ".github/workflows/verapdf.yml"), "utf8");
-    for (const [prefix, text] of [["ci", CI], ["verapdf", verapdf]] as const) {
+    for (const [prefix, text] of [
+      ["ci", CI],
+      ["verapdf", verapdf],
+    ] as const) {
       expect(text).toContain(CONCURRENCY(prefix));
       expect([...text.matchAll(/^concurrency:/gm)]).toHaveLength(1);
       expect(text).not.toMatch(/cancel-in-progress:.*refs\/heads\/main/);
     }
   });
 });
-
 
 describe("ci.yml", () => {
   it("has exactly the jobs ci-ok knows, plus ci-ok", () => {
