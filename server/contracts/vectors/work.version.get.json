@@ -26,6 +26,31 @@
       }
     },
     {
+      "name": "slides-snapshot",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "revision": "2"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "revision": 2,
+          "document": "{\"documentKind\":\"slides\",\"schemaVersion\":1,\"slides\":[]}",
+          "documentKind": "slides"
+        }
+      }
+    },
+    {
       "name": "diff",
       "kind": "success",
       "request": {

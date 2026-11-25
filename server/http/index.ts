@@ -36,6 +36,7 @@ export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createMilestoneTemplateRoutesFor } from "./milestone-template/index.ts";
 export { createAssignmentRubricRoutesFor } from "./assignment-rubric/index.ts";
 export { createAssignmentCodeTestsRoutesFor } from "./assignment-code-tests/index.ts";
+export { createQuestionnaireRoutesFor } from "./questionnaires/index.ts";
 export { createWorkRubricRoutesFor } from "./work-rubric/index.ts";
 export { createWorkTemplateRoutesFor } from "./work-template/index.ts";
 export { createAssignmentTemplateRoutesFor } from "./assignment-template/index.ts";
