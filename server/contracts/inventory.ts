@@ -532,6 +532,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116184562",
   },
+  // SRV-V16-TEMA-PRIJEDLOG (val16-razlika): the topic of a thesis, proposed by the student and decided by the mentor.
+  "app/api/works/[documentId]/thesis-topic/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173074345",
+  },
+  "app/api/works/[documentId]/thesis-topic/decision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173074345",
+  },
   "app/api/works/[documentId]/assistant-match/explanation/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7092390512",
