@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6257);
+SELECT plan(6259);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2338,6 +2338,24 @@ SELECT is_empty(
      CROSS JOIN unnest(ARRAY['app.read_work_thesis_committee(text)', 'app.set_work_thesis_committee(text,jsonb)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-V16-POVJERENSTVO-ZAPIS: only ductus_app and the owner execute the thesis committee RPCs'
+);
+-- SRV-V16-POPIS-FAKULTET: actor-level cases are in 249-thesis-overview.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_thesis_overview(text,integer,boolean,timestamptz,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V16-POPIS-FAKULTET: only ductus_app and the owner execute the thesis overview RPC'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute app.thesis_work_documents'
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public' UNION ALL SELECT 'ductus_app') AS r
+     WHERE has_function_privilege(r.rolname, 'app.thesis_work_documents(uuid)', 'EXECUTE') $$,
+  'SRV-V16-POPIS-FAKULTET: only the identity owner and the evidence owner execute the document helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f

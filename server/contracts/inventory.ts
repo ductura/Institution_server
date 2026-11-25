@@ -555,6 +555,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173852373",
   },
+  // SRV-V16-POPIS-FAKULTET (val16-razlika): the theses of the faculty for the registrar's office, read only.
+  "app/api/institution/thesis-overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7177488643",
+  },
   "app/api/works/[documentId]/assistant-match/explanation/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7092390512",

@@ -37,6 +37,12 @@ export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
 export { createThesisTopicStore, type ThesisTopicStore } from "./thesis-topic/index.ts";
 export { createThesisCommitteeStore, type ThesisCommitteeStore } from "./thesis-committee/index.ts";
 export {
+  createThesisOverviewStore,
+  decodeThesisOverviewCursor,
+  encodeThesisOverviewCursor,
+  type ThesisOverviewStore,
+} from "./thesis-overview/index.ts";
+export {
   createInstitutionConfigStore,
   facultyRulesProblems,
   loadFacultyRules,

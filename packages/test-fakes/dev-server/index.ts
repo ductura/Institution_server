@@ -73,6 +73,7 @@ import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { THESIS_HANDLERS } from "./thesis-routes.ts";
 import { THESIS_TOPIC_HANDLERS } from "./thesis-topic-routes.ts";
 import { THESIS_COMMITTEE_HANDLERS } from "./thesis-committee-routes.ts";
+import { THESIS_OVERVIEW_HANDLERS } from "./thesis-overview-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import { PORTABLE_RECORD_HANDLERS } from "./portable-record-routes.ts";
@@ -144,6 +145,7 @@ export const DEV_HANDLERS: Handlers = {
   ...THESIS_HANDLERS,
   ...THESIS_TOPIC_HANDLERS,
   ...THESIS_COMMITTEE_HANDLERS,
+  ...THESIS_OVERVIEW_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,

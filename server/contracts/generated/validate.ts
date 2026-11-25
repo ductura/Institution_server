@@ -1007,6 +1007,19 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.thesis-overview.get:query": (() => {
+  const local0 = /^(?:[1-9]|[1-9]\d|1\d\d|200)$/;
+  const local1 = /^[A-Za-z0-9_-]{1,120}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['stage'] !== undefined ? ((((value['stage'] === 'none')) || ((value['stage'] === 'submitted_to_office')) || ((value['stage'] === 'defense_scheduled')) || ((value['stage'] === 'defended')))) : true) &&
+      (value['limit'] !== undefined ? ((typeof value['limit'] === 'string') && local0.test(value['limit'])) : true) &&
+      (value['after'] !== undefined ? ((typeof value['after'] === 'string') && local1.test(value['after'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['stage', 'limit', 'after'].includes(key))
+    )
+  }
+  })(),
   "institution.thesis-settings.put:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

@@ -24,6 +24,7 @@ export { createQualitativeCodesRoutesFor } from "./qualitative-codes.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export { createThesisTopicRoutesFor } from "./thesis-topic/index.ts";
 export { createThesisCommitteeRoutesFor } from "./thesis-committee/index.ts";
+export { createThesisOverviewRoutesFor } from "./thesis-overview/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,

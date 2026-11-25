@@ -1,0 +1,340 @@
+{
+  "route": "institution.thesis-overview.get",
+  "vectors": [
+    {
+      "name": "first-page",
+      "kind": "success",
+      "request": {
+        "query": {
+          "limit": "2"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "works": [
+            {
+              "documentId": "doc-izmisljeni-zavrsni-1",
+              "workType": "master_thesis",
+              "mentorName": {
+                "givenName": "Marko",
+                "familyName": "Izmi\u0161ljeni\u0107"
+              },
+              "studentName": {
+                "givenName": "Ana",
+                "familyName": "Izmi\u0161ljenka"
+              },
+              "stage": "defense_scheduled",
+              "defenseAt": "2026-12-01T10:00:00.000Z",
+              "topicState": "approved",
+              "committeeSize": 2
+            },
+            {
+              "documentId": "doc-izmisljeni-zavrsni-2",
+              "workType": "bachelor_thesis",
+              "mentorName": {
+                "givenName": "Vesna",
+                "familyName": "Izmi\u0161ljani\u0107"
+              },
+              "studentName": {
+                "givenName": "Dora",
+                "familyName": "Izmi\u0161ljenka"
+              },
+              "stage": "none",
+              "defenseAt": null,
+              "topicState": "proposed",
+              "committeeSize": 0
+            }
+          ],
+          "next": "MjAyNi0xMi0wMVQxMDowMDowMC4wMDBafDAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDBkMQ"
+        }
+      }
+    },
+    {
+      "name": "next-page",
+      "kind": "success",
+      "request": {
+        "query": {
+          "limit": "2",
+          "after": "MjAyNi0xMi0wMVQxMDowMDowMC4wMDBafDAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDBkMQ"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "works": [
+            {
+              "documentId": null,
+              "workType": "master_thesis",
+              "mentorName": null,
+              "studentName": null,
+              "stage": "none",
+              "defenseAt": null,
+              "topicState": "none",
+              "committeeSize": 0
+            }
+          ],
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "filtered",
+      "kind": "success",
+      "request": {
+        "query": {
+          "stage": "defense_scheduled"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "works": [
+            {
+              "documentId": "doc-izmisljeni-zavrsni-1",
+              "workType": "master_thesis",
+              "mentorName": {
+                "givenName": "Marko",
+                "familyName": "Izmi\u0161ljeni\u0107"
+              },
+              "studentName": {
+                "givenName": "Ana",
+                "familyName": "Izmi\u0161ljenka"
+              },
+              "stage": "defense_scheduled",
+              "defenseAt": "2026-12-01T10:00:00.000Z",
+              "topicState": "approved",
+              "committeeSize": 2
+            }
+          ],
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "query": {
+          "stage": "defended"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "works": [],
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000249001"
+        }
+      }
+    },
+    {
+      "name": "forbidden-mentor",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000249002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000249003"
+        }
+      }
+    },
+    {
+      "name": "unknown-stage",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        },
+        "query": {
+          "stage": "graded"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000249004"
+        }
+      }
+    },
+    {
+      "name": "limit-too-large",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        },
+        "query": {
+          "limit": "201"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000249005"
+        }
+      }
+    },
+    {
+      "name": "limit-zero",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        },
+        "query": {
+          "limit": "0"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000249006"
+        }
+      }
+    },
+    {
+      "name": "unknown-parameter",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        },
+        "query": {
+          "order": "desc"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000249007"
+        }
+      }
+    },
+    {
+      "name": "bad-cursor",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        },
+        "query": {
+          "after": "not-a-key"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000249008"
+        }
+      }
+    }
+  ]
+}

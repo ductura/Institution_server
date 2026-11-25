@@ -76,6 +76,7 @@ import {
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
@@ -433,6 +434,8 @@ async function main(): Promise<void> {
       ...createThesisTopicRoutesFor(databases.main),
       // SRV-V16-POVJERENSTVO-ZAPIS: the committee of a thesis as a list, named by the administrator.
       ...createThesisCommitteeRoutesFor(databases.main),
+      // SRV-V16-POPIS-FAKULTET: the theses of the faculty for the registrar, read only.
+      ...createThesisOverviewRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
