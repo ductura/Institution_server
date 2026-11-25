@@ -179,7 +179,8 @@ export const studentAssignmentWorkGet = defineRoute({
   responses: [
     {
       status: 200,
-      description: "ready (an empty list when the student has no course)",
+      description:
+        "ready (an empty list when the student has no course and no open mentorship with an assignment); the rows also cover every assignment student.mentored-assignments.get would list",
       body: closed({
         assignments: Type.Array(
           closed({
@@ -201,6 +202,46 @@ export const studentAssignmentWorkGet = defineRoute({
           }),
         ),
       }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(503, "unavailable")],
+});
+
+// INT-31 (Ductus#2055): the assignments of the caller's open mentorships (a
+// thesis has no course, so student.assignments.get never lists it). A route of
+// its own, because a new member of student.assignments.get is a major release
+// of @ductura/contracts (scripts/release/README.md). The members are those of
+// MyAssignment; mentorshipId joins it to student.mentorships.get.
+const MentoredAssignment = closed({
+  id: Uuid,
+  mentorshipId: Uuid,
+  title: Type.String({ minLength: 1 }),
+  /** Due time of the current version. */
+  dueAt: Instant,
+  /** The current version's notice is not acknowledged yet; the work opens it first. */
+  noticeFirst: Type.Boolean(),
+  workType: WorkType,
+  /** The mentor, or null when the mentor's name is not recorded. */
+  mentor: Type.Union([closed(Person), Type.Null()]),
+  /** A later due time granted to the caller alone, or null; never earlier than dueAt. */
+  extendedDueAt: Type.Union([Instant, Type.Null()]),
+});
+
+export const studentMentoredAssignmentsGet = defineRoute({
+  id: "student.mentored-assignments.get",
+  method: "GET",
+  path: "/api/v1/student/mentored-assignments",
+  inventory: "app/api/student/mentored-assignments/route.ts",
+  access: "signed_in",
+  summary:
+    "The current version of every assignment of the caller's open mentorships whose mentor holds a confirmed teacher role: the works the caller may open by the mentorship relation, not by a course. By due time, then id. The identity comes from the session only. A row the read cannot vouch for makes the whole answer 503, never a partial list.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description:
+        "ready (an empty list when the student has no open mentorship with an assignment)",
+      body: closed({ assignments: Type.Array(MentoredAssignment) }),
     },
   ],
   errors: [error(401, "unauthorized"), error(503, "unavailable")],
@@ -439,6 +480,7 @@ export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
   studentAssignmentWorkGet,
+  studentMentoredAssignmentsGet,
   studentNoticeReadPost,
   studentNoticeGet,
   studentSubmissionGet,

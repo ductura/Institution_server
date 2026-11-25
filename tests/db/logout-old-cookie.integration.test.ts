@@ -75,6 +75,7 @@ import {
   createReceiptPdfRoutesFor,
   createStudentNoticeRouteFor,
   createStudentAssignmentsRouteFor,
+  createStudentMentoredAssignmentsRouteFor,
   createStudentAccessLogRouteFor,
   createStudentConversationsRouteFor,
   createStudentWriteRoutesFor,
@@ -1001,6 +1002,13 @@ const SESSION_ROUTES = {
   "student.assignments.get": {
     method: "GET",
     path: "/api/v1/student/assignments",
+    body: () => undefined,
+    live: 200,
+  },
+  // INT-31: the assignments of the caller's open mentorships; none here, so an empty list.
+  "student.mentored-assignments.get": {
+    method: "GET",
+    path: "/api/v1/student/mentored-assignments",
     body: () => undefined,
     live: 200,
   },
@@ -2368,6 +2376,7 @@ const FACTORIES = [
   "createReceiptPdfRoutesFor",
   "createStudentNoticeRouteFor",
   "createStudentAssignmentsRouteFor",
+  "createStudentMentoredAssignmentsRouteFor",
   "createStudentAccessLogRouteFor",
   "createStudentWriteRoutesFor",
   "createMeRouteFor",
@@ -2505,6 +2514,7 @@ const MOUNTED = [
   ...createReceiptPdfRoutesFor(databases.main, ORIGIN),
   createStudentNoticeRouteFor(databases.main),
   createStudentAssignmentsRouteFor(databases.main),
+  createStudentMentoredAssignmentsRouteFor(databases.main),
   createStudentAccessLogRouteFor(databases.main),
   ...createStudentWriteRoutesFor(databases.main),
   createMeRouteFor(databases.main),

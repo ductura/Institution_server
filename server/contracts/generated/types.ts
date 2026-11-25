@@ -1016,6 +1016,13 @@ export type Operations = {
     success: { status: 200; body: { "exceptions": ({ "id": string; "kind": "exception"; "untilAt": string; "reasonId": "justified" | "technical" | "agreement"; "createdAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "student.mentored-assignments.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "assignments": ({ "id": string; "mentorshipId": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor": { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
   "student.notice-read.post": {
     params: { "assignmentId": string };
     query: undefined;

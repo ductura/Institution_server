@@ -361,6 +361,8 @@ export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-re
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,
+  createStudentMentoredAssignmentsRoute,
+  createStudentMentoredAssignmentsRouteFor,
 } from "./student-assignments.ts";
 export {
   createStudentWriteRoutes,
