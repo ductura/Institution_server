@@ -75,6 +75,7 @@ import {
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
+  createFormatRulesRoutesFor,
   createReturnForRevisionRoutesFor,
   createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
@@ -715,6 +716,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createAssignmentTemplateRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createFormatRulesRoutesFor(databases.main)",
+    ids: ["student.assignment-format-rules.get"],
+    routes: () => createFormatRulesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createReturnForRevisionRoutesFor(databases.main)",
     ids: ["work.return-for-revision.post"],
     routes: () => createReturnForRevisionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -1091,6 +1097,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.work-template.put",
       "teacher.assignment-template.put",
       "student.assignment-template.get",
+      "student.assignment-format-rules.get",
       "work.return-for-revision.post",
       "work.source-notes.get",
       "work.source-notes.post",
