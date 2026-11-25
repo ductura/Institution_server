@@ -45,6 +45,7 @@ export {
   computeSheet,
   formatCellRef,
   parseCellRef,
+  roundResult,
   validateSheetDocument,
   type ComputedCell,
   type Sheet,

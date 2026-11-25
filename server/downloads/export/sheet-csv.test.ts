@@ -148,6 +148,12 @@ describe("renderSheetCsv", () => {
     expect(plainDecimal(123456789012345680000)).toBe("123456789012345680000");
   });
 
+  it("rounds a numeric literal to 15 significant digits as a formula result is", () => {
+    expect(
+      csv(doc(sheet(ID_A, "Demo", { ["A1"]: num(1.2345678901234567), ["B1"]: formula("=A1") }))),
+    ).toBe("\uFEFF1.23456789012346;1.23456789012346\r\n");
+  });
+
   it("exports the first sheet, or the named one, and refuses an unknown sheet", () => {
     const document = doc(
       sheet(ID_A, "Prvi", { ["A1"]: text("prvi") }),

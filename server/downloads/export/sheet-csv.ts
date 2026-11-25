@@ -12,6 +12,7 @@
 import {
   computeSheet,
   formatCellRef,
+  roundResult,
   parseCellRef,
   type ComputedCell,
   type Sheet,
@@ -53,7 +54,7 @@ function cellText(sheet: Sheet, ref: string, computed: Record<string, ComputedCe
         : { type: "text", value: cell.value }
       : computed[ref];
   if (result === undefined) return "";
-  if (result.type === "number") return plainDecimal(result.value);
+  if (result.type === "number") return plainDecimal(roundResult(result.value));
   if (result.type === "error") return result.code;
   return escapeText(result.value);
 }
