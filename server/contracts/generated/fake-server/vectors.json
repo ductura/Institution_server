@@ -31848,7 +31848,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.119.0",
+        "apiVersion": "1.120.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -31864,7 +31864,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.119.0",
+        "apiVersion": "1.120.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -48173,7 +48173,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": "agr-diplomski"
+        "lektaProfileId": "agr-diplomski",
+        "citationStyle": "apa"
       }
     }
   },
@@ -48203,7 +48204,8 @@
           "abbr",
           "hole"
         ],
-        "lektaProfileId": null
+        "lektaProfileId": null,
+        "citationStyle": "fpzg"
       }
     }
   },
