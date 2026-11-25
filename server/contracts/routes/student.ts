@@ -174,12 +174,13 @@ export const studentAssignmentWorkGet = defineRoute({
   inventory: "app/api/student/assignment-work/route.ts",
   access: "signed_in",
   summary:
-    "The state of the caller's own work for every assignment student.assignments.get or student.mentored-assignments.get would list at the same instant: one row per assignment, by assignmentId (lowercase). submitted: the caller has a recorded submission for the assignment, of any of its versions; in_progress: the caller has a work for it (one per student and assignment) and no recorded submission; not_started: no work. The two reads are separate, so a client joins them by lowercase id and shows no state for an assignment without a row on both sides. The identity comes from the session only. A row the read cannot vouch for makes the whole answer 503, never a partial list.",
+    "The state of the caller's own work for every assignment student.assignments.get would list at the same instant: one row per assignment, by assignmentId (lowercase). submitted: the caller has a recorded submission for the assignment, of any of its versions; in_progress: the caller has a work for it (one per student and assignment) and no recorded submission; not_started: no work. The two reads are separate, so a client joins them by lowercase id and shows no state for an assignment without a row on both sides. The identity comes from the session only. A row the read cannot vouch for makes the whole answer 503, never a partial list.",
   request: {},
   responses: [
     {
       status: 200,
-      description: "ready (an empty list when the student has no course)",
+      description:
+        "ready (an empty list when the student has no course and no open mentorship with an assignment); the rows also cover every assignment student.mentored-assignments.get would list",
       body: closed({
         assignments: Type.Array(
           closed({
