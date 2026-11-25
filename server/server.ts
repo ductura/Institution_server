@@ -217,12 +217,16 @@ const APP_ORIGIN = appOrigin(process.env);
 // Step 5 writes traffic.request through the log service into log_entry of the
 // logs database (ductus_logs_writer, the pool of metricSamples); the service
 // never throws and a request never waits for it (DAN-1536).
+// Without LOGS_DATABASE_URL every record would fail and put a log_store_failed
+// line on stderr, so traffic is recorded only where the logs database is set.
+const logsConfigured = (env: NodeJS.ProcessEnv): boolean =>
+  (env.LOGS_DATABASE_URL ?? "").trim() !== "";
 const layersFor = (databases: ReturnType<typeof createDatabases>) =>
   createLayers({
     expectedOrigin: APP_ORIGIN,
     trustedProxies: TRUSTED_PROXIES ?? [],
     rateLimiter: createAddressRateLimiter(rateLimitConfig.limits),
-    trafficLog: trafficLogFor(databases.metricSamples),
+    ...(logsConfigured(process.env) ? { trafficLog: trafficLogFor(databases.metricSamples) } : {}),
   });
 
 // SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
