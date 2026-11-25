@@ -851,6 +851,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  // SRV-NF4-POTVRDE-DORADE (Ductus#2055): notice and revision follow-up beside the overview; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/follow-up/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",

@@ -128,7 +128,11 @@ const TEACHER_READ_ROUTES = [
   "teacher.assignment-submissions.post",
 ] as const;
 
-const TEACHER_ROSTER_ROUTES = ["teacher.course-students.get", "teacher.assignment-overview.get"];
+const TEACHER_ROSTER_ROUTES = [
+  "teacher.course-students.get",
+  "teacher.assignment-overview.get",
+  "teacher.assignment-follow-up.get",
+];
 
 export const DAN_803: readonly string[] = [
   "student.assignments.get",
@@ -260,6 +264,7 @@ const SRV_MENTOR_2 = [
 const SRV_27 = [
   "teacher.course-students.get",
   "teacher.assignment-overview.get",
+  "teacher.assignment-follow-up.get",
   "teacher.submission-receipt.get",
   ...SRV_31,
 ] as const;

@@ -14,6 +14,7 @@ const TOKEN = "T".repeat(43);
 const COOKIE = `__Host-ductus_session=${TOKEN}`;
 const ROSTER = `/api/v1/teacher/courses/${ID}/students`;
 const OVERVIEW = `/api/v1/teacher/assignments/${ID}/overview`;
+const FOLLOW_UP = `/api/v1/teacher/assignments/${ID}/follow-up`;
 const student = { student_id: STUDENT, given_name: null, family_name: null, groupName: "Grupa B" };
 const minute = new Date("2026-11-20T12:34:00.000Z");
 
@@ -43,7 +44,7 @@ function get(path: string, headers: Record<string, string> = { cookie: COOKIE })
   return fetch(`http://127.0.0.1:${server.port}${path}`, { headers });
 }
 
-describe.each([ROSTER, OVERVIEW])("%s", (path) => {
+describe.each([ROSTER, OVERVIEW, FOLLOW_UP])("%s", (path) => {
   it.each(["nije-uuid", "%ZZ", "%00", "%2530", "%2F", `${ID}%0A`])(
     "returns the same empty answer for malformed %s and for a database refusal",
     async (id) => {
@@ -167,4 +168,105 @@ it("fails the entire overview for an invalid row after a valid one", async () =>
     rows: [unsubmitted, { ...unsubmitted, student_id: ID, requestedMinute: minute }],
   });
   expect((await get(OVERVIEW)).status).toBe(503);
+});
+
+describe("follow-up (SRV-NF4-POTVRDE-DORADE)", () => {
+  const STUDENT_2 = "00000000-0000-4000-8000-0000000000b2";
+  const window = new Date("2026-11-20T12:35:00.000Z");
+  const full = {
+    studentId: STUDENT,
+    noticeReadMinute: minute,
+    noticeAcknowledgedMinute: minute,
+    noticeVersionNo: 2,
+    revisionState: "responded",
+    revisionChangedWindow: window,
+    openRevisionCount: 1,
+    instruction: "izmisljena-uputa-koja-ne-izlazi",
+  };
+  const none = {
+    studentId: STUDENT_2,
+    noticeReadMinute: null,
+    noticeAcknowledgedMinute: null,
+    noticeVersionNo: null,
+    revisionState: null,
+    revisionChangedWindow: null,
+    openRevisionCount: 0,
+  };
+
+  // Database rows have snake_case columns; the test writes them in camelCase.
+  const row = (fields: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(fields).map(([key, value]) => [
+        key.replace(/[A-Z]/gu, (c) => `_${c.toLowerCase()}`),
+        value,
+      ]),
+    );
+
+  it("returns closed rows with minutes, the five-minute window and nulls", async () => {
+    query.mockResolvedValue({ rows: [row(full), row(none)] });
+    const answer = await get(FOLLOW_UP);
+    const body: unknown = await answer.json();
+    expect(answer.status).toBe(200);
+    expect(answer.headers.get("cache-control")).toBe("no-store");
+    expect(body).toEqual({
+      students: [
+        {
+          studentId: STUDENT,
+          noticeReadAt: minute.toISOString(),
+          noticeAcknowledgedAt: minute.toISOString(),
+          noticeVersionNo: 2,
+          revisionState: "responded",
+          revisionChangedAt: window.toISOString(),
+          openRevisionCount: 1,
+        },
+        {
+          studentId: STUDENT_2,
+          noticeReadAt: null,
+          noticeAcknowledgedAt: null,
+          noticeVersionNo: null,
+          revisionState: null,
+          revisionChangedAt: null,
+          openRevisionCount: 0,
+        },
+      ],
+    });
+    expect(Value.Check(routes[2]!.contract.responses[0]!.body!, body)).toBe(true);
+    expect(JSON.stringify(body)).not.toContain("izmisljena-uputa");
+  });
+
+  it.each([
+    ["a second in the read minute", { noticeReadMinute: new Date("2026-11-20T12:34:01.000Z") }],
+    ["text for a minute", { noticeReadMinute: minute.toISOString() }],
+    ["an acknowledgment without a version", { noticeVersionNo: null }],
+    ["a version without an acknowledgment", { noticeAcknowledgedMinute: null }],
+    ["version 0", { noticeVersionNo: 0 }],
+    ["a fractional version", { noticeVersionNo: 1.5 }],
+    ["a window off five minutes", { revisionChangedWindow: minute }],
+    ["a state without a window", { revisionChangedWindow: null }],
+    ["a window without a state", { revisionState: null }],
+    ["an unmapped state", { revisionState: "reopened" }],
+    ["a negative count", { openRevisionCount: -1 }],
+    ["a count as text", { openRevisionCount: "1" }],
+    ["an uppercase id", { studentId: STUDENT.toUpperCase() }],
+    ["a missing id", { studentId: null }],
+  ])("fails the entire answer for %s after a valid row", async (_, change) => {
+    query.mockResolvedValue({ rows: [row(none), row({ ...full, ...change })] });
+    const answer = await get(FOLLOW_UP);
+    expect(answer.status).toBe(503);
+    expect(await answer.text()).not.toContain(STUDENT_2);
+  });
+
+  it("fails the entire answer for a repeated student", async () => {
+    query.mockResolvedValue({ rows: [row(full), row({ ...none, studentId: STUDENT })] });
+    expect((await get(FOLLOW_UP)).status).toBe(503);
+  });
+
+  it("asks only app.assignment_follow_up for the path's assignment", async () => {
+    await get(FOLLOW_UP);
+    expect(query).toHaveBeenCalledExactlyOnceWith(
+      TOKEN,
+      expect.stringContaining("FROM app.assignment_follow_up($1::uuid)"),
+      [ID],
+    );
+  });
 });
