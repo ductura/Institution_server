@@ -119,6 +119,8 @@ SELECT bag_eq(
             ('collaboration.create_comment_template(text,text)'),
             ('collaboration.list_comment_templates()'),
             ('collaboration.delete_comment_template(uuid)'),
+            ('collaboration.create_comment_template(text,text,text)'),
+            ('collaboration.update_comment_template(uuid,text,text,text)'),
             ('collaboration.create_work_message(text,text)'),
             ('collaboration.list_work_messages(text)'),
             ('collaboration.list_working_criteria(text)'),

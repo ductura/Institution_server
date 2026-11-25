@@ -284,6 +284,24 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.assignment-late-submission.put:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.assignment-late-submission.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['lateSubmissionAllowed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "institution.assignment-team-setting.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1500,6 +1518,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.assignment-late-submission.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.assignment-requirements.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -2107,6 +2133,31 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.comment-bank-entry.put:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['entryId'] === 'string') &&
+      local0.test(value['entryId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.comment-bank-entry.put:body": (() => {
+  const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^(?=[^\u0000-\u001f\u007f-\u009f]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,40}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      (((value['kind'] === 'must')) || ((value['kind'] === 'sugg')) || ((value['kind'] === 'q')) || ((value['kind'] === 'praise'))) &&
+      (value['label'] !== undefined ? ((((typeof value['label'] === 'string') && local1.test(value['label'])) || ((value['label'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['text', 'kind', 'label'].includes(key))
+    )
+  }
+  })(),
   "teacher.comment-bank.delete:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -2120,13 +2171,15 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "teacher.comment-bank.post:body": (() => {
   const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^(?=[^\u0000-\u001f\u007f-\u009f]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,40}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['text'] === 'string') &&
       local0.test(value['text']) &&
       (((value['kind'] === 'must')) || ((value['kind'] === 'sugg')) || ((value['kind'] === 'q')) || ((value['kind'] === 'praise'))) &&
-      Object.getOwnPropertyNames(value).length === 2
+      (value['label'] !== undefined ? ((((typeof value['label'] === 'string') && local1.test(value['label'])) || ((value['label'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['text', 'kind', 'label'].includes(key))
     )
   }
   })(),

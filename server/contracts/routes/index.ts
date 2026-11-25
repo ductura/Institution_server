@@ -135,6 +135,7 @@ export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
+export { lateSubmissionRoutes } from "./late-submission.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {

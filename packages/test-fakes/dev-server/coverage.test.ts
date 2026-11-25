@@ -1905,6 +1905,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
   },
   "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank-entry.put": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmišljeno: dopunite izvor.", kind: "sugg", label: "Izvor" },
+    },
+  },
   "teacher.comment-bank.delete": {
     before: [BANK_STEP],
     request: {
@@ -2211,6 +2221,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "institution.assignment-late-submission.put": {
+    request: {
+      path: `/api/v1/institution/assignments/${IDS.assignment}/late-submission`,
+      as: "nastavnik",
+      method: "PUT",
+      body: { lateSubmissionAllowed: false },
+    },
+  },
+  "student.assignment-late-submission.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/late-submission`,
+      as: "student",
+      method: "GET",
     },
   },
   "teacher.declaration-question.get": {

@@ -148,6 +148,13 @@ export type Operations = {
     success: { status: 200; body: { "id": string; "groups": ({ "id": string; "name": string })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable" | "conflict";
   };
+  "institution.assignment-late-submission.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "lateSubmissionAllowed": boolean };
+    success: { status: 200; body: { "lateSubmissionAllowed": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "institution.assignment-team-setting.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -841,6 +848,13 @@ export type Operations = {
     success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.assignment-late-submission.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "lateSubmissionAllowed": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.assignment-requirements.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1198,6 +1212,13 @@ export type Operations = {
     success: { status: 200; body: { "useInstitutionTemplate": boolean; "version": number | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "not_found" | "conflict" | "invalid_input" | "unavailable";
   };
+  "teacher.comment-bank-entry.put": {
+    params: { "entryId": string };
+    query: undefined;
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise"; "label"?: string | null };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "teacher.comment-bank.delete": {
     params: { "entryId": string };
     query: undefined;
@@ -1209,13 +1230,13 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "createdAt": string })[] }; headers: {  } };
+    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "label"?: string | null; "createdAt": string })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "teacher.comment-bank.post": {
     params: undefined;
     query: undefined;
-    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise" };
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise"; "label"?: string | null };
     success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
