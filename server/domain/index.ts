@@ -49,4 +49,9 @@ export {
   type Sheet,
   type SheetDocument,
 } from "./sheet/index.ts";
-export { computeSheet, type ComputedCell } from "./sheet/formula/index.ts";
+export {
+  computeSheet,
+  parseFormula,
+  type ComputedCell,
+  type FormulaNode,
+} from "./sheet/formula/index.ts";

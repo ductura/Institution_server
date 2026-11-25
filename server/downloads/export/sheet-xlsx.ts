@@ -10,9 +10,11 @@ import {
   columnLabel,
   computeSheet,
   parseCellRef,
+  parseFormula,
   sheetDigest,
   validateSheetDocument,
   type ComputedCell,
+  type FormulaNode,
   type Sheet,
   type SheetDocument,
 } from "../../domain/index.ts";
@@ -54,6 +56,32 @@ export function escapeXml(text: string): string {
 }
 
 /**
+ * Text of a cell, a computed text or a sheet name as ST_Xstring reads it: a literal
+ * `_xHHHH_` would be read back as the character U+HHHH, so its underscore is escaped
+ * (`_x005F_`) before the markup is.
+ */
+export function xstring(text: string): string {
+  return escapeXml(text.replace(/_(?=[xX][0-9A-Fa-f]{4}_)/gu, "_x005F_"));
+}
+
+/** Whether the formula uses only what the server computes: no unknown name or function, no reference outside the grid. */
+function isSupportedFormula(node: FormulaNode): boolean {
+  switch (node.type) {
+    case "bad-name":
+    case "bad-ref":
+      return false;
+    case "unary":
+      return isSupportedFormula(node.operand);
+    case "binary":
+      return isSupportedFormula(node.left) && isSupportedFormula(node.right);
+    case "call":
+      return node.args.every(isSupportedFormula);
+    default:
+      return true;
+  }
+}
+
+/**
  * The formula as the file writes it: without the leading "=", and with function and
  * reference names in capitals outside text literals ("..." with "" for a quote), so
  * a reader that is strict about case reads what the server computed.
@@ -90,19 +118,26 @@ class SharedStrings {
 
   xml(): string {
     const items = this.list
-      .map((text) => `<si><t xml:space="preserve">${escapeXml(text)}</t></si>`)
+      .map((text) => `<si><t xml:space="preserve">${xstring(text)}</t></si>`)
       .join("");
     return `${XML_DECLARATION}<sst xmlns="${MAIN_NS}" count="${this.references}" uniqueCount="${this.list.length}">${items}</sst>`;
   }
 }
 
 function formulaResultCell(ref: string, formula: string, result: ComputedCell | undefined): string {
-  const f = `<f>${escapeXml(formulaForFile(formula))}</f>`;
+  // A formula the server does not compute (an unknown function such as WEBSERVICE, a
+  // reference outside the grid, bad syntax) is never written as a formula: a reader
+  // that calculates would run what the server refused. Only its error value is written.
+  const parsed = parseFormula(formula);
+  const f =
+    parsed.ok && isSupportedFormula(parsed.node)
+      ? `<f>${escapeXml(formulaForFile(formula))}</f>`
+      : "";
   if (result === undefined || result.type === "error") {
     return `<c r="${ref}" t="e">${f}<v>${escapeXml(result?.code ?? "#VALUE!")}</v></c>`;
   }
   if (result.type === "text") {
-    return `<c r="${ref}" t="str">${f}<v>${escapeXml(result.value)}</v></c>`;
+    return `<c r="${ref}" t="str">${f}<v>${xstring(result.value)}</v></c>`;
   }
   return `<c r="${ref}">${f}<v>${numberText(result.value)}</v></c>`;
 }
@@ -160,8 +195,7 @@ function contentTypesXml(sheets: number): string {
 function workbookXml(doc: SheetDocument): string {
   const sheets = doc.sheets
     .map(
-      (sheet, i) =>
-        `<sheet name="${escapeXml(sheet.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`,
+      (sheet, i) => `<sheet name="${xstring(sheet.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`,
     )
     .join("");
   return `${XML_DECLARATION}<workbook xmlns="${MAIN_NS}" xmlns:r="${REL_NS}"><bookViews><workbookView/></bookViews><sheets>${sheets}</sheets></workbook>`;
