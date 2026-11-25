@@ -15,6 +15,7 @@ import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
 import { MENTORSHIP_CONSULTATION_HANDLERS } from "./mentorship-consultation-routes.ts";
 import { KEY_DATES_HANDLERS } from "./key-dates.ts";
 import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
+import { WORK_TEAM_HANDLERS } from "./work-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -36,6 +37,7 @@ import { ASSIGNMENT_COPY_HANDLERS } from "./assignment-copy-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { EVENT_DISPUTE_HANDLERS } from "./event-dispute-routes.ts";
 import { ORIGIN_HANDLERS } from "./origin-routes.ts";
+import { PRACTICE_HANDLERS } from "./practice-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
@@ -120,7 +122,9 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTORSHIP_CONSULTATION_HANDLERS,
   ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
+  ...WORK_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
+  ...PRACTICE_HANDLERS,
   ...THESIS_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,

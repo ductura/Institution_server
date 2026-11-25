@@ -2058,6 +2058,8 @@ export const hr = {
     versionConflict:
       "Zadatak je u međuvremenu promijenjen. Učitajte zadnju verziju pa pokušajte ponovno.",
     practiceAssignment: "Probni zadatak nema ocjenu.",
+    placementClosed: "Datum zapisa nije unutar razdoblja prakse.",
+    nothingToSign: "Do odabranog datuma nema zapisa za potpis.",
     alreadySubmitted: "Rad je već predan, pa se izjava više ne može mijenjati.",
     attachmentStale: "Priloženi razgovor se u međuvremenu promijenio. Priložite ga ponovno.",
     attachmentsTooLarge: "Prilozi izjave zajedno su preveliki.",
