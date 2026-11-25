@@ -58,12 +58,12 @@ it("reads the current version only as a teacher of the assignment under PostgreS
       },
     });
     // The creation flags are fixed once set (assignment_setup_immutable), so
-    // the fixture row is switched with the guard off, as the owner of the table.
+    // the fixture row is switched with triggers off for this one statement.
     await db.exec(`
-      ALTER TABLE institution.assignment DISABLE TRIGGER assignment_setup_immutable;
+      SET session_replication_role = replica;
       UPDATE institution.assignment SET external_tools_allowed = true, ai_summary_only = true
        WHERE id = '${ASSIGNMENT_ID}';
-      ALTER TABLE institution.assignment ENABLE TRIGGER assignment_setup_immutable;
+      RESET session_replication_role;
     `);
     expect(await readAssignmentCurrentVersion(withActor, teacher, ASSIGNMENT_ID)).toMatchObject({
       kind: "found",

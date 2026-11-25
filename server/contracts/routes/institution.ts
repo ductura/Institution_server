@@ -458,7 +458,7 @@ export const assignmentGet = defineRoute({
   inventory: "app/api/institution/assignments/[assignmentId]/route.ts",
   access: "course_teacher",
   summary:
-    "The current version of an assignment, for a teacher of its course: its number and whole content as institution.assignment-versions.post takes it, instants as Date.toISOString writes them. externalToolsAllowed and aiSummaryOnly are those of the creation (migration 20261219210000), always sent; groupIds is that of the creation, absent until the server stores it. Sec-Fetch-Site, when sent, other than same-origin is 403; a malformed id is 422; another course's assignment, an unknown one and any caller who is not a teacher of its course are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+    "The current version of an assignment, for a teacher of its course: its number and whole content as institution.assignment-versions.post takes it, instants as Date.toISOString writes them. groupIds, externalToolsAllowed and aiSummaryOnly are those of the creation, absent until the server stores them. Sec-Fetch-Site, when sent, other than same-origin is 403; a malformed id is 422; another course's assignment, an unknown one and any caller who is not a teacher of its course are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
   request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
   responses: [
     {
