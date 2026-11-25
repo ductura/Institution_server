@@ -7,4 +7,4 @@
 - Pristup iz odnosa (C-23): otvoreni član predmeta s ulogom nastavnika (potvrđena, neopozvana) ili mentor otvorenog mentorstva; student je otvoreni član predmeta ili student otvorenog mentorstva. Tuđi, nepoznat i iz druge ustanove: isti `ZD404`.
 - Odvojeno od privatnih radnih kriterija mentora (SRV-1107), koje student ne čita.
 
-PgTAP: `db/main/tests/247-assignment-rubric.sql` i redci u `030-institution-access-matrix.sql`.
+PgTAP: `db/main/tests/250-assignment-rubric.sql` i redci u `030-institution-access-matrix.sql`.

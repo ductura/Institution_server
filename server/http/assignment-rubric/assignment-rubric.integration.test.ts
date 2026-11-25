@@ -1,5 +1,5 @@
 // SRV-V17-RUBRIC-DEF: the three rubric routes on a real server and pipeline, over a fake
-// withActor that answers like the database (the SQL itself is db/main/tests/247-assignment-rubric.sql):
+// withActor that answers like the database (the SQL itself is db/main/tests/250-assignment-rubric.sql):
 // a teacher reads and adds versions, a student reads (the six default criteria while none is set),
 // everyone else reads 404, a stale version is 409, input outside the contract is 422, and nobody
 // reads a mark, a number or a grade.
@@ -7,6 +7,8 @@ import { request as httpRequest } from "node:http";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { WORKING_CRITERION_IDS } from "../../contracts/index.ts";
+import { defaultRubricCriteria } from "../../database/index.ts";
 import { createDatabases, createLayers, type Running, startServer } from "../index.ts";
 
 import { createAssignmentRubricRoutesFor } from "./index.ts";
@@ -123,6 +125,10 @@ const put = (
 ) => call("PUT", teacherUrl(id), token, JSON.stringify({ expectedVersion, criteria }));
 
 describe("assignment rubric", () => {
+  it("defaults to exactly the working criteria of the mentor, in their order", () => {
+    expect(defaultRubricCriteria().map((c) => c.id)).toEqual([...WORKING_CRITERION_IDS]);
+  });
+
   it("counts an accepted PUT as session activity, and nothing else", async () => {
     await call("GET", teacherUrl(ASSIGNMENT), TEACHER);
     await put(TEACHER, 0, []); // refused: 422
