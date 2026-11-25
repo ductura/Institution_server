@@ -105,6 +105,12 @@ export {
   ThesisTopicInput,
   thesisTopicRoutes,
 } from "./thesis-topic.ts";
+export {
+  THESIS_COMMITTEE_MAX_MEMBERS,
+  THESIS_COMMITTEE_ROLES,
+  ThesisCommitteeInput,
+  thesisCommitteeRoutes,
+} from "./thesis-committee.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export {

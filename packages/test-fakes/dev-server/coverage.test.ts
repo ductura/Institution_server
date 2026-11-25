@@ -678,6 +678,24 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { version: 1, decision: "approved" },
     },
   },
+  // SRV-V16-POVJERENSTVO-ZAPIS: the committee of a thesis as a list kept with the work.
+  "work.thesis-committee.get": {
+    request: { path: `/api/v1/works/${IDS.document}/thesis-committee`, as: "student" },
+  },
+  "work.thesis-committee.put": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/thesis-committee`,
+      as: "administrator",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        members: [
+          { userId: IDS.teacher, role: "chair" },
+          { userId: IDS.teacher2, role: "member" },
+        ],
+      },
+    },
+  },
   "mentorship.request-approve.post": {
     before: [REQUEST_MENTORSHIP],
     request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },

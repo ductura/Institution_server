@@ -22,6 +22,7 @@ export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export { createThesisTopicRoutesFor } from "./thesis-topic/index.ts";
+export { createThesisCommitteeRoutesFor } from "./thesis-committee/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,

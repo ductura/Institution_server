@@ -2381,6 +2381,20 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "quote": string | null; "page": string | null; "note": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
+  "work.thesis-committee.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "members": ({ "userId": string; "name": { "givenName": string; "familyName": string } | null; "role": "chair" | "member" })[]; "changedAt": string | null; "changedByPart": "faculty" | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.thesis-committee.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "members": ({ "userId": string; "role": "chair" | "member" })[] };
+    success: { status: 200; body: { "members": ({ "userId": string; "name": { "givenName": string; "familyName": string } | null; "role": "chair" | "member" })[]; "changedAt": string | null; "changedByPart": "faculty" | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "unsupported_media_type" | "invalid_input";
+  };
   "work.thesis-form.put": {
     params: { "documentId": string; "code": string };
     query: undefined;
