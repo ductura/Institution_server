@@ -129,7 +129,6 @@ describe("parseSlideStep", () => {
       { ...heading, slot: "body", extra: 1 },
       { ...heading, slot: "nowhere" },
       { ...heading, slot: "subtitle" }, // slot does not take a heading
-      { ...heading, id: "00000000-0000-4000-8000-0000000000aa" },
       {
         type: "image",
         id: IMG,
@@ -641,5 +640,67 @@ describe("applySlideSteps", () => {
       ok: false,
       error: "result_invalid",
     });
+  });
+
+  it("accepts a block whose id equals the parser's probe slide id", () => {
+    for (const id of [
+      "00000000-0000-4000-8000-0000000000aa",
+      "00000000-0000-4000-8000-0000000000bb",
+    ]) {
+      const block: SlideBlock = { ...heading, id };
+      const parsed = parseSlideStep({ type: "blockSet", slideId: S1, index: 0, block });
+      expect(parsed.ok).toBe(true);
+      if (parsed.ok)
+        expect(applySlideStep(slidesRevisionZeroDocument(), parsed.step).ok).toBe(true);
+    }
+  });
+
+  it("refuses a step whose result is over the snapshot byte limit", () => {
+    const sid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const bid = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}`;
+    const filler = "\u{1f600}".repeat(1200); // 4800 bytes of UTF-8, JCS keeps them as is
+    const paragraphAt = (n: number): SlideBlock => ({
+      type: "paragraph",
+      id: bid(n),
+      slot: "body",
+      text: filler,
+    });
+    // A valid deck close to the cap, built directly: 50 slides of 8 paragraphs
+    // is 400 blocks, about 1.92 MB, under 2 MiB.
+    const slides = Array.from({ length: 50 }, (_, s) => ({
+      id: s === 0 ? S1 : sid(s),
+      layout: "titleContent" as const,
+      blocks: Array.from({ length: 8 }, (_, b) => paragraphAt(s * 8 + b + 1)),
+    }));
+    const doc = validateSlidesDocument({ documentKind: "slides", schemaVersion: 1, slides });
+    if (!doc.ok) throw new Error("fixture invalid");
+    let current = doc.doc;
+    expect(Buffer.byteLength(slidesSnapshotText(current), "utf8")).toBeLessThan(2 * 1024 * 1024);
+    let refused: ReturnType<typeof applySlideStep> | null = null;
+    for (let s = 50; s < 60 && refused === null; s += 1) {
+      const added = applySlideStep(current, {
+        type: "slideAdd",
+        slideId: sid(s),
+        layout: "titleContent",
+        index: s,
+      });
+      if (!added.ok) throw new Error("add refused");
+      current = added.doc;
+      for (let b = 0; b < 8 && refused === null; b += 1) {
+        const step: SlideStep = {
+          type: "blockSet",
+          slideId: sid(s),
+          index: b,
+          block: paragraphAt(s * 8 + b + 1),
+        };
+        const result = applySlideStep(current, step);
+        if (result.ok) current = result.doc;
+        else refused = result;
+      }
+    }
+    expect(refused).toEqual({ ok: false, error: "too_large" });
+    expect(Buffer.byteLength(slidesSnapshotText(current), "utf8")).toBeLessThanOrEqual(
+      2 * 1024 * 1024,
+    );
   });
 });

@@ -7,7 +7,13 @@ import { createHash } from "node:crypto";
 
 import { canonicalizeJcs } from "../forensics/index.ts";
 
-import { LAYOUT_SLOTS, type Slide, type SlideBlock, type SlidesDocument } from "./schema.ts";
+import {
+  LAYOUT_SLOTS,
+  MAX_SLIDES_SNAPSHOT_BYTES,
+  type Slide,
+  type SlideBlock,
+  type SlidesDocument,
+} from "./schema.ts";
 import { slideTextSha256, type SlideStep } from "./steps.ts";
 import { validateSlidesDocument } from "./validate.ts";
 
@@ -21,7 +27,8 @@ export type ApplySlideStepErrorCode =
   | "hash_mismatch"
   | "target_invalid"
   | "no_change"
-  | "result_invalid";
+  | "result_invalid"
+  | "too_large";
 
 export type ApplySlideStep =
   { ok: true; doc: SlidesDocument } | { ok: false; error: ApplySlideStepErrorCode };
@@ -150,6 +157,11 @@ export function applySlideSteps(doc: SlidesDocument, steps: readonly SlideStep[]
     // so a later step never sees a state the contract forbids.
     const checked = validateSlidesDocument(draft);
     if (!checked.ok) return { ok: false, error: "result_invalid", index };
+    // The snapshot cap is not a structural rule of the validator; a document
+    // that `verifySlidesSnapshot` would refuse as too large is never a result.
+    if (Buffer.byteLength(canonicalizeJcs(checked.doc), "utf8") > MAX_SLIDES_SNAPSHOT_BYTES) {
+      return { ok: false, error: "too_large", index };
+    }
     draft = checked.doc;
   }
   return { ok: true, doc: draft };

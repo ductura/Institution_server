@@ -161,6 +161,9 @@ export function slideTextSha256(text: string): string {
  * A block as the document validator sees it: put alone in a probe slide whose
  * layout has the block's slot. Returns a fresh, known-keys-only copy, or null.
  */
+const PROBE_SLIDE_ID = "00000000-0000-4000-8000-0000000000aa";
+const OTHER_PROBE_SLIDE_ID = "00000000-0000-4000-8000-0000000000bb";
+
 function checkBlock(raw: unknown): SlideBlock | null {
   if (!isPlainObject(raw)) return null;
   const slot = ownProperty(raw, "slot");
@@ -168,8 +171,8 @@ function checkBlock(raw: unknown): SlideBlock | null {
     (LAYOUT_SLOTS[candidate] as readonly unknown[]).includes(slot),
   );
   if (layout === undefined) return null;
-  const probeId = "00000000-0000-4000-8000-0000000000aa";
-  if (ownProperty(raw, "id") === probeId) return null;
+  // A probe slide id that differs from the block's id, so no valid block id is excluded.
+  const probeId = ownProperty(raw, "id") === PROBE_SLIDE_ID ? OTHER_PROBE_SLIDE_ID : PROBE_SLIDE_ID;
   const probe = validateSlidesDocument({
     documentKind: "slides",
     schemaVersion: 1,
