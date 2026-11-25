@@ -21,6 +21,7 @@ import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
+import { FAKE_TEAM_ID } from "./work-team-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
@@ -227,6 +228,23 @@ const SET_TEAM: Step = {
   as: "nastavnik",
   headers: ORIGIN,
   body: { assistantIds: [IDS.teacher2] },
+};
+const WORK_TEAM_BASE = `/api/v1/student/assignments/${IDS.assignment}/team`;
+const TEACHER_TEAMS = `/api/v1/teacher/assignments/${IDS.assignment}/teams`;
+const TEAM_SETTING_PATH = `/api/v1/institution/assignments/${IDS.assignment}/team-setting`;
+const TEAMS_ON = { enabled: true, minSize: 2, maxSize: 4, formation: "student_choice" } as const;
+const TEAMS_ON_STEP: Step = {
+  path: TEAM_SETTING_PATH,
+  method: "PUT",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: TEAMS_ON,
+};
+const TEAM_CREATE_STEP: Step = {
+  path: WORK_TEAM_BASE,
+  as: "student",
+  headers: ORIGIN,
+  body: { action: "create" },
 };
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
@@ -957,6 +975,45 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  // SRV-V19-GRUPA-UGOVOR: work teams; the first team of a fake state has FAKE_TEAM_ID.
+  "institution.assignment-team-setting.put": { request: TEAMS_ON_STEP },
+  "institution.assignment-team-setting.get": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEAM_SETTING_PATH, as: "nastavnik" },
+  },
+  "student.work-team.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: WORK_TEAM_BASE, as: "student" },
+  },
+  "student.work-team.post": { before: [TEAMS_ON_STEP], request: TEAM_CREATE_STEP },
+  "teacher.work-teams.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik" },
+  },
+  "teacher.work-teams.post": {
+    before: [TEAMS_ON_STEP],
+    request: { path: TEACHER_TEAMS, as: "nastavnik", headers: ORIGIN, body: {} },
+  },
+  "teacher.work-team-member.post": {
+    prepare: (state) => {
+      state.courses.find((course) => course.id === IDS.course)?.studentIds.push(IDS.student2);
+    },
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: {
+      path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/members`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { studentId: IDS.student2, action: "add" },
+    },
+  },
+  "student.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${WORK_TEAM_BASE}/contribution`, as: "student" },
+  },
+  "teacher.work-team-contribution.get": {
+    before: [TEAMS_ON_STEP, TEAM_CREATE_STEP],
+    request: { path: `${TEACHER_TEAMS}/${FAKE_TEAM_ID}/contribution`, as: "nastavnik" },
+  },
   "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
   "institution.teaching-team-view.get": { request: { path: `${TEAM}/view`, as: "nastavnik" } },
   "institution.teaching-team.post": { request: SET_TEAM },
@@ -1405,6 +1462,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/works/${IDS.document}/milestone-plan/apply-template`,
       as: "nastavnik",
       headers: ORIGIN,
+    },
+  },
+  "institution.work-template.get": {
+    request: { path: "/api/v1/institution/work-templates/seminar_paper", as: "administrator" },
+  },
+  "institution.work-template.put": {
+    request: {
+      method: "PUT",
+      path: "/api/v1/institution/work-templates/seminar_paper",
+      as: "administrator",
+      headers: ORIGIN,
+      body: {
+        expectedVersion: 0,
+        titlePage: ["title", "author", "mentor"],
+        sections: [
+          { title: "Uvod", hint: "Predstavite temu i pitanje rada." },
+          { title: "Zaključak", hint: "" },
+        ],
+        citationStyle: "fpzg",
+      },
     },
   },
   "work.milestone-states.get": {

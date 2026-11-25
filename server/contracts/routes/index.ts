@@ -74,6 +74,12 @@ export {
   milestoneTemplateRoutes,
 } from "./milestone-template.ts";
 export {
+  WORK_TEMPLATE_TYPES,
+  WorkTemplateInput,
+  WorkTemplateType,
+  workTemplateRoutes,
+} from "./work-template.ts";
+export {
   ReturnForRevisionInput,
   ReturnForRevisionResult,
   returnForRevisionRoutes,
@@ -174,6 +180,20 @@ export {
 export { StudentWork, studentWorkRoutes } from "./student-work.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
+export {
+  institutionAssignmentTeamSettingPut,
+  studentWorkTeamContributionGet,
+  studentWorkTeamPost,
+  teacherWorkTeamContributionGet,
+  teacherWorkTeamMemberPost,
+  WORK_TEAM_CATEGORIES,
+  WORK_TEAM_FORMATIONS,
+  WORK_TEAM_NOTICE,
+  WORK_TEAM_SIZE_MAX,
+  WORK_TEAM_SIZE_MIN,
+  WORK_TEAM_WORK_STATES,
+  workTeamRoutes,
+} from "./work-team.ts";
 export {
   MentorNoteInput,
   MentorshipNoteParams,
