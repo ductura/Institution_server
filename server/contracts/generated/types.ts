@@ -365,6 +365,13 @@ export type Operations = {
     success: { status: 200; body: { "importId": string; "source": "merlin" | "isvu"; "expiresAt": string; "counts": { "new": number; "alreadyEnrolled": number; "unsuitable": number }; "rows": ({ "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "new"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "already_enrolled"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "unsuitable"; "reason": "invalid_identifier" | "missing_name" | "duplicate" | "unknown_account" | "ineligible_account" | "name_mismatch" | "removed" | "course_teacher" })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "not_found" | "unavailable" | "roster_columns_missing" | "roster_too_many_rows" | "roster_malformed";
   };
+  "institution.student-data-export-students.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "exports": ({ "exportId": string; "studentId": string; "state": "requested" | "approved" | "ready" | "downloaded" | "expired" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "institution.student-data-exports-approve.post": {
     params: { "exportId": string };
     query: undefined;
@@ -992,7 +999,7 @@ export type Operations = {
     params: { "taskId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "rubrics": ({ "key": string; "label": string })[]; "document": { "revision": number; "blocks": ({ "kind": "paragraph" | "heading" | "quote" | "list_item"; "text": string })[] } }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "rubrics": ({ "key": string; "label": string })[]; "document": { "blocks": ({ "kind": "paragraph" | "heading" | "quote" | "list_item"; "text": string })[] } }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.peer-review.post": {

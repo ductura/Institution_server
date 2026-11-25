@@ -2094,6 +2094,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "institution.student-data-exports.get": {
     request: { path: "/api/v1/institution/student-data-exports", as: "bez-uloge" },
   },
+  "institution.student-data-export-students.get": {
+    request: { path: "/api/v1/institution/student-data-export-students", as: "bez-uloge" },
+  },
   "institution.student-data-exports.post": {
     request: {
       path: "/api/v1/institution/student-data-exports",

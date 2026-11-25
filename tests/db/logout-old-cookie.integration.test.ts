@@ -32,6 +32,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createPracticeJournalRoutesFor,
   createThesisRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
@@ -800,6 +801,45 @@ const SESSION_ROUTES = {
   "mentorship.notes.post": {
     path: `/api/v1/mentorships/${randomUUID()}/notes`,
     body: () => ({ body: "Izmisljena biljeska." }),
+    live: 404,
+  },
+  // SRV-V19-DNEVNIK-RUTE: a live session with no part in any practice reads 404 (or an empty list).
+  "practice.placements.post": {
+    path: "/api/v1/practice/placements",
+    body: () => ({
+      mentorshipId: randomUUID(),
+      organisationName: "Izmisljena organizacija",
+      startsOn: "2026-10-01",
+      endsOn: "2026-12-01",
+    }),
+    live: 404,
+  },
+  "practice.placements.get": {
+    method: "GET",
+    path: "/api/v1/practice/placements",
+    body: () => undefined,
+    live: 200,
+  },
+  "practice.entries.get": {
+    method: "GET",
+    path: `/api/v1/practice/placements/${randomUUID()}/entries`,
+    body: () => undefined,
+    live: 404,
+  },
+  "practice.entries.post": {
+    path: `/api/v1/practice/placements/${randomUUID()}/entries`,
+    body: () => ({ date: "2026-11-02", hours: 4, text: "Izmisljeni zapis." }),
+    live: 404,
+  },
+  "practice.signoffs.post": {
+    path: `/api/v1/practice/placements/${randomUUID()}/signoffs`,
+    body: () => ({ throughDate: "2026-11-02" }),
+    live: 404,
+  },
+  "practice.signoffs.get": {
+    method: "GET",
+    path: `/api/v1/practice/placements/${randomUUID()}/signoffs`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-MENTOR-2: a live session with no part in any thesis.
@@ -1691,6 +1731,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-NF7-IZVOZ-STUDENT: the same reach as the list, so the same 200 with none.
+  "institution.student-data-export-students.get": {
+    method: "GET",
+    path: "/api/v1/institution/student-data-export-students",
+    body: () => undefined,
+    live: 200,
+  },
   "institution.student-data-exports.post": {
     path: "/api/v1/institution/student-data-exports",
     body: () => ({
@@ -2138,6 +2185,7 @@ const FACTORIES = [
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
+  "createPracticeJournalRoutesFor",
   "createThesisRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -2267,6 +2315,7 @@ const MOUNTED = [
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
+  ...createPracticeJournalRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -2570,6 +2619,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("student-work.") ||
         id.startsWith("work.") ||
         id.startsWith("mentorship.") ||
+        id.startsWith("practice.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : id.startsWith("ops.")
