@@ -1207,6 +1207,100 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length <= 0
     )
   }),
+  "practice.entries.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['placementId'] === 'string') &&
+      local0.test(value['placementId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "practice.entries.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['placementId'] === 'string') &&
+      local0.test(value['placementId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "practice.entries.post:body": (() => {
+  const local0 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,4000}(?![\s\S])/;
+  const local2 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['date'] === 'string') &&
+      local0.test(value['date']) &&
+      (((value['hours'] === 0.5)) || ((value['hours'] === 1)) || ((value['hours'] === 1.5)) || ((value['hours'] === 2)) || ((value['hours'] === 2.5)) || ((value['hours'] === 3)) || ((value['hours'] === 3.5)) || ((value['hours'] === 4)) || ((value['hours'] === 4.5)) || ((value['hours'] === 5)) || ((value['hours'] === 5.5)) || ((value['hours'] === 6)) || ((value['hours'] === 6.5)) || ((value['hours'] === 7)) || ((value['hours'] === 7.5)) || ((value['hours'] === 8)) || ((value['hours'] === 8.5)) || ((value['hours'] === 9)) || ((value['hours'] === 9.5)) || ((value['hours'] === 10)) || ((value['hours'] === 10.5)) || ((value['hours'] === 11)) || ((value['hours'] === 11.5)) || ((value['hours'] === 12))) &&
+      (typeof value['text'] === 'string') &&
+      local1.test(value['text']) &&
+      (value['correctsEntryId'] !== undefined ? ((typeof value['correctsEntryId'] === 'string') && local2.test(value['correctsEntryId'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['date', 'hours', 'text', 'correctsEntryId'].includes(key))
+    )
+  }
+  })(),
+  "practice.placements.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  const local1 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,120}(?<!\s)(?![\s\S])/;
+  const local2 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\s\S])/;
+  const local3 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['mentorshipId'] === 'string') &&
+      local0.test(value['mentorshipId']) &&
+      (typeof value['organisationName'] === 'string') &&
+      local1.test(value['organisationName']) &&
+      (typeof value['startsOn'] === 'string') &&
+      local2.test(value['startsOn']) &&
+      (typeof value['endsOn'] === 'string') &&
+      local3.test(value['endsOn']) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
+  "practice.signoffs.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['placementId'] === 'string') &&
+      local0.test(value['placementId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "practice.signoffs.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['placementId'] === 'string') &&
+      local0.test(value['placementId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "practice.signoffs.post:body": (() => {
+  const local0 = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,1000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['throughDate'] === 'string') &&
+      local0.test(value['throughDate']) &&
+      (value['comment'] !== undefined ? ((typeof value['comment'] === 'string') && local1.test(value['comment'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['throughDate', 'comment'].includes(key))
+    )
+  }
+  })(),
   "profile.interface-locale.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1871,6 +1965,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "teacher.assignment-follow-up.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "teacher.assignment-grade.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
