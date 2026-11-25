@@ -213,6 +213,11 @@ export {
   type QuestionnaireResponsesPort,
 } from "./questionnaire-responses.ts";
 export {
+  createQuestionnaireExportRoutes,
+  createQuestionnaireExportRoutesFor,
+  type QuestionnaireExportPort,
+} from "./questionnaire-export.ts";
+export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
 } from "./declaration-question.ts";

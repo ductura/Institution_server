@@ -139,6 +139,7 @@ export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
+export { questionnaireExportRoutes } from "./questionnaire-export.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {

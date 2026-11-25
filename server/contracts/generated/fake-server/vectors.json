@@ -36597,7 +36597,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.142.0",
+        "apiVersion": "1.143.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -36613,7 +36613,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.142.0",
+        "apiVersion": "1.143.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -76515,6 +76515,205 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-00000000d204"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "export",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "schema": "questionnaire-export-v1",
+        "questionnaireId": "00000000-0000-4000-8000-0000000000b1",
+        "variables": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "order": 1,
+            "kind": "single",
+            "label": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "order": 2,
+            "kind": "scale",
+            "label": "Koliko vam je kompostiranje važno?",
+            "options": []
+          }
+        ],
+        "rows": [
+          {
+            "n": 1,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": 4
+            }
+          },
+          {
+            "n": 2,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": null
+            }
+          },
+          {
+            "n": 3,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "ne",
+              "00000000-0000-4000-8000-0000000000f2": 2
+            }
+          },
+          {
+            "n": 4,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": null,
+              "00000000-0000-4000-8000-0000000000f2": 3
+            }
+          },
+          {
+            "n": 5,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": 5
+            }
+          }
+        ],
+        "responseCount": 5,
+        "includesText": false
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258ad01"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "bad-include-text",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "query": {
+        "includeText": "da"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258ad02"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000258ad03"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "too-few-responses",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-00000258ad04"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258ad05"
       }
     }
   },

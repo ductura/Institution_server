@@ -141,6 +141,7 @@ import {
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -434,6 +435,8 @@ async function main(): Promise<void> {
       ...createCourseAssistantRoutesFor(databases.main),
       // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.
       ...createQuestionnaireResponsesRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-IZVOZ: the author reads the answers as questionnaire-export-v1.
+      ...createQuestionnaireExportRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),

@@ -1653,6 +1653,13 @@ export type Operations = {
     success: { status: 200; body: { "rows": ({ "familyName": string; "givenName": string; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": string; "givenName": string; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string } | { "familyName": null; "givenName": null; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": null; "givenName": null; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string })[]; "extensionReasons": ({ "studentId": string | null; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.questionnaire-export.get": {
+    params: { "id": string };
+    query: { "includeText"?: "true" | "false"; [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "schema": "questionnaire-export-v1"; "questionnaireId": string; "variables": ({ "questionId": string; "order": number; "kind": "single" | "multiple" | "scale" | "number" | "text"; "label": string; "options": ({ "code": string; "label": string })[] })[]; "rows": ({ "n": number; "values": { [key: string]: unknown } })[]; "responseCount": number; "includesText": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
   "teacher.questionnaire-manual-responses.post": {
     params: { "id": string };
     query: undefined;

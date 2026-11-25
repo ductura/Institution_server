@@ -138,6 +138,7 @@ import {
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1627,6 +1628,13 @@ const SESSION_ROUTES = {
     body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
     live: 404,
   },
+  // SRV-V18-UPITNIK-IZVOZ: a live session with no such questionnaire gets 404.
+  "teacher.questionnaire-export.get": {
+    method: "GET",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/export`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -2518,6 +2526,7 @@ const FACTORIES = [
   "createLateSubmissionRoutesFor",
   "createCourseAssistantRoutesFor",
   "createQuestionnaireResponsesRoutesFor",
+  "createQuestionnaireExportRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2660,6 +2669,7 @@ const MOUNTED = [
   ...createLateSubmissionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
   ...createQuestionnaireResponsesRoutesFor(databases.main),
+  ...createQuestionnaireExportRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

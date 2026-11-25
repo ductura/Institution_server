@@ -599,6 +599,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
   },
+  // SRV-V18-UPITNIK-IZVOZ (Ductus#2058; val 18, V18-4): the author reads the answers as questionnaire-export-v1.
+  "app/api/teacher/questionnaires/[id]/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173573927",
+  },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
     methods: ["GET", "PUT"],

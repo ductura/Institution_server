@@ -1784,6 +1784,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { answers: [{ questionId: "b1000000-0000-4000-8000-000000000002", value: 4 }] },
     },
   },
+  // SRV-V18-UPITNIK-IZVOZ
+  "teacher.questionnaire-export.get": {
+    request: {
+      path: "/api/v1/teacher/questionnaires/b0000000-0000-4000-8000-000000000001/export",
+      as: "nastavnik",
+    },
+  },
   "teacher.course-assistant.get": {
     request: { path: `/api/v1/teacher/courses/${IDS.course}/assistant`, as: "nastavnik" },
   },
