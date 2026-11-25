@@ -176,6 +176,23 @@ describe("runAnalysis: refuses", () => {
       "variable_count",
     );
     expect(await problem({ variables: [] })).toBe("variable_count");
+    const wide = Array.from({ length: 13 }, (_, i) => `v${i}`);
+    expect(
+      await problem({
+        variables: wide,
+        columns: wide.map((name) => ({ name, kind: "numeric" })),
+        rows: [wide.map(() => 1)],
+      }),
+    ).toBe("dataset_invalid");
+    // 12 columns are allowed, 13 variables over them are not: more variables than the registry takes.
+    const twelve = wide.slice(0, 12);
+    expect(
+      await problem({
+        variables: [...twelve, twelve[0]],
+        columns: twelve.map((name) => ({ name, kind: "numeric" })),
+        rows: [twelve.map(() => 1)],
+      }),
+    ).toBe("variable_count");
     expect(await problem({ variables: [1] })).toBe("variables_invalid");
     expect(await problem({ variables: "sati" })).toBe("variables_invalid");
   });
