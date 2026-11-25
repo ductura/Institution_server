@@ -15,6 +15,8 @@ export * from "./assistant/index.ts";
 export * from "./declaration/index.ts";
 export * from "./export-snapshot/index.ts";
 export * from "./provenance-share/index.ts";
+// SRV-V19-DNEVNIK-RUTE: the digest and the input checks of the practice journal.
+export * from "./practice-journal/index.ts";
 // SRV-1230: the deterministic match with an answer of the assistant.
 export * from "./assistant-match/index.ts";
 export * from "./retention/index.ts";
