@@ -33,6 +33,10 @@ function codebookOf(state: State, accountId: string): Code[] {
   return book;
 }
 
+/** The codes of an account, for the routes that mark passages with them (SRV-V18-KODIRANJE-OZNAKE). */
+export const fakeQualCodebookOf = (state: State, accountId: string): readonly Code[] =>
+  codebookOf(state, accountId);
+
 const renumber = (book: Code[]): void => book.forEach((code, index) => (code.order = index + 1));
 const sameName = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 

@@ -44,6 +44,7 @@ import {
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
   createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDirectEditRoutesFor,
   createDownloadsManifestRoute,
@@ -617,6 +618,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createLateSubmissionRoutesFor", () => createLateSubmissionRoutesFor(STAND_IN)],
   ["createCourseAssistantRoutesFor", () => createCourseAssistantRoutesFor(STAND_IN)],
   ["createQualitativeMaterialsRoutesFor", () => createQualitativeMaterialsRoutesFor(STAND_IN)],
+  ["createQualitativeSegmentsRoutesFor", () => createQualitativeSegmentsRoutesFor(STAND_IN)],
   ["createProcessSummaryRouteFor", () => [createProcessSummaryRouteFor(STAND_IN, STAND_IN, {})]],
   [
     "createProcessSummaryDetailsRouteFor",

@@ -210,6 +210,7 @@ export {
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
+export { createQualitativeSegmentsRoutesFor } from "./qualitative-segments.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,

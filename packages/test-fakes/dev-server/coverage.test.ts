@@ -19,6 +19,7 @@ import {
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
 import { fakeQualCodeId } from "./qualitative-codes-routes.ts";
+import { fakeQualSegmentId, seedQualSegment } from "./qualitative-segments-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { FAKE_QUESTIONNAIRE_ID } from "./questionnaire-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
@@ -327,6 +328,38 @@ const seedQualMaterialOfStudent = (state: State) => {
     text: "Izmišljena bilješka.",
     createdOn: "2026-11-25",
     segmentCount: 0,
+  });
+};
+// SRV-V18-KODIRANJE-OZNAKE: a material and a code of the student, then a marked passage.
+const QUAL_SEGMENT_CODE_NAME = "Izmišljeni kod oznake";
+const QUAL_SEGMENT_CODE_ID = fakeQualCodeId(IDS.student, QUAL_SEGMENT_CODE_NAME);
+const QUAL_SEGMENTS = `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}/segments`;
+const QUAL_SEGMENT_BODY = {
+  codeId: QUAL_SEGMENT_CODE_ID,
+  anchor: { paragraph: 0, start: 0, end: 10, quote: "Izmišljena" },
+  memo: "Izmišljena napomena.",
+};
+const QUAL_SEGMENT_CODE: Step = {
+  path: "/api/v1/student/qual/codes",
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { name: QUAL_SEGMENT_CODE_NAME },
+};
+const QUAL_SEGMENT_MARK: Step = {
+  path: QUAL_SEGMENTS,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: QUAL_SEGMENT_BODY,
+};
+const seedQualMaterialAndSegment = (state: State) => {
+  seedQualMaterialOfStudent(state);
+  seedQualSegment(state, IDS.student, {
+    materialId: QUAL_MATERIAL_ID,
+    codeId: QUAL_SEGMENT_CODE_ID,
+    ...QUAL_SEGMENT_BODY.anchor,
+    memo: QUAL_SEGMENT_BODY.memo,
   });
 };
 const seedNote = (state: State) => {
@@ -2223,6 +2256,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "DELETE",
       headers: ORIGIN,
     },
+  },
+  "student.qual-segments.get": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: { path: QUAL_SEGMENTS, as: "student", method: "GET" },
+  },
+  "student.qual-segments.post": {
+    prepare: seedQualMaterialOfStudent,
+    before: [QUAL_SEGMENT_CODE],
+    request: QUAL_SEGMENT_MARK,
+  },
+  "student.qual-segment.delete": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: {
+      path: `/api/v1/student/qual/segments/${fakeQualSegmentId(QUAL_MATERIAL_ID, QUAL_SEGMENT_CODE_ID, 0, 0, 10)}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "student.qual-export.get": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: { path: "/api/v1/student/qual/export", as: "student", method: "GET" },
   },
   "institution.assistant-request-limit.get": {
     request: { path: "/api/v1/institution/assistant/request-limit", as: "administrator" },

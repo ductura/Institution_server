@@ -1,0 +1,258 @@
+{
+  "route": "student.qual-export.get",
+  "vectors": [
+    {
+      "name": "exported",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "schema": "qualitative-export-v1",
+          "codebook": [
+            {
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "name": "Odnos prema mentoru",
+              "description": "Odlomci o odnosu s mentorom."
+            },
+            {
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "name": "Vrijeme i rokovi",
+              "description": ""
+            }
+          ],
+          "segments": [
+            {
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "paragraph": 0,
+              "start": 0,
+              "end": 10,
+              "quote": "Izmišljena",
+              "memo": "Izmišljena napomena."
+            },
+            {
+              "material": "00000000-0000-4000-8000-00000018a002",
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "paragraph": 0,
+              "start": 0,
+              "end": 5,
+              "quote": "Drugi",
+              "memo": null
+            },
+            {
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "paragraph": 1,
+              "start": 4,
+              "end": 9,
+              "quote": "drugi",
+              "memo": null
+            }
+          ],
+          "counts": [
+            {
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "n": 1
+            },
+            {
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "material": "00000000-0000-4000-8000-00000018a002",
+              "n": 1
+            },
+            {
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "n": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "exported-one-material",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        },
+        "query": {
+          "materialId": "00000000-0000-4000-8000-00000018a001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "schema": "qualitative-export-v1",
+          "codebook": [
+            {
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "name": "Odnos prema mentoru",
+              "description": "Odlomci o odnosu s mentorom."
+            },
+            {
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "name": "Vrijeme i rokovi",
+              "description": ""
+            }
+          ],
+          "segments": [
+            {
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "paragraph": 0,
+              "start": 0,
+              "end": 10,
+              "quote": "Izmišljena",
+              "memo": "Izmišljena napomena."
+            },
+            {
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "paragraph": 1,
+              "start": 4,
+              "end": 9,
+              "quote": "drugi",
+              "memo": null
+            }
+          ],
+          "counts": [
+            {
+              "code": "00000000-0000-4000-8000-00000018c001",
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "n": 1
+            },
+            {
+              "code": "00000000-0000-4000-8000-00000018c002",
+              "material": "00000000-0000-4000-8000-00000018a001",
+              "n": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "exported-empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "schema": "qualitative-export-v1",
+          "codebook": [],
+          "segments": [],
+          "counts": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000180223"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        },
+        "query": {
+          "materialId": "00000000-0000-4000-8000-00000018a0aa"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000180224"
+        }
+      }
+    },
+    {
+      "name": "malformed-material-id",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        },
+        "query": {
+          "materialId": "nije-uuid"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000180225"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000180226"
+        }
+      }
+    }
+  ]
+}
