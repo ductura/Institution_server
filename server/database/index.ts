@@ -540,6 +540,11 @@ export {
   type SubmissionDeclarationGateAnswer,
 } from "./declaration/index.ts";
 export {
+  createLateSubmissionPort,
+  type LateSubmissionPort,
+  type LateSubmissionSetting,
+} from "./late-submission.ts";
+export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,
   type InputRhythm,

@@ -198,6 +198,7 @@ export {
   createDeclarationRequiredRoutes,
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
+export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
