@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(4974);
+SELECT plan(5066);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -201,6 +201,8 @@ SELECT bag_eq(
         'assignment_team_setting', 'work_team', 'work_team_member_event',
         -- SRV-V19-RECENZIJA-BAZA: anonymous peer review; cells in 249-peer-review.sql.
         'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal',
+        -- SRV-ASIST-PREKIDAC: the assistant switch per course; cells in 254-assistant-course-switch.sql.
+        'course_assistant_setting',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
         'roster_import', 'roster_import_entry'],
   'the institution schema holds exactly the tables of this matrix'
@@ -354,6 +356,7 @@ SELECT bag_eq(
     'peer_review_allocation: peer_review_allocation_owner ALL to ductus_identity',
     'peer_review: peer_review_owner ALL to ductus_identity',
     'peer_review_withdrawal: peer_review_withdrawal_owner ALL to ductus_identity',
+    'course_assistant_setting: course_assistant_setting_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
     'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
   ],
@@ -909,6 +912,14 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
     AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
   'PIL-P1-RITAM-PREDMET-SRV: audit.input_rhythm_course_switch_event has forced RLS, the identity owner and no privilege for another role')
   FROM pg_class c WHERE c.oid = 'audit.input_rhythm_course_switch_event'::regclass;
+-- The trail of the assistant switch per course (audit.assistant_course_switch_event), SRV-ASIST-PREKIDAC.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.rolname <> 'ductus_identity'
+        AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'SRV-ASIST-PREKIDAC: audit.assistant_course_switch_event has forced RLS, the identity owner and no privilege for another role')
+  FROM pg_class c WHERE c.oid = 'audit.assistant_course_switch_event'::regclass;
 -- The trail of the declaration switch (audit.declaration_required_event), PIL-K-IZJAVA-SRV.
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
     AND NOT EXISTS (
@@ -1738,6 +1749,41 @@ SELECT is(
   format('SRV-V19-RECENZIJA-BAZA: %s writes a review of an unknown task: %s', c.actor, c.result))
 FROM (VALUES ('ana', 'ZD404'), ('dora', 'ZD404'), ('boris', 'ZD404'), ('vesna', 'ZD404'), ('marko', 'ZD404'), ('iva', 'ZD404'), ('nina', 'ZD404'), ('tomo', 'ZD404'), ('lea', 'ZD404'), ('petra', 'ZD404'), ('anon', 'ZD401')) AS c (actor, result);
 
+-- 1i3c. SRV-ASIST-PREKIDAC: the assistant switch per course
+-- (institution.course_assistant_setting) only through its RPCs: the teacher of
+-- K1 reads and sets it, the students of Z1 read only the availability, everyone
+-- else is refused. The rest is in 254-assistant-course-switch.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT enabled::text FROM app.course_assistant_switch_read({k1})'), 1, 5), c.result,
+  format('SRV-ASIST-PREKIDAC: %s reads the assistant switch of K1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+             ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT enabled::text FROM app.course_assistant_switch({k1}, true)'), 1, 5), c.result,
+  format('SRV-ASIST-PREKIDAC: %s sets the assistant switch of K1 (to the value in force): %s', c.actor, c.result))
+FROM (VALUES ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+             ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT outcome FROM app.my_assistant_available({z1})'), 1, 9), c.result,
+  format('SRV-ASIST-PREKIDAC: %s reads the assistant availability of Z1: %s', c.actor, c.result))
+FROM (VALUES ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
+             ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')) AS c (actor, result);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.course_assistant_switch(uuid,boolean)', 'app.course_assistant_switch_read(uuid)',
+       'app.my_assistant_available(uuid)', 'app.assistant_cost_published(uuid)', 'app.course_assistant_on(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-ASIST-PREKIDAC: only ductus_app and the owner execute the switch RPCs'
+);
+SELECT ok((SELECT bool_and(p.prosecdef AND has_function_privilege('ductus_app', f, 'EXECUTE') = (f NOT IN ('app.assistant_cost_published(uuid)', 'app.course_assistant_on(uuid,uuid)')))
+             FROM unnest(ARRAY['app.course_assistant_switch(uuid,boolean)', 'app.course_assistant_switch_read(uuid)',
+               'app.my_assistant_available(uuid)', 'app.assistant_cost_published(uuid)', 'app.course_assistant_on(uuid,uuid)']) f
+             JOIN pg_proc p ON p.oid = f::regprocedure),
+  'SRV-ASIST-PREKIDAC: the web role calls the three RPCs, not the two workers; all SECURITY DEFINER');
+
 -- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
 -- only for a student of the assignment, and only the caller's own (Ana's was
 -- extended in 1h); null for everyone else. The rest is in
@@ -2049,13 +2095,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff',
-                        'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal'])
+                        'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal',
+                        'course_assistant_setting'])
                         WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'course_assistant_setting') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
