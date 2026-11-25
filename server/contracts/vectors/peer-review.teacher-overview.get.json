@@ -1,0 +1,162 @@
+{
+  "route": "peer-review.teacher-overview.get",
+  "vectors": [
+    {
+      "name": "listed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "allocations": [
+            {
+              "reviewId": "00000000-0000-4000-8000-00000000b201",
+              "reviewer": {
+                "id": "00000000-0000-4000-8000-00000000b301",
+                "givenName": "Studentica",
+                "familyName": "Probna"
+              },
+              "author": {
+                "id": "00000000-0000-4000-8000-00000000b302",
+                "givenName": "Student",
+                "familyName": "Primjerni"
+              },
+              "state": "submitted"
+            },
+            {
+              "reviewId": null,
+              "reviewer": {
+                "id": "00000000-0000-4000-8000-00000000b301",
+                "givenName": "Studentica",
+                "familyName": "Probna"
+              },
+              "author": {
+                "id": "00000000-0000-4000-8000-00000000b303",
+                "givenName": "Student",
+                "familyName": "Izmisljeni"
+              },
+              "state": "pending"
+            },
+            {
+              "reviewId": "00000000-0000-4000-8000-00000000b202",
+              "reviewer": {
+                "id": "00000000-0000-4000-8000-00000000b302",
+                "givenName": "Student",
+                "familyName": "Primjerni"
+              },
+              "author": {
+                "id": "00000000-0000-4000-8000-00000000b303",
+                "givenName": "Student",
+                "familyName": "Izmisljeni"
+              },
+              "state": "withdrawn"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "allocations": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {},
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000007029"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-0000000000ff"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-00000000702a"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-recenzija-00000001"
+        },
+        "params": {
+          "assignmentId": "a5000000-0000-4000-8000-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000702b"
+        }
+      }
+    }
+  ]
+}
