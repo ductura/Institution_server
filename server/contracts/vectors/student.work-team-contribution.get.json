@@ -1,0 +1,242 @@
+{
+  "route": "student.work-team-contribution.get",
+  "vectors": [
+    {
+      "name": "ready",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "ready",
+          "members": [
+            {
+              "givenName": "Student",
+              "familyName": "Drugi",
+              "categories": [
+                {
+                  "category": "written",
+                  "codePoints": 900
+                },
+                {
+                  "category": "ai_transferred",
+                  "codePoints": 0
+                },
+                {
+                  "category": "pasted",
+                  "codePoints": 120
+                },
+                {
+                  "category": "imported",
+                  "codePoints": 0
+                },
+                {
+                  "category": "unattributed",
+                  "codePoints": 0
+                }
+              ],
+              "totalCodePoints": 1020
+            },
+            {
+              "givenName": "Student",
+              "familyName": "Prvi",
+              "categories": [
+                {
+                  "category": "written",
+                  "codePoints": 1500
+                },
+                {
+                  "category": "ai_transferred",
+                  "codePoints": 80
+                },
+                {
+                  "category": "pasted",
+                  "codePoints": 0
+                },
+                {
+                  "category": "imported",
+                  "codePoints": 200
+                },
+                {
+                  "category": "unattributed",
+                  "codePoints": 0
+                }
+              ],
+              "totalCodePoints": 1780
+            }
+          ],
+          "notice": "not_authorship_evidence"
+        }
+      }
+    },
+    {
+      "name": "pending",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "pending"
+        }
+      }
+    },
+    {
+      "name": "failed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "failed"
+        }
+      }
+    },
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "none"
+        }
+      }
+    },
+    {
+      "name": "disabled",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "state": "disabled"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {},
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000007154"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b102"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000007155"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-student-tim-0000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-00000000b101"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000007156"
+        }
+      }
+    }
+  ]
+}
