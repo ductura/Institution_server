@@ -89,18 +89,22 @@ it("lists placements and reads entries with the signoffs as the contract says", 
   expect(listed.headers.get("cache-control")).toBe("no-store");
   expect(((await listed.json()) as { placements: unknown[] }).placements).toHaveLength(1);
 
-  query
-    .mockReturnValueOnce([
-      {
-        entryId: ENTRY,
-        date: "2026-11-02",
-        hours: "7.5",
-        text: "Zapis.",
-        correctsEntryId: null,
-        createdAt: new Date("2026-11-02T10:00:00.000Z"),
-      },
-    ])
-    .mockReturnValueOnce([]);
+  // One statement, so one snapshot of entries and signoffs; the database sends the instant with an offset.
+  query.mockReturnValueOnce([
+    {
+      entries: [
+        {
+          entryId: ENTRY,
+          date: "2026-11-02",
+          hours: "7.5",
+          text: "Zapis.",
+          correctsEntryId: null,
+          createdAt: "2026-11-02T10:00:00.000123+00:00",
+        },
+      ],
+      signoffs: [],
+    },
+  ]);
   const read = await call(BASE + "/entries");
   expect(await read.json()).toEqual({
     entries: [
@@ -115,7 +119,12 @@ it("lists placements and reads entries with the signoffs as the contract says", 
     ],
     signoffs: [],
   });
+  expect(query).toHaveBeenCalledTimes(2);
   expect(query.mock.calls[1]![1]).toEqual([ID]);
+  expect(query.mock.calls[1]![0]).toContain("practice_signoffs");
+  expect(query.mock.calls[1]![0]).toContain("practice_entries");
+  // The list is bounded by the contract's 200 before the answer is checked.
+  expect(query.mock.calls[0]![0]).toContain("LIMIT 200");
 });
 
 it("keeps entry input out of the database when it is not valid", async () => {

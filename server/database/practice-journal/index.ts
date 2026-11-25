@@ -44,16 +44,27 @@ const PLACEMENTS = `SELECT placement_id AS "placementId", mentorship_id AS "ment
     organisation_name AS "organisationName", to_char(starts_on, ${DATE}) AS "startsOn",
     to_char(ends_on, ${DATE}) AS "endsOn", entry_count AS "entryCount",
     to_char(signed_through, ${DATE}) AS "signedThrough"
-  FROM app.practice_placements()`;
-const ENTRIES = `SELECT entry_id AS "entryId", to_char(entry_date, ${DATE}) AS "date",
-    hours::text AS "hours", body AS "text", corrects_entry_id AS "correctsEntryId",
-    created_at AS "createdAt"
-  FROM app.practice_entries($1::uuid)`;
-const SIGNOFFS = `SELECT signoff_id AS "signoffId", to_char(through_date, ${DATE}) AS "throughDate",
+  FROM app.practice_placements()
+  ORDER BY starts_on DESC, placement_id
+  LIMIT 200`;
+const SIGNOFF_COLUMNS = `signoff_id AS "signoffId", to_char(through_date, ${DATE}) AS "throughDate",
     entry_count AS "entryCount", entries_sha256 AS "entriesSha256", comment, signed_at AS "signedAt",
     mentor_id AS "mentorId", mentor_given_name AS "mentorGivenName",
-    mentor_family_name AS "mentorFamilyName"
-  FROM app.practice_signoffs($1::uuid)`;
+    mentor_family_name AS "mentorFamilyName"`;
+const SIGNOFFS = `SELECT ${SIGNOFF_COLUMNS} FROM app.practice_signoffs($1::uuid)`;
+// Entries and signoffs come from one statement, so one snapshot: a signoff is
+// never shown without the entries it covers. The functions give the order; the
+// ordinality keeps it through the aggregate.
+const ENTRIES_AND_SIGNOFFS = `SELECT
+  (SELECT coalesce(json_agg(e ORDER BY e.ord), '[]'::json) FROM (
+     SELECT entry_id AS "entryId", to_char(entry_date, ${DATE}) AS "date", hours::text AS "hours",
+            body AS "text", corrects_entry_id AS "correctsEntryId", created_at AS "createdAt", f.ord AS ord
+       FROM app.practice_entries($1::uuid) WITH ORDINALITY AS f(entry_id, entry_date, hours, body, corrects_entry_id, created_at, ord)
+  ) e) AS entries,
+  (SELECT coalesce(json_agg(g ORDER BY g.ord), '[]'::json) FROM (
+     SELECT ${SIGNOFF_COLUMNS}, f.ord AS ord
+       FROM app.practice_signoffs($1::uuid) WITH ORDINALITY AS f(signoff_id, through_date, entry_count, entries_sha256, comment, signed_at, mentor_id, mentor_given_name, mentor_family_name, ord)
+  ) g) AS signoffs`;
 const ADD_ENTRY =
   "SELECT app.add_practice_entry($1::uuid, $2::date, $3::numeric, $4::text, $5::uuid) AS id";
 const SIGN = `SELECT signoff_id AS "signoffId", entry_count AS "entryCount", entries_sha256 AS "entriesSha256"
@@ -121,9 +132,19 @@ export function createPracticeJournalStore(withActor: WithActor) {
     // Entries and signoffs are read in one transaction: one snapshot of the practice.
     entries: (token: string, placementId: string) =>
       withActor(token, async (tx) => {
-        const entries = await tx.query<EntryRow>(ENTRIES, [placementId]);
-        const signoffs = await tx.query<SignoffRow>(SIGNOFFS, [placementId]);
-        return { entries: entries.rows.map(entryOf), signoffs: signoffs.rows.map(signoffOf) };
+        const { rows } = await tx.query<{
+          entries: (Omit<EntryRow, "createdAt"> & { createdAt: string })[];
+          signoffs: (Omit<SignoffRow, "signedAt"> & { signedAt: string })[];
+        }>(ENTRIES_AND_SIGNOFFS, [placementId]);
+        if (rows.length !== 1 || !rows[0]) throw new Error("missing practice journal");
+        return {
+          entries: rows[0].entries.map((row) =>
+            entryOf({ ...row, createdAt: new Date(row.createdAt) }),
+          ),
+          signoffs: rows[0].signoffs.map((row) =>
+            signoffOf({ ...row, signedAt: new Date(row.signedAt) }),
+          ),
+        };
       }),
     addEntry: (
       token: string,
