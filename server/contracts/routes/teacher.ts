@@ -6,6 +6,7 @@ import { SignedSubmissionReceipt } from "./evidence.ts";
 import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 import { teacherDeclarationGet } from "./teacher-declaration.ts";
+import { teacherAssignmentFollowUpGet } from "./teacher-follow-up.ts";
 import { teacherSubmissionDetailGet } from "./teacher-submissions.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/teacher-courses.ts
@@ -545,6 +546,7 @@ export const teacherRoutes = [
   teacherAccessGet,
   teacherCourseStudentsGet,
   teacherAssignmentOverviewGet,
+  teacherAssignmentFollowUpGet,
   teacherSubmissionReceiptGet,
   teacherMentorshipRequestsGet,
   teacherMentorshipRequestDecisionPost,

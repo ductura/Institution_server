@@ -13,6 +13,7 @@ export type { Command, Ports, StackConfig, StackEnv } from "./config.ts";
 export {
   commandLine,
   isStackPostmaster,
+  tailLines,
   listensOn,
   portFree,
   postgresOptions,

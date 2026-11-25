@@ -1611,6 +1611,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  "teacher.assignment-follow-up.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/follow-up`,
+    body: () => undefined,
+    live: 200,
+  },
   // SRV-1306: a live session that is no administrator of the institution gets 403 (ZD403).
   "institution.admin-courses.get": {
     method: "GET",

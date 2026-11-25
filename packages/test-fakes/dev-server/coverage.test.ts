@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
 import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { plantRosterImport } from "./roster-import-routes.ts";
@@ -406,6 +407,15 @@ const BANK_STEP: Step = {
 
 const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
 const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
+const PRACTICE_PLACEMENT = `/api/v1/practice/placements/${FAKE_PLACEMENT_ID}`;
+const PRACTICE_ENTRIES = `${PRACTICE_PLACEMENT}/entries`;
+const PRACTICE_ENTRY: Step = {
+  path: PRACTICE_ENTRIES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { date: "2026-03-09", hours: 4, text: "Izmisljen opis rada u izmisljenoj organizaciji." },
+};
 const REQUEST_MENTORSHIP: Step = {
   path: MENTORSHIP_REQUESTS,
   as: "student",
@@ -435,6 +445,40 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
       body: { body: "Izmisljena privatna biljeska." },
     },
+  },
+  // SRV-V19-DNEVNIK-UGOVOR: the practice journal; the invented placement exists from the start.
+  "practice.placements.post": {
+    request: {
+      path: "/api/v1/practice/placements",
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: {
+        mentorshipId: IDS.mentorship,
+        organisationName: "Organizacija B",
+        startsOn: "2026-03-02",
+        endsOn: "2026-06-30",
+      },
+    },
+  },
+  "practice.placements.get": { request: { path: "/api/v1/practice/placements", as: "student" } },
+  "practice.entries.get": {
+    before: [PRACTICE_ENTRY],
+    request: { path: PRACTICE_ENTRIES, as: "nastavnik" },
+  },
+  "practice.entries.post": { request: PRACTICE_ENTRY },
+  "practice.signoffs.post": {
+    before: [PRACTICE_ENTRY],
+    request: {
+      path: `${PRACTICE_PLACEMENT}/signoffs`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { throughDate: "2026-03-10", comment: "Potvrdujem zapise." },
+    },
+  },
+  "practice.signoffs.get": {
+    request: { path: `${PRACTICE_PLACEMENT}/signoffs`, as: "nastavnik" },
   },
   // SRV-MENTOR-2: forms of the faculty, the mentor's consent and the stage after submission.
   "institution.thesis-forms.get": {
@@ -1889,6 +1933,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "teacher.assignment-overview.get": {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/overview`, as: "nastavnik" },
+  },
+  "teacher.assignment-follow-up.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/follow-up`, as: "nastavnik" },
   },
   "teacher.submission-receipt.get": {
     before: SUBMIT_STEPS,
