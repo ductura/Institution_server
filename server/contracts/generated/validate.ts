@@ -2024,6 +2024,13 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.qual-export.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['materialId'] !== undefined ? ((typeof value['materialId'] === 'string') && value['materialId'].length <= 64) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['materialId'].includes(key))
+    )
+  }),
   "student.qual-material.delete:params": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -2058,6 +2065,101 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       value['text'].length <= 200000 &&
       value['text'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
+  "student.qual-segment.delete:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['codeId'] === 'string') &&
+      local0.test(value['codeId']) &&
+      (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) &&
+      (typeof nestedAnchor['paragraph'] === 'number' && Number.isInteger(nestedAnchor['paragraph'])) &&
+      nestedAnchor['paragraph'] <= 100000 &&
+      nestedAnchor['paragraph'] >= 0 &&
+      (typeof nestedAnchor['start'] === 'number' && Number.isInteger(nestedAnchor['start'])) &&
+      nestedAnchor['start'] <= 100000 &&
+      nestedAnchor['start'] >= 0 &&
+      (typeof nestedAnchor['end'] === 'number' && Number.isInteger(nestedAnchor['end'])) &&
+      nestedAnchor['end'] <= 100000 &&
+      nestedAnchor['end'] >= 0 &&
+      (typeof nestedAnchor['quote'] === 'string') &&
+      nestedAnchor['quote'].length <= 1000 &&
+      nestedAnchor['quote'].length >= 1 &&
+      Object.getOwnPropertyNames(value['anchor']).length === 4 &&
+      (value['memo'] !== undefined ? ((typeof value['memo'] === 'string') && value['memo'].length <= 2000 && value['memo'].length >= 1) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['codeId', 'anchor', 'memo'].includes(key))
+    )
+  }
+  })(),
+  "student.questionnaire-responses.post:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.questionnaire-responses.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Array.isArray(value['answers']) &&
+      value['answers'].length <= 40 &&
+      value['answers'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && value['value'].length <= 2000 && value['value'].length >= 1) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.questionnaire.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }
   })(),
@@ -2965,6 +3067,47 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.questionnaire-export.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.questionnaire-export.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['includeText'] !== undefined ? ((((value['includeText'] === 'true')) || ((value['includeText'] === 'false')))) : true)
+    )
+  }),
+  "teacher.questionnaire-manual-responses.post:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.questionnaire-manual-responses.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Array.isArray(value['answers']) &&
+      value['answers'].length <= 40 &&
+      value['answers'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && value['value'].length <= 2000 && value['value'].length >= 1) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "teacher.questionnaire-state.post:params": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -4000,6 +4143,27 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (value['sheet'] !== undefined ? ((typeof value['sheet'] === 'string') && local0.test(value['sheet'])) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['sheet'].includes(key))
+    )
+  }
+  })(),
+  "work.export-sheet-xlsx.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.export-sheet-xlsx.get:query": (() => {
+  const local0 = /^[1-9][0-9]{0,15}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['versionId'] !== undefined ? ((typeof value['versionId'] === 'string') && local0.test(value['versionId'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['versionId'].includes(key))
     )
   }
   })(),

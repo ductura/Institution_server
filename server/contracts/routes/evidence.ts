@@ -182,6 +182,10 @@ export const open = defineRoute({
         // has none, and the client then treats the work as unavailable (openedWorkFrom).
         receiptKeys: Type.Array(ReceiptKey),
         submitted: Type.Boolean(),
+        // IZV-RUTE-1a (ED-22): acceptedAt of the newest signed receipt of the work, the minute
+        // the receipt signs; null while none is signed. The server always sends it; optional
+        // only so that a client of an earlier minor stays valid.
+        lastSignedAt: Type.Optional(Type.Union([Minute, Type.Null()])),
       }),
     },
   ],

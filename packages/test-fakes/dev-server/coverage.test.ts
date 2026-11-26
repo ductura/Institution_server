@@ -19,6 +19,7 @@ import {
 import { fakeImportIds } from "./import-routes.ts";
 import { fakePeerReviewId, fakePeerTaskId } from "./peer-review-routes.ts";
 import { fakeQualCodeId } from "./qualitative-codes-routes.ts";
+import { fakeQualSegmentId, seedQualSegment } from "./qualitative-segments-routes.ts";
 import { FAKE_PLACEMENT_ID } from "./practice-routes.ts";
 import { FAKE_QUESTIONNAIRE_ID } from "./questionnaire-routes.ts";
 import { studentDataExportTokenHashOf } from "./student-data-export-routes.ts";
@@ -327,6 +328,38 @@ const seedQualMaterialOfStudent = (state: State) => {
     text: "Izmišljena bilješka.",
     createdOn: "2026-11-25",
     segmentCount: 0,
+  });
+};
+// SRV-V18-KODIRANJE-OZNAKE: a material and a code of the student, then a marked passage.
+const QUAL_SEGMENT_CODE_NAME = "Izmišljeni kod oznake";
+const QUAL_SEGMENT_CODE_ID = fakeQualCodeId(IDS.student, QUAL_SEGMENT_CODE_NAME);
+const QUAL_SEGMENTS = `/api/v1/student/qual/materials/${QUAL_MATERIAL_ID}/segments`;
+const QUAL_SEGMENT_BODY = {
+  codeId: QUAL_SEGMENT_CODE_ID,
+  anchor: { paragraph: 0, start: 0, end: 10, quote: "Izmišljena" },
+  memo: "Izmišljena napomena.",
+};
+const QUAL_SEGMENT_CODE: Step = {
+  path: "/api/v1/student/qual/codes",
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { name: QUAL_SEGMENT_CODE_NAME },
+};
+const QUAL_SEGMENT_MARK: Step = {
+  path: QUAL_SEGMENTS,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: QUAL_SEGMENT_BODY,
+};
+const seedQualMaterialAndSegment = (state: State) => {
+  seedQualMaterialOfStudent(state);
+  seedQualSegment(state, IDS.student, {
+    materialId: QUAL_MATERIAL_ID,
+    codeId: QUAL_SEGMENT_CODE_ID,
+    ...QUAL_SEGMENT_BODY.anchor,
+    memo: QUAL_SEGMENT_BODY.memo,
   });
 };
 const seedNote = (state: State) => {
@@ -1886,6 +1919,41 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE
+  "student.questionnaires.get": {
+    request: { path: "/api/v1/student/questionnaires", as: "student" },
+  },
+  "student.questionnaire.get": {
+    request: {
+      path: "/api/v1/student/questionnaires/b0000000-0000-4000-8000-000000000001",
+      as: "student",
+    },
+  },
+  "student.questionnaire-responses.post": {
+    request: {
+      path: "/api/v1/student/questionnaires/b0000000-0000-4000-8000-000000000001/responses",
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: { answers: [{ questionId: "b1000000-0000-4000-8000-000000000001", value: "da" }] },
+    },
+  },
+  "teacher.questionnaire-manual-responses.post": {
+    request: {
+      path: "/api/v1/teacher/questionnaires/b0000000-0000-4000-8000-000000000001/responses/manual",
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { answers: [{ questionId: "b1000000-0000-4000-8000-000000000002", value: 4 }] },
+    },
+  },
+  // SRV-V18-UPITNIK-IZVOZ
+  "teacher.questionnaire-export.get": {
+    request: {
+      path: "/api/v1/teacher/questionnaires/b0000000-0000-4000-8000-000000000001/export",
+      as: "nastavnik",
+    },
+  },
   "teacher.course-assistant.get": {
     request: { path: `/api/v1/teacher/courses/${IDS.course}/assistant`, as: "nastavnik" },
   },
@@ -2031,6 +2099,29 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       ).toString("base64");
     },
     request: { path: `/api/v1/works/${IDS.document}/export/csv`, as: "nastavnik" },
+  },
+  // SRV-V14-SHEET-XLSX: the same invented spreadsheet, as the saved version of the work.
+  "work.export-sheet-xlsx.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      if (work === undefined) throw new Error("no work");
+      const sheet = {
+        schemaVersion: 1,
+        kind: "spreadsheet",
+        sheets: [
+          {
+            id: "00000000-0000-4000-8000-0000000000a1",
+            name: "Demo",
+            rows: 3,
+            columns: 2,
+            cells: { ["A1"]: { value: 2 }, ["A2"]: { value: null, formula: "=A1*2" } },
+          },
+        ],
+      };
+      work.document = Buffer.from(JSON.stringify(sheet)).toString("base64");
+    },
+    request: { path: `/api/v1/works/${IDS.document}/export/xlsx`, as: "nastavnik" },
   },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
@@ -2306,6 +2397,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "DELETE",
       headers: ORIGIN,
     },
+  },
+  "student.qual-segments.get": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: { path: QUAL_SEGMENTS, as: "student", method: "GET" },
+  },
+  "student.qual-segments.post": {
+    prepare: seedQualMaterialOfStudent,
+    before: [QUAL_SEGMENT_CODE],
+    request: QUAL_SEGMENT_MARK,
+  },
+  "student.qual-segment.delete": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: {
+      path: `/api/v1/student/qual/segments/${fakeQualSegmentId(QUAL_MATERIAL_ID, QUAL_SEGMENT_CODE_ID, 0, 0, 10)}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "student.qual-export.get": {
+    prepare: seedQualMaterialAndSegment,
+    before: [QUAL_SEGMENT_CODE],
+    request: { path: "/api/v1/student/qual/export", as: "student", method: "GET" },
   },
   "institution.assistant-request-limit.get": {
     request: { path: "/api/v1/institution/assistant/request-limit", as: "administrator" },

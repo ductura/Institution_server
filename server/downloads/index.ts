@@ -15,6 +15,8 @@ export {
   renderDocx,
   renderSheetCsv,
   renderSheetCsvOfText,
+  renderSheetXlsx,
+  XLSX_TYPE,
   renderWorkDocx,
   type ExportLabels,
   type SheetCsv,

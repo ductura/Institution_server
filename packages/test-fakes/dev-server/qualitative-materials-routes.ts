@@ -27,6 +27,10 @@ function ownOf(state: State, accountId: string): FakeQualMaterial[] {
   return own;
 }
 
+/** The caller's own materials, for the routes that mark passages in them (SRV-V18-KODIRANJE-OZNAKE). */
+export const fakeQualMaterialsOf = (state: State, accountId: string): FakeQualMaterial[] =>
+  ownOf(state, accountId);
+
 /** For a scenario that needs a material before the request. */
 export function seedQualMaterial(state: State, accountId: string, material: FakeQualMaterial) {
   ownOf(state, accountId).push(material);

@@ -79,6 +79,7 @@ function answerOf(opened: OpenWorkResult): EvidenceAnswer | { readonly body: unk
     document: Buffer.from(snapshot, "utf8").toString("base64"),
     receiptKeys: work.receiptKeys,
     submitted: work.submitted,
+    lastSignedAt: work.lastSignedAt,
   };
   return { body };
 }

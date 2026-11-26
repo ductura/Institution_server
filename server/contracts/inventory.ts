@@ -619,10 +619,45 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "DELETE"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173076650",
   },
+  // SRV-V18-KODIRANJE-OZNAKE (Ductus#2058, val 18): the passages a student marks in their own material and the export of the coding.
+  "app/api/student/qual/materials/[id]/segments/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
+  "app/api/student/qual/segments/[id]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
+  "app/api/student/qual/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
   // SRV-ASIST-LIMIT-ADMIN (Ductus#2055 T2, approved 25. 11.): the administrator's request limit.
   "app/api/institution/assistant/request-limit/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE (Ductus#2058; val 18, V18-1): a student answers an open questionnaire once; a teacher enters a sheet by hand.
+  "app/api/student/questionnaires/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/responses/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/teacher/questionnaires/[id]/responses/manual/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  // SRV-V18-UPITNIK-IZVOZ (Ductus#2058; val 18, V18-4): the author reads the answers as questionnaire-export-v1.
+  "app/api/teacher/questionnaires/[id]/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173573927",
   },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
@@ -793,6 +828,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/export/csv/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
+  },
+  // SRV-V14-SHEET-XLSX (val 14 decision 6, Ductus#2058 c.7173654855): the .xlsx of a saved version of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/xlsx/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654855",
   },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
