@@ -99,7 +99,12 @@ export {
   createMerlinPackageRoutes,
   createMerlinPackageRoutesFor,
 } from "./merlin-packages/index.ts";
-export { createAssistantRoutes, createAssistantRoutesFor } from "./assistant/index.ts";
+export {
+  createAssistantRoutes,
+  createAssistantRoutesFor,
+  openAiProviderFrom,
+  type OpenAiEnv,
+} from "./assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
