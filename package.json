@@ -12,6 +12,7 @@
     "build": "node scripts/build/server.ts",
     "start": "node --disallow-code-generation-from-strings dist/server.js",
     "stack:vs1": "node scripts/stack/vs1.ts",
+    "owner:board": "node scripts/owner-board/cli.ts",
     "evidence:verify": "node scripts/evidence-verify/cli.ts",
     "lokalno": "node scripts/lokalno/lokalno.ts",
     "typecheck": "tsc --noEmit",
