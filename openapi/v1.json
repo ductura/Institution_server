@@ -7966,12 +7966,12 @@
                         },
                         "start": {
                           "minimum": 0,
-                          "maximum": 1000000,
+                          "maximum": 2097152,
                           "type": "integer"
                         },
                         "end": {
                           "minimum": 0,
-                          "maximum": 1000000,
+                          "maximum": 2097152,
                           "type": "integer"
                         },
                         "removed": {

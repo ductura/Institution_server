@@ -118,6 +118,11 @@ BEGIN
   IF v_hash IS DISTINCT FROM p_base_hash THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
+  -- Two creates on the same work wait for each other here, so the bound is
+  -- counted by one of them at a time (a transaction-level lock, released at
+  -- its end).
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('collaboration.suggestion:' || scope.institution_id::text || ':' || p_document_id, 0));
   IF (SELECT count(*) FROM collaboration.suggestion s
        WHERE s.document_id = p_document_id AND s.institution_id = scope.institution_id)
      >= collaboration.suggestion_max() THEN
@@ -175,7 +180,10 @@ DECLARE
   actor record;
   v_row record;
   v_role text;
-  v_live record;
+  -- Typed, not a record: a reject never assigns them, and the answer still
+  -- names them (an unassigned record has no fields to name).
+  v_live_hash text;
+  v_live_body text;
 BEGIN
   SELECT * INTO actor FROM institution.require_actor();
   SELECT s.id, s.institution_id, s.assignment_id, s.owner_id, s.document_id, s.anchor, s.text
@@ -205,7 +213,7 @@ BEGIN
     RAISE EXCEPTION 'not allowed' USING ERRCODE = 'ZD409';
   END IF;
   IF p_action = 'accept' THEN
-    SELECT l.content_hash, l.body INTO v_live FROM collaboration.live_state l
+    SELECT l.content_hash, l.body INTO v_live_hash, v_live_body FROM collaboration.live_state l
      WHERE l.document_id = v_row.document_id AND l.institution_id = v_row.institution_id;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'not allowed' USING ERRCODE = 'ZD409';
@@ -215,9 +223,7 @@ BEGIN
      SET state = CASE p_action WHEN 'accept' THEN 'accepted' ELSE 'rejected' END,
          decided_at = statement_timestamp()
    WHERE s.id = v_row.id;
-  RETURN QUERY SELECT v_row.document_id, v_row.anchor, v_row.text,
-    CASE WHEN p_action = 'accept' THEN v_live.content_hash END,
-    CASE WHEN p_action = 'accept' THEN v_live.body END;
+  RETURN QUERY SELECT v_row.document_id, v_row.anchor, v_row.text, v_live_hash, v_live_body;
 END
 $$;
 

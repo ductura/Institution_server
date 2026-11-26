@@ -173,17 +173,19 @@ SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), a.actio
   FROM (VALUES ('withdraw', 'an unknown decision'), ('', 'an empty decision'), (NULL, 'no decision')) a(action, why);
 SELECT is(pg_temp.stored(), 'drugi odlomak|pending;|pending;treći odlomak|pending', 'no refused decision changed anything');
 
--- 7. One decision each: accept answers the live state, reject none; a second is refused.
+-- 7. One decision each: reject first (the first decision of this session, so
+-- the answer of a reject is built without the live state ever read), then
+-- accept, which answers the live state; a second decision is refused.
+SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'reject'), 'doc-a||f|f',
+  'the owner rejects as the first decision of the session; a rejection carries no state');
+SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'accept'), 'ZD409: not allowed',
+  'a rejected suggestion is not accepted afterwards');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'accept'), 'doc-a|drugi odlomak|t|t',
   'the owner accepts and receives the live state the suggestion applies to');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'accept'), 'ZD409: not allowed',
   'an accepted suggestion is not accepted twice');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'reject'), 'ZD409: not allowed',
   'an accepted suggestion is not rejected afterwards');
-SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'reject'), 'doc-a||f|f',
-  'the owner rejects; a rejection carries no state');
-SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'accept'), 'ZD409: not allowed',
-  'a rejected suggestion is not accepted afterwards');
 SELECT is(pg_temp.listed('vesna'),
   'drugi odlomak|accepted|t|t|t|t;|rejected|t|t|t|t;treći odlomak|pending|t|t|t|f',
   'the teacher reads the decisions with their window');
@@ -191,6 +193,18 @@ SELECT is(pg_temp.listed('vesna'),
 -- 8. Nothing of it entered the evidence of the work or its live state.
 SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_before),
   'suggestions and decisions changed neither the evidence nor the live state of the work');
+
+-- 8b. At most 500 suggestions on one work, in any state (the list is bounded by it).
+INSERT INTO collaboration.suggestion
+  (institution_id, assignment_id, owner_id, author_id, document_id, anchor, text, base_hash)
+SELECT institution_id, assignment_id, owner_id, author_id, document_id, anchor, 'x' || n, base_hash
+  FROM collaboration.suggestion, generate_series(1, 497) AS n
+ WHERE id = (SELECT val FROM ref WHERE name = 's1')::uuid;
+SELECT is((SELECT count(*)::int FROM collaboration.suggestion WHERE document_id = 'doc-a'), 500,
+  'fixture: the work holds 500 suggestions');
+SELECT is(pg_temp.suggest('vesna', 'doc-a', 'pet stotina prvi'), 'ZD409: not allowed',
+  'a work with 500 suggestions takes no more');
+DELETE FROM collaboration.suggestion WHERE document_id = 'doc-a' AND text ~ '^x[0-9]+$';
 
 -- 9. A submitted work: no new suggestion, no decision.
 SELECT is(pg_temp.call('ana', 'pkg-a', 'request-1', pg_temp.descriptor(), 10, repeat('a', 64), repeat('d', 64),
