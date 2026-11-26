@@ -71,6 +71,7 @@ import {
   createRevisionRestoreRouteFor,
   createWorkExportRouteFor,
   createSheetCsvRouteFor,
+  createSheetXlsxRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -572,6 +573,13 @@ const SESSION_ROUTES = {
   "work.export-sheet-csv.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/export/csv`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V14-SHEET-XLSX: the .xlsx of a work it may not read is 404, as a missing work.
+  "work.export-sheet-xlsx.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/xlsx`,
     body: () => undefined,
     live: 404,
   },
@@ -2645,6 +2653,7 @@ const FACTORIES = [
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
   "createSheetCsvRouteFor",
+  "createSheetXlsxRouteFor",
   "createPortableRecordRouteFor",
   "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
@@ -2795,6 +2804,7 @@ const MOUNTED = [
   createRevisionRestoreRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
   createSheetCsvRouteFor(databases.main),
+  createSheetXlsxRouteFor(databases.main),
   createPortableRecordRouteFor(databases.main, ORIGIN),
   ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
