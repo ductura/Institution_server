@@ -23,7 +23,9 @@ import {
 } from "../domain/index.ts";
 import type { EvidencePayloadLocator, EvidencePayloadStore } from "../external/storage/index.ts";
 
-import { verifySlidesCommit, workKindOfContext } from "./slides/index.ts";
+import { workKindOfContext } from "./ingest/index.ts";
+import { verifySheetCommit } from "./sheet/index.ts";
+import { verifySlidesCommit } from "./slides/index.ts";
 
 export type EvidenceCommitRequest = {
   documentId: string;
@@ -113,6 +115,15 @@ async function prepareAndCommit(
   let snapshotText: string;
   if (kind === "slides") {
     const verdict = verifySlidesCommit({
+      transactionFormat: s.captureContext.transactionFormat,
+      document,
+      finalDocumentHash: s.finalDocumentHash,
+    });
+    if (verdict.status !== "ok") return { status: verdict.status };
+    snapshotText = verdict.text;
+  } else if (kind === "spreadsheet") {
+    // SRV-V14-SHEET-EVIDENCE: the same, by the spreadsheet validator and step format.
+    const verdict = verifySheetCommit({
       transactionFormat: s.captureContext.transactionFormat,
       document,
       finalDocumentHash: s.finalDocumentHash,
