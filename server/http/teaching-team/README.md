@@ -8,7 +8,7 @@ Provjerava oblik zahtjeva i provodi ga kroz sesiju i prilagodnik baze.
 
 ## Tko ga zove
 
-Usmjerivač poslužitelja za četiri rute nastavnog tima.
+Usmjerivač poslužitelja za pet ruta nastavnog tima.
 
 ## Koje podatke dira
 
