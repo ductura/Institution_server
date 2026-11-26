@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { REVISION_ZERO_JCS, REVISION_ZERO_SHA256 } from "../../../server/domain/index.ts";
 import type { OpenedWork } from "../index.ts";
 
-import { OUTAGE, saveTimes, simulateHour, summarize } from "./sat-pisanja.ts";
+import {
+  CHARS_PER_SAVE,
+  OUTAGE,
+  saveTimes,
+  sentence,
+  simulateHour,
+  summarize,
+} from "./sat-pisanja.ts";
 
 const work: OpenedWork = {
   documentId: "11111111-1111-4111-8111-111111111111",
@@ -14,6 +21,10 @@ const work: OpenedWork = {
 const minute = "2026-11-26T10:00:00.000Z";
 
 describe("sat pisanja", () => {
+  it("types exactly the assumed number of characters per save", () => {
+    for (const index of [0, 9, 99, 999]) expect(sentence(index)).toHaveLength(CHARS_PER_SAVE);
+  });
+
   it("repeats exactly for the same seed and differs for another", () => {
     expect(saveTimes(1)).toEqual(saveTimes(1));
     expect(saveTimes(1)).not.toEqual(saveTimes(2));

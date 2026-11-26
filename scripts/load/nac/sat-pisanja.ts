@@ -83,8 +83,10 @@ function prng(seed: number): () => number {
   };
 }
 
-const sentence = (index: number): string =>
-  `Izmišljena rečenica broj ${index} o kućnom kompostiranju. `.padEnd(CHARS_PER_SAVE, "x");
+export const sentence = (index: number): string =>
+  `Izmišljena rečenica broj ${index} o kućnom kompostiranju. `
+    .slice(0, CHARS_PER_SAVE)
+    .padEnd(CHARS_PER_SAVE, "x");
 
 /** The times (s) of every save in the hour, and the phase kind at each second. */
 export function saveTimes(seed: number): number[] {

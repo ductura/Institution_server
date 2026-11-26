@@ -6,7 +6,7 @@ Skripte: `scripts/load/nac/sat-pisanja.ts` (model i simulacija), `sat-pisanja-pr
 
 ## Rezultat jednog korisnika
 
-**Jedan sat ovakvog pisanja stvara 2017 zahtjeva, 42,0 MB prometa, 274 potpisa.**
+**Jedan sat ovakvog pisanja stvara 2017 zahtjeva, 40,7 MB prometa, 274 potpisa.**
 
 | Što                                        |                Broj |
 | ------------------------------------------ | ------------------: |
@@ -16,11 +16,11 @@ Skripte: `scripts/load/nac/sat-pisanja.ts` (model i simulacija), `sat-pisanja-pr
 | Čitanja prikaza uživo, 200 (novi sadržaj)  |                 155 |
 | Čitanja prikaza uživo, 304 (bez promjene)  |               1 345 |
 | Neuspjeli pokušaji tijekom prekida veze    |                  26 |
-| Poslano (tijela spremanja i objava)        |        33 495 319 B |
-| Primljeno (tijela čitanja 200)             |        10 534 243 B |
-| Najmanje / najveće tijelo spremanja        | 2 020 B / 166 434 B |
+| Poslano (tijela spremanja i objava)        |        32 470 680 B |
+| Primljeno (tijela čitanja 200)             |        10 251 406 B |
+| Najmanje / najveće tijelo spremanja        | 1 992 B / 165 470 B |
 
-Zahtjevi (2017) = spremanja + objave + čitanja 200 + čitanja 304; neuspjeli pokušaji nisu u zbroju. Promet (42,0 MB) = poslano + primljeno.
+Zahtjevi (2017) = spremanja + objave + čitanja 200 + čitanja 304; neuspjeli pokušaji nisu u zbroju. Promet (40,7 MB) = poslano + primljeno.
 
 ## Što je u scenariju (sat, redom)
 
@@ -34,7 +34,7 @@ Predaja (`submission.submit.post`) i izvoz (`work-export*`) su jednokratni i zas
 
 ## Glavni nalaz: tijelo spremanja nosi cijeli dokument
 
-`CommitBody.document` je cijela kanonska snimka dokumenta u base64, uz svako spremanje (`scripts/load/lanac.ts`). Spremanje od 40 znakova na kratkom dokumentu je oko 2 KB, na dugom oko 166 KB. Živi prikaz isto šalje cijeli dokument (`live.document.put`, tijelo je JCS bajtovi snimke, do 2 MiB), najviše jednom u sekundi. Zato promet raste s veličinom dokumenta, a ne s brojem utipkanih znakova. Najveći dokazani trošak prometa u ovoj probi su ta dva ponavljanja cijele snimke (spremanje i objava uživo). Smanjenje (npr. slanje razlike) mijenja ugovor, pa ide kao odluka za Daniela, ne kao izmjena u ovom zadatku.
+`CommitBody.document` je cijela kanonska snimka dokumenta u base64, uz svako spremanje (`scripts/load/lanac.ts`). Spremanje od 40 znakova na kratkom dokumentu je oko 2 KB, na dugom oko 165 KB. Živi prikaz isto šalje cijeli dokument (`live.document.put`, tijelo je JCS bajtovi snimke, do 2 MiB), najviše jednom u sekundi. Zato promet raste s veličinom dokumenta, a ne s brojem utipkanih znakova. Najveći dokazani trošak prometa u ovoj probi su ta dva ponavljanja cijele snimke (spremanje i objava uživo). Smanjenje (npr. slanje razlike) mijenja ugovor, pa ide kao odluka za Daniela, ne kao izmjena u ovom zadatku.
 
 ## Ritam klijenta (izvor)
 
