@@ -1,6 +1,6 @@
 # Izvoz kvalitativnog kodiranja v1 (`qualitative-export-v1`)
 
-Zadatak: SRV-V18-KODIRANJE-OZNAKE `srv-v18-kodiranje-oznake` (Ductus#2058, nalog c.7173853108; val 18, `docs/nalazi/val18-razlika.md` u WEB repou, §5 zadatak 8, nalazi V18-4, V18-6, V18-8, V18-9). Ruta: `student.qual-export.get`, `GET /api/v1/student/qual/export`, pristup `student`, API 1.147.0, aditivno. Oblik gradi `buildQualitativeExport` u `server/domain/qualitative-coding/export.ts`, čisto: isti ulaz daje iste bajtove.
+Zadatak: SRV-V18-KODIRANJE-OZNAKE `srv-v18-kodiranje-oznake` (Ductus#2058, nalog c.7173853108; val 18, `docs/nalazi/val18-razlika.md` u WEB repou, §5 zadatak 8, nalazi V18-4, V18-6, V18-8, V18-9). Ruta: `student.qual-export.get`, `GET /api/v1/student/qual/export`, pristup `student`, API 1.149.0, aditivno. Oblik gradi `buildQualitativeExport` u `server/domain/qualitative-coding/export.ts`, čisto: isti ulaz daje iste bajtove.
 
 Izvoz je **opis za nošenje**, ne presuda: nema ocjene, ranga ni usporedbe gradiva. JSON je jedini oblik s poslužitelja; CSV iz njega piše web (V18-6; ugovorni format nema tekstualno tijelo), isto kao za upitnik.
 
