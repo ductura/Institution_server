@@ -112,12 +112,22 @@ async function receiptsFor(segments: readonly Uint8Array[], signer: Signer) {
   return receipts;
 }
 
+/** The Merkle file of a package; `leaves` null leaves only the inclusion proof. */
+type MerkleProof = {
+  receiptId: string;
+  index: number;
+  treeSize: number;
+  root: string;
+  proof: string[];
+  leaves: string[] | null;
+};
+
 type Package = {
   segments: Uint8Array[];
   receipts: unknown[];
   head: { segmentHash: string; segmentCount: number } | null;
   initialDocument: JcsJsonValue | null;
-  merkle: Record<string, unknown> | null;
+  merkle: MerkleProof | null;
   keys: unknown;
   /** Names the manifest lists; by default every segment and receipt in order. */
   segmentNames?: string[];
@@ -168,7 +178,10 @@ const check = (pkg: Package, argv: readonly string[] = ARGS) =>
   runChainVerify(argv, memoryIo(filesOf(pkg)));
 
 // A day of three invented receipts and the two of this work, in log order.
-async function merkleFor(receipts: readonly Record<string, unknown>[], pick: number) {
+async function merkleFor(
+  receipts: readonly Record<string, unknown>[],
+  pick: number,
+): Promise<MerkleProof> {
   const other = (n: number) => sha256(`izmisljena tuda potvrda ${n}`);
   const leaves = [other(1), ...receipts.map((r) => r.payloadDigestSha256 as string), other(2)];
   const leafHashes = await Promise.all(leaves.map((leaf) => evidenceLogLeafHash(fromHex(leaf))));
