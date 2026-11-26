@@ -3,7 +3,7 @@
 // rule 8). Only a write whose result is exactly the stored suggestion applied
 // to the state before it is recorded as the teacher's suggestion; anything
 // else is the student's own change.
-import { documentsEqual, type CanonicalDocument } from "../../domain/document/index.ts";
+import { documentsEqual, type CanonicalDocument } from "../../document/index.ts";
 
 import { applySuggestion, type SuggestionChange } from "./apply.ts";
 import type { Suggestion } from "./suggestion.ts";
