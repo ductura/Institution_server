@@ -115,6 +115,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationConversationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
@@ -2017,6 +2018,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // F4-NAS-R04-SRV: the same for a conversation of that declaration.
+  "teacher.declaration-conversation.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/declaration/conversations/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-F4-NAS-R11: a live session that may not read that student's notes gets 404 (ZD403).
   "teacher.submission-notes.get": {
     method: "GET",
@@ -2858,6 +2866,7 @@ const FACTORIES = [
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createTeacherDeclarationRouteFor",
+  "createTeacherDeclarationConversationRouteFor",
   "createTeacherSubmissionNotesRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
@@ -3018,6 +3027,7 @@ const MOUNTED = [
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createTeacherDeclarationRouteFor(databases.main),
+  createTeacherDeclarationConversationRouteFor(databases.main),
   createTeacherSubmissionNotesRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),

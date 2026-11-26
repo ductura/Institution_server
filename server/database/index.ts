@@ -499,7 +499,10 @@ export {
   type TeacherSubmissionReader,
 } from "./teacher-submissions/index.ts";
 export {
+  createTeacherDeclarationConversationReader,
   createTeacherDeclarationReader,
+  type TeacherDeclarationConversation,
+  type TeacherDeclarationConversationReader,
   type TeacherDeclaration,
   type TeacherDeclarationReader,
 } from "./teacher-declaration/index.ts";

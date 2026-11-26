@@ -2763,6 +2763,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  // F4-NAS-R04-SRV: the fake stores no conversation, so nothing is attached.
+  "teacher.declaration-conversation.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration/conversations/00000000-0000-4000-8000-0000000000c1`,
+      as: "nastavnik",
+    },
+    refused: "not_found",
+  },
   "teacher.submission-notes.get": {
     before: [NOTE],
     request: {

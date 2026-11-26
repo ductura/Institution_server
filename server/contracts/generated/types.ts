@@ -1674,6 +1674,13 @@ export type Operations = {
     success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.declaration-conversation.get": {
+    params: { "assignmentId": string; "studentId": string; "conversationId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "conversationId": string; "throughSeq": number; "messagesSha256": string; "messages": ({ "seq": number; "role": "student_paragraph" | "provider_response"; "content": string; "contentSha256": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.declaration-question.get": {
     params: { "assignmentId": string };
     query: undefined;
