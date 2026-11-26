@@ -184,19 +184,23 @@ async function signIn(origin: string, account = "demo-student") {
   return { answer: await b.get(back), jar: b.jar, browser: b };
 }
 
-/** The neutral page: the contract's HTML error, no cache, the attempt cleared, no session. */
-async function expectPage(answer: Response, status: number, logged: string[]) {
-  expect(answer.status).toBe(status);
-  expect(answer.headers.get("content-type")).toBe("text/html; charset=utf-8");
+/**
+ * A failed login (STU-R01): a 303 to the sign-in page with the contract's
+ * code, no cache, no session cookie, and no value from the provider or the
+ * request in the logs.
+ */
+async function expectFailureRedirect(
+  answer: Response,
+  code: "login_failed" | "provider_unavailable",
+  origin: string,
+  logged: string[],
+) {
+  expect(answer.status).toBe(303);
+  expect(answer.headers.get("location")).toBe(`${origin}/prijava?greska=${code}`);
   expect(answer.headers.get("cache-control")).toBe("no-store");
-  expect(answer.headers.get("x-request-id")).toEqual(expect.any(String));
-  expect(answer.headers.get("location")).toBeNull();
   const cookies = answer.headers.getSetCookie();
   expect(cookies.some((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`))).toBe(false);
-  const body = await answer.text();
-  expect(body).toMatch(/^<!doctype html>\n<html lang="hr">/u);
-  expect(body).toContain("Prijava nije dovršena");
-  expect(body).toContain('href="/api/v1/auth/login"');
+  expect(await answer.text()).toBe("");
   // Logs carry a stage and a code, never a value from the provider or the request.
   expect(logged.join("\n")).not.toMatch(/demo-student|code=|state=/u);
   return cookies;
@@ -223,10 +227,10 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     expect(closed).toEqual([]);
   });
 
-  it("refuse: access_denied ends on the 400 page, with no session", async () => {
+  it("refuse: access_denied ends on the sign-in page as login_failed, with no session", async () => {
     const { origin, opened, logged } = await stack("refuse");
     const { answer, jar } = await signIn(origin);
-    const cookies = await expectPage(answer, 400, logged);
+    const cookies = await expectFailureRedirect(answer, "login_failed", origin, logged);
     expect(cookies).toEqual([
       `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
     ]);
@@ -239,7 +243,7 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     const { origin, opened, logged } = await stack("expired", { userinfoAtMs: OIDC_EXPIRES_AT_MS });
     const { answer } = await signIn(origin, "demo-teacher");
     // Refused where the tokens are used (userinfo answers 401), not anywhere earlier.
-    const cookies = await expectPage(answer, 400, logged);
+    const cookies = await expectFailureRedirect(answer, "login_failed", origin, logged);
     expect(cookies).toEqual([
       `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
     ]);
@@ -250,14 +254,11 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     expect(opened).toEqual([]);
   });
 
-  it("unavailable: the login itself ends on the 503 page, with no attempt cookie", async () => {
+  it("unavailable: the login itself ends on the sign-in page as provider_unavailable, with no attempt cookie", async () => {
     const { origin, opened, logged } = await stack("unavailable");
     const answer = await fetch(`${origin}/api/v1/auth/login`, { redirect: "manual" });
-    const cookies = await expectPage(answer, 503, logged);
+    const cookies = await expectFailureRedirect(answer, "provider_unavailable", origin, logged);
     expect(cookies).toEqual([]);
-    expect(await (await fetch(`${origin}/api/v1/auth/login`)).text()).toContain(
-      "Prijava preko AAI@EduHr trenutačno ne odgovara.",
-    );
     expect(opened).toEqual([]);
   });
 });
@@ -312,7 +313,9 @@ describe("the login routes over HTTP", () => {
     );
     const back = location(await b.get(resume), resume);
     expect((await b.get(back)).status).toBe(303);
-    expect((await b.get(back)).status).toBe(400);
+    const replay = await b.get(back);
+    expect(replay.status).toBe(303);
+    expect(replay.headers.get("location")).toBe(`${origin}/prijava?greska=login_failed`);
     expect(opened).toHaveLength(1);
   });
 
@@ -440,7 +443,7 @@ describe("a login configuration that does not load", () => {
   // Ported from Ductus tests/unit/auth/routes.test.ts at 078c780 ("ends on
   // the neutral page, naming no variable"), over the real routes here.
   it.each([["production"], [undefined]])(
-    "D-09: the fake provider with NODE_ENV %s ends on the 503 page, naming no variable",
+    "D-09: the fake provider with NODE_ENV %s ends on the sign-in page as provider_unavailable, naming no variable",
     async (nodeEnv) => {
       const logged: string[] = [];
       vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
