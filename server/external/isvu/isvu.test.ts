@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -249,6 +249,25 @@ describe("the setting", () => {
       const root = join(ROOT, "config", "faculties");
       expect(readIsvuSettingFile(root, "demo-fakultet").mode).toBe("mock");
       expect(readIsvuSettingFile(root, "fpzg").mode).toBe("off");
+    });
+
+    it("every faculty directory except demo-* has isvu.json set to exactly off (V18-22-R06)", () => {
+      const root = join(ROOT, "config", "faculties");
+      const faculties = readdirSync(root, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name);
+      expect(faculties).toEqual(expect.arrayContaining(["fpzg", "demo-fakultet"]));
+      const real = faculties.filter((name) => !name.startsWith("demo-"));
+      expect(real).toContain("fpzg");
+      for (const name of real) {
+        const raw = JSON.parse(readFileSync(join(root, name, "isvu.json"), "utf8")) as unknown;
+        expect(raw, name).toEqual({ format: ISVU_SETTING_FORMAT, mode: "off" });
+        expect(readIsvuSettingFile(root, name).mode, name).toBe("off");
+      }
+      // a demo faculty may only be mock or off, never anything else
+      for (const name of faculties.filter((n) => n.startsWith("demo-"))) {
+        expect(["mock", "off"], name).toContain(readIsvuSettingFile(root, name).mode);
+      }
     });
   });
 });
