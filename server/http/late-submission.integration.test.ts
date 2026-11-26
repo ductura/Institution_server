@@ -2,8 +2,8 @@
 // with the real pipeline, over a fake port: the success and refusal vectors of
 // both contracts, a body that is not exactly {lateSubmissionAllowed} refused
 // before the port, the port never asked for a malformed id, another's
-// assignment read as 404 on both routes, and 503 for an answer outside the
-// contract. The framing vectors (origin, size, stream) belong to the shared
+// assignment read as 404 on every route, and 503 for an answer outside the
+// contract. The teacher's read (F4-NAS-R01) asks only its own port method. The framing vectors (origin, size, stream) belong to the shared
 // layers and are covered by their own tests. All values are invented.
 import { readFileSync } from "node:fs";
 
@@ -44,6 +44,7 @@ const FRAMING = new Set([
 const ROUTES = [
   { id: "institution.assignment-late-submission.put", method: "PUT", scope: "institution" },
   { id: "student.assignment-late-submission.get", method: "GET", scope: "student" },
+  { id: "teacher.assignment-late-submission.get", method: "GET", scope: "teacher" },
 ] as const;
 const path = (scope: string, assignmentId: string) =>
   `/${scope}/assignments/${assignmentId}/late-submission`;
@@ -55,6 +56,7 @@ let reply: () => Promise<unknown> = async () => ({ status: "not_found" });
 async function start(): Promise<string> {
   const port = {
     read: (...args: unknown[]) => (calls.push(["read", ...args]), reply()),
+    readAsTeacher: (...args: unknown[]) => (calls.push(["readAsTeacher", ...args]), reply()),
     set: (...args: unknown[]) => (calls.push(["set", ...args]), reply()),
   } as unknown as LateSubmissionPort;
   running = await startServer({
@@ -186,5 +188,46 @@ describe("a student of the course reads it", () => {
     };
     const base = await start();
     expect((await get(base, ID)).status).toBe(503);
+  });
+});
+
+describe("the teacher of the assignment reads it back (F4-NAS-R01)", () => {
+  const TEACHER_READ = { cookie: TEACHER.cookie };
+  const read = (base: string, assignment: string, headers: Record<string, string> = TEACHER_READ) =>
+    fetch(base + path("teacher", assignment), { headers });
+
+  it("the teacher read asks only the teacher's port, with the token and the id in lowercase", async () => {
+    reply = async () => ({ status: "read", lateSubmissionAllowed: false });
+    const base = await start();
+    const got = await read(base, ID.toUpperCase());
+    expect(await got.json()).toEqual({ lateSubmissionAllowed: false });
+    expect(got.headers.get("cache-control")).toBe("no-store");
+    expect(calls).toEqual([["readAsTeacher", "izmisljeni-token-nastavnika-000000000000001", ID]]);
+  });
+
+  it("another teacher's, a student's or an unknown assignment is 404, the same answer", async () => {
+    const base = await start();
+    const got = await read(base, ID);
+    expect(got.status).toBe(404);
+    expect(((await got.json()) as { code: string }).code).toBe("not_found");
+  });
+
+  it("a malformed id is 404 and a cross-site read 403, both without the port", async () => {
+    const base = await start();
+    expect((await read(base, "nije-uuid")).status).toBe(404);
+    expect((await read(base, ID, { ...TEACHER_READ, "sec-fetch-site": "cross-site" })).status).toBe(
+      403,
+    );
+    expect(calls).toEqual([]);
+  });
+
+  it("an answer outside the contract or a failing port is 503", async () => {
+    reply = async () => ({ status: "read", lateSubmissionAllowed: "da" });
+    const base = await start();
+    expect((await read(base, ID)).status).toBe(503);
+    reply = async () => {
+      throw new Error("izmišljen kvar baze");
+    };
+    expect((await read(base, ID)).status).toBe(503);
   });
 });
