@@ -2417,6 +2417,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "work.imports.post": { request: POST_IMPORT },
+  "work.imports.get": {
+    before: [POST_IMPORT],
+    request: { path: IMPORTS, as: "student" },
+  },
   "work.imports.confirm.post": {
     before: [POST_IMPORT],
     request: {

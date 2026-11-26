@@ -1,3 +1,5 @@
 # import
 
 `POST /api/v1/works/{documentId}/imports` i `POST /api/v1/works/{documentId}/imports/{importId}/confirm` (`work.imports.post`, `work.imports.confirm.post`, SRV-1803). Tanki HTTP rub: sesija, oblik zahtjeva i zatvoreni odgovori. Prvo pita bazu smije li student vlasnik uvoziti u rad (`import_gate`), tek onda `server/import` čita datoteku i gradi manifest, a `server/database/import` ga sprema. Pregled je označen izvorom `import` i vrstom dokaza `imported`; u rad ulazi tek potvrdom, koja je idempotentna. Tko smije odlučuje baza.
+
+`GET /api/v1/works/{documentId}/imports` (`work.imports.get`, SRV-F4-PM2-R14-SRV, M8.13): popis uvoza rada, samo metapodaci (id, vrsta i oblik datoteke, veličina, normalizirani naziv ili null, osnovna revizija, vrijeme, stanje pending/confirmed/expired, vrijeme potvrde i događaj), najviše 200 najnovijih; nikad manifest, hash ni sadržaj. Isti odgovor za studenta vlasnika i nastavnika zadatka (`collaboration.list_imports`, odnos, C-23); tuđi, nepostojeći i neispravan rad su isti 404. Čitanje ništa ne zapisuje.
