@@ -230,13 +230,16 @@ it("drafts a general comment with a kind, keeps it from the student until publis
       await delay.createDraftWithKind(TEACHER, WORK, "Izmišljena napomena.", ANCHOR, null),
     ).toMatchObject({ status: "ok" });
     // The kind, and a null anchor, are the author's to read while a draft.
-    expect(await delay.listDrafts(TEACHER, WORK)).toMatchObject({
-      status: "ok",
-      drafts: [
-        { anchor: null, kind: "praise" },
-        { anchor: ANCHOR, kind: null },
-      ],
-    });
+    // Two threads written in one instant have no fixed order: compare as sets.
+    const listed = await delay.listDrafts(TEACHER, WORK);
+    expect(listed).toMatchObject({ status: "ok" });
+    expect("drafts" in listed ? listed.drafts : []).toHaveLength(2);
+    expect("drafts" in listed ? listed.drafts : []).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ anchor: null, kind: "praise" }),
+        expect.objectContaining({ anchor: ANCHOR, kind: null }),
+      ]),
+    );
     expect(await published(STUDENT)).toEqual([]);
     // Bad input, and everyone but the teacher of the work, are refused.
     expect(await delay.createDraftWithKind(TEACHER, WORK, "Tekst.", null, "x" as never)).toEqual({
@@ -252,10 +255,14 @@ it("drafts a general comment with a kind, keeps it from the student until publis
     }
     // Publishing gives the student both, with the kind and the missing anchor.
     expect(await delay.publish(TEACHER, WORK)).toEqual({ status: "ok", published: 2 });
-    expect(await published(STUDENT)).toEqual([
-      { body: "Izmišljen opći komentar.", kind: "praise", anchor: null },
-      { body: "Izmišljena napomena.", kind: null, anchor: ANCHOR },
-    ]);
+    const seen = await published(STUDENT);
+    expect(seen).toHaveLength(2);
+    expect(seen).toEqual(
+      expect.arrayContaining([
+        { body: "Izmišljen opći komentar.", kind: "praise", anchor: null },
+        { body: "Izmišljena napomena.", kind: null, anchor: ANCHOR },
+      ]),
+    );
     expect(await published(OTHER_STUDENT).catch(() => "refused")).toBe("refused");
   } finally {
     await db.close();
