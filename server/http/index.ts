@@ -58,6 +58,7 @@ export { createAssistantMatchRoutesFor } from "./assistant-match/index.ts";
 export { createInputRhythmRoutesFor } from "./input-rhythm/index.ts";
 export { createRevisionRestoreRouteFor } from "./revision-restore/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
+export { createTeacherRoleRoutes, createTeacherRoleRoutesFor } from "./teacher-roles/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export { ANALYSIS_ENABLED, createAnalysisRoutesFor } from "./analysis/index.ts";
