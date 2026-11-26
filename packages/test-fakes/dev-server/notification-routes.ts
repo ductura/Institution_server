@@ -5,6 +5,7 @@ export const DEMO_NOTIFICATION_ID = "00000000-0000-4000-8000-000000001701";
 export const DEMO_REVISION_NOTIFICATION_ID = "00000000-0000-4000-8000-000000001711";
 export const DEMO_MESSAGE_SLOT_NOTIFICATION_ID = "00000000-0000-4000-8000-000000001721";
 const readAt = new WeakMap<State, string>();
+const messageSlotReadAt = new WeakMap<State, string>();
 
 export const NOTIFICATION_HANDLERS: Handlers = {
   "notifications.list.get": ({ account, state, query }) => {
@@ -72,7 +73,7 @@ export const NOTIFICATION_HANDLERS: Handlers = {
       documentId: IDS.document,
       slotId: null,
       createdAt: "2026-11-26T09:00:00.000Z",
-      readAt: readAt.get(state) ?? null,
+      readAt: messageSlotReadAt.get(state) ?? null,
     };
     return {
       status: 200,
@@ -84,9 +85,16 @@ export const NOTIFICATION_HANDLERS: Handlers = {
   },
   "notifications.read.post": ({ account, params, state, now }) => {
     if (account === null) return { error: "unauthorized" };
-    if (account.id !== IDS.student || params.id.toLowerCase() !== DEMO_NOTIFICATION_ID)
-      return { error: "not_found" };
-    if (!readAt.has(state)) readAt.set(state, now.toISOString());
+    const id = params.id.toLowerCase();
+    // Each demo notification keeps its own read time; reading one never marks another.
+    const store =
+      id === DEMO_NOTIFICATION_ID
+        ? readAt
+        : id === DEMO_MESSAGE_SLOT_NOTIFICATION_ID
+          ? messageSlotReadAt
+          : undefined;
+    if (account.id !== IDS.student || store === undefined) return { error: "not_found" };
+    if (!store.has(state)) store.set(state, now.toISOString());
     return { status: 204 };
   },
 };
