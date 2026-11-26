@@ -11,6 +11,7 @@ import { assertFakeOidcAllowed } from "@ductura/test-fakes/oidc";
 import {
   ALLOWED_NODE_ENV,
   DEFAULT_PORTS,
+  EPHEMERAL_PORTS,
   FETCH_BAD_PORTS,
   parseArgs,
   SLOTS,
@@ -112,6 +113,12 @@ describe("stackPorts", () => {
     ["VS1_OIDC_PORT", "5060"],
   ])("refuses %s=%s, a port fetch refuses", (name, value) => {
     expect(() => stackPorts({ [name]: value })).toThrow(/bad port/u);
+  });
+
+  it("has no default port inside the ephemeral range of outgoing connections", () => {
+    for (const port of Object.values(DEFAULT_PORTS)) {
+      expect(port < EPHEMERAL_PORTS.from || port > EPHEMERAL_PORTS.to).toBe(true);
+    }
   });
 
   it("has no default port fetch refuses", () => {
