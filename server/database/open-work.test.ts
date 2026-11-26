@@ -77,7 +77,7 @@ function opener(rows: Rows) {
             : text.includes("evidence.document_revision")
               ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
               : text.includes("evidence.package")
-                ? (rows.domain ?? [{ evidence_domain_id: DOMAIN }])
+                ? (rows.domain ?? [{ evidence_domain_id: DOMAIN, last_signed_at: null }])
                 : (rows.keys ?? [KEY]);
         return { rows: pick as never[], rowCount: pick.length };
       },
@@ -146,6 +146,7 @@ describe("createWorkOpener", () => {
           },
         ],
         submitted: false,
+        lastSignedAt: null,
       },
     });
     expect(seen.map((s) => s.values)).toEqual([
@@ -285,6 +286,28 @@ describe("createWorkOpener", () => {
     const { open, seen } = opener({ domain: rows, keys: [] });
     expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
     expect(seen.some((s) => s.text.includes("signing_key"))).toBe(false);
+  });
+
+  it("IZV-RUTE-1a: sends the signed minute of the newest signed receipt", async () => {
+    const at = "2026-11-20T09:41:00.000Z";
+    const { open, seen } = opener({ domain: [{ evidence_domain_id: DOMAIN, last_signed_at: at }] });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok && result.value.lastSignedAt).toBe(at);
+    // Only a signed receipt counts, newest by the sequence its segment ends at.
+    const sql = seen.find((s) => s.text.includes("evidence.package"))?.text ?? "";
+    expect(sql).toMatch(/r\.status = 'signed'/);
+    expect(sql).toMatch(/ORDER BY s\.sequence_to DESC LIMIT 1/);
+  });
+
+  it.each([
+    ["absent", {}],
+    ["seconds in it", { last_signed_at: "2026-11-20T09:41:07.000Z" }],
+    ["another zone", { last_signed_at: "2026-11-20T09:41:00.000+01:00" }],
+    ["empty", { last_signed_at: "" }],
+    ["a number", { last_signed_at: 1 }],
+  ])("IZV-RUTE-1a: a last signed time %s is a malformed row", async (_name, change) => {
+    const { open } = opener({ domain: [{ evidence_domain_id: DOMAIN, ...change }] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
   });
 
   it.each([
