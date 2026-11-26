@@ -78,6 +78,23 @@ SELECT is(pg_temp.overview('iva', NULL, 1, true, '2026-12-01T10:00:00Z', pg_temp
 SELECT is(pg_temp.overview('iva', NULL, 1, true, NULL, pg_temp.id('ms2')), '-/-/none/-/none/0/false', 'after the first undated work');
 SELECT is(pg_temp.overview('iva', NULL, 1, true, NULL, pg_temp.id('ms3')), 'empty', 'after the last work');
 
+-- The other two stages show too, and a date with microseconds is read to the
+-- millisecond, so a key written from it never repeats the work it came from.
+SELECT is(pg_temp.ask('marko', format('SELECT stage FROM app.set_work_thesis_stage(%L, %L, NULL)', pg_temp.mdoc(), 'submitted_to_office')),
+  'submitted_to_office', 'Marko marks the work as handed to the office');
+SELECT is(pg_temp.overview('iva', 'submitted_to_office'), 'Ana/Marko/submitted_to_office/-/approved/2/true', 'the stage submitted_to_office shows');
+SELECT is(pg_temp.ask('marko', format('SELECT stage FROM app.set_work_thesis_stage(%L, %L, %L::timestamptz)', pg_temp.mdoc(),
+  'defended', '2026-12-02T09:30:00Z')), 'defended', 'Marko marks the work as defended');
+SELECT is(pg_temp.overview('iva', 'defended'), 'Ana/Marko/defended/12-02/approved/2/true', 'the stage defended shows');
+SELECT is(pg_temp.overview('iva', 'defense_scheduled'), 'empty', 'and leaves defense_scheduled');
+SELECT is(pg_temp.ask_as('ductus_identity', 'iva', format(
+  'WITH i AS (INSERT INTO institution.work_thesis_stage_event (institution_id, document_id, stage, defense_at, actor_id, actor_part) '
+  'VALUES (%L, %L, %L, %L::timestamptz, %L, %L) RETURNING 1) SELECT count(*) FROM i',
+  pg_temp.id('fak_a'), pg_temp.mdoc(), 'defended', '2026-12-03 10:00:00.123456+00', pg_temp.id('iva'), 'faculty')), '1', 'a stage with microseconds is written');
+SELECT is(pg_temp.overview('iva', NULL, 1), 'Ana/Marko/defended/12-03/approved/2/true,Dora/Vesna/none/-/none/0/false', 'the date with microseconds shows to the day');
+SELECT is(pg_temp.overview('iva', NULL, 1, true, '2026-12-03T10:00:00.123Z', pg_temp.id('ms1')),
+  'Dora/Vesna/none/-/none/0/false,-/-/none/-/none/0/false', 'the key made of the millisecond date skips exactly that work');
+
 -- Bad input is 422 and writes nothing.
 SELECT is(pg_temp.overview('iva', s), 'ZD422: invalid input', 'stage ' || s) FROM (VALUES ('graded'), (''), ('DEFENDED')) AS t(s);
 SELECT is(pg_temp.overview('iva', NULL, l), 'ZD422: invalid input', 'limit ' || l) FROM (VALUES (0), (201), (-1)) AS t(l);

@@ -11,6 +11,9 @@
 -- another institution's works are never seen. Errors carry no input:
 -- ZD401 no session, ZD403 not allowed, ZD422 invalid input.
 --
+-- The date is read to the millisecond (the contract's precision), so a key written
+-- from it always matches the row it came from.
+--
 -- Paging is by key: the caller passes the key of the last row it got (date of
 -- the defence or none, mentorship id), so no page skips or repeats a work.
 SET LOCAL ROLE ductus_migrator;
@@ -69,7 +72,8 @@ BEGIN
       SELECT m.id AS mentorship_id, doc.id AS document_id, m.work_type,
              mn.given_name AS mentor_given_name, mn.family_name AS mentor_family_name,
              sn.given_name AS student_given_name, sn.family_name AS student_family_name,
-             coalesce(st.stage, 'none') AS stage, st.defense_at,
+             coalesce(st.stage, 'none') AS stage,
+             date_trunc('milliseconds', st.defense_at) AS defense_at,
              CASE WHEN tv.id IS NULL THEN 'none' WHEN td.id IS NULL THEN 'proposed' ELSE td.decision END AS topic_state,
              coalesce(cm.size, 0) AS committee_size
         FROM institution.mentorship m

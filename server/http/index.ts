@@ -214,6 +214,7 @@ export {
 } from "./declaration-required.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
+export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
@@ -301,6 +302,7 @@ export {
   createLayers,
   createPipeline,
   PIPELINE_STEPS,
+  trafficLogFor,
   type App,
   type Layer,
   type Layers,

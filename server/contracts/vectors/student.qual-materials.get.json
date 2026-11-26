@@ -1,0 +1,98 @@
+{
+  "route": "student.qual-materials.get",
+  "vectors": [
+    {
+      "name": "two-materials",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "materials": [
+            {
+              "id": "00000000-0000-4000-8000-00000018a001",
+              "title": "Intervju A",
+              "kind": "interview",
+              "createdOn": "2026-11-25",
+              "charCount": 35,
+              "segmentCount": 0,
+              "locked": false
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000018a002",
+              "title": "Bilješka A",
+              "kind": "note",
+              "createdOn": "2026-11-25",
+              "charCount": 35,
+              "segmentCount": 2,
+              "locked": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "materials": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000180101"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000180102"
+        }
+      }
+    }
+  ]
+}
