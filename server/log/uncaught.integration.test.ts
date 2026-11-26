@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -12,7 +11,8 @@ import { CANARY } from "./invented.fixture.ts";
  * stack are nowhere, and the process exits 1 as it would without the capture.
  */
 
-const INDEX = fileURLToPath(new URL("./index.ts", import.meta.url));
+// A file URL, not a path: a Windows path such as D:\... is no valid ESM specifier.
+const INDEX = new URL("./index.ts", import.meta.url).href;
 
 function run(fault: string) {
   const script = `
