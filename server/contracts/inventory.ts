@@ -1281,12 +1281,7 @@ export const SERVER_SOURCES: Readonly<
  * fake server. This list may only shrink: an id leaves it when its handler is
  * mounted (tests/contracts/contract-only.test.ts).
  */
-export const CONTRACT_ONLY: readonly string[] = [
-  "institution.enrollments.post",
-  "institution.role-confirmation.post",
-  "institution.role-revocation.post",
-  "ops.events.get",
-];
+export const CONTRACT_ONLY: readonly string[] = ["institution.enrollments.post", "ops.events.get"];
 
 /**
  * Inventory files whose contracts follow in the next PR (DAN-736, part 2). This

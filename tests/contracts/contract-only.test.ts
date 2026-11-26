@@ -26,6 +26,7 @@ import {
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createEnrollmentCodeStateRouteFor,
+  createTeacherRoleRoutesFor,
   createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
@@ -431,6 +432,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createEnrollmentCodeStateRouteFor(databases.main)",
     ids: ["institution.enrollment-code-state.get"],
     routes: () => [createEnrollmentCodeStateRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-ULOGA-POTVRDA-OPOZIV: the administrator confirms and revokes a teacher role.
+    call: "createTeacherRoleRoutesFor(databases.main)",
+    ids: ["institution.role-confirmation.post", "institution.role-revocation.post"],
+    routes: () => createTeacherRoleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // SRV-14: a course's new assignment and an assignment's next version.
@@ -1087,6 +1094,7 @@ describe("CONTRACT_ONLY", () => {
         ...SRV_31,
         ...INSTITUTION_COURSE_ROUTES,
         "institution.enrollment-code-state.get",
+        ...["institution.role-confirmation.post", "institution.role-revocation.post"],
         "institution.course-assignments.post",
         "institution.assignment-versions.post",
         "submission.submit.post",
@@ -1140,6 +1148,8 @@ describe("routes the entry point mounts itself", () => {
       "support.problem-reports.post",
       ...INSTITUTION_COURSE_ROUTES,
       "institution.enrollment-code-state.get",
+      "institution.role-confirmation.post",
+      "institution.role-revocation.post",
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.assignment.get",

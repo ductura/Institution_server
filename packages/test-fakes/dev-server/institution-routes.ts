@@ -254,8 +254,11 @@ export const INSTITUTION_HANDLERS: Handlers = {
   },
   "institution.role-confirmation.post": ({ state, account, params }) => {
     if (!isAdmin(account)) return { error: "forbidden" };
+    // As institution.confirm_teacher_role: the administrator themself, a missing
+    // person and a student (whose login gives no teacher right, D-171) are one 404.
     const teacher = state.accounts.find((a) => a.id === params.teacherId);
-    if (teacher === undefined) return { error: "not_found" };
+    if (teacher === undefined || teacher.id === account?.id || teacher.roles.includes("student"))
+      return { error: "not_found" };
     if (!teacher.roles.includes("teacher")) teacher.roles.push("teacher");
     return { status: 200, body: { confirmed: true } };
   },
