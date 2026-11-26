@@ -16,7 +16,7 @@
 --       cannot be derived yet and are never returned; the closed reason set
 --       and the mandatory_attachment_missing check stay as they are.
 --   declaration.list_conversations        RPC of the web role: the candidates
---       with the throughSeq and messagesSha256 the client sends back in
+--       (at most 200, the response limit, by conversation id) with the throughSeq and messagesSha256 the client sends back in
 --       ai.attachments. Own work only; another student's assignment or a
 --       missing one is not_found.
 SET LOCAL ROLE ductus_migrator;
@@ -31,7 +31,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
     FROM assistant.conversation c
     JOIN (SELECT x.conversation_id, x.institution_id, x.seq, x.content_sha256,
                  row_number() OVER (PARTITION BY x.conversation_id ORDER BY x.seq) AS rn
-            FROM assistant.message x) m
+            FROM assistant.message x
+           WHERE x.conversation_id IN (SELECT k.id FROM assistant.conversation k
+                                        WHERE k.assignment_id = p_assignment AND k.student_id = p_student)) m
       ON m.conversation_id = c.id AND m.institution_id = c.institution_id AND m.seq = m.rn
    WHERE c.assignment_id = p_assignment AND c.student_id = p_student
    GROUP BY c.id
@@ -64,8 +66,9 @@ BEGIN
         'throughSeq', cardinality(c.message_hashes),
         'messagesSha256', encode(sha256(convert_to(array_to_json(c.message_hashes)::text, 'UTF8')), 'hex'))
       ORDER BY c.conversation_id)
-      FROM declaration.conversation_snapshot(v_actor.institution_id, p_assignment, v_actor.user_id,
-        v_document.id, v_document.current_revision) c), '[]'::jsonb));
+      FROM (SELECT s.* FROM declaration.conversation_snapshot(v_actor.institution_id, p_assignment,
+              v_actor.user_id, v_document.id, v_document.current_revision) s
+             ORDER BY s.conversation_id LIMIT 200) c), '[]'::jsonb));
 END $$;
 
 REVOKE EXECUTE ON FUNCTION declaration.list_conversations(uuid) FROM PUBLIC;
