@@ -287,6 +287,16 @@ async function selfTest(bin: string, reportDir: string): Promise<number> {
   }
 }
 
+/**
+ * The exit code of a run against the stack: 2 when it left its scope or leaked the cookie,
+ * 1 when Schemathesis hit run errors (nothing reliable was checked), otherwise 0, also with
+ * disagreements.
+ */
+export function stackExitCode(result: Pick<ProbeResult, "leaks" | "summary">): number {
+  if (result.leaks.length > 0 || result.summary.scope.length > 0) return 2;
+  return result.summary.errors > 0 ? 1 : 0;
+}
+
 async function stackRun(bin: string, reportDir: string, specFile: string): Promise<number> {
   assertLocal(process.env);
   // The stack sends the sign-in callback to the edge, so the probe uses the browser's origin too.
@@ -308,11 +318,9 @@ async function stackRun(bin: string, reportDir: string, specFile: string): Promi
     const text = `Pokret ${startedAt} – ${new Date().toISOString()}, ${origin}, Schemathesis ${SCHEMATHESIS_VERSION}\n${formatSummary(result.summary)}`;
     writeFileSync(join(reportDir, "sazetak.txt"), `${text}\n`);
     console.log(text);
-    if (result.leaks.length > 0) {
+    if (result.leaks.length > 0)
       console.log(`KOLAČIĆ u izvještaju (${result.leaks.join(", ")}): izvještaj ne dijeli.`);
-      return 2;
-    }
-    return result.summary.scope.length > 0 ? 2 : 0;
+    return stackExitCode(result);
   } finally {
     const logout = await student.api("auth/logout", {});
     await logout.body?.cancel();

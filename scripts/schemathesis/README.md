@@ -18,7 +18,7 @@ Izvještaji (`report.json`, `requests.har.json`, `output.txt`, `sazetak.txt`) za
 
 - 0 kad je pokret valjan, i kad je našao neslaganja;
 - 2 kad je pokret izašao iz opsega ili kad je kolačić završio u izvještaju;
-- 1 kad pokret nije uspio (prijava, verzija, popis ruta).
+- 1 kad pokret nije uspio (prijava, verzija, popis ruta) ili kad Schemathesis javi greške pokretanja (npr. nedostupan poslužitelj).
 
 ## Opseg i zaštite
 

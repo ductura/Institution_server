@@ -10,6 +10,7 @@ import {
   selfTestProblems,
   SELF_PATHS,
   SELF_SPEC,
+  stackExitCode,
 } from "./run.ts";
 
 describe("restrictSpec", () => {
@@ -117,5 +118,26 @@ describe("selfTestProblems", () => {
       "poslužitelj je primio i: POST /api/v1/good, GET /api/v1/outside",
       "kolačić u: izlaz",
     ]);
+  });
+});
+
+describe("stackExitCode", () => {
+  const summary = { routes: [], unchecked: [], disagreements: [], errors: 0, scope: [] };
+
+  it("is 0 for a valid run, also when it found disagreements", () => {
+    expect(stackExitCode({ leaks: [], summary })).toBe(0);
+    const disagreements = [{ code: "ST108", title: "t", count: 1, operations: ["GET /api/v1/x"] }];
+    expect(stackExitCode({ leaks: [], summary: { ...summary, disagreements } })).toBe(0);
+  });
+
+  it("is 1 when Schemathesis reported run errors", () => {
+    expect(stackExitCode({ leaks: [], summary: { ...summary, errors: 3 } })).toBe(1);
+  });
+
+  it("is 2 when the run left its scope or leaked the cookie, before run errors", () => {
+    expect(
+      stackExitCode({ leaks: [], summary: { ...summary, scope: ["outside"], errors: 1 } }),
+    ).toBe(2);
+    expect(stackExitCode({ leaks: ["izlaz"], summary })).toBe(2);
   });
 });
