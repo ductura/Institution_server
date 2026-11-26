@@ -49,6 +49,11 @@ export type OpenedWork = {
    * minute, as the receipt carries it), or null while no receipt of the work is signed.
    */
   lastSignedAt: string | null;
+  /**
+   * SRV-V14-KIND-ENUM: the kind of the work when the opener knows it; absent is "text", the
+   * only kind app.open_student_work opens today.
+   */
+  workKind?: "text" | "slides" | "spreadsheet";
 };
 
 const error = (code: string, messageKey: string): AppError => ({ code, messageKey });
