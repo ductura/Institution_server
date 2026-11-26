@@ -277,6 +277,7 @@ describe("route inventory", () => {
       "institution.teacher-roles.get: app/api/institution/teachers/route.ts is not in the inventory",
       "teacher.submission-detail.get: app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/route.ts is not in the inventory",
       "teacher.declaration.get: app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/route.ts is not in the inventory",
+      "teacher.declaration-conversation.get: app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/conversations/[conversationId]/route.ts is not in the inventory",
       "teacher.assignment-submissions.post: app/api/teacher/assignment-submissions/route.ts is not in the inventory",
       "teacher.access.get: app/api/teacher/access/route.ts is not in the inventory",
       "teacher.course-students.get: app/api/teacher/courses/[courseId]/students/route.ts is not in the inventory",

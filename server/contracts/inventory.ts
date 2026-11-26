@@ -1155,6 +1155,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051",
   },
+  // F4-NAS-R04-SRV (D-41): Ductus has no teacher read of the attached conversations.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/conversations/[conversationId]/route.ts":
+    {
+      methods: ["GET"],
+      source: "danielrisavi77-create/Ductus#2058:issuecomment-7196020811",
+    },
   "app/api/teacher/mentorship-requests/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
