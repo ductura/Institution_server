@@ -1,9 +1,8 @@
 // SRV-M4-LEKTA-FPZG: the excerpt of the FPZG rule package taken from Lekta
 // (read only, a fixed commit). Pure: no I/O. `parseLektaPackage` validates a
-// parsed JSON value, `loadFpzgPackageV1` returns the validated package that
-// ships in fpzg-v1.json, `ruleById` looks a rule up by its id.
-import fpzgV1 from "./fpzg-v1.json" with { type: "json" };
-import type { AppError, Result } from "../result.ts";
+// parsed JSON value, the caller reads fpzg-v1.json (a JSON import in
+// server code needs a lint exception, so none is made here), `ruleById` looks a rule up by its id.
+import type { AppError, Result } from "../index.ts";
 
 export type LektaSource = { datoteka: string; sha256: string };
 export type LektaRule = {
@@ -99,8 +98,4 @@ export function parseLektaPackage(raw: unknown): Result<LektaPackage> {
 
 export function ruleById(pkg: LektaPackage, id: string): LektaRule | undefined {
   return pkg.pravila.find((rule) => rule.id === id);
-}
-
-export function loadFpzgPackageV1(): Result<LektaPackage> {
-  return parseLektaPackage(fpzgV1);
 }

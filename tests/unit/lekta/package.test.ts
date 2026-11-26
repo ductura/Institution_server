@@ -9,10 +9,16 @@ import {
   ruleById,
 } from "../../../server/domain/lekta/index.ts";
 
-const loaded = loadFpzgPackageV1();
+const loaded = parseLektaPackage(
+  JSON.parse(
+    readFileSync(new URL("../../../server/domain/lekta/fpzg-v1.json", import.meta.url), "utf8"),
+  ),
+);
 if (!loaded.ok) throw new Error("the shipped package must be valid");
 const pkg = loaded.value;
-const clone = () => structuredClone(JSON.parse(JSON.stringify(pkg))) as Record<string, any>;
+type Rec = Record<string, unknown> & { izvori: Rec[]; pravila: Rec[] };
+const at = (list: Rec[], i: number): Rec => list[i] as Rec;
+const clone = () => JSON.parse(JSON.stringify(pkg)) as Rec;
 
 describe("Lekta FPZG package v1", () => {
   it("loads and carries its version and commit", () => {
@@ -52,18 +58,18 @@ describe("Lekta FPZG package v1", () => {
 });
 
 describe("rejects an invalid package", () => {
-  const cases: [string, (p: Record<string, any>) => void][] = [
+  const cases: [string, (p: Rec) => void][] = [
     ["bad version", (p) => (p.packageVersion = "1.0")],
     ["bad commit", (p) => (p.lektaCommit = "xyz")],
     ["missing sources", (p) => (p.izvori = [])],
-    ["bad hash", (p) => (p.izvori[0].sha256 = "abc")],
-    ["duplicate source", (p) => p.izvori.push({ ...p.izvori[0] })],
-    ["duplicate rule id", (p) => (p.pravila[1].id = p.pravila[0].id)],
-    ["bad rule id", (p) => (p.pravila[0].id = "Bad Id")],
-    ["empty description", (p) => (p.pravila[0].opis = " ")],
-    ["unknown status", (p) => (p.pravila[0].status = "mozda")],
-    ["rule cites an unlisted file", (p) => (p.pravila[0].izvor.datoteka = "x.md")],
-    ["missing value", (p) => delete p.pravila[0].vrijednost],
+    ["bad hash", (p) => (at(p.izvori, 0).sha256 = "abc")],
+    ["duplicate source", (p) => p.izvori.push({ ...at(p.izvori, 0) })],
+    ["duplicate rule id", (p) => (at(p.pravila, 1).id = at(p.pravila, 0).id)],
+    ["bad rule id", (p) => (at(p.pravila, 0).id = "Bad Id")],
+    ["empty description", (p) => (at(p.pravila, 0).opis = " ")],
+    ["unknown status", (p) => (at(p.pravila, 0).status = "mozda")],
+    ["rule cites an unlisted file", (p) => ((at(p.pravila, 0)?.izvor as Rec).datoteka = "x.md")],
+    ["missing value", (p) => delete at(p.pravila, 0).vrijednost],
   ];
   it.each(cases)("%s", (_name, mutate) => {
     const raw = clone();

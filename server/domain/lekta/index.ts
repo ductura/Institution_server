@@ -1,6 +1,5 @@
 // Public interface of server/domain/lekta; other folders import only this file.
 export {
-  loadFpzgPackageV1,
   parseLektaPackage,
   ruleById,
   type LektaPackage,
