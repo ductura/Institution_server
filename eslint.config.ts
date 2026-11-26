@@ -253,6 +253,7 @@ const DATABASE_NAMES = [
   "key_id",
   "key_version",
   "last_sequence_to",
+  "last_signed_at", // IZV-RUTE-1a
   "revoked_at",
   "valid_from",
   "valid_to",
