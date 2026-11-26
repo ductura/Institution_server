@@ -22,6 +22,7 @@ import {
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
   createRevisionSendRouteFor,
+  createSuggestionRoutesFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createConsultationSlotRoutesFor,
@@ -256,6 +257,38 @@ const SESSION_ROUTES = {
   "collaboration.revision-send.post": {
     path: "/api/v1/revision-send",
     body: () => ({ documentId: randomUUID(), message: null }),
+    live: 404,
+  },
+  // SRV-ED42-PRIJEDLOZI: a work or suggestion that is not the caller's is 404.
+  "collaboration.suggestions-list.post": {
+    path: "/api/v1/suggestions/list",
+    body: () => ({ documentId: randomUUID() }),
+    live: 404,
+  },
+  "collaboration.suggestions.post": {
+    path: "/api/v1/suggestions",
+    body: () => ({
+      anchor: {
+        nodeId: "0f0e0d0c-0b0a-4000-8000-000000000001",
+        quote: "izmišljeni",
+        prefix: "",
+        suffix: "",
+        startHint: 0,
+        endHint: 10,
+      },
+      documentId: randomUUID(),
+      text: "drugi",
+    }),
+    live: 404,
+  },
+  "collaboration.suggestion-accept.post": {
+    path: "/api/v1/suggestions/accept",
+    body: () => ({ suggestionId: randomUUID() }),
+    live: 404,
+  },
+  "collaboration.suggestion-reject.post": {
+    path: "/api/v1/suggestions/reject",
+    body: () => ({ suggestionId: randomUUID() }),
     live: 404,
   },
   // SRV-1105: a work it may not read is 404 for the list and for both writes.
@@ -2670,6 +2703,7 @@ const FACTORIES = [
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
+  "createSuggestionRoutesFor",
   "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
   "createEventDisputeRoutesFor",
@@ -2822,6 +2856,7 @@ const MOUNTED = [
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
+  ...createSuggestionRoutesFor(databases.main),
   ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createEventDisputeRoutesFor(databases.main),

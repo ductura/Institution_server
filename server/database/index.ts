@@ -900,6 +900,16 @@ export {
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
 export {
+  applySuggestionToLive,
+  createSuggestions,
+  type SuggestionAnchorInput,
+  type SuggestionRefusal,
+  type SuggestionRow,
+  type Suggestions,
+  type SuggestionState,
+  type SuggestionToApply,
+} from "./suggestions/index.ts";
+export {
   createImports,
   type ImportConfirmed,
   type ImportConfirmRejection,

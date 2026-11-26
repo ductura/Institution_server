@@ -1,0 +1,3 @@
+# suggestions
+
+Priključak baze za prijedloge izmjene teksta nastavnika (SRV-ED42-PRIJEDLOZI, PITANJE ED-42; D-34, C-9, D-266 t. 1; migracija `20261220190000_collaboration_suggestion.sql`). Jedan poziv je jedna `withActor` transakcija nad RPC-ovima sheme `collaboration`: prijedlog stvara samo nastavnik rada, popis isti za studenta vlasnika i nastavnike, a prihvaća ili odbija samo student vlasnik, jednom. Pri stvaranju čita stanje uživo koje nastavnik vidi i provjerava sidro; pri prihvaćanju predaje stanje uživo pozivatelju za primjenu u istoj transakciji i poništava odluku ako se prijedlog više ne može primijeniti. Ne čita i ne piše evidenciju ni stanje uživo.
