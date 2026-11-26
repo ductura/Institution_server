@@ -256,7 +256,9 @@ describe("N3: a refused request leaves the session cookie alone", () => {
   it("callback refused by the provider", async () => {
     const { signIn } = await stack("refuse");
     const answer = await signIn();
-    expect(answer.status).toBe(400);
+    // STU-R01: a refused callback ends on the sign-in page with the contract's code.
+    expect(answer.status).toBe(303);
+    expect(answer.headers.get("location")).toMatch(/\/prijava\?greska=login_failed$/u);
     expect(sessionCookies(answer)).toEqual([]);
   });
 
