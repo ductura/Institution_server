@@ -710,6 +710,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
   },
+  // SRV-ED35-KRITERIJI-STUDENT (Daniel 26. 11. 2026, replacing B-9): the owner
+  // student reads each teacher's working criteria; no Ductus route.
+  "app/api/student/works/[documentId]/working-criteria/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",
+  },
   // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run; no Ductus route.
   "app/api/institution/retention/route.ts": {
     methods: ["GET"],

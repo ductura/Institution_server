@@ -155,6 +155,7 @@ describe("route inventory", () => {
       "work.origin-thresholds.get: app/api/works/[documentId]/origin-thresholds/route.ts is not in the inventory",
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
+      "student.working-criteria.get: app/api/student/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.assignment-rubric.get: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "teacher.assignment-rubric.put: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "student.assignment-rubric.get: app/api/student/assignments/[assignmentId]/rubric/route.ts is not in the inventory",

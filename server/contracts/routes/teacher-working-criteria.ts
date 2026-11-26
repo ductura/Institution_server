@@ -3,13 +3,16 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { MUTATION_GUARD } from "./shared.ts";
+import { END, Name } from "./teacher.ts";
 
-// SRV-1107 (Ductus#2051, wave 11, B-9): the six criteria of the mentor's
-// rubric (E§3.5 mentor3 "Kriteriji ocjene") as the teacher's private working
-// note on a work, like a private note (D-130). Only the teacher of the work
-// who wrote it reads it. No student route, summary, export or submission
-// carries a criterion, an assessment or a note, and no number or grade is ever
-// computed from it. Identity, institution and author are never in the request:
+// SRV-1107 (Ductus#2051, wave 11): the six criteria of the mentor's rubric
+// (E§3.5 mentor3 "Kriteriji ocjene") as the teacher's working note on a work.
+// Only the teacher of the work who wrote it reads and writes it as a teacher.
+// Since Daniel's decision of 26. 11. 2026 (Ductus#2058 c.7192734757, replacing
+// B-9) the student who owns the work reads it too, through
+// student.working-criteria.get. No summary, export or submission carries a
+// criterion, an assessment or a note, and no number or grade is ever computed
+// from it. Identity, institution and author are never in the request:
 // the session decides. The criteria are those of the prototype (S.rubric); the label is their message key.
 
 export const WORKING_CRITERION_IDS = [
@@ -88,7 +91,46 @@ export const teacherWorkingCriterionPut = defineRoute({
   ],
 });
 
+/** Lowercase UUID, as the database returns it. */
+const TeacherId = Type.String({
+  pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
+});
+/** The teacher's name pair, or null when the institution holds none. */
+const TeacherName = Type.Union([closed({ givenName: Name, familyName: Name }), Type.Null()]);
+
+// SRV-ED35-KRITERIJI-STUDENT (Daniel 26. 11. 2026, Ductus#2058 c.7192734757):
+// the student reads the working criteria of her own work, each teacher who set
+// one separately, never merged. This replaces the B-9 rule above for reading
+// only: the student never writes a criterion.
+export const studentWorkingCriteriaGet = defineRoute({
+  id: "student.working-criteria.get",
+  method: "GET",
+  path: "/api/v1/student/works/{documentId}/working-criteria",
+  inventory: "app/api/student/works/[documentId]/working-criteria/route.ts",
+  access: "student_owner",
+  summary:
+    "The working criteria of the caller's own work, one entry per teacher who set at least one, never merged: the teacher's id and name pair (null when the institution holds none), then the six criteria in the same order and shape as teacher.working-criteria.get, with a null assessment and note where that teacher set nothing. Teachers by family name, then given name, then id; while no teacher has set one the list is empty. Only the student who owns the work; a teacher, another student, an unknown work and a malformed id all read the same 404. The read writes nothing in the access log.",
+  request: { params: closed({ documentId: WorkId }) },
+  responses: [
+    {
+      status: 200,
+      description: "the criteria of each teacher",
+      body: closed({
+        teachers: Type.Array(
+          closed({
+            teacherId: TeacherId,
+            teacherName: TeacherName,
+            criteria: Type.Array(Criterion, { minItems: 6, maxItems: 6 }),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
+});
+
 export const teacherWorkingCriteriaRoutes = [
   teacherWorkingCriteriaGet,
   teacherWorkingCriterionPut,
+  studentWorkingCriteriaGet,
 ] as const;

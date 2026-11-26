@@ -1429,6 +1429,13 @@ export type Operations = {
     success: { status: 200; body: { "state": "disabled" } | { "state": "none"; "formation": "student_choice" | "teacher_assigned"; "openTeams": ({ "teamId": string; "memberCount": number })[] } | { "state": "member"; "team": { "teamId": string; "members": ({ "givenName": string; "familyName": string })[] } }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
   };
+  "student.working-criteria.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "teachers": ({ "teacherId": string; "teacherName": { "givenName": string; "familyName": string } | null; "criteria": ({ "id": "topic" | "structure" | "sources" | "method" | "language" | "formatting"; "label": string; "assessment": 0 | 1 | 2 | null; "note": string | null })[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "submission.submit-second.post": {
     params: undefined;
     query: undefined;
