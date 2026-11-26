@@ -31,25 +31,18 @@ function rateOf(value: string | undefined): bigint | null {
 export type OpenAiEnv = Readonly<Record<string, string | undefined>>;
 
 export type OpenAiProviderOptions = {
-  readonly transport?: OpenAiTransport;
+  /** The connection; the process composition hands in the platform transport (this module opens no connection, S1). */
+  readonly transport: OpenAiTransport;
   /** Receives metadata only (model, outcome, tokens, duration). */
   readonly record?: (metadata: OpenAiCallMetadata) => void;
   readonly baseUrl?: string;
   readonly timeoutMs?: number;
 };
 
-const fetchTransport: OpenAiTransport = (request) =>
-  fetch(request.url, {
-    method: "POST",
-    headers: { ...request.headers },
-    body: request.body,
-    signal: request.signal,
-  });
-
 /** The provider, or null (ai_disabled) when the key, the prices or the entry are missing or refused. */
 export function openAiProviderFrom(
   env: OpenAiEnv,
-  options: OpenAiProviderOptions = {},
+  options: OpenAiProviderOptions,
 ): AssistantProvider | null {
   const apiKey = env["OPENAI_API_KEY"];
   const input = rateOf(env["AI_RATE_INPUT_MICRO_PER_MTOK"]);
@@ -70,7 +63,7 @@ export function openAiProviderFrom(
   const config: AssistantProviderConfig = parsed.config;
   const port = createOpenAiAssistant({
     apiKey,
-    transport: options.transport ?? fetchTransport,
+    transport: options.transport,
     rates: { input, output },
     timeoutMs: options.timeoutMs ?? OPENAI_TIMEOUT_MS,
     ...(options.baseUrl === undefined ? {} : { baseUrl: options.baseUrl }),

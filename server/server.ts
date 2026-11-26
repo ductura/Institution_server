@@ -307,6 +307,13 @@ async function main(): Promise<void> {
   // F4-PM2-R11 (D-316): OpenAI behind the assistant port; null without a key and
   // prices, so ai_disabled. Only metadata is logged, never text, key or identity.
   const assistantProvider = openAiProviderFrom(process.env, {
+    transport: (request) =>
+      fetch(request.url, {
+        method: "POST",
+        headers: { ...request.headers },
+        body: request.body,
+        signal: request.signal,
+      }),
     record: (metadata) =>
       console.info(JSON.stringify({ event: "assistant.provider_call", ...metadata })),
   });
