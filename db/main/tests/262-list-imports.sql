@@ -1,6 +1,6 @@
 -- SRV-F4-PM2-R14-SRV (F4 row PM2-R14, M8.13 "Povijest dokumenta"; Daniel's
 -- decision of 26. 11. 2026, Ductus#2059 c.7202802486): the list of the imports
--- of a work (20261220320000), the same for both roles. The access matrix of the
+-- of a work (20261220390000), the same for both roles. The access matrix of the
 -- read: the student who owns the work and a teacher of its assignment; another
 -- student, a teacher of another course, an administrator, a person with no
 -- relation and another institution never do. It returns metadata only and
