@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { DocumentKind, MUTATION_GUARD } from "./shared.ts";
+import { DocumentKind, WorkKind, MUTATION_GUARD } from "./shared.ts";
 import { assignmentGradeGet } from "./assignments.ts";
 import { Name } from "./teacher.ts";
 
@@ -138,6 +138,7 @@ const ASSIGNMENT_CONTENT = {
 const ASSIGNMENT_KIND = {
   /** The kind of document the assignment asks for; absent means text, as in the reads. */
   documentKind: Type.Optional(DocumentKind),
+  workKind: Type.Optional(WorkKind),
 };
 
 export const assignmentVersionsPost = defineRoute({

@@ -1022,6 +1022,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "client.error.post": {
+    request: {
+      path: "/api/v1/client-error",
+      body: { appVersion: "1.4.0", errorClass: "type_error", kind: "error", page: "assignments" },
+    },
+  },
   "collaboration.comments.post": {
     before: [
       commit("izmisljena-transakcija-1", 0),

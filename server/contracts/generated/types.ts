@@ -78,6 +78,13 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
+  "client.error.post": {
+    params: undefined;
+    query: undefined;
+    body: { "appVersion": string; "errorClass": "type_error" | "range_error" | "reference_error" | "syntax_error" | "other"; "kind": "error" | "unhandledrejection" | "render"; "page": "home" | "how_it_works" | "work" | "enroll" | "assignments" | "assignment_courses" | "assignment_works" | "teacher" | "teacher_fast_path" | "teacher_mentorships" | "institution" | "institution_courses" | "institution_users" | "institution_rules" | "other" };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "collaboration.comments.post": {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;
@@ -152,7 +159,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "assignmentId": string; "start"?: boolean };
-    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "schemaVersion"?: 1 | 2 | 3; "revisionZeroHash"?: string; "documentKind"?: "text" | "slides"; "slidesSchemaVersion"?: 1; "sheetSchemaVersion"?: 1; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean; "lastSignedAt"?: string | null }; headers: {  } };
+    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "schemaVersion"?: 1 | 2 | 3; "revisionZeroHash"?: string; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet"; "slidesSchemaVersion"?: 1; "sheetSchemaVersion"?: 1; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean; "lastSignedAt"?: string | null }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
   };
   "evidence.replay.post": {
@@ -221,7 +228,7 @@ export type Operations = {
   "institution.assignment-versions.post": {
     params: { "assignmentId": string };
     query: undefined;
-    body: { "expectedVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "documentKind"?: "text" | "slides" };
+    body: { "expectedVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" };
     success: { status: 201; body: { "assignmentId": string; "versionNo": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable" | "version_conflict";
   };
@@ -270,7 +277,7 @@ export type Operations = {
   "institution.course-assignments.post": {
     params: { "courseId": string };
     query: undefined;
-    body: { "requestKey": string; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "groupIds"?: (string)[]; "externalToolsAllowed"?: boolean; "aiSummaryOnly"?: boolean; "documentKind"?: "text" | "slides"; "isPractice"?: boolean };
+    body: { "requestKey": string; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "groupIds"?: (string)[]; "externalToolsAllowed"?: boolean; "aiSummaryOnly"?: boolean; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet"; "isPractice"?: boolean };
     success: { status: 201; body: { "id": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable" | "conflict";
   };
@@ -957,14 +964,14 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "workId": string; "rulesVersion": number | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides" }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "workId": string; "rulesVersion": number | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
   "student-work.works.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides" })[] }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "student.access-log.get": {
@@ -1048,7 +1055,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear"?: string; "groups"?: ({ "id": string; "name": string })[]; "teachers"?: ({ "id": string; "givenName": string; "familyName": string; "role": "holder" | "collaborator" })[]; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor"?: { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt"?: string | null; "documentKind"?: "text" | "slides" })[] })[] }; headers: {  } };
+    success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear"?: string; "groups"?: ({ "id": string; "name": string })[]; "teachers"?: ({ "id": string; "givenName": string; "familyName": string; "role": "holder" | "collaborator" })[]; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor"?: { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt"?: string | null; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" })[] })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "student.assistant-conversation.get": {
@@ -2693,7 +2700,7 @@ export type Operations = {
     params: { "documentId": string; "revision": string };
     query: { "compareFrom"?: string };
     body: undefined;
-    success: { status: 200; body: { "revision": number; "document": string; "documentKind"?: "text" | "slides" } | { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    success: { status: 200; body: { "revision": number; "document": string; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" } | { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.versions.get": {

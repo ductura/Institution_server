@@ -39,6 +39,7 @@ test("every database has a pgTAP directory with at least one test file, which pg
     assert.deepEqual(testFiles(databaseNamed(name).testsDir), [
       `db/${name}/tests/000-rls-everywhere.sql`,
       `db/${name}/tests/000-roles.sql`,
+      `db/${name}/tests/002-matrix-coverage.sql`,
       ...(extra[name] ?? []),
     ]);
   }
