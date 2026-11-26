@@ -150,6 +150,7 @@ import {
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -471,6 +472,8 @@ async function main(): Promise<void> {
       ...createQuestionnaireExportRoutesFor(databases.main),
       // SRV-V18-KODIRANJE-GRADIVO: the student's own material for qualitative coding.
       ...createQualitativeMaterialsRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-OZNAKE: the passages a student marks and the export of the coding.
+      ...createQualitativeSegmentsRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
