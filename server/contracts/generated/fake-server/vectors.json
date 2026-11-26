@@ -40946,7 +40946,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.169.0",
+        "apiVersion": "1.170.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40962,7 +40962,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.169.0",
+        "apiVersion": "1.170.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -54888,7 +54888,22 @@
         "readAt": null,
         "acknowledgedAt": null,
         "purposeCatalogVersion": 1,
-        "aiSummaryOnly": false
+        "aiSummaryOnly": false,
+        "previousVersion": {
+          "versionNo": 1,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljena uputa: opiši jedan izmišljeni pokus kompostiranja.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-11-02T08:00:00.000Z",
+          "dueAt": "2026-12-08T22:59:00.000Z",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": [
+            "proofreading"
+          ],
+          "evidenceProfile": "basic",
+          "wordMin": 1500,
+          "wordMax": 2500
+        }
       }
     }
   },
@@ -54923,7 +54938,8 @@
         "readAt": "2026-11-03T09:14:00.000Z",
         "acknowledgedAt": "2026-11-03T09:20:00.000Z",
         "purposeCatalogVersion": 1,
-        "aiSummaryOnly": true
+        "aiSummaryOnly": true,
+        "previousVersion": null
       }
     }
   },
