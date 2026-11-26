@@ -112,7 +112,7 @@ Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `
 | `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)                           | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
 | `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`)                    | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
-Pristup sadržaju proizlazi iz odnosa, ne iz uloge: svaka ruta ima test da tuđi sadržaj daje odbijanje, a pravila na razini baze provjerava pgTAP matrica (`db/main/tests`).
+Pristup sadržaju proizlazi iz odnosa, ne iz uloge. Provjerava ga baza (RLS i RPC), što čuva pgTAP matrica (`db/main/tests`); testovi ruta pokrivaju odbijanje tuđeg sadržaja gdje postoje.
 
 Dimni test stvarnog poslužitelja: `server/server-smoke.integration.test.ts` gradi `dist/server.js` kao `pnpm build`, pokreće ga i provjerava granicu HTTP-a (zdravlje bez prijave, 401 bez sesije i za `Authorization: Bearer <id korisnika>`, 404 u formatu ugovora, 400 i 413 za neupotrebljivo tijelo, ništa od tijela u izlazu procesa). Naslijeđeni kostur (`server/app.ts`, `server/access.ts`, `server/store.ts`) uklonjen je u DAN-1537; isti test pada ako se vrati.
 
