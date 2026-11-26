@@ -182,3 +182,89 @@ it("keeps a draft from the student until it is published, keeps the bank private
     await db.close();
   }
 });
+
+it("drafts a general comment with a kind, keeps it from the student until published and then shows both (EDI-R20)", async () => {
+  const db = await createTestDatabase("main", { authority: true });
+  try {
+    await db.exec(readFileSync(new URL("institution.inc", FIXTURES), "utf8"));
+    await db.exec(
+      readFileSync(new URL("evidence-acceptance.inc", FIXTURES), "utf8").replace(
+        /^\\ir institution\.inc\r?\n/mu,
+        "",
+      ),
+    );
+    const withActor: WithActor = async (token, run) => {
+      await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
+      await db.exec("SET LOCAL ROLE ductus_app");
+      try {
+        return await run({
+          async query<Row>(sql: string, args?: readonly unknown[]) {
+            const { rows } = await db.query<Row>(sql, [...(args ?? [])]);
+            return { rows, rowCount: rows.length };
+          },
+        });
+      } finally {
+        await db.exec("RESET ROLE");
+      }
+    };
+    const delay = createCommentDelay(withActor);
+    const published = async (token: string) =>
+      (
+        await withActor(token, (tx) =>
+          tx.query<{ body: string; kind: string | null; anchor: unknown }>(
+            "SELECT body, kind, anchor FROM collaboration.list_comments($1) ORDER BY comment_position",
+            [WORK],
+          ),
+        )
+      ).rows;
+
+    const general = await delay.createDraftWithKind(
+      TEACHER,
+      WORK,
+      "Izmišljen opći komentar.",
+      null,
+      "praise",
+    );
+    expect(general).toMatchObject({ status: "ok" });
+    expect(
+      await delay.createDraftWithKind(TEACHER, WORK, "Izmišljena napomena.", ANCHOR, null),
+    ).toMatchObject({ status: "ok" });
+    // The kind, and a null anchor, are the author's to read while a draft.
+    // Two threads written in one instant have no fixed order: compare as sets.
+    const listed = await delay.listDrafts(TEACHER, WORK);
+    expect(listed).toMatchObject({ status: "ok" });
+    expect("drafts" in listed ? listed.drafts : []).toHaveLength(2);
+    expect("drafts" in listed ? listed.drafts : []).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ anchor: null, kind: "praise" }),
+        expect.objectContaining({ anchor: ANCHOR, kind: null }),
+      ]),
+    );
+    expect(await published(STUDENT)).toEqual([]);
+    // Bad input, and everyone but the teacher of the work, are refused.
+    expect(await delay.createDraftWithKind(TEACHER, WORK, "Tekst.", null, "x" as never)).toEqual({
+      status: "invalid",
+    });
+    expect(await delay.createDraftWithKind(TEACHER, WORK, "   ", null, "q")).toEqual({
+      status: "invalid",
+    });
+    for (const token of [STUDENT, OTHER_STUDENT, OTHER_TENANT]) {
+      expect(await delay.createDraftWithKind(token, WORK, "Tekst.", null, "q")).toEqual({
+        status: "not_found",
+      });
+    }
+    // Publishing gives the student both, with the kind and the missing anchor.
+    expect(await delay.publish(TEACHER, WORK)).toEqual({ status: "ok", published: 2 });
+    const seen = await published(STUDENT);
+    expect(seen).toHaveLength(2);
+    expect(seen).toEqual(
+      expect.arrayContaining([
+        { body: "Izmišljen opći komentar.", kind: "praise", anchor: null },
+        { body: "Izmišljena napomena.", kind: null, anchor: ANCHOR },
+      ]),
+    );
+    expect(await published(OTHER_STUDENT).catch(() => "refused")).toBe("refused");
+  } finally {
+    await db.close();
+  }
+});
