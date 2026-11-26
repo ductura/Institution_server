@@ -10,6 +10,7 @@ import {
   REVISION_ZERO_JCS,
   REVISION_ZERO_SHA256,
 } from "../../server/domain/index.ts";
+import { noticeFingerprint } from "../../server/domain/notice/index.ts";
 import { initialCommit, seedSubmission } from "./seed-predaja.ts";
 
 it("sends a valid first segment whose final hash matches the edited snapshot", () => {
@@ -60,6 +61,7 @@ it("reuses enrollment, acknowledgment and revision across two seed runs", async 
     afterDeadline: false,
   };
   const calls: string[] = [];
+  let acknowledged: object | undefined;
   const api = async (path: string, body?: object) => {
     calls.push(path);
     const called = (suffix: string) => calls.some((call) => call.endsWith(suffix));
@@ -92,7 +94,12 @@ it("reuses enrollment, acknowledgment and revision across two seed runs", async 
           evidenceProfile: "basic",
           wordMin: null,
           wordMax: null,
+          // Sent by the notice route, but not a member of the fingerprint.
+          purposeCatalogVersion: 1,
         });
+      case `institution/assignments/${assignmentId}/acknowledgment`:
+        acknowledged = body;
+        return Response.json({});
       case "evidence/open":
         return Response.json({
           status: "opened",
@@ -126,4 +133,20 @@ it("reuses enrollment, acknowledgment and revision across two seed runs", async 
   ]);
   expect(calls.filter((path) => path === "evidence/commit")).toHaveLength(1);
   expect(calls.filter((path) => path.endsWith("/acknowledgment"))).toHaveLength(1);
+  expect(acknowledged).toEqual({
+    versionNo: 1,
+    fingerprint: await noticeFingerprint({
+      templateVersion: 1,
+      title: scenario.title,
+      instructions: "Izmišljene upute.",
+      workType: "short_paper",
+      opensAt: "2026-11-01T07:00:00.000Z",
+      dueAt: "2027-01-31T22:59:00.000Z",
+      aiPolicy: "prohibited",
+      aiPurposes: [],
+      evidenceProfile: "basic",
+      wordMin: null,
+      wordMax: null,
+    }),
+  });
 });

@@ -2021,6 +2021,8 @@ export const hr = {
     invalidAiPolicy: "Pravilo o umjetnoj inteligenciji nije ispravno.",
     invalidAiPurposes: "Namjene umjetne inteligencije nisu ispravne za odabrano pravilo.",
     invalidEvidenceProfile: "Profil dokaza nije ispravan.",
+    invalidCodeTests:
+      "Testovi uz zadatak nisu ispravni: najviše 10 testova s različitim oznakama, ukupno do 16 KiB.",
     invalidLogoutToken: "Zahtjev za odjavu nije ispravan.",
     loginFailed: "Prijava nije uspjela. Pokušajte ponovno.",
     loginRefused: "Prijava je odbijena.",
@@ -2100,6 +2102,12 @@ export const hr = {
       awaitingDecision: "Rok čuvanja nije određen; određuje ga fakultet.",
       neverDeleted: "Ne briše se: dokazuje predaju i nakon brisanja sadržaja.",
     },
+  },
+  // Words printed by the .pptx of a slides work (server/downloads/export/pptx.ts,
+  // SRV-V13-IZVOZ-PPTX); added after the port.
+  slidesExport: {
+    slide: "Slajd",
+    presentation: "Prezentacija",
   },
 } as const;
 

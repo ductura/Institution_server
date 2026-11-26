@@ -63,7 +63,12 @@ import {
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
+  createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
+  createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
@@ -74,6 +79,8 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -250,6 +257,7 @@ const SRV_1407 = [
 const SRV_1408 = [
   "institution.teaching-team.get",
   "institution.teaching-team-view.get",
+  "institution.teaching-team-candidates.get",
   "institution.teaching-team.post",
   "institution.teaching-group-members.put",
 ];
@@ -275,6 +283,25 @@ const SRV_V19_GRUPA = [
   "student.work-team-contribution.get",
   "teacher.work-team-contribution.get",
 ];
+// SRV-V19-RECENZIJA-RUTE: the nine routes of the anonymous peer review.
+const SRV_V19_RECENZIJA = [
+  "peer-review.round.put",
+  "peer-review.round.get",
+  "peer-review.allocate.post",
+  "peer-review.teacher-overview.get",
+  "peer-review.review-withdrawal.post",
+  "student.peer-review-tasks.get",
+  "student.peer-review-work.get",
+  "student.peer-review.post",
+  "student.peer-reviews-received.get",
+];
+// SRV-V18-KODIRANJE-SIFRARNIK: the four routes of the codebook of qualitative coding.
+const SRV_V18_SIFRARNIK = [
+  "student.qual-codes.get",
+  "student.qual-codes.post",
+  "student.qual-code.patch",
+  "student.qual-code.delete",
+];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -287,6 +314,13 @@ const SRV_MENTOR_2 = [
   "work.thesis-stage.get",
   "work.thesis-stage.put",
 ];
+const SRV_V16_TEMA = [
+  "work.thesis-topic.get",
+  "work.thesis-topic.put",
+  "work.thesis-topic-decision.post",
+];
+const SRV_V16_POVJERENSTVO = ["work.thesis-committee.get", "work.thesis-committee.put"];
+const SRV_V16_POPIS = ["institution.thesis-overview.get"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -645,9 +679,34 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createPeerReviewRoutesFor(databases.main)",
+    ids: SRV_V19_RECENZIJA,
+    routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeCodesRoutesFor(databases.main)",
+    ids: SRV_V18_SIFRARNIK,
+    routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisTopicRoutesFor(databases.main)",
+    ids: SRV_V16_TEMA,
+    routes: () => createThesisTopicRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisCommitteeRoutesFor(databases.main)",
+    ids: SRV_V16_POVJERENSTVO,
+    routes: () => createThesisCommitteeRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisOverviewRoutesFor(databases.main)",
+    ids: SRV_V16_POPIS,
+    routes: () => createThesisOverviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -730,6 +789,26 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "student.assignment-rubric.get",
     ],
     routes: () => createAssignmentRubricRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createAssignmentCodeTestsRoutesFor(databases.main)",
+    ids: [
+      "teacher.assignment-code-tests.get",
+      "teacher.assignment-code-tests.put",
+      "student.assignment-code-tests.get",
+    ],
+    routes: () => createAssignmentCodeTestsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQuestionnaireRoutesFor(databases.main)",
+    ids: [
+      "teacher.questionnaires.get",
+      "teacher.questionnaires.post",
+      "teacher.questionnaire.get",
+      "teacher.questionnaire.patch",
+      "teacher.questionnaire-state.post",
+    ],
+    routes: () => createQuestionnaireRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createWorkRubricRoutesFor(databases.main)",
@@ -1097,7 +1176,12 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_1413,
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
+      ...SRV_V19_RECENZIJA,
+      ...SRV_V18_SIFRARNIK,
       ...SRV_MENTOR_2,
+      ...SRV_V16_TEMA,
+      ...SRV_V16_POVJERENSTVO,
+      ...SRV_V16_POPIS,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
@@ -1128,6 +1212,14 @@ describe("routes the entry point mounts itself", () => {
       "teacher.assignment-rubric.get",
       "teacher.assignment-rubric.put",
       "student.assignment-rubric.get",
+      "teacher.assignment-code-tests.get",
+      "teacher.assignment-code-tests.put",
+      "student.assignment-code-tests.get",
+      "teacher.questionnaires.get",
+      "teacher.questionnaires.post",
+      "teacher.questionnaire.get",
+      "teacher.questionnaire.patch",
+      "teacher.questionnaire-state.post",
       "teacher.work-rubric.get",
       "teacher.work-rubric-mark.put",
       "institution.work-template.get",

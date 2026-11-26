@@ -29,8 +29,19 @@ export {
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
 export { createPracticeJournalStore } from "./practice-journal/index.ts";
+export { createQuestionnaireStore, type QuestionnaireForm } from "./questionnaire/index.ts";
+export { createQualitativeCodingStore, type QualCode } from "./qualitative-coding.ts";
 export { createWorkTeamStore, type ContributionSource } from "./work-team/index.ts";
+export { createPeerReviewStore } from "./peer-review/index.ts";
 export { createThesisStore, type ThesisStore } from "./thesis/index.ts";
+export { createThesisTopicStore, type ThesisTopicStore } from "./thesis-topic/index.ts";
+export { createThesisCommitteeStore, type ThesisCommitteeStore } from "./thesis-committee/index.ts";
+export {
+  createThesisOverviewStore,
+  decodeThesisOverviewCursor,
+  encodeThesisOverviewCursor,
+  type ThesisOverviewStore,
+} from "./thesis-overview/index.ts";
 export {
   createInstitutionConfigStore,
   facultyRulesProblems,
@@ -449,6 +460,12 @@ export {
   type RubricCriterion,
 } from "./assignment-rubric/index.ts";
 export {
+  createAssignmentCodeTests,
+  type AssignmentCodeTestsRevision,
+  type AssignmentCodeTestsStore,
+  type StoredCodeTest,
+} from "./assignment-code-tests/index.ts";
+export {
   createWorkRubric,
   type WorkRubricLevel,
   type WorkRubricMark,
@@ -574,6 +591,14 @@ export {
   type LateSubmissionPort,
   type LateSubmissionSetting,
 } from "./late-submission.ts";
+export {
+  createCourseAssistantPort,
+  type AssistantAvailability,
+  type AssistantRequestCount,
+  type AssistantRequestLimit,
+  type CourseAssistantPort,
+  type CourseAssistantSwitch,
+} from "./course-assistant.ts";
 export {
   createInputRhythm,
   RHYTHM_MAX_GAPS_PER_BURST,

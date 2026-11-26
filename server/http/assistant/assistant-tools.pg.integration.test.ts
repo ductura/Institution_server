@@ -13,7 +13,11 @@ import { readFileSync } from "node:fs";
 import { expect, it, vi } from "vitest";
 
 import { createTestDatabase } from "../../../test-support/database/index.ts";
-import { createAssistantRequests, type WithActor } from "../../database/index.ts";
+import {
+  createAssistantRequests,
+  createCourseAssistantPort,
+  type WithActor,
+} from "../../database/index.ts";
 import { createSyntheticAssistant } from "../../external/assistant/index.ts";
 import { facultyAiSettingsOf } from "../../external/assistant-tools/index.ts";
 import { createDatabases, createLayers, startServer } from "../index.ts";
@@ -121,6 +125,7 @@ it("drives begin_tool_step, the guard and the port from the route on the real RP
         requests: createAssistantRequests(withActor),
         rules: assignmentRulesFrom(withActor),
         provider: { config: config.config, port },
+        availability: (token, id) => createCourseAssistantPort(withActor).available(token, id),
         tools: assistantRouteToolsFor(withActor, settings),
       }),
     });

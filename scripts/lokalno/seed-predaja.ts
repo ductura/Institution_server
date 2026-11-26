@@ -18,6 +18,7 @@ import {
   REVISION_ZERO_NODE_ID,
   REVISION_ZERO_SHA256,
 } from "../../server/domain/index.ts";
+import { noticeFingerprint } from "../../server/domain/notice/index.ts";
 import { createEditStepsV1Replayer } from "../../server/external/storage/index.ts";
 import { SESSION_COOKIE_NAME, sessionTokenFromCookie } from "../../server/session/index.ts";
 
@@ -174,12 +175,6 @@ async function json<T>(api: Api, path: string, body?: object): Promise<T> {
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const base64 = (value: string) => Buffer.from(value, "utf8").toString("base64");
 
-// The notice route sends exactly the fingerprint fields and these four identifiers/markers.
-function noticeFingerprint({ assignmentId, versionNo, acknowledgedAt, readAt, ...notice }: Notice) {
-  const aiPurposes = notice.aiPolicy === "prohibited" ? [] : [...new Set(notice.aiPurposes)].sort();
-  return hash(`ductus-notice-fingerprint-v1\n${canonicalizeJcs({ ...notice, aiPurposes })}`);
-}
-
 export function initialCommit(work: Work, text: string, now: string) {
   const initial = Buffer.from(work.document, "base64").toString("utf8");
   if (hash(initial) !== REVISION_ZERO_SHA256 || work.documentHash !== REVISION_ZERO_SHA256)
@@ -239,7 +234,9 @@ export async function seedSubmission(api: Api, scenario: Scenario) {
     await json(api, `student/assignments/${assignmentId}/notice-read`, { versionNo });
     await json(api, `institution/assignments/${assignmentId}/acknowledgment`, {
       versionNo,
-      fingerprint: noticeFingerprint(notice),
+      // The server's own field list: the notice route also sends fields that are not
+      // members of the fingerprint (purposeCatalogVersion).
+      fingerprint: await noticeFingerprint(notice),
     });
   }
   const work = await json<Work>(api, "evidence/open", { assignmentId: assignment.id, start: true });

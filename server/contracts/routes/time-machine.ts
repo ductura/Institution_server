@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { DocumentKind } from "./shared.ts";
 import { WorkId } from "./versions.ts";
 
 const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
@@ -53,6 +54,8 @@ export const workVersionGet = defineRoute({
             maxLength: 2_097_152,
             description: "Canonical JSON of the document.",
           }),
+          // SRV-V13-UGOVOR-VRSTA: the kind of the work; absent means text.
+          documentKind: Type.Optional(DocumentKind),
         }),
         closed({
           from: Revision,

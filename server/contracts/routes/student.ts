@@ -3,7 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { SignedSubmissionReceipt } from "./evidence.ts";
-import { MUTATION_GUARD } from "./shared.ts";
+import { DocumentKind, MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END, Name, StudentSubmissionState } from "./teacher.ts";
 
 export { StudentSubmissionState };
@@ -53,6 +53,8 @@ const MyAssignment = closed({
   mentor: Type.Optional(Type.Union([closed(Person), Type.Null()])),
   /** A later due time granted to the caller alone, or null; never earlier than dueAt. */
   extendedDueAt: Type.Optional(Type.Union([Instant, Type.Null()])),
+  /** The kind of document the assignment asks for (SRV-V13-UGOVOR-VRSTA); absent means text. */
+  documentKind: Type.Optional(DocumentKind),
 });
 
 const MyCourse = closed({

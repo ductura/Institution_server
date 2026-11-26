@@ -4,9 +4,12 @@ on:
   pull_request:
 permissions:
   contents: read
+# CI-BRZINA: a newer push to a pull request or to the migration base cancels
+# the older run (its result is stale and it holds org runners); a push to
+# main never, each main run has its own group.
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.ref == 'refs/heads/migracija/kopija-ductus-backend' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/migracija/kopija-ductus-backend' }}
 # DAN-867: every run step is bash -eo pipefail (scripts/ci/shell.ts); without
 # it GitHub runs bash -e {0}, and a failed command in a pipe passes.
 defaults:
@@ -25,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.base.sha || 'main' }}
+          ref: ${{ (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'migracija/kopija-ductus-backend') && github.event.pull_request.base.sha || 'main' }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -38,7 +41,7 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          if [ "$EVENT_NAME" != pull_request ] || [ "$PR_BASE_REF" != main ]; then
+          if [ "$EVENT_NAME" != pull_request ] || { [ "$PR_BASE_REF" != main ] && [ "$PR_BASE_REF" != migracija/kopija-ductus-backend ]; }; then
             echo 'profile=full' >> "$GITHUB_OUTPUT"
           elif [ ! -f scripts/ci/scope.ts ] || [ -L scripts/ci/scope.ts ]; then
             echo 'profile=full' >> "$GITHUB_OUTPUT"
@@ -458,7 +461,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.base.sha || 'main' }}
+          ref: ${{ (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'migracija/kopija-ductus-backend') && github.event.pull_request.base.sha || 'main' }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

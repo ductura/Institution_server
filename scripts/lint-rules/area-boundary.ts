@@ -73,7 +73,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   "test-server": ["http", "settings"],
   tests: ["domain", "downloads"],
 };
-/** The entry point: files directly in server/ (server.ts; today index.ts and app.ts). */
+/** The entry point: files directly in server/ (server.ts). */
 export const ENTRY = "(entry)";
 const ENTRY_IMPORTS: readonly string[] = ["http", "settings", "config"];
 /** routes.ts imports only these areas (http only as a type) and its own ./service.ts. */

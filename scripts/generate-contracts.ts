@@ -45,6 +45,8 @@ const plain = (schema: TSchema): unknown => JSON.parse(JSON.stringify(schema));
 function ts(schema: Schema): string {
   if (schema.const !== undefined) return JSON.stringify(schema.const);
   if (Array.isArray(schema.anyOf)) return (schema.anyOf as Schema[]).map(ts).join(" | ");
+  // Any JSON value (Type.Unknown, SRV-V21-KOD-TESTOVI-RUTA): the input and expected value of a code test.
+  if (Object.keys(schema).length === 0) return "unknown";
   switch (schema.type) {
     case "string":
       // A multipart file part (SRV-1102): the client sends a Blob.
@@ -438,7 +440,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const type = res.headers.get("content-type") ?? "";
     // A binary answer (image/jpeg, DOCX) is read as a Blob; it is never a problem body.
-    const body: unknown = type.startsWith("application/json") ? await res.json() : (type.startsWith("image/") || type.startsWith("application/vnd.openxmlformats-officedocument.")) && res.status < 400 ? await res.blob() : undefined;
+    const body: unknown = type.startsWith("application/json") ? await res.json() : (type.startsWith("image/") || type.startsWith("text/csv") || type.startsWith("application/vnd.openxmlformats-officedocument.")) && res.status < 400 ? await res.blob() : undefined;
     // A status the contract lists as an answer is one even at 400 or above
     // (live.document.put 409 {outcome, token}), unless its body is a problem
     // body: the same status can also be an error (revision-requests 409).

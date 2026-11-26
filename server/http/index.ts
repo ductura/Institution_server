@@ -19,7 +19,12 @@ export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
+export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
+export { createQualitativeCodesRoutesFor } from "./qualitative-codes.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
+export { createThesisTopicRoutesFor } from "./thesis-topic/index.ts";
+export { createThesisCommitteeRoutesFor } from "./thesis-committee/index.ts";
+export { createThesisOverviewRoutesFor } from "./thesis-overview/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -34,6 +39,8 @@ export {
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createMilestoneTemplateRoutesFor } from "./milestone-template/index.ts";
 export { createAssignmentRubricRoutesFor } from "./assignment-rubric/index.ts";
+export { createAssignmentCodeTestsRoutesFor } from "./assignment-code-tests/index.ts";
+export { createQuestionnaireRoutesFor } from "./questionnaires/index.ts";
 export { createWorkRubricRoutesFor } from "./work-rubric/index.ts";
 export { createWorkTemplateRoutesFor } from "./work-template/index.ts";
 export { createAssignmentTemplateRoutesFor } from "./assignment-template/index.ts";
@@ -101,6 +108,8 @@ export {
 } from "./teacher-submissions-bulk/index.ts";
 export {
   createSubmissionPackageRoutes,
+  createSheetCsvRoute,
+  createSheetCsvRouteFor,
   createSubmissionPackageRoutesFor,
   createWorkPdfRouteFor,
   type SubmissionPackageRouteDeps,
@@ -204,6 +213,18 @@ export {
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
+export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
+export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
+export {
+  createQuestionnaireResponsesRoutes,
+  createQuestionnaireResponsesRoutesFor,
+  type QuestionnaireResponsesPort,
+} from "./questionnaire-responses.ts";
+export {
+  createQuestionnaireExportRoutes,
+  createQuestionnaireExportRoutesFor,
+  type QuestionnaireExportPort,
+} from "./questionnaire-export.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
@@ -291,6 +312,7 @@ export {
   createLayers,
   createPipeline,
   PIPELINE_STEPS,
+  trafficLogFor,
   type App,
   type Layer,
   type Layers,

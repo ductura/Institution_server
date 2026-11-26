@@ -31,7 +31,7 @@ export type ExportSnapshotInput = {
 };
 
 type ExportNode = DocumentNodeV4 | InlineNodeV4;
-type CapabilityMap = Record<ExportNode["type"], ExportCapability> &
+type CapabilityMap = Record<Exclude<ExportNode["type"], "orderedItem">, ExportCapability> &
   Partial<Record<string, ExportCapability>>;
 
 type DeepReadonly<T> = T extends string ? T : { readonly [Key in keyof T]: DeepReadonly<T[Key]> };
@@ -48,6 +48,7 @@ const DOCX_CAPABILITIES = {
   paragraph: "exported",
   heading: "exported",
   bulletItem: "degraded",
+  orderedItem: "degraded",
   quote: "exported",
   codeBlock: "degraded",
   box: "degraded",
@@ -62,14 +63,20 @@ const DOCX_CAPABILITIES = {
   crossReference: "omitted",
 } satisfies Record<ExportNode["type"], ExportCapability>;
 
+// `orderedItem` (v4 §2.2) is listed only for a document that has one, so the
+// frozen bytes and hash of every export without a numbered list stay as they were.
+const { orderedItem: ORDERED_ITEM_CAPABILITY, ...BASE_CAPABILITIES } = DOCX_CAPABILITIES;
+
 function capabilityMapFor(nodes: readonly DocumentNodeV4[]): CapabilityMap {
   const unknownTypes = new Set<string>();
+  let hasOrderedItem = false;
   const pending: unknown[] = [...nodes];
   const visited = new WeakSet<object>();
   while (pending.length > 0) {
     const node = pending.pop();
     if (node === null || typeof node !== "object" || visited.has(node)) continue;
     visited.add(node);
+    if ("type" in node && node.type === "orderedItem") hasOrderedItem = true;
     if (
       "type" in node &&
       typeof node.type === "string" &&
@@ -82,7 +89,8 @@ function capabilityMapFor(nodes: readonly DocumentNodeV4[]): CapabilityMap {
     }
   }
   return {
-    ...DOCX_CAPABILITIES,
+    ...BASE_CAPABILITIES,
+    ...(hasOrderedItem ? { orderedItem: ORDERED_ITEM_CAPABILITY } : {}),
     ...Object.fromEntries([...unknownTypes].map((type) => [type, "omitted"] as const)),
   };
 }

@@ -101,6 +101,8 @@ function block(b: ExportBlock, links: Links): string {
       return `<w:p>${runs(b.runs, links)}</w:p>`;
     case "bullet":
       return `<w:p><w:pPr><w:ind w:left="567" w:hanging="283"/></w:pPr>${run({ text: "• ", bold: false, italic: false, superscript: false, subscript: false })}${runs(b.runs, links)}</w:p>`;
+    case "ordered":
+      return `<w:p><w:pPr><w:ind w:left="567" w:hanging="283"/></w:pPr>${run({ text: `${b.number}. `, bold: false, italic: false, superscript: false, subscript: false })}${runs(b.runs, links)}</w:p>`;
     case "quote":
       return `<w:p><w:pPr><w:ind w:left="709" w:right="709"/></w:pPr>${runs(b.runs, links)}</w:p>`;
     case "code":

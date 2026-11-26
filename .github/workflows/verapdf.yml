@@ -5,6 +5,12 @@ on:
     branches: [main, migracija/kopija-ductus-backend]
 permissions:
   contents: read
+# CI-BRZINA: a newer push to a pull request or to the migration base cancels
+# the older run (its result is stale and it holds org runners); a push to
+# main never, each main run has its own group.
+concurrency:
+  group: verapdf-${{ github.event_name == 'pull_request' && github.ref || github.ref == 'refs/heads/migracija/kopija-ductus-backend' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/migracija/kopija-ductus-backend' }}
 defaults:
   run:
     shell: bash

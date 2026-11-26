@@ -224,3 +224,162 @@ BEGIN
   RESET ROLE;
 END
 $demo$;
+
+-- SRV-V18-UPITNIK-BAZA (val 18): an invented questionnaire in the seminar of
+-- demo-fakultet, made, opened and filled by hand by demo-teacher through the
+-- functions the application calls (as the block above). Twelve invented sheets
+-- carry no person; nothing here is a real answer. A rerun adds nothing: the
+-- block is skipped when the questionnaire exists. One DO block is one
+-- transaction; the session it opens is closed at its end.
+DO $questionnaire$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_course constant text := 'Izmišljeni seminar iz ekologije grada';
+  c_title constant text := 'Izmišljeno istraživanje: navike kompostiranja';
+  c_questions constant jsonb := $q$[
+    {"kind": "single", "text": "Kompostirate li otpad iz kućanstva?", "options": [{"code": "da", "label": "Da"}, {"code": "ne", "label": "Ne"}, {"code": "ponekad", "label": "Ponekad"}]},
+    {"kind": "multiple", "text": "Što stavljate u kompost?", "options": [{"code": "voce", "label": "Ostatke voća"}, {"code": "povrce", "label": "Ostatke povrća"}, {"code": "lisce", "label": "Lišće"}, {"code": "kava", "label": "Talog kave"}]},
+    {"kind": "scale", "text": "Koliko vam je kompostiranje naporno? (1 nimalo, 5 jako)", "scale": {"min": 1, "max": 5}},
+    {"kind": "number", "text": "Koliko kilograma otpada mjesečno kompostirate?"},
+    {"kind": "single", "text": "Imate li vrt?", "options": [{"code": "da", "label": "Da"}, {"code": "ne", "label": "Ne"}]},
+    {"kind": "scale", "text": "Koliko vam je važno smanjiti otpad? (1 nimalo, 5 jako)", "scale": {"min": 1, "max": 5}},
+    {"kind": "number", "text": "Koliko osoba živi u vašem kućanstvu?"},
+    {"kind": "text", "text": "Što bi vam olakšalo kompostiranje?"}
+  ]$q$;
+  v_institution uuid;
+  v_token text;
+  v_teacher uuid;
+  v_course uuid;
+  v_id uuid;
+  v_ids uuid[];
+  v_n integer;
+  v_answers jsonb;
+BEGIN
+  SELECT id INTO STRICT v_institution FROM identity.institution
+   WHERE slug = 'demo-fakultet' AND aai_home_org = c_home_org;
+  SELECT c.id INTO v_course FROM institution.course c
+   WHERE c.institution_id = v_institution AND c.name = c_course LIMIT 1;
+  IF v_course IS NULL OR EXISTS (SELECT 1 FROM institution.questionnaire q WHERE q.title = c_title) THEN
+    RETURN;
+  END IF;
+
+  v_token := rtrim(translate(encode(
+    sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())), 'base64'), '+/', '-_'), '=');
+  SET LOCAL ROLE ductus_auth;
+  PERFORM identity.open_session(c_issuer, 'demo-teacher', 'demo-teacher@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_token, 'UTF8')), 'Petar', 'Kranjčec', true);
+  RESET ROLE;
+
+  SET LOCAL ROLE ductus_app;
+  PERFORM set_config('app.session_token', v_token, true);
+  v_id := app.create_questionnaire(v_course, c_title, c_questions);
+  PERFORM app.set_questionnaire_state(v_id, 'open');
+  SELECT array_agg(q.question_id ORDER BY q.ord) INTO v_ids FROM app.teacher_questionnaire(v_id) q;
+  FOR v_n IN 1 .. 12 LOOP
+    v_answers := jsonb_build_array(
+      jsonb_build_object('questionId', v_ids[1], 'value', (ARRAY['da', 'ne', 'ponekad'])[1 + v_n % 3]),
+      jsonb_build_object('questionId', v_ids[2], 'value',
+        CASE v_n % 3 WHEN 0 THEN '["voce", "povrce"]'::jsonb WHEN 1 THEN '["lisce"]'::jsonb ELSE '["voce", "kava"]'::jsonb END),
+      jsonb_build_object('questionId', v_ids[3], 'value', 1 + v_n % 5),
+      jsonb_build_object('questionId', v_ids[4], 'value', 2 + (v_n % 4) * 1.5),
+      jsonb_build_object('questionId', v_ids[5], 'value', CASE WHEN v_n % 2 = 0 THEN 'da' ELSE 'ne' END),
+      jsonb_build_object('questionId', v_ids[6], 'value', 1 + (v_n * 2) % 5),
+      jsonb_build_object('questionId', v_ids[7], 'value', 1 + v_n % 4));
+    -- Every third sheet leaves the free text empty, as people do.
+    IF v_n % 3 <> 0 THEN
+      v_answers := v_answers || jsonb_build_array(jsonb_build_object(
+        'questionId', v_ids[8], 'value', 'Izmišljena primjedba broj ' || v_n));
+    END IF;
+    PERFORM app.manual_questionnaire_response(v_id, v_answers);
+  END LOOP;
+  PERFORM set_config('app.session_token', v_token, true);
+  PERFORM identity.close_current_session();
+  PERFORM set_config('app.session_token', '', true);
+  RESET ROLE;
+END
+$questionnaire$;
+
+-- SRV-V18-KODIRANJE-BAZA (val 18): invented material for qualitative coding of
+-- demo-student, kept through the functions the application calls (as the blocks
+-- above): two texts (`Intervju A` and `Bilješka A`), a codebook of six codes and
+-- a few marked passages. The offsets are found in the text by position(), so a
+-- wrong one is refused by the function itself. Nothing here is a real interview
+-- or a real person. A rerun adds nothing: the block is skipped when the first
+-- material exists. One DO block is one transaction; the session it opens is
+-- closed at its end.
+DO $coding$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_interview constant text :=
+    E'Pitanje: Kako biste opisali svoje iskustvo s kompostiranjem?\n'
+    || E'Odgovor: Isprva je bilo naporno, ali sada mi je to navika. Susjedi su se smijali, a sada pitaju za savjet.\n'
+    || E'Pitanje: Što vam je najteže?\n'
+    || E'Odgovor: Najteže je održati redovitost zimi, kad je hladno i ništa se ne raspada.';
+  c_note constant text :=
+    E'Bilješka s terena: dvorište iza zgrade, tri kontejnera za kompost.\n'
+    || E'Čini se da se stanari međusobno podsjećaju na red.';
+  c_codes constant text[][] := ARRAY[
+    ['Navika', 'Radnja koja je postala svakodnevna'],
+    ['Napor', 'Trud i poteškoće'],
+    ['Susjedstvo', 'Odnosi sa susjedima'],
+    ['Zima', 'Utjecaj hladnoće'],
+    ['Znanje', 'Savjet i iskustvo'],
+    ['Prostor', 'Mjesto i oprema']];
+  -- material (1 interview, 2 note), code (1..6), paragraph, quote, memo
+  c_marks constant jsonb := $m$[
+    [1, 2, 1, "naporno", null],
+    [1, 1, 1, "navika", "Promjena u odnosu na početak."],
+    [1, 3, 1, "Susjedi su se smijali", null],
+    [1, 5, 1, "pitaju za savjet", null],
+    [1, 4, 3, "zimi", "Zima se spominje kao glavna prepreka."],
+    [1, 2, 3, "Najteže je održati redovitost", null],
+    [2, 6, 0, "tri kontejnera za kompost", null],
+    [2, 3, 1, "stanari međusobno podsjećaju", null]]$m$;
+  v_institution uuid;
+  v_token text;
+  v_materials uuid[];
+  v_codes uuid[] := ARRAY[]::uuid[];
+  v_n integer;
+  v_mark jsonb;
+  v_body text;
+  v_line text;
+BEGIN
+  SELECT id INTO STRICT v_institution FROM identity.institution
+   WHERE slug = 'demo-fakultet' AND aai_home_org = c_home_org;
+  IF EXISTS (SELECT 1 FROM institution.qual_material m
+              JOIN identity.user_account u ON u.id = m.owner_id AND u.institution_id = m.institution_id
+             WHERE m.institution_id = v_institution AND u.oidc_subject = 'demo-student' AND m.title = 'Intervju A') THEN
+    RETURN;
+  END IF;
+
+  v_token := rtrim(translate(encode(
+    sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())), 'base64'), '+/', '-_'), '=');
+  SET LOCAL ROLE ductus_auth;
+  PERFORM identity.open_session(c_issuer, 'demo-student', 'demo-student@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_token, 'UTF8')), 'Lucija', 'Đaković', false);
+  RESET ROLE;
+
+  SET LOCAL ROLE ductus_app;
+  PERFORM set_config('app.session_token', v_token, true);
+  v_materials := ARRAY[app.create_qual_material('Intervju A', 'interview', c_interview),
+                       app.create_qual_material('Bilješka A', 'note', c_note)];
+  FOR v_n IN 1 .. array_length(c_codes, 1) LOOP
+    v_codes := v_codes || app.create_qual_code(c_codes[v_n][1], c_codes[v_n][2]);
+  END LOOP;
+  FOR v_mark IN SELECT * FROM jsonb_array_elements(c_marks) LOOP
+    v_body := CASE (v_mark ->> 0)::integer WHEN 1 THEN c_interview ELSE c_note END;
+    v_line := (string_to_array(v_body, E'\n'))[(v_mark ->> 2)::integer + 1];
+    v_n := strpos(v_line, v_mark ->> 3) - 1;
+    PERFORM app.create_qual_segment(
+      v_materials[(v_mark ->> 0)::integer], v_codes[(v_mark ->> 1)::integer],
+      (v_mark ->> 2)::integer, v_n, v_n + char_length(v_mark ->> 3), v_mark ->> 3,
+      CASE WHEN jsonb_typeof(v_mark -> 4) = 'string' THEN v_mark ->> 4 END);
+  END LOOP;
+  PERFORM set_config('app.session_token', v_token, true);
+  PERFORM identity.close_current_session();
+  PERFORM set_config('app.session_token', '', true);
+  RESET ROLE;
+END
+$coding$;

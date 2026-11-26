@@ -53,6 +53,7 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -70,7 +71,12 @@ import {
   createMentorNotesRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
+  createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
+  createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
@@ -124,6 +130,8 @@ import {
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
+  createAssignmentCodeTestsRoutesFor,
+  createQuestionnaireRoutesFor,
   createWorkRubricRoutesFor,
   createWorkTemplateRoutesFor,
   createAssignmentTemplateRoutesFor,
@@ -137,6 +145,10 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createCourseAssistantRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
+  createQualitativeMaterialsRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -159,6 +171,7 @@ import {
   routesOf,
   serverShutdownHooks,
   startServer,
+  trafficLogFor,
 } from "./http/index.ts";
 import {
   deploymentProblems,
@@ -202,18 +215,27 @@ const problems = [
 //    database that is down fails only its own calls.
 // 3. Layers, in the order of docs/server-map.md §3, steps 2 to 8: client IP,
 //    IP rules, rate limit, traffic record, security headers, origin check,
-//    operator policy. The order is fixed in http (PIPELINE_STEPS); step 5 is
-//    empty until wave 5, step 4 limits requests (DAN-814), and without an
+//    operator policy. The order is fixed in http (PIPELINE_STEPS); step 5 records
+//    traffic (DAN-1536), step 4 limits requests (DAN-814), and without an
 //    operator list and a second-factor port step 8 keeps operator paths closed
 //    (DAN-842-1, DAN-1092-1). Without APP_ORIGIN every state-changing request gets 403.
 // One origin for the pipeline's check and for WebAuthn's client data and rpId
 // (DAN-840-3f1), so the two can never differ.
 const APP_ORIGIN = appOrigin(process.env);
-const LAYERS = createLayers({
-  expectedOrigin: APP_ORIGIN,
-  trustedProxies: TRUSTED_PROXIES ?? [],
-  rateLimiter: createAddressRateLimiter(rateLimitConfig.limits),
-});
+// Step 5 writes traffic.request through the log service into log_entry of the
+// logs database (ductus_logs_writer, the pool of metricSamples); the service
+// never throws and a request never waits for it (DAN-1536).
+// Without LOGS_DATABASE_URL every record would fail and put a log_store_failed
+// line on stderr, so traffic is recorded only where the logs database is set.
+const logsConfigured = (env: NodeJS.ProcessEnv): boolean =>
+  (env.LOGS_DATABASE_URL ?? "").trim() !== "";
+const layersFor = (databases: ReturnType<typeof createDatabases>) =>
+  createLayers({
+    expectedOrigin: APP_ORIGIN,
+    trustedProxies: TRUSTED_PROXIES ?? [],
+    rateLimiter: createAddressRateLimiter(rateLimitConfig.limits),
+    ...(logsConfigured(process.env) ? { trafficLog: trafficLogFor(databases.metricSamples) } : {}),
+  });
 
 // SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
 // only outside local work (NODE_ENV development or test, the one definition
@@ -270,7 +292,7 @@ async function main(): Promise<void> {
     port,
     databases,
     shutdown,
-    layers: LAYERS,
+    layers: layersFor(databases),
     security: SECURITY,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
@@ -357,6 +379,10 @@ async function main(): Promise<void> {
       ...createMilestoneTemplateRoutesFor(databases.main),
       // SRV-V17-RUBRIC-DEF: the rubric of an assignment (teacher defines, student reads).
       ...createAssignmentRubricRoutesFor(databases.main),
+      // SRV-V21-KOD-TESTOVI-RUTA: the code tests of an assignment (teacher writes, both read).
+      ...createAssignmentCodeTestsRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-AUTOR: the questionnaires of a course (teacher makes, edits a draft, opens, closes).
+      ...createQuestionnaireRoutesFor(databases.main),
       // SRV-V17-RUBRIC-LEVEL: the teacher's mark of a level per rubric criterion on a work.
       ...createWorkRubricRoutesFor(databases.main),
       // SRV-V17-TEMPLATE-ADMIN: the work template of the institution per work type.
@@ -381,6 +407,8 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      // SRV-V14-SHEET-CSV: the CSV of one sheet of a spreadsheet work, the same readers as the DOCX.
+      createSheetCsvRouteFor(databases.main),
       // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
       createPortableRecordRouteFor(databases.main, APP_ORIGIN),
       // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
@@ -410,8 +438,17 @@ async function main(): Promise<void> {
       ...createMentorNotesRoutesFor(databases.main),
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
+      ...createPeerReviewRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-SIFRARNIK: the codebook of a student's own qualitative coding.
+      ...createQualitativeCodesRoutesFor(databases.main),
       // SRV-MENTOR-2: thesis forms, the mentor's consent and the stage after submission.
       ...createThesisRoutesFor(databases.main),
+      // SRV-V16-TEMA-PRIJEDLOG: the student proposes the topic of a thesis, the mentor decides.
+      ...createThesisTopicRoutesFor(databases.main),
+      // SRV-V16-POVJERENSTVO-ZAPIS: the committee of a thesis as a list, named by the administrator.
+      ...createThesisCommitteeRoutesFor(databases.main),
+      // SRV-V16-POPIS-FAKULTET: the theses of the faculty for the registrar, read only.
+      ...createThesisOverviewRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
@@ -423,6 +460,14 @@ async function main(): Promise<void> {
       ...createDeclarationQuestionRoutesFor(databases.main),
       // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
       ...createLateSubmissionRoutesFor(databases.main),
+      // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
+      ...createCourseAssistantRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.
+      ...createQuestionnaireResponsesRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-IZVOZ: the author reads the answers as questionnaire-export-v1.
+      ...createQuestionnaireExportRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-GRADIVO: the student's own material for qualitative coding.
+      ...createQualitativeMaterialsRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),

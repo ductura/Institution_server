@@ -40,8 +40,8 @@ export const CRITICAL_PATHS: readonly string[] = [
   "AGENTS.md",
   // This list protects itself, as in Ductus.
   "scripts/engineering/**",
-  // Transitional entry point, HTTP server and test access rules until
-  // server.ts and server/http replace them (docs/server-map.md, "Prelazno stanje").
+  // The removed transitional entry point (DAN-775), HTTP server and test
+  // access rules (DAN-1537): a file that comes back at these paths stays critical.
   "server/index.ts",
   "server/app.ts",
   "server/access.ts",

@@ -2039,6 +2039,8 @@ const en = {
     invalidAiPolicy: "The artificial intelligence rule is not valid.",
     invalidAiPurposes: "The artificial intelligence purposes do not fit the chosen rule.",
     invalidEvidenceProfile: "The evidence profile is not valid.",
+    invalidCodeTests:
+      "The code tests are not valid: at most 10 tests with different ids, 16 KiB in all.",
     invalidLogoutToken: "The sign-out request is not valid.",
     loginFailed: "Signing in did not succeed. Please try again.",
     loginRefused: "Signing in was refused.",
@@ -2118,6 +2120,10 @@ const en = {
       awaitingDecision: "The retention period is not set; the faculty sets it.",
       neverDeleted: "Not deleted: it proves the submission even after the content is deleted.",
     },
+  },
+  slidesExport: {
+    slide: "Slide",
+    presentation: "Presentation",
   },
 } as const satisfies Messages;
 
