@@ -116,6 +116,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
+  createRevisionSendRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createMentorshipFollowRoutesFor,
@@ -355,6 +356,7 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-2006: revision requests (DAN-314), the teacher asks for a rework of a passage.
       createRevisionRequestsRouteFor(databases.main),
+      createRevisionSendRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
       // SRV-MENTOR-3: note to self and reading place (MK-9), seen marks (MK-11), the mentor's overview (MK-8).

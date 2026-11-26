@@ -6,7 +6,10 @@ export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createSourceNotebookRoutesFor } from "./source-notebook/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
-export { createRevisionRequestsRouteFor } from "./revision-requests/index.ts";
+export {
+  createRevisionRequestsRouteFor,
+  createRevisionSendRouteFor,
+} from "./revision-requests/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createWorkInterviewRoutesFor } from "./work-interview/index.ts";
 export { createWorkInterviewPdfRouteFor } from "./work-interview/pdf/index.ts";

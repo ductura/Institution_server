@@ -21,6 +21,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
+  createRevisionSendRouteFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createConsultationSlotRoutesFor,
@@ -244,6 +245,12 @@ const SESSION_ROUTES = {
     path: "/api/v1/revision-requests/list",
     body: () => ({ documentId: randomUUID() }),
     live: 403,
+  },
+  // SRV-ED43-DORADA-POSALJI: a work that is not the caller's is 404.
+  "collaboration.revision-send.post": {
+    path: "/api/v1/revision-send",
+    body: () => ({ documentId: randomUUID(), message: null }),
+    live: 404,
   },
   // SRV-1105: a work it may not read is 404 for the list and for both writes.
   "work.consultation-records.get": {
@@ -2557,6 +2564,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createRevisionRequestsRouteFor",
+  "createRevisionSendRouteFor",
   "createWorkMessagesRoutesFor",
   "createMentorshipFollowRoutesFor",
   "createSelfNoteSealedRoutesFor",
@@ -2702,6 +2710,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   createRevisionRequestsRouteFor(databases.main),
+  createRevisionSendRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
   ...createMentorshipFollowRoutesFor(databases.main),
   ...createSelfNoteSealedRoutesFor(databases.main),

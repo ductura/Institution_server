@@ -310,6 +310,48 @@ describe("dev fake server: live view and collaboration", () => {
     });
     expect(contractProblems("collaboration.revision-requests.post", list)).toEqual([]);
   });
+
+  it("sends a revision round only for an open request, never twice, and only as the owner", async () => {
+    const state = createState();
+    const teacher = await signIn(state, "nastavnik");
+    const student = await signIn(state, "student");
+    const sendRound = (headers: Record<string, string>, message: string | null = null) =>
+      send(state, "/api/v1/revision-send", {
+        body: { documentId: IDS.document, message },
+        headers,
+      });
+    expect((await sendRound(student)).json).toMatchObject({ error: "not_allowed" });
+    const created = await send(state, "/api/v1/revision-requests/create", {
+      body: {
+        anchor: {
+          nodeId: "0a000000-0000-4000-8000-000000000001",
+          quote: "Izmišljeno",
+          prefix: "",
+          suffix: "",
+          startHint: 0,
+          endHint: 10,
+        },
+        documentId: IDS.document,
+        instruction: "Izmišljena uputa.",
+        requestedRevision: 0,
+      },
+      headers: teacher,
+    });
+    expect(created.status).toBe(200);
+    expect((await sendRound(teacher)).json).toMatchObject({ error: "forbidden" });
+    const first = await sendRound(student, "Izmišljena poruka.");
+    expect(contractProblems("collaboration.revision-send.post", first)).toEqual([]);
+    expect(first.json).toEqual({ round: 1 });
+    expect((await sendRound(student)).json).toMatchObject({ error: "not_allowed" });
+    const missing = await send(state, "/api/v1/revision-send", {
+      body: { documentId: "izmisljeni-nepostojeci-rad", message: null },
+      headers: student,
+    });
+    expect(missing.json).toMatchObject({ error: "not_found" });
+    expect(state.revisionSends.map((s) => [s.round, s.message])).toEqual([
+      [1, "Izmišljena poruka."],
+    ]);
+  });
 });
 
 describe("dev fake server: review findings on #366", () => {

@@ -1017,6 +1017,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7081618556",
   },
+  // SRV-ED43-DORADA-POSALJI (Ductus#2058, BLOK ED-43): the student owner sends the revision for review.
+  "app/api/revision-send/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7178648513",
+  },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",

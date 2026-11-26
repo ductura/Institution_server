@@ -207,6 +207,7 @@ describe("route inventory", () => {
       "support.problem-report-status.post: app/api/problem-reports/[reference]/status/route.ts is not in the inventory",
       "institution.admin-actions.get: app/api/institution/admin-actions/route.ts is not in the inventory",
       "projection.process-summary-details.post: app/api/process-summary/details/route.ts is not in the inventory",
+      "collaboration.revision-send.post: app/api/revision-send/route.ts is not in the inventory",
       "work.consultation-slots.get: app/api/works/[documentId]/consultation-slots/route.ts is not in the inventory",
       "work.consultation-slots.post: app/api/works/[documentId]/consultation-slots/route.ts is not in the inventory",
       "work.consultation-slots.patch: app/api/works/[documentId]/consultation-slots/[slotId]/route.ts is not in the inventory",

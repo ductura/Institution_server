@@ -86,8 +86,8 @@ SELECT is(pg_temp.send('ana', 'doc-a', m.text), 'ZD422: invalid input', m.why)
                ('   ', 'a message of blanks'),
                (repeat('a', 2001), 'a message above 2000 characters'),
                (E'a\u0007b', 'a control character'),
-               (E'a‮b', 'a bidi override'),
-               (E'é', 'a message that is not NFC')) m(text, why);
+               (E'a\u202Eb', 'a bidi override'),
+               (E'e\u0301', 'a message that is not NFC')) m(text, why);
 SELECT is(pg_temp.sends(), 'none', 'no invalid message wrote anything');
 
 -- 5. The first round, the repeated send, the next round.
