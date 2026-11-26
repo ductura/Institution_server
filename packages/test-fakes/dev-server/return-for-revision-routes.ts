@@ -44,4 +44,28 @@ export const RETURN_FOR_REVISION_HANDLERS: Handlers = {
       },
     };
   },
+  // F4-NAS-R16-SRV: the due date of the open return. The student owner and a teacher
+  // of the work read it, everybody else does not see the work. Open means the work
+  // was returned and not submitted again.
+  "work.revision-due.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((entry) => entry.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) === null) {
+      return { error: "not_found" };
+    }
+    const last = state.workReturns.filter((entry) => entry.documentId === work.documentId).at(-1);
+    if (last === undefined || work.state === "submitted") {
+      return { status: 200, body: { returned: null } };
+    }
+    return {
+      status: 200,
+      body: {
+        returned: {
+          round: last.round,
+          revisionDueAt: last.revisionDueAt,
+          returnedAt: last.returnedAt,
+        },
+      },
+    };
+  },
 };
