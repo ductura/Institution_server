@@ -13,6 +13,7 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createEnrollmentCodeStateRouteFor,
+  createTeacherRoleRoutesFor,
   createRosterImportRoutesFor,
   createIsvuSourceRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -2125,6 +2126,17 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-ULOGA-POTVRDA-OPOZIV: the account is no administrator, so both are 403.
+  "institution.role-confirmation.post": {
+    path: `/api/v1/institution/teachers/${STUDENT}/role-confirmation`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.role-revocation.post": {
+    path: `/api/v1/institution/teachers/${STUDENT}/role-revocation`,
+    body: () => ({}),
+    live: 403,
+  },
   // Ductus#2028 (w1119o): the student and version routes on the same front.
   // The account teaches no course or assignment: each RPC refuses with 403.
   "institution.student-removal.post": {
@@ -2728,6 +2740,7 @@ const FACTORIES = [
   "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
   "createEnrollmentCodeStateRouteFor",
+  "createTeacherRoleRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
   "createAssignmentGradeRouteFor",
@@ -2884,6 +2897,7 @@ const MOUNTED = [
   createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   createEnrollmentCodeStateRouteFor(databases.main),
+  ...createTeacherRoleRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
   createAssignmentGradeRouteFor(databases.main),
