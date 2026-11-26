@@ -231,10 +231,10 @@
           "documentId": "dokument-izmisljeni-zv-1",
           "evidenceProfileId": "standard-v1",
           "currentRevision": 0,
-          "documentHash": "df89679f4a77a27f4c669a12c443a728423d36f1247b693733c96b455f172535",
+          "documentHash": "70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4",
           "headSegmentHash": null,
           "lastSequenceTo": 0,
-          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOltdLCJpZCI6IjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyIsInR5cGUiOiJwYXJhZ3JhcGgifSx7ImNoaWxkcmVuIjpbXSwiaWQiOiI4YjNlMmQ3MS02YzRmLTRhOTAtYjVkMi1lMTdmMGE5YzNiNDYiLCJ0eXBlIjoicGFyYWdyYXBoIn1dLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+          "document": "eyJraW5kIjoic3ByZWFkc2hlZXQiLCJzY2hlbWFWZXJzaW9uIjoxLCJzaGVldHMiOlt7ImNlbGxzIjp7fSwiY29sdW1ucyI6MTAsImlkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAwIiwibmFtZSI6Ikxpc3QxIiwicm93cyI6MTAwfV19",
           "receiptKeys": [
             {
               "algorithm": "Ed25519",
