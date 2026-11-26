@@ -14,7 +14,7 @@ Kontrolna točka koja ne prođe neku od provjera (oštećena, tuđeg zapisa, iza
 
 ## Tko ga zove
 
-Worker, nakon što provjeri lanac odsječaka (verifyEvidenceChainV2) i potvrde. Spajanje u petlju workera nije dio SRV-1503 (otvorena stavka u PR-u).
+Worker, nakon što provjeri lanac odsječaka (verifyEvidenceChainV2) i potvrde. Petlja je `server/worker/reconstruction/` (F4-PM2-R02): za svaki dospjeli paket zove `createPackageCheckpointRecorder` (`package-pass.ts`), koji čita lanac (`chain-source.ts`, RPC `app.worker_packages_due_checkpoints` i `app.worker_package_chain`), objekte odsječaka iz pohrane ustanove, provjerava ih prema glavi paketa (`verifyEvidenceChainV2`; lanac s prekidom ili objekt koji nije pod svojim hashom se preskače) i tek tada zove `recordDueCheckpoints`. Revizija 0 i odabir replayera dolaze iz `schemaVersion` početnog teksta.
 
 ## Koje podatke dira
 
@@ -22,7 +22,7 @@ Worker, nakon što provjeri lanac odsječaka (verifyEvidenceChainV2) i potvrde. 
 
 ## Što izvozi
 
-`readDocumentAtRevision`, `buildReconstructionCheckpoints`, `verifyReconstructionCheckpoint`, `checkpointRevisionsDue`, `readPackageRevision`, `recordDueCheckpoints`, `createWorkerReconstructionCheckpointStore` i njihove tipove (`index.ts`).
+`readDocumentAtRevision`, `buildReconstructionCheckpoints`, `verifyReconstructionCheckpoint`, `checkpointRevisionsDue`, `readPackageRevision`, `recordDueCheckpoints`, `createWorkerReconstructionCheckpointStore`, `createWorkerEvidenceChainSource`, `createPackageCheckpointRecorder` i njihove tipove (`index.ts`).
 
 ## Što ne smije uvoziti
 
