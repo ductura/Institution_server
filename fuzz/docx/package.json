@@ -1,0 +1,13 @@
+{
+  "name": "@ductura/fuzz-docx",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Jazzer.js fuzzing of the DOCX import (ISTR-8); its own lockfile, not part of the workspace",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@jazzer.js/core": "4.0.0"
+  }
+}

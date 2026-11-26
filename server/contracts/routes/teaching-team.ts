@@ -86,6 +86,24 @@ export const teachingTeamRoutes = [
     errors: ERRORS,
   }),
   defineRoute({
+    id: "institution.teaching-team-candidates.get",
+    method: "GET",
+    path: `${PATH}/team/candidates`,
+    inventory: `${INVENTORY}/team/candidates/route.ts`,
+    access: "course_teacher",
+    summary:
+      "The people the holder can add as assistants: confirmed teachers of the same institution who are neither a teacher of the course nor an active assistant, ordered by name. Only an ID and a display name, never an address or another identifier. Anyone but the holder is refused.",
+    request: { params: closed({ id: Uuid }) },
+    responses: [
+      {
+        status: 200,
+        description: "the candidates for the assistant roster",
+        body: closed({ candidates: Type.Array(Person, { maxItems: 5000 }) }),
+      },
+    ],
+    errors: ERRORS,
+  }),
+  defineRoute({
     id: "institution.teaching-team.post",
     method: "POST",
     path: `${PATH}/team`,

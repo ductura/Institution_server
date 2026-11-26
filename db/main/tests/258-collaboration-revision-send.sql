@@ -1,5 +1,5 @@
 -- SRV-ED43-DORADA-POSALJI (Ductus#2058, BLOK ED-43): the student owner sends
--- the revision for review (collaboration.send_revision, 20261220160000). The
+-- the revision for review (collaboration.send_revision, 20261220180000). The
 -- table and its grants, who may send, the round, the repeated send that never
 -- skips a round, the message rule, the submitted work and the retention
 -- delete. Personas of institution.inc and evidence-acceptance.inc, all

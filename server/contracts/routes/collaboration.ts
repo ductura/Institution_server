@@ -323,7 +323,7 @@ export const revisionRequestsPost = defineRoute({
 // route of its own, beside the actions of revision-requests, because a new
 // action would change that route's existing schemas (contracts:breaking).
 // Database: collaboration.revision_send and collaboration.send_revision
-// (20261220160000).
+// (20261220180000).
 
 /** The round of a sent revision of one work: 1, 2, 3 … */
 const Round = Type.Integer({ minimum: 1, maximum: 1000 });

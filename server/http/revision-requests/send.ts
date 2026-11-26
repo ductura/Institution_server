@@ -4,7 +4,7 @@
 // session cookie (401), the media type, the bounded body as its exact
 // canonical bytes, the work id before the other values (a malformed id reads
 // as a missing work, 404), the shape of the contract and the text rule of the
-// message, then collaboration.send_revision (migration 20261220160000). The
+// message, then collaboration.send_revision (migration 20261220180000). The
 // database decides the relation (the teacher of the work 403, anybody else
 // 404), whether a revision request was opened or reopened since the previous
 // round (409 not_allowed otherwise, also on a submitted work) and which round
