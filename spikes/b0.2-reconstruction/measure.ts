@@ -15,7 +15,7 @@ import {
   EMPTY,
   replayer,
   type InventedRecord,
-} from "../../server/evidence/reconstruction/record.fixture.ts";
+} from "./record.ts";
 
 export const PILOT_WORDS = 15_000;
 export const DOCTORAL_WORDS = 80_000;

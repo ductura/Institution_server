@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { inventedWords, measure } from "./measure.ts";
+import { buildRecord } from "./record.ts";
 
 test("inventedWords gives exactly the asked words in segments of the asked size", () => {
   const texts = inventedWords(45, 20);
@@ -27,7 +28,7 @@ test("a work shorter than the checkpoint distance has no checkpoint and replays 
 });
 
 test("a checkpoint over the size limit is reported as not used, not as a faster read", async () => {
-  const { buildRecord } = await import("../../server/evidence/reconstruction/record.fixture.ts");
+  
   const big = "x".repeat(1_100_000);
   const record = await buildRecord([big, big, "kraj "]);
   await assert.rejects(
