@@ -33,11 +33,12 @@ export function createTeacherSubmissionNotesReader(
     let rows: Record<string, unknown>[] | null;
     try {
       rows = await withActor(token, async (tx) => {
-        const actor = (await tx.query<Record<string, unknown>>(ACTOR_SQL)).rows[0];
-        if (actor === undefined) throw Object.assign(new Error("no session"), { code: "ZD401" });
-        if (typeof actor.user_id !== "string" || actor.user_id.toLowerCase() === studentId) {
-          return null;
+        // A closed or unknown session reads as one row of NULLs: 401, as every route.
+        const userId = (await tx.query<Record<string, unknown>>(ACTOR_SQL)).rows[0]?.user_id;
+        if (typeof userId !== "string") {
+          throw Object.assign(new Error("no session"), { code: "ZD401" });
         }
+        if (userId.toLowerCase() === studentId) return null;
         return (await tx.query<Record<string, unknown>>(SQL, [assignmentId, studentId])).rows;
       });
     } catch (error) {

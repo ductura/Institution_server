@@ -9,7 +9,7 @@ const NOTE = "00000000-0000-4000-8000-0000000000c1";
 
 const TEACHER = "00000000-0000-4000-8000-0000000000d1";
 
-function setup(rows: object[] | Error, actor: string = TEACHER) {
+function setup(rows: object[] | Error, actor: string | null = TEACHER) {
   const calls: (readonly unknown[] | undefined)[] = [];
   const withActor: WithActor = async (_token, run) =>
     run({
@@ -79,5 +79,11 @@ it("is unavailable for a malformed row", async () => {
 it("refuses the caller's own notes without reading them, as the database would serve them", async () => {
   const { read, calls } = setup([row(NOTE, "Izmišljena napomena.", new Date())], STUDENT);
   expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "not_found" });
+  expect(calls).toEqual([]);
+});
+
+it("is unauthenticated for a session without an actor, before reading any note", async () => {
+  const { read, calls } = setup([row(NOTE, "Izmišljena napomena.", new Date())], null);
+  expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "unauthenticated" });
   expect(calls).toEqual([]);
 });
