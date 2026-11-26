@@ -86,6 +86,7 @@ describe("route inventory", () => {
     ).toEqual(["app/api/student/assignments/route.ts: methods none, inventory GET"]);
     expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
       "client.context.post: app/api/client-context/route.ts is not in the inventory",
+      "client.error.post: app/api/client-error/route.ts is not in the inventory",
       "auth.webauthn-challenge.post: app/api/auth/webauthn/challenge/route.ts is not in the inventory",
       "auth.webauthn-registration.post: app/api/auth/webauthn/registration/route.ts is not in the inventory",
       "auth.webauthn-assertion.post: app/api/auth/webauthn/assertion/route.ts is not in the inventory",

@@ -80,6 +80,9 @@ function answerOf(opened: OpenWorkResult): EvidenceAnswer | { readonly body: unk
     receiptKeys: work.receiptKeys,
     submitted: work.submitted,
     lastSignedAt: work.lastSignedAt,
+    // SRV-V14-KIND-ENUM: always sent; documentKind is not (kind = workKind ?? documentKind ?? "text").
+    workKind: work.workKind ?? "text",
+    ...(work.workKind === "spreadsheet" ? { sheetSchemaVersion: 1 } : {}),
   };
   return { body };
 }

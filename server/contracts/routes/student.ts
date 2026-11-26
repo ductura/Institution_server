@@ -3,7 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { SignedSubmissionReceipt } from "./evidence.ts";
-import { DocumentKind, MUTATION_GUARD } from "./shared.ts";
+import { DocumentKind, WorkKind, MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END, Name, StudentSubmissionState } from "./teacher.ts";
 
 export { StudentSubmissionState };
@@ -55,6 +55,7 @@ const MyAssignment = closed({
   extendedDueAt: Type.Optional(Type.Union([Instant, Type.Null()])),
   /** The kind of document the assignment asks for (SRV-V13-UGOVOR-VRSTA); absent means text. */
   documentKind: Type.Optional(DocumentKind),
+  workKind: Type.Optional(WorkKind),
 });
 
 const MyCourse = closed({

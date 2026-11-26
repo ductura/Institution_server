@@ -1,0 +1,44 @@
+name: Provjera dostupnosti
+
+# DAN-1567, part 3: every 15 minutes one look at /api/v1/ready from outside
+# (scripts/uptime). A look that does not get 200 opens one issue or rewrites
+# its body; a look that gets 200 closes it. The address is the repository
+# variable READY_URL: until an environment exists and the variable is set, the
+# job does not run. No secret is used; the token may only write issues.
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+# DAN-867: every run step is bash -eo pipefail (scripts/ci/shell.ts).
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Provjera spremnosti
+    if: vars.READY_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Jedna provjera i zapis u issue
+        env:
+          READY_URL: ${{ vars.READY_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/uptime/cli.ts

@@ -20,6 +20,7 @@ import {
   createAddressRateLimiter,
   createAuthRoutes,
   createClientContextRoute,
+  createClientErrorRoute,
   createDownloadsManifestRoute,
   createWorkPdfRouteFor,
   createDatabases,
@@ -173,6 +174,7 @@ import {
   logStartupFailed,
   logStartupRefused,
   facultyRulesProblems,
+  installUncaughtCapture,
   parseTrustedProxies,
   readRateLimitConfig,
   readinessCheckFor,
@@ -191,6 +193,18 @@ import {
   metricsIntervalProblems,
   testModeProblems,
 } from "./settings/index.ts";
+
+// 0. Errors nobody caught (DAN-1567). Node would print the error with its
+//    message and stack, which can quote a value; here it is one line of two
+//    closed codes (server/log/uncaught.ts), and the process exits 1 all the same.
+type Uncaught = "uncaughtException" | "unhandledRejection";
+installUncaughtCapture(
+  {
+    on: (event: Uncaught, listener: (error: unknown) => void) => process.on(event, listener),
+    off: (event: Uncaught, listener: (error: unknown) => void) => process.off(event, listener),
+  },
+  { exit: (code) => process.exit(code) },
+);
 
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
@@ -312,6 +326,9 @@ async function main(): Promise<void> {
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
+      // An error nobody caught in the browser (DAN-1568): closed codes only,
+      // written as one line of the process log until a log writer is wired.
+      createClientErrorRoute(),
       createEvidenceOpenRoute(databases.main),
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),

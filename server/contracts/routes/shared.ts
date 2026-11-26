@@ -25,3 +25,17 @@ export const MUTATION_GUARD = [
  * change (contracts:breaking); a client without it treats the work as text.
  */
 export const DocumentKind = Type.Union([Type.Literal("text"), Type.Literal("slides")]);
+
+/**
+ * SRV-V14-KIND-ENUM: the kind of work with the value DocumentKind cannot take. Widening
+ * DocumentKind to "spreadsheet" is refused by contracts:breaking, so it stays text|slides and
+ * every route that carries documentKind carries this optional workKind beside it. The rule
+ * for a client: kind = workKind ?? documentKind ?? "text". The server always sends workKind;
+ * documentKind only for "text" and "slides". A request naming both with different values
+ * is the existing 422.
+ */
+export const WorkKind = Type.Union([
+  Type.Literal("text"),
+  Type.Literal("slides"),
+  Type.Literal("spreadsheet"),
+]);
