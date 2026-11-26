@@ -122,7 +122,7 @@ async function redirect(response: Response, expectedOrigin: string, path?: strin
   return url;
 }
 
-async function signInSession(origin: string, issuer: string, account: string) {
+export async function signInSession(origin: string, issuer: string, account: string) {
   const go = browser(origin, issuer);
   const login = new URL("/api/v1/auth/login?returnTo=/app/web/", origin);
   const authorize = await redirect(await go(login), issuer);
