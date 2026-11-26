@@ -420,11 +420,13 @@ jobs:
           # receipt and an object in the local S3; the same build under production is 503.
           PATH="$PGBIN:$PATH" node scripts/stack/vs1-commit-check.ts
           # Health reads no database: check that the server's own login reaches it.
-          "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
+          "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:25360/ductus" -tAc 'SELECT 1'
       # ZEL-SRV-PGCTL: diagnostics only. `pg_ctl: could not start server` does not
       # say why; the postmaster logs of every cluster of this job do. Also the
-      # listeners and the ephemeral port range: 54329, 54330 and 54360 lie inside
-      # it (32768-60999), so an outgoing connection can hold such a port.
+      # listeners and the ephemeral port range: 54329 and 54330 lie inside it
+      # (32768-60999), so an outgoing connection can hold such a port. The VS-1
+      # PostgreSQL therefore listens on 25360, below the range (SRV-CI-VS1-PORT:
+      # runs 45839389209 and 45841997971 failed with the old default port taken).
       - name: Dijagnostika PostgreSQL-a (zadnjih 100 redaka loga)
         if: failure()
         run: |
@@ -446,7 +448,7 @@ jobs:
         if: always() && steps.vs1-up.outcome != 'skipped'
         run: |
           PATH="$PGBIN:$PATH" pnpm stack:vs1 down
-          for port in 54360 4100 4180 4191; do
+          for port in 25360 4100 4180 4191; do
             if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
           done
           if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata|packages/test-fakes/oidc/server.ts|scripts/stack/local-s3.ts)"; then

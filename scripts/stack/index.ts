@@ -1,6 +1,7 @@
 export {
   ALLOWED_NODE_ENV,
   DEFAULT_PORTS,
+  EPHEMERAL_PORTS,
   FETCH_BAD_PORTS,
   parseArgs,
   SAFE_PATH,

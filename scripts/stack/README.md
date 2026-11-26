@@ -48,7 +48,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 
 | Varijabla           | Zadano | Značenje             |
 | ------------------- | ------ | -------------------- |
-| `VS1_POSTGRES_PORT` | 54360  | PostgreSQL           |
+| `VS1_POSTGRES_PORT` | 25360  | PostgreSQL           |
 | `VS1_SERVER_PORT`   | 4100   | server               |
 | `VS1_OIDC_PORT`     | 4180   | lažni OIDC pružatelj |
 | `VS1_S3_PORT`       | 4191   | lokalni S3           |
