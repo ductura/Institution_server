@@ -503,3 +503,20 @@ describe("gaps and record state (#384 F, G)", () => {
     expect(summary.sessions.count).toBe(120);
   });
 });
+
+describe("a segment in a spreadsheet or slides step format (SRV-V14-PROJEKCIJE-FORMAT)", () => {
+  it("gives no summary, whether the check or the projection refuses it", async () => {
+    const stored = await buildPackage([minuteSegment("10:00", [pasted("Lorem ipsum dolor")])]);
+    for (const transactionFormat of ["ductus-sheet-steps-v1", "ductus-slide-steps-v1"]) {
+      const segment = JSON.parse(stored.payloads[0]!) as Record<string, unknown>;
+      segment.captureContext = { editorModel: "prosemirror", transactionFormat };
+      const payload = canonicalizeJcs(segment);
+      const result = await projectProcessSummary({
+        payloads: [payload],
+        head: { segmentHash: await sha256WebCrypto(payload), segmentCount: 1 },
+        thresholds: THRESHOLDS,
+      });
+      expect(result).toEqual({ ok: false, reason: "invalid_segment" });
+    }
+  });
+});

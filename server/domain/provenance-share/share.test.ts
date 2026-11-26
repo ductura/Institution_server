@@ -12,6 +12,9 @@ import {
   revisionZeroDocumentV3,
   revisionZeroDocumentV4,
 } from "../document/index.ts";
+import { evidenceTransactionFormatOfWork } from "../forensics/index.ts";
+import { SHEET_STEP_FORMAT_V1 } from "../sheet/index.ts";
+import { SLIDE_STEP_FORMAT_V1 } from "../slides/index.ts";
 
 import { computeProvenanceShare, type ShareEvent, type ShareResult } from "./share.ts";
 
@@ -27,10 +30,17 @@ const ATOMS = load<Fixture>("atoms-v3.json");
 const EDITED = load<Fixture>("edited-transfer-v1.json");
 const PASTED = load<Fixture>("all-pasted-v1.json");
 
+/** The format the segments of a text work of this revision 0 are recorded in. */
+function formatsOf(initial: unknown): unknown[] {
+  return [evidenceTransactionFormatOfWork((initial as { schemaVersion: unknown }).schemaVersion)];
+}
+const TEXT_V1 = formatsOf(revisionZeroDocument());
+
 /** The share after the first `count` events of a fixture. */
 function after(fixture: Fixture, initial: unknown, count: number): ShareResult {
   return computeProvenanceShare({
     initialDocument: initial,
+    transactionFormats: formatsOf(initial),
     events: fixture.events.slice(0, count),
     submittedDocument: fixture.documents[count - 1],
   });
@@ -50,6 +60,7 @@ describe("vector §9.1", () => {
   it("gives the categories and percents of the contract, byte for byte", () => {
     const result = computeProvenanceShare({
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events: VECTOR.events,
       submittedDocument: VECTOR.submittedDocument,
     });
@@ -77,6 +88,7 @@ describe("vector §9.1", () => {
     const prefix = (count: number) =>
       computeProvenanceShare({
         initialDocument: revisionZeroDocument(),
+        transactionFormats: TEXT_V1,
         events: VECTOR.events.slice(0, count),
         submittedDocument: VECTOR.submittedDocument,
       });
@@ -129,6 +141,7 @@ describe("inline atoms (§1.1)", () => {
     const text = { type: "text", text: "Odlomak" };
     const result = computeProvenanceShare({
       initialDocument,
+      transactionFormats: formatsOf(initialDocument),
       events: [
         {
           source: "editor",
@@ -167,6 +180,7 @@ describe("edge cases of the task", () => {
   it("empty submitted text: T = 0 and every percent 0", () => {
     const empty = computeProvenanceShare({
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events: [],
       submittedDocument: revisionZeroDocument(),
     });
@@ -213,6 +227,7 @@ describe("edge cases of the task", () => {
     }));
     const result = computeProvenanceShare({
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events,
       submittedDocument: PASTED.documents[0],
     });
@@ -222,6 +237,7 @@ describe("edge cases of the task", () => {
   it("is deterministic: the same chain gives the same bytes", () => {
     const input = {
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events: VECTOR.events,
       submittedDocument: VECTOR.submittedDocument,
     };
@@ -234,6 +250,7 @@ describe("edge cases of the task", () => {
 describe("failures: never a share (§1.2, §1.3)", () => {
   const base = () => ({
     initialDocument: revisionZeroDocument() as unknown,
+    transactionFormats: TEXT_V1 as unknown[],
     events: structuredClone(VECTOR.events) as ShareEvent[],
     submittedDocument: structuredClone(VECTOR.submittedDocument) as {
       nodes: { id: string; children: { text: string }[] }[];
@@ -284,6 +301,7 @@ describe("failures: never a share (§1.2, §1.3)", () => {
     const inside = first.length + 2 + 1 + second.indexOf("🌱") + 1;
     const split = {
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events: [
         ...EDGE.events,
         {
@@ -342,6 +360,7 @@ describe("failures: never a share (§1.2, §1.3)", () => {
     expect(
       computeProvenanceShare({
         initialDocument: revisionZeroDocumentV3(),
+        transactionFormats: [],
         events: [],
         submittedDocument: revisionZeroDocument(),
       }),
@@ -352,10 +371,91 @@ describe("failures: never a share (§1.2, §1.3)", () => {
     expect(
       computeProvenanceShare({
         initialDocument: revisionZeroDocumentV4(),
+        transactionFormats: [],
         events: [],
         submittedDocument: revisionZeroDocumentV4(),
       }),
     ).toEqual({ ok: false, reason: "unsupported_format" });
+  });
+});
+
+describe("segments recorded in another step format (SRV-V14-PROJEKCIJE-FORMAT)", () => {
+  // The steps are text steps the replayer accepts, so only the recorded
+  // format can tell that the chain is not one of text: without the check the
+  // same chain gives the share of the vector.
+  const recordedAs = (transactionFormats: unknown) =>
+    computeProvenanceShare({
+      initialDocument: revisionZeroDocument(),
+      events: VECTOR.events,
+      transactionFormats: transactionFormats as unknown[],
+      submittedDocument: VECTOR.submittedDocument,
+    });
+
+  it("gives the share of the vector when every segment is in the work's text format", () => {
+    expect(recordedAs(TEXT_V1).ok).toBe(true);
+    expect(recordedAs([...TEXT_V1, ...TEXT_V1, ...TEXT_V1]).ok).toBe(true);
+  });
+
+  it("refuses a spreadsheet segment with the existing unsupported_format", () => {
+    expect(recordedAs([SHEET_STEP_FORMAT_V1])).toEqual({ ok: false, reason: "unsupported_format" });
+  });
+
+  it("refuses a slides segment with the existing unsupported_format", () => {
+    expect(recordedAs([SLIDE_STEP_FORMAT_V1])).toEqual({ ok: false, reason: "unsupported_format" });
+  });
+
+  it("refuses the whole chain when one segment of many is not text", () => {
+    for (const other of [SHEET_STEP_FORMAT_V1, SLIDE_STEP_FORMAT_V1]) {
+      expect(recordedAs([...TEXT_V1, other, ...TEXT_V1])).toEqual({
+        ok: false,
+        reason: "unsupported_format",
+      });
+    }
+  });
+
+  it("refuses a text format of another document version, and unknown values", () => {
+    for (const format of [
+      formatsOf(revisionZeroDocumentV3())[0],
+      "ductus-edit-steps-v2",
+      "ductus-edit-steps-v4",
+      "",
+      null,
+      undefined,
+      1,
+    ]) {
+      expect(recordedAs([format])).toEqual({ ok: false, reason: "unsupported_format" });
+    }
+  });
+
+  it("refuses events with no recorded format, or formats that are not a list", () => {
+    expect(recordedAs([])).toEqual({ ok: false, reason: "unsupported_format" });
+    for (const formats of [undefined, null, SHEET_STEP_FORMAT_V1, TEXT_V1[0], { 0: TEXT_V1[0] }]) {
+      expect(recordedAs(formats)).toEqual({ ok: false, reason: "unsupported_format" });
+    }
+  });
+
+  it("refuses a v3 work recorded in a non-text format, and keeps its own text format", () => {
+    const initial = revisionZeroDocumentV3();
+    const share = (transactionFormats: unknown[]) =>
+      computeProvenanceShare({
+        initialDocument: initial,
+        events: ATOMS.events,
+        transactionFormats,
+        submittedDocument: ATOMS.documents.at(-1),
+      });
+    expect(share(formatsOf(initial)).ok).toBe(true);
+    expect(share([SHEET_STEP_FORMAT_V1])).toEqual({ ok: false, reason: "unsupported_format" });
+    expect(share(TEXT_V1)).toEqual({ ok: false, reason: "unsupported_format" });
+  });
+
+  it("gives an empty share with no events and no segments", () => {
+    const empty = computeProvenanceShare({
+      initialDocument: revisionZeroDocument(),
+      events: [],
+      transactionFormats: [],
+      submittedDocument: revisionZeroDocument(),
+    });
+    expect(empty.ok && empty.share.totalCodePoints).toBe(0);
   });
 });
 
@@ -391,6 +491,7 @@ describe("cost", () => {
     const started = performance.now();
     const result = computeProvenanceShare({
       initialDocument: revisionZeroDocument(),
+      transactionFormats: TEXT_V1,
       events,
       submittedDocument,
     });

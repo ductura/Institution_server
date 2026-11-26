@@ -1,7 +1,7 @@
 // docs/contracts/provenance-share-v1.md §3, §6 and vector §9.5.
 import { describe, expect, it } from "vitest";
 
-import { revisionZeroDocument } from "../document/index.ts";
+import { EDIT_STEP_FORMAT_V1, revisionZeroDocument } from "../document/index.ts";
 import { canonicalizeJcs } from "../forensics/index.ts";
 
 import {
@@ -29,6 +29,7 @@ describe("vector §9.5", () => {
     ) as { events: { source: string; steps: unknown }[]; submittedDocument: unknown };
     const share = computeProvenanceShare({
       initialDocument: revisionZeroDocument(),
+      transactionFormats: [EDIT_STEP_FORMAT_V1],
       events: fixture.events,
       submittedDocument: fixture.submittedDocument,
     });
