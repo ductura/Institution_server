@@ -15,7 +15,7 @@ const raw = (): Record<string, unknown> =>
 describe("auth/sign-in-failure.json", () => {
   it("is the page, the parameter and exactly two codes", () => {
     expect(SIGN_IN_FAILURE).toEqual({
-      page: "/prijava",
+      page: "/aplikacija/prijava",
       param: "greska",
       codes: [
         { code: "login_failed", messageKey: "auth.failedBody" },
@@ -38,7 +38,7 @@ describe("auth/sign-in-failure.json", () => {
   it.each<[string, (data: Record<string, unknown>) => void]>([
     ["a stray key", (d) => (d.extra = 1)],
     ["another format", (d) => (d.format = "ductura-sign-in-failure-v2")],
-    ["another page", (d) => (d.page = "//prijava")],
+    ["another page", (d) => (d.page = "//aplikacija/prijava")],
     ["a parameter that is not a plain word", (d) => (d.param = "greska&x=1")],
     ["a third code", (d) => (d.codes = [...codes(), { code: "no_role", messageKey: "x" }])],
     ["one code", (d) => (d.codes = codes().slice(0, 1))],

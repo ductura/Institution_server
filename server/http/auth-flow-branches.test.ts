@@ -86,7 +86,9 @@ const FAILURE_CODE = { 400: "login_failed", 503: "provider_unavailable" } as con
 
 function expectFailureRedirect(response: Response, status: 400 | 503) {
   expect(response.status).toBe(303);
-  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${FAILURE_CODE[status]}`);
+  expect(response.headers.get("location")).toBe(
+    `${APP}/aplikacija/prijava?greska=${FAILURE_CODE[status]}`,
+  );
 }
 
 async function expectRefused(response: Response, status: 400 | 403 | 503 = 400) {
@@ -102,7 +104,9 @@ async function expectRefused(response: Response, status: 400 | 403 | 503 = 400) 
 
 describe("startLogin", () => {
   it("keeps in the attempt cookie exactly the values sent to the provider", async () => {
-    const { authorize, header, value } = await begin("/api/v1/auth/login?returnTo=%2Frad");
+    const { authorize, header, value } = await begin(
+      "/api/v1/auth/login?returnTo=%2Faplikacija%2Frad",
+    );
     expect(header).toMatch(/; Max-Age=300$/);
     const attempt = decode(value);
     expect(Object.keys(attempt).sort()).toEqual([
@@ -113,7 +117,7 @@ describe("startLogin", () => {
       "state",
       "v",
     ]);
-    expect(attempt).toMatchObject({ v: 1, returnTo: "/rad" });
+    expect(attempt).toMatchObject({ v: 1, returnTo: "/aplikacija/rad" });
     const p = authorize.searchParams;
     expect(attempt.state).toBe(p.get("state"));
     expect(attempt.nonce).toBe(p.get("nonce"));
@@ -135,15 +139,15 @@ describe("startLogin", () => {
     const { value } = await begin(
       `/api/v1/auth/login?returnTo=${encodeURIComponent("https://zlo.test/")}`,
     );
-    expect(decode(value).returnTo).toBe("/");
+    expect(decode(value).returnTo).toBe("/aplikacija/");
   });
 });
 
 describe("startLogin with a return path that grows when normalized", () => {
   // Codex on #104: "/" and 100 "č" pass safeReturnTo's 512-character input
   // limit but normalize to 601 characters, and the attempt would be 1055.
-  it("keeps every attempt it issues readable by finishLogin, falling back to /", async () => {
-    const path = `/${"č".repeat(100)}`;
+  it("keeps every attempt it issues readable by finishLogin, falling back to the default", async () => {
+    const path = `/aplikacija/${"č".repeat(100)}`;
     const response = await startLogin(
       new Request(`${APP}/api/v1/auth/login?returnTo=${encodeURIComponent(path)}`),
       deps,
@@ -157,11 +161,11 @@ describe("startLogin with a return path that grows when normalized", () => {
       string,
       unknown
     >;
-    expect(decoded.returnTo).toBe("/");
+    expect(decoded.returnTo).toBe("/aplikacija/");
   });
 
   it("keeps a long non-ASCII path that still fits", async () => {
-    const path = `/${"č".repeat(40)}`;
+    const path = `/aplikacija/${"č".repeat(40)}`;
     const response = await startLogin(
       new Request(`${APP}/api/v1/auth/login?returnTo=${encodeURIComponent(path)}`),
       deps,
@@ -174,7 +178,7 @@ describe("startLogin with a return path that grows when normalized", () => {
       string,
       unknown
     >;
-    expect(decoded.returnTo).toBe(`/${"%C4%8D".repeat(40)}`);
+    expect(decoded.returnTo).toBe(`/aplikacija/${"%C4%8D".repeat(40)}`);
   });
 });
 
@@ -267,7 +271,7 @@ describe("finishLogin with an attempt cookie it cannot trust", () => {
       `${LOGIN_COOKIE_NAME}=${forged}`,
     );
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(`${APP}/`);
+    expect(response.headers.get("location")).toBe(`${APP}/aplikacija/`);
   });
 });
 

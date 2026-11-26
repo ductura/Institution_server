@@ -124,7 +124,7 @@ async function redirect(response: Response, expectedOrigin: string, path?: strin
 
 export async function signInSession(origin: string, issuer: string, account: string) {
   const go = browser(origin, issuer);
-  const login = new URL("/api/v1/auth/login?returnTo=/app/web/", origin);
+  const login = new URL("/api/v1/auth/login?returnTo=/aplikacija/", origin);
   const authorize = await redirect(await go(login), issuer);
   const interaction = await redirect(await go(authorize), issuer);
   const page = await go(interaction);
@@ -142,7 +142,7 @@ export async function signInSession(origin: string, issuer: string, account: str
     .map((line) => line.split(";", 1)[0] ?? "")
     .filter((pair) => pair.startsWith(`${SESSION_COOKIE_NAME}=`))
     .join("; ");
-  await redirect(answer, origin, "/app/web/");
+  await redirect(answer, origin, "/aplikacija/");
   if (!session) throw new Error("Lažni OIDC nije otvorio sesiju.");
   const api = (path: string, body?: object) =>
     go(new URL(`/api/v1/${path}`, origin), {

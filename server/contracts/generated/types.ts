@@ -1674,6 +1674,13 @@ export type Operations = {
     success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.declaration-conversation.get": {
+    params: { "assignmentId": string; "studentId": string; "conversationId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "conversationId": string; "throughSeq": number; "messagesSha256": string; "messages": ({ "seq": number; "role": "student_paragraph" | "provider_response"; "content": string; "contentSha256": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.declaration-question.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -2304,6 +2311,13 @@ export type Operations = {
     success: { status: 200; body: { "importId": string; "eventId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "import_not_found" | "import_manifest_mismatch" | "import_expired" | "import_not_allowed" | "import_revision_changed" | "unavailable";
   };
+  "work.imports.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "imports": ({ "importId": string; "importKind": "file-upload" | "cloud-version"; "fileFormat": "docx" | "pdf"; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "preparedAt": string; "state": "pending" | "confirmed" | "expired"; "confirmedAt": string | null; "eventId": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "work.imports.post": {
     params: { "documentId": string };
     query: undefined;
@@ -2535,6 +2549,20 @@ export type Operations = {
     success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "work.plan.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[]; "updatedAt": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.plan.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[] };
+    success: { status: 200; body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[]; "updatedAt": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.reading-place.delete": {
     params: { "documentId": string };
     query: undefined;
@@ -2569,6 +2597,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.revision-due.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "returned": { "round": number; "revisionDueAt": string | null; "returnedAt": string } | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.sealed-self-note.delete": {
     params: { "documentId": string };

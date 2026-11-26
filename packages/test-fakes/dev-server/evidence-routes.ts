@@ -255,6 +255,9 @@ export const EVIDENCE_HANDLERS: Handlers = {
     if (work.segments.length === 0)
       return { error: "blocked", body: { status: "blocked", reason: "no_evidence" } };
     const requestedAt = now.toISOString();
+    // A new submission closes the open return of the work, as a newer attempt does.
+    for (const entry of state.workReturns)
+      if (entry.documentId === work.documentId) entry.closed = true;
     work.state = "submitted";
     work.submittedAt = requestedAt;
     work.submittedDocument = Buffer.from(work.document, "base64").toString("utf8");

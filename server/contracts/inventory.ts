@@ -726,6 +726,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",
   },
+  // F4-NAS-R16-SRV (NAS-R16, Ductus#2058): the revision due date of a work; no Ductus route.
+  "app/api/works/[documentId]/revision-due/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196662679",
+  },
   // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run; no Ductus route.
   "app/api/institution/retention/route.ts": {
     methods: ["GET"],
@@ -910,6 +915,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
   },
+  // SRV-F4-PM2-R15 (Ductus#2059, F4-PM2-R15-SRV; plan M5.14b, D-234): the plan of a work behind the panel Struktura; Ductus has no such route.
+  "app/api/works/[documentId]/plan/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7199153557",
+  },
   "app/api/works/[documentId]/seen/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
@@ -970,8 +980,9 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
   // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  // SRV-F4-PM2-R14-SRV (Ductus#2059 c.7202802486): GET, the list of the imports of a work.
   "app/api/works/[documentId]/imports/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
   },
   "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
@@ -1164,6 +1175,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051",
   },
+  // F4-NAS-R04-SRV (D-41): Ductus has no teacher read of the attached conversations.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/conversations/[conversationId]/route.ts":
+    {
+      methods: ["GET"],
+      source: "danielrisavi77-create/Ductus#2058:issuecomment-7196020811",
+    },
   // SRV-F4-NAS-R11 (Ductus#2058, NAS-51, C-4): the notes a student kept beside a submission, read by its teacher; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-notes/route.ts": {
     methods: ["GET"],

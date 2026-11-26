@@ -39,6 +39,19 @@ export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {
+  WORK_PLAN_DEFINITION_MAX,
+  WORK_PLAN_MAX_ITEMS,
+  WORK_PLAN_PURPOSE_MAX,
+  WORK_PLAN_QUESTION_MAX,
+  WORK_PLAN_TERM_KINDS,
+  WORK_PLAN_TERM_MAX,
+  workPlanGet,
+  workPlanPut,
+  workPlanRoutes,
+  WorkPlanInput,
+  WorkPlanState,
+} from "./work-plan.ts";
+export {
   mentorshipFollowRoutes,
   ReadingPlaceInput,
   SeenInput,
@@ -191,6 +204,7 @@ export {
 } from "./assistant-setting.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export { workRevisionDueRoutes } from "./work-revision-due.ts";
 export { workRubricRoutes } from "./work-rubric.ts";
 export {
   AssignmentRubricInput,

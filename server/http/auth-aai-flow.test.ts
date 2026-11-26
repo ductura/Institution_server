@@ -99,7 +99,7 @@ async function expectRefused(response: Response, status: 400 | 403 | 503 = 403) 
     // STU-R01: 400 and 503 end as a 303 to the sign-in page with the contract's code.
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toContain(
-      `/prijava?greska=${status === 400 ? "login_failed" : "provider_unavailable"}`,
+      `/aplikacija/prijava?greska=${status === 400 ? "login_failed" : "provider_unavailable"}`,
     );
   }
   expect(deps.openSession).not.toHaveBeenCalled();
