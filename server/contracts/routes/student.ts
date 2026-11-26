@@ -335,6 +335,12 @@ export const studentNoticeGet = defineRoute({
          * purposeCatalogVersion. Not a member of the notice fingerprint.
          */
         purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
+        /**
+         * SRV-F4-STU-R09 (Ductus#2058): the assignment's "samo sažimanje" rule
+         * (the AI assistant only summarises), as the teacher set it; absent
+         * from an older server, which a client reads as false.
+         */
+        aiSummaryOnly: Type.Optional(Type.Boolean()),
       }),
     },
   ],

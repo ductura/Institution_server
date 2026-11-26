@@ -33,6 +33,7 @@ const BASE: readonly (readonly [string, unknown])[] = [
   ["read_at", null],
   ["acknowledged_at", new Date("2026-11-03T09:20:00.000Z")],
   ["purpose_catalog_version", 1],
+  ["ai_summary_only", false],
 ];
 const row = (...over: (readonly [string, unknown])[]): object =>
   Object.fromEntries([...BASE, ...over]);
@@ -78,6 +79,7 @@ describe("student notice", () => {
         readAt: null,
         acknowledgedAt: "2026-11-03T09:20:00.000Z",
         purposeCatalogVersion: 1,
+        aiSummaryOnly: false,
       },
     });
     expect(seen[1]!.values).toEqual([A]);
@@ -132,6 +134,9 @@ describe("student notice", () => {
       ["purpose_catalog_version", 0],
       ["purpose_catalog_version", "1"],
       ["purpose_catalog_version", null],
+      ["ai_summary_only", null],
+      ["ai_summary_only", "false"],
+      ["ai_summary_only", 0],
     ];
     for (const bad of bads) {
       expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
@@ -146,5 +151,12 @@ describe("student notice", () => {
     const read = await port.read(TOKEN, A);
     expect(read.ok && read.value.purposeCatalogVersion).toBe(2);
     expect(seen[1]!.text).toContain("v.purpose_catalog_version");
+  });
+
+  it("reads the assignment's summarise-only rule, and asks for it from the assignment row", async () => {
+    const { port, seen } = reader([actorRow(USER)], [row(["ai_summary_only", true])]);
+    const read = await port.read(TOKEN, A);
+    expect(read.ok && read.value.aiSummaryOnly).toBe(true);
+    expect(seen[1]!.text).toContain("a.ai_summary_only");
   });
 });
