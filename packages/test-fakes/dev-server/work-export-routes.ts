@@ -6,7 +6,7 @@
 // same version gives the same bytes and the same X-Export-Snapshot-Sha256. The
 // real source, its access log row and the submission cut are app.read_work_export.
 // The CSV of one sheet of a spreadsheet work (SRV-V14-SHEET-CSV) is served here too.
-import { merlinHr } from "../../../locales/index.ts";
+import { merlinHr, messagesHr } from "../../../locales/index.ts";
 import {
   freezeExportSnapshot,
   validateSheetDocument,
@@ -16,9 +16,12 @@ import {
 import {
   A4_PAGE,
   buildExportModel,
+  PPTX_TYPE,
   renderDocx,
   renderSheetCsv,
   renderSheetXlsx,
+  renderSlidesPptx,
+  slidesBodyKind,
   XLSX_TYPE,
 } from "../../../server/downloads/index.ts";
 import type { Handlers } from "./server.ts";
@@ -111,6 +114,39 @@ export const WORK_EXPORT_HANDLERS: Handlers = {
         "x-export-sheet-sha256": xlsx.sheetSha256,
       },
       body: new Blob([xlsx.bytes], { type: XLSX_TYPE }),
+    };
+  },
+  // SRV-V13-RUTA-IZVOZ: the .pptx of a slides work. A work that is not a slides work, another's
+  // work and an unknown version are the same 404. The fake has no stored images and no local
+  // converter: a slide that binds an image, and every PDF, are the 503 of a missing dependency.
+  "work.export-slides.get": ({ state, account, params, query }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) === null)
+      return { error: "not_found" };
+    if (
+      Object.keys(query).some((key) => key !== "format" && key !== "versionId") ||
+      (query.format !== "pptx" && query.format !== "pdf")
+    )
+      return { error: "invalid_input" };
+    const asked = query.versionId === undefined ? work.revision : Number(query.versionId);
+    if (work.revision < 1 || asked !== work.revision) return { error: "not_found" };
+    const body = Buffer.from(work.document, "base64").toString("utf8");
+    if (slidesBodyKind(body).kind === "not_slides") return { error: "not_found" };
+    const exported = renderSlidesPptx({
+      snapshot: Buffer.from(body, "utf8"),
+      images: new Map(),
+      labels: messagesHr.slidesExport,
+    });
+    if (exported.status !== "rendered" || query.format === "pdf") return { error: "unavailable" };
+    return {
+      status: 200,
+      headers: {
+        "cache-control": "private, no-store",
+        "content-disposition": 'attachment; filename="rad.pptx"',
+        "x-export-snapshot-sha256": exported.snapshotSha256,
+      },
+      body: new Blob([exported.bytes], { type: PPTX_TYPE }),
     };
   },
 };

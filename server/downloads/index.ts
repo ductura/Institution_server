@@ -23,6 +23,8 @@ export {
 } from "./export/index.ts";
 // SRV-1902: the ZIP of all submissions of an assignment uses the same deterministic writer.
 export { writeZip, type ZipEntry } from "./export/index.ts";
+// SRV-V13-RUTA-IZVOZ: the dev fake server writes the .pptx without the converter.
+export { renderSlidesPptx } from "./export/index.ts";
 export {
   createSnapshotPdf,
   freezePdfSource,

@@ -10,8 +10,7 @@
 import { randomUUID } from "node:crypto";
 
 import { SLIDES_DOCUMENT_KIND } from "../../../domain/index.ts";
-import { renderSlidesPptx, type SlidesPptx } from "../pptx.ts";
-import type { SlidesExportLabels } from "../slides-model.ts";
+import { renderSlidesPptx, type SlidesExportLabels, type SlidesPptx } from "../index.ts";
 
 export const PPTX_TYPE =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";

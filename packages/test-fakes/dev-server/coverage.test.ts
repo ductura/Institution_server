@@ -4,6 +4,7 @@ import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 
 import { IMPORT_READ_LIMITS } from "../../../server/contracts/index.ts";
+import { slidesSnapshotText, type SlidesDocument } from "../../../server/domain/index.ts";
 import { prepareDocxImport } from "../../../server/import/index.ts";
 
 import { ROUTE_TABLE } from "../fake-server/index.ts";
@@ -2192,6 +2193,34 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       work.document = Buffer.from(JSON.stringify(sheet)).toString("base64");
     },
     request: { path: `/api/v1/works/${IDS.document}/export/xlsx`, as: "nastavnik" },
+  },
+  // SRV-V13-RUTA-IZVOZ: an invented one-slide deck as the saved version of the work.
+  "work.export-slides.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    prepare: (state) => {
+      const work = state.works.find((w) => w.documentId === IDS.document);
+      if (work === undefined) throw new Error("no work");
+      const deck: SlidesDocument = {
+        documentKind: "slides",
+        schemaVersion: 1,
+        slides: [
+          {
+            id: "00000000-0000-4000-8000-0000000000b1",
+            layout: "title",
+            blocks: [
+              {
+                type: "heading",
+                id: "00000000-0000-4000-8000-0000000000b2",
+                slot: "title",
+                text: "Demo",
+              },
+            ],
+          },
+        ],
+      };
+      work.document = Buffer.from(slidesSnapshotText(deck)).toString("base64");
+    },
+    request: { path: `/api/v1/works/${IDS.document}/export-slides?format=pptx`, as: "nastavnik" },
   },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],

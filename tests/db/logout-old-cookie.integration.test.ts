@@ -74,6 +74,7 @@ import {
   createWorkExportRouteFor,
   createSheetCsvRouteFor,
   createSheetXlsxRouteFor,
+  createWorkExportSlidesRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -621,6 +622,13 @@ const SESSION_ROUTES = {
   "work.export-sheet-xlsx.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/export/xlsx`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V13-RUTA-IZVOZ: the slides export of a work it may not read is 404, as a missing work.
+  "work.export-slides.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export-slides?format=pptx`,
     body: () => undefined,
     live: 404,
   },
@@ -2725,6 +2733,7 @@ const FACTORIES = [
   "createWorkExportRouteFor",
   "createSheetCsvRouteFor",
   "createSheetXlsxRouteFor",
+  "createWorkExportSlidesRouteFor",
   "createPortableRecordRouteFor",
   "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
@@ -2879,6 +2888,7 @@ const MOUNTED = [
   createWorkExportRouteFor(databases.main),
   createSheetCsvRouteFor(databases.main),
   createSheetXlsxRouteFor(databases.main),
+  createWorkExportSlidesRouteFor(databases.main, process.env, process.cwd()),
   createPortableRecordRouteFor(databases.main, ORIGIN),
   ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
