@@ -82,6 +82,26 @@ describe("restore drill on restored infrastructure (M11.2-P04)", () => {
     });
   });
 
+  it("finds an erased item in the bucket that is gone from the database", async () => {
+    const result = await runInfrastructureDrill(
+      await base({ copy: KEPT, bucket: [...KEPT, asItem(TOMBSTONES[0]!)] }),
+    );
+    expect(result).toMatchObject({ ok: false, bucket: { resurrected: 1 } });
+  });
+
+  it("refuses conflicting bucket entries whatever their order", async () => {
+    const other = { ...KEPT[0]!, contentSha256: "b".repeat(64) };
+    for (const bucket of [
+      [KEPT[0], other],
+      [other, KEPT[0]],
+    ]) {
+      expect(await runInfrastructureDrill(await base({ bucket }))).toEqual({
+        ok: false,
+        problem: "bucket_malformed",
+      });
+    }
+  });
+
   it("closes on a tombstone list that does not match the checkpoint", async () => {
     expect(await runInfrastructureDrill(await base({ tombstones: [TOMBSTONES[0]] }))).toMatchObject(
       { ok: false },

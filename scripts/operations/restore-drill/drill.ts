@@ -10,6 +10,7 @@
 // points at production (migrations and restores there are not done by an
 // agent). Every answer is a closed code or a count, never an input value.
 import {
+  readErasureTombstones,
   runRestoreDrill,
   type DrillCopyItem,
   type RestoreDrillProblem,
@@ -92,6 +93,9 @@ export async function runInfrastructureDrill(input: {
   if (!drill.ok) return { ok: false, problem: drill.problem };
 
   const inBucket = new Map(bucket.map((item) => [keyOf(item), item.contentSha256]));
+  // One item per subject: two entries under one key make the answer depend on
+  // the order of the export, so such a bucket is refused.
+  if (inBucket.size !== bucket.length) return { ok: false, problem: "bucket_malformed" };
   let missing = 0;
   let mismatched = 0;
   for (const item of drill.restored) {
@@ -99,7 +103,10 @@ export async function runInfrastructureDrill(input: {
     if (found === undefined) missing += 1;
     else if (found !== item.contentSha256) mismatched += 1;
   }
-  const resurrected = drill.withheld.filter((item) => inBucket.has(keyOf(item))).length;
+  // Against every verified tombstone, not only those whose item is still in the
+  // restored database: an erased item may be gone there and back in the bucket.
+  const tombstones = readErasureTombstones(input.tombstones) ?? [];
+  const resurrected = tombstones.filter((t) => inBucket.has(keyOf(t))).length;
   const check: BucketCheck = { missing, mismatched, resurrected };
   if (missing + mismatched + resurrected > 0) {
     return { ok: false, problem: "bucket_differs", bucket: check };
