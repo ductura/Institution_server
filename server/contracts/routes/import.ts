@@ -171,4 +171,51 @@ export const workImportsConfirmPost = defineRoute({
   ],
 });
 
-export const importRoutes = [workImportsPost, workImportsConfirmPost] as const;
+/** The most imports of one work the list returns (the newest). */
+export const MAX_LISTED_IMPORTS = 200;
+
+// SRV-F4-PM2-R14-SRV (F4 row PM2-R14, M8.13 "Povijest dokumenta"; Daniel's
+// decision of 26. 11. 2026, Ductus#2059 c.7202802486): the list of the imports
+// of a work, only their metadata and never a manifest, a hash or any content.
+// The same answer for both roles (D-198 item 6): the student who owns the work
+// and a teacher of its assignment, decided from the relation (C-23).
+export const workImportsGet = defineRoute({
+  id: "work.imports.get",
+  method: "GET",
+  path: "/api/v1/works/{documentId}/imports",
+  inventory: "app/api/works/[documentId]/imports/route.ts",
+  access: "owner_or_course_teacher",
+  summary:
+    "The imports prepared into a work, newest first, at most 200: for each the importId, importKind, fileFormat, rawByteLength, the normalised file name or null, baseRevision, preparedAt and its state (pending, confirmed or expired after 60 minutes); confirmedAt and the one eventId only for a confirmed import, else null. Never the content, the manifest or a hash of the file. The same answer for the student who owns the work and for a teacher of its assignment; another student, a teacher of another course, an unknown or a malformed work all read the same 404. The list is empty while nothing was imported. The read writes nothing in the access log.",
+  request: { params },
+  responses: [
+    {
+      status: 200,
+      description: "the imports of the work, newest first",
+      body: closed({
+        imports: Type.Array(
+          closed({
+            importId: ImportId,
+            importKind: Type.Union([Type.Literal("file-upload"), Type.Literal("cloud-version")]),
+            fileFormat: Type.Union([Type.Literal("docx"), Type.Literal("pdf")]),
+            rawByteLength: Type.Integer({ minimum: 1, maximum: MAX_IMPORT_RAW_BYTES }),
+            fileName: ImportFileNameV1,
+            baseRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+            preparedAt: Instant,
+            state: Type.Union([
+              Type.Literal("pending"),
+              Type.Literal("confirmed"),
+              Type.Literal("expired"),
+            ]),
+            confirmedAt: Type.Union([Instant, Type.Null()]),
+            eventId: Type.Union([ImportId, Type.Null()]),
+          }),
+          { maxItems: MAX_LISTED_IMPORTS },
+        ),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
+});
+
+export const importRoutes = [workImportsPost, workImportsConfirmPost, workImportsGet] as const;

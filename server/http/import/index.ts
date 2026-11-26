@@ -1,4 +1,4 @@
-// POST /api/v1/works/{documentId}/imports and
+// GET and POST /api/v1/works/{documentId}/imports (work.imports.get, SRV-F4-PM2-R14-SRV) and
 // POST /api/v1/works/{documentId}/imports/{importId}/confirm (work.imports.post
 // and work.imports.confirm.post, SRV-1803; M8.2, M8.2b, D-282, D-290 to D-292;
 // contract docs/adr/import-contract.md). The HTTP edge only, as direct-edit: a
@@ -51,6 +51,7 @@ const find = (id: string) => {
 };
 const POST_CONTRACT = find("work.imports.post");
 const CONFIRM_CONTRACT = find("work.imports.confirm.post");
+const LIST_CONTRACT = find("work.imports.get");
 const POST_BODY = POST_CONTRACT.request.body!;
 const CONFIRM_BODY = CONFIRM_CONTRACT.request.body!;
 const BODY_TIMEOUT_MS = 15_000;
@@ -202,8 +203,40 @@ export function createImportConfirmRoute(imports: Imports): Route {
   };
 }
 
-/** Both routes over main's application withActor. */
+/**
+ * GET /api/v1/works/{documentId}/imports (work.imports.get, SRV-F4-PM2-R14-SRV):
+ * the metadata of the imports of a work, for its student owner and a teacher of
+ * its assignment. The database decides who may; a work that is not the caller's
+ * or not there is 404, as everywhere (C-23). No file or content is read.
+ */
+export function createImportListRoute(imports: Imports): Route {
+  return {
+    contract: LIST_CONTRACT,
+    async handle(request, response, params) {
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return refuse(response, 401, "unauthorized");
+      const documentId = workIdFromPath(params?.documentId ?? "");
+      if (documentId === null || !isWorkId(documentId)) return refuse(response, 404, "not_found");
+      try {
+        const answer = await imports.list(token, documentId);
+        if (answer.status === "listed") {
+          return sendJson(response, 200, { imports: answer.imports });
+        }
+        return refusalOf(response, answer.status, "not_found");
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), LIST_CONTRACT.id);
+        return sendProblem(response, 503, "unavailable");
+      }
+    },
+  };
+}
+
+/** The three routes over main's application withActor. */
 export function createImportRoutesFor(main: { withActor: WithActor }): Route[] {
   const imports = createImports(main.withActor);
-  return [createImportPostRoute(imports), createImportConfirmRoute(imports)];
+  return [
+    createImportPostRoute(imports),
+    createImportConfirmRoute(imports),
+    createImportListRoute(imports),
+  ];
 }
