@@ -55,7 +55,12 @@ const NOUN_FINDING =
  * server/http/error-catalog.ts). `adminSettings`: the reasons the server
  * sends beside a code for the administrator's screens (SRV-ADMIN-3, NF-7).
  */
-export const SOURCE_ADDITIONS: readonly string[] = ["errors", "clientErrors", "adminSettings"];
+export const SOURCE_ADDITIONS: readonly string[] = [
+  "errors",
+  "clientErrors",
+  "adminSettings",
+  "slidesExport",
+];
 
 /**
  * Single texts added after the port inside a ported section; the source digest

@@ -737,6 +737,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  // SRV-V16-POPIS-FAKULTET: the theses of the faculty, read by the administrator.
+  "institution.thesis-overview.get": {
+    request: { path: "/api/v1/institution/thesis-overview?limit=1", as: "administrator" },
+  },
   "mentorship.request-approve.post": {
     before: [REQUEST_MENTORSHIP],
     request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },

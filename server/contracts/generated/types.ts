@@ -498,6 +498,13 @@ export type Operations = {
     success: { status: 201; body: { "code": string; "version": number; "title": string; "workTypes": ("bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis")[]; "active": boolean; "publishedAt": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
   };
+  "institution.thesis-overview.get": {
+    params: undefined;
+    query: { "stage"?: "none" | "submitted_to_office" | "defense_scheduled" | "defended"; "limit"?: string; "after"?: string };
+    body: undefined;
+    success: { status: 200; body: { "works": ({ "documentId": string | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentorName": { "givenName": string; "familyName": string } | null; "studentName": { "givenName": string; "familyName": string } | null; "stage": "none" | "submitted_to_office" | "defense_scheduled" | "defended"; "defenseAt": string | null; "topicState": "none" | "proposed" | "approved" | "returned"; "committeeSize": number })[]; "next": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.thesis-settings.get": {
     params: undefined;
     query: undefined;
