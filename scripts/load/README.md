@@ -38,3 +38,5 @@ Broj korisnika jednak je broju pripremljenih studenata. Pragovi `http_req_failed
 `lanac.ts` gradi lanac v2 segmenata (JCS, `predecessorSegmentHash`) koji poslužitelj prihvaća. `lanac.test.ts` ga provjerava s `verifyEvidenceChainV2`.
 
 Rezultati i uska grla: [docs/nalazi/opterecenje-2611.md](../../docs/nalazi/opterecenje-2611.md).
+
+SRV-OPT-1000 (1000 pisaca i 1000 zahtjeva u sekundi, 1, 2 i 4 kopije): [docs/nalazi/srv-opt-1000.md](../../docs/nalazi/srv-opt-1000.md). Samo scenarij i skripta; pokretanje odobrava Daniel.
