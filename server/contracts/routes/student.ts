@@ -306,7 +306,7 @@ export const studentNoticeGet = defineRoute({
   inventory: "app/api/student/assignments/[assignmentId]/notice/route.ts",
   access: "student_enrolled",
   summary:
-    "The notice of the current version of an assignment of the caller's open student membership (E-6): the content of that version as the notice shows it, the notice template version, and when the caller first read it (PO-7, student.notice-read.post) and acknowledged it (institution.acknowledgment.post), each null until then. The fields are exactly those of the notice fingerprint (DAN-306), instants as Date.toISOString writes them; the browser computes the fingerprint from them and sends it with versionNo to institution.acknowledgment.post. aiPurposes is empty when aiPolicy is prohibited. The identity comes from the session only. Sec-Fetch-Site, when sent, other than same-origin is 403. Another's assignment, an unknown one and a malformed id are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+    "The notice of the current version of an assignment of the caller's open student membership (E-6): the content of that version as the notice shows it, the notice template version, and when the caller first read it (PO-7, student.notice-read.post) and acknowledged it (institution.acknowledgment.post), each null until then. The fields are exactly those of the notice fingerprint (DAN-306), instants as Date.toISOString writes them; the browser computes the fingerprint from them and sends it with versionNo to institution.acknowledgment.post. aiPurposes is empty when aiPolicy is prohibited. aiSummaryOnly says whether the assistant of the assignment only summarises (never part of the fingerprint). The identity comes from the session only. Sec-Fetch-Site, when sent, other than same-origin is 403. Another's assignment, an unknown one and a malformed id are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
   request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
   responses: [
     {
@@ -335,6 +335,12 @@ export const studentNoticeGet = defineRoute({
          * purposeCatalogVersion. Not a member of the notice fingerprint.
          */
         purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
+        /**
+         * SRV-EDI-R08: the assistant of this assignment only summarises
+         * (aiSummaryOnly of institution.assignment-versions.post). Not a member
+         * of the notice fingerprint; the server always sends it.
+         */
+        aiSummaryOnly: Type.Optional(Type.Boolean()),
       }),
     },
   ],
