@@ -55075,6 +55075,695 @@
     }
   },
   {
+    "route": "student.questionnaire-responses.post",
+    "name": "stored",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a101"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a102"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a103"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "16385"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-00000258a104"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "40"
+      },
+      "rawBody": "{\"answers\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-00000258a105"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a106"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a107"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "22"
+      },
+      "rawBody": "{\"all"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a108"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258a109"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-00000258a10a"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a10b"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "not-boolean",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": "ne"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258a10c"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ],
+        "reason": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258a10d"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000258a10e"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258a10f"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire-responses.post",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-00000258a110"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire.get",
+    "name": "open",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000000b1",
+        "courseId": "00000000-0000-4000-8000-0000000000c1",
+        "title": "Izmišljeno istraživanje: navike kompostiranja",
+        "participated": false,
+        "questions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000f1",
+            "order": 1,
+            "kind": "single",
+            "text": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ],
+            "scale": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000f2",
+            "order": 2,
+            "kind": "scale",
+            "text": "Koliko vam je kompostiranje važno?",
+            "options": null,
+            "scale": {
+              "min": 1,
+              "max": 5
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258a401"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000258a402"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaire.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258a403"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaires.get",
+    "name": "open",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "questionnaires": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000b1",
+            "courseId": "00000000-0000-4000-8000-0000000000c1",
+            "title": "Izmišljeno istraživanje: navike kompostiranja",
+            "participated": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.questionnaires.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258a301"
+      }
+    }
+  },
+  {
+    "route": "student.questionnaires.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258a302"
+      }
+    }
+  },
+  {
     "route": "student.receipt-pdf.get",
     "name": "receipt",
     "request": {
@@ -78863,6 +79552,741 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-00000000d204"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "export",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "schema": "questionnaire-export-v1",
+        "questionnaireId": "00000000-0000-4000-8000-0000000000b1",
+        "variables": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "order": 1,
+            "kind": "single",
+            "label": "Kompostirate li kod kuće?",
+            "options": [
+              {
+                "code": "da",
+                "label": "Da"
+              },
+              {
+                "code": "ne",
+                "label": "Ne"
+              }
+            ]
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "order": 2,
+            "kind": "scale",
+            "label": "Koliko vam je kompostiranje važno?",
+            "options": []
+          }
+        ],
+        "rows": [
+          {
+            "n": 1,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": 4
+            }
+          },
+          {
+            "n": 2,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": null
+            }
+          },
+          {
+            "n": 3,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "ne",
+              "00000000-0000-4000-8000-0000000000f2": 2
+            }
+          },
+          {
+            "n": 4,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": null,
+              "00000000-0000-4000-8000-0000000000f2": 3
+            }
+          },
+          {
+            "n": 5,
+            "values": {
+              "00000000-0000-4000-8000-0000000000f1": "da",
+              "00000000-0000-4000-8000-0000000000f2": 5
+            }
+          }
+        ],
+        "responseCount": 5,
+        "includesText": false
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258ad01"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a306"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "bad-include-text",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "query": {
+        "includeText": "da"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258ad02"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000258ad03"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "too-few-responses",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-00000258ad04"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-export.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258ad05"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "stored",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a201"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a202"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000258a203"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "16385"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-00000258a204"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "40"
+      },
+      "rawBody": "{\"answers\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-00000258a205"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a206"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a207"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "22"
+      },
+      "rawBody": "{\"all"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a208"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000258a209"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\",\"value\":\"da\"},{\"questionId\":\"00000000-0000-4000-8000-0000000000f2\",\"value\":3}]}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-00000258a20a"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"answers\":[{\"questionId\":\"00000000-0000-4000-8000-0000000000f1\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000258a20b"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "not-boolean",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": "ne"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258a20c"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ],
+        "reason": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-00000258a20d"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000258a20e"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000258a20f"
+      }
+    }
+  },
+  {
+    "route": "teacher.questionnaire-manual-responses.post",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000000b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "answers": [
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f1",
+            "value": "da"
+          },
+          {
+            "questionId": "00000000-0000-4000-8000-0000000000f2",
+            "value": 3
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-00000258a210"
       }
     }
   },
