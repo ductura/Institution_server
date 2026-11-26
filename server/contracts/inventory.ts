@@ -1160,6 +1160,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051",
   },
+  // SRV-F4-NAS-R11 (Ductus#2058, NAS-51, C-4): the notes a student kept beside a submission, read by its teacher; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-notes/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058",
+  },
   "app/api/teacher/mentorship-requests/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",

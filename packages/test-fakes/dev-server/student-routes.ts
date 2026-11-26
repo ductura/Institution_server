@@ -11,7 +11,15 @@ import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
 
 import type { Handlers } from "./server.ts";
-import type { Account, Assignment, SourceProof, State, WorkSource } from "./state.ts";
+import {
+  teachesCourse,
+  visibleStudents,
+  type Account,
+  type Assignment,
+  type SourceProof,
+  type State,
+  type WorkSource,
+} from "./state.ts";
 
 /** Assignments of the courses the account is a student in. */
 export function studentAssignments(state: State, account: Account): Assignment[] {
@@ -232,6 +240,26 @@ export const STUDENT_HANDLERS: Handlers = {
     if (assignment === undefined) return { error: "not_found" };
     const notes = state.submissionNotes
       .filter((note) => note.assignmentId === assignment.id && note.studentId === account.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+      .map(({ id, text, createdAt }) => ({ id, text, createdAt }));
+    return { status: 200, body: { notes } };
+  },
+  // SRV-F4-NAS-R11: a teacher reads the notes of a student they may see; another's, an
+  // unknown or an unrelated assignment or student is 404. The read leaves no access-log row.
+  "teacher.submission-notes.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId.toLowerCase());
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    const studentId = params.studentId.toLowerCase();
+    if (
+      assignment === undefined ||
+      course === undefined ||
+      !teachesCourse(course, account) ||
+      !visibleStudents(course, account).includes(studentId)
+    )
+      return { error: "not_found" };
+    const notes = state.submissionNotes
+      .filter((note) => note.assignmentId === assignment.id && note.studentId === studentId)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
       .map(({ id, text, createdAt }) => ({ id, text, createdAt }));
     return { status: 200, body: { notes } };

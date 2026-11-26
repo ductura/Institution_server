@@ -81,13 +81,22 @@ function callback(url: URL | string, cookie?: string) {
   return finishLogin(new Request(url, { headers: cookie ? { cookie } : {} }), deps);
 }
 
-async function expectRefused(response: Response, status = 400) {
-  expect(response.status).toBe(status);
+/** A failed login (STU-R01): 400 and 503 are a 303 to the sign-in page with the contract's code. */
+const FAILURE_CODE = { 400: "login_failed", 503: "provider_unavailable" } as const;
+
+function expectFailureRedirect(response: Response, status: 400 | 503) {
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${FAILURE_CODE[status]}`);
+}
+
+async function expectRefused(response: Response, status: 400 | 403 | 503 = 400) {
+  if (status === 403) expect(response.status).toBe(403);
+  else expectFailureRedirect(response, status);
   expect(deps.openSession).not.toHaveBeenCalled();
   const cookies = setCookies(response);
   expect(cookies.has(SESSION_COOKIE_NAME)).toBe(false);
   expect(cookies.get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
-  expect(response.headers.get("location")).toBeNull();
+  if (status === 403) expect(response.headers.get("location")).toBeNull();
   expect(response.headers.get("cache-control")).toBe("no-store");
 }
 
@@ -282,7 +291,7 @@ describe("finishLogin when the provider fails", () => {
     expect(idp.tokenRequests).toHaveLength(0);
   });
 
-  it.each([
+  it.each<[string, Record<string, unknown>, 400 | 503]>([
     ["the client is refused", { endpointStatus: { path: "/token", status: 401 } }, 400],
     ["the code has expired", { codeExpired: true }, 400],
     [
@@ -326,10 +335,9 @@ describe("finishLogin when the session ports fail", () => {
       Object.assign(new Error("connect ana@demo.ductus.test"), { code: "ECONNREFUSED" }),
     );
     const response = await approvedCallback();
-    expect(response.status).toBe(503);
+    expectFailureRedirect(response, 503);
     expect(setCookies(response).has(SESSION_COOKIE_NAME)).toBe(false);
     expect(setCookies(response).get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
-    expect(await response.text()).toContain("trenutačno ne odgovara");
     const logged = JSON.stringify(errors.mock.calls);
     expect(logged).toContain("Error:ECONNREFUSED");
     expect(logged).not.toContain("ana@demo.ductus.test");
@@ -348,7 +356,7 @@ describe("finishLogin when the session ports fail", () => {
     "logs only a fallback code when opening the session rejects with %s",
     async (_, reason, expected) => {
       deps.openSession.mockRejectedValueOnce(reason);
-      expect((await approvedCallback()).status).toBe(503);
+      expectFailureRedirect(await approvedCallback(), 503);
       const logged = JSON.stringify(errors.mock.calls);
       expect(logged).toContain(expected);
       expect(logged).not.toContain("ana@demo.ductus.test");
@@ -356,12 +364,11 @@ describe("finishLogin when the session ports fail", () => {
     },
   );
 
-  it("shows the neutral 400 page on a conflict", async () => {
+  it("sends a conflict to the sign-in page as login_failed", async () => {
     deps.openSession.mockResolvedValueOnce({ ok: false, reason: "conflict" });
     const response = await approvedCallback();
-    expect(response.status).toBe(400);
+    expectFailureRedirect(response, 400);
     expect(setCookies(response).has(SESSION_COOKIE_NAME)).toBe(false);
-    expect(await response.text()).toContain("Prijava nije dovršena");
   });
 
   it("still signs in when the previous session cannot be closed", async () => {

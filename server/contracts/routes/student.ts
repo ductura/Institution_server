@@ -56,6 +56,8 @@ const MyAssignment = closed({
   /** The kind of document the assignment asks for (SRV-V13-UGOVOR-VRSTA); absent means text. */
   documentKind: Type.Optional(DocumentKind),
   workKind: Type.Optional(WorkKind),
+  /** A practice assignment (F4-STU-R02): the work counts for nothing; absent means not one. */
+  isPractice: Type.Optional(Type.Boolean()),
 });
 
 const MyCourse = closed({
@@ -335,6 +337,12 @@ export const studentNoticeGet = defineRoute({
          * purposeCatalogVersion. Not a member of the notice fingerprint.
          */
         purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
+        /**
+         * SRV-EDI-R08: the assistant of this assignment only summarises
+         * (aiSummaryOnly of institution.assignment-versions.post). Not a member
+         * of the notice fingerprint; the server always sends it.
+         */
+        aiSummaryOnly: Type.Optional(Type.Boolean()),
       }),
     },
   ],
@@ -478,6 +486,9 @@ export const studentSubmissionNotesPost = defineRoute({
     error(422, "invalid_input"),
   ],
 });
+
+// The note shape, shared with the teacher's read (SRV-F4-NAS-R11).
+export { SubmissionNote };
 
 export const studentRoutes = [
   studentAssignmentsGet,

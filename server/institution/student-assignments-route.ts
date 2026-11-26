@@ -22,6 +22,7 @@ export type StudentAssignment = {
   noticeFirst: boolean;
   workType: string;
   extendedDueAt: string | null;
+  isPractice: boolean;
 };
 export type StudentCourse = {
   id: string;
@@ -52,6 +53,7 @@ export function studentCoursesOf(rows: readonly StudentAssignmentRow[]): Student
       noticeFirst: !row.acknowledged,
       workType: row.workType,
       extendedDueAt: row.extendedDueAt,
+      isPractice: row.isPractice,
     });
   }
   return [...courses.values()];

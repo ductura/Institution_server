@@ -18,6 +18,7 @@ import {
   type OidcClient,
 } from "../external/srce-auth/index.ts";
 
+import { SIGN_IN_FAILURE, type SignInFailureCode } from "../contracts/index.ts";
 import type { OpenSession } from "../database/index.ts";
 import {
   clearedSessionSetCookie,
@@ -207,6 +208,38 @@ function redirect(location: string, cookies: string[]): Response {
 }
 
 /**
+ * Where a failed login ends for the browser (DAN-1081-Sb, STU-R01): a 303 to
+ * the sign-in page of the configured origin with the closed code in the query
+ * (SIGN_IN_FAILURE), so the app shows its own failure state. Only the two
+ * codes of that contract are sent; the code says nothing of which check failed.
+ * A refusal (403) stays on the neutral page: `login_refused` is not in the
+ * published contract, and adding it is the owner's decision.
+ */
+function failureRedirect(
+  code: SignInFailureCode,
+  deps: AuthDeps,
+  extraHeaders: Headers = new Headers(),
+): Response {
+  const target = new URL(SIGN_IN_FAILURE.page, deps.config.redirectUri.origin);
+  target.searchParams.set(SIGN_IN_FAILURE.param, code);
+  const headers = new Headers(extraHeaders);
+  headers.set("location", target.href);
+  for (const [k, v] of Object.entries(NO_STORE)) headers.set(k, v);
+  return new Response(null, { status: 303, headers });
+}
+
+/** A login failure: 400 and 503 go to the sign-in page, 403 to the neutral page. */
+function loginFailure(
+  status: 400 | 403 | 503,
+  deps: AuthDeps,
+  extraHeaders: Headers = new Headers(),
+): Response {
+  if (status === 400) return failureRedirect("login_failed", deps, extraHeaders);
+  if (status === 503) return failureRedirect("provider_unavailable", deps, extraHeaders);
+  return failurePage(status, extraHeaders);
+}
+
+/**
  * Why `auth_time` does not show a sign-in at the provider made at or after
  * `sinceSeconds` (INT-20d), or undefined when it does: it must be present, a
  * whole number of seconds, not earlier than that less the allowed clock skew
@@ -261,7 +294,7 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
     );
   } catch (error) {
     logFailure("authorize", errorCode(error));
-    return failurePage(503);
+    return loginFailure(503, deps);
   }
   // A return path that normalizes past the decoder's limit (a long
   // non-ASCII path, percent-encoded by URL) would give an attempt that
@@ -286,7 +319,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   const attempt = decodeAttempt(readCookie(request, LOGIN_COOKIE_NAME));
   if (!attempt) {
     logFailure("callback", "no_attempt");
-    return failurePage(400, cleared);
+    return loginFailure(400, deps, cleared);
   }
   // The server bounds the attempt's age itself (INT-20g), before the
   // provider is asked: a browser that keeps the cookie past Max-Age, or a
@@ -295,7 +328,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   // rewrites itself.
   if (attemptExpired(attempt.startedAt, deps.config.clockToleranceSeconds)) {
     logFailure("callback", "attempt_expired");
-    return failurePage(400, cleared);
+    return loginFailure(400, deps, cleared);
   }
   // While the sign-out mark is there, only an attempt started with it counts
   // (INT-20e): an attempt without its start is refused before the provider
@@ -303,7 +336,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
   const signedOut = hasSignedOutMark(request);
   if (signedOut && attempt.freshSince === undefined) {
     logFailure("callback", "attempt_without_start");
-    return failurePage(400, cleared);
+    return loginFailure(400, deps, cleared);
   }
 
   let verified;
@@ -311,7 +344,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     verified = await deps.oidc.verify(new URL(request.url), attempt);
   } catch (error) {
     logFailure("verify", errorCode(error));
-    return failurePage(isProviderUnavailable(error) ? 503 : 400, cleared);
+    return loginFailure(isProviderUnavailable(error) ? 503 : 400, deps, cleared);
   }
 
   // An attempt started after a sign-out (INT-20d) counts only a sign-in at
@@ -325,14 +358,14 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     );
     if (refusal) {
       logFailure("auth_time", refusal);
-      return failurePage(400, cleared);
+      return loginFailure(400, deps, cleared);
     }
   }
 
   const claims = identityFromClaims(verified.idToken, verified.userinfo);
   if (!claims.ok) {
     logFailure("claims", claims.reason);
-    return failurePage(403, cleared);
+    return loginFailure(403, deps, cleared);
   }
 
   const { token, tokenHash } = newSessionToken();
@@ -341,11 +374,11 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     opened = await deps.openSession({ issuer: verified.issuer, ...claims.identity, tokenHash });
   } catch (error) {
     logFailure("open_session", errorCode(error));
-    return failurePage(503, cleared);
+    return loginFailure(503, deps, cleared);
   }
   if (!opened.ok) {
     logFailure("open_session", opened.reason);
-    return failurePage(opened.reason === "refused" ? 403 : 400, cleared);
+    return loginFailure(opened.reason === "refused" ? 403 : 400, deps, cleared);
   }
 
   // A session cookie the browser already had (another user's, or one planted
