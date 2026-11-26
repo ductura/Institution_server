@@ -95,10 +95,21 @@ SELECT is(pg_temp.schema_print('evidence'), (SELECT evidence FROM print_before),
 SELECT is(pg_temp.schema_print('audit'), (SELECT audit FROM print_before),
   'the student read leaves no row in the access log');
 
--- 6. A cleared criterion and a removed teacher.
-SELECT is(pg_temp.ask('marko', $$ SELECT count(*) FROM collaboration.save_working_criterion('doc-a', 'sources', NULL, NULL) $$), '1', 'marko clears his one criterion');
-SELECT is(pg_temp.ask('ana', $$ SELECT count(DISTINCT teacher_id) FROM collaboration.student_working_criteria('doc-a') $$),
-  '1', 'a teacher who cleared every criterion no longer appears');
+-- 6. A removed teacher and a cleared criterion.
+-- Marko leaves K1: his rows belong to the work, so Ana still reads them.
+UPDATE institution.course_member SET member_to = now()
+ WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('marko');
+SELECT is(pg_temp.ask('ana', $$ SELECT count(DISTINCT teacher_id) || ':' || count(*) FROM collaboration.student_working_criteria('doc-a') $$),
+  '2:12', 'a teacher who left the course still appears with his six criteria');
+SELECT is(pg_temp.ask('ana', format($$ SELECT assessment FROM collaboration.student_working_criteria('doc-a') WHERE teacher_id = %L AND criterion_id = 'sources' $$, pg_temp.id('marko'))),
+  '2', 'Ana still reads the assessment of the teacher who left');
+SELECT is(pg_temp.ask('marko', $$ SELECT count(*) FROM collaboration.save_working_criterion('doc-a', 'sources', NULL, NULL) $$), 'ZD403: forbidden',
+  'the teacher who left can no longer change his criterion');
+-- Vesna clears both of hers: she no longer appears.
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM collaboration.save_working_criterion('doc-a', 'sources', NULL, NULL) $$), '1', 'vesna clears her first criterion');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM collaboration.save_working_criterion('doc-a', 'language', NULL, NULL) $$), '1', 'vesna clears her second criterion');
+SELECT is(pg_temp.ask('ana', $$ SELECT string_agg(DISTINCT teacher_id::text, ',') FROM collaboration.student_working_criteria('doc-a') $$),
+  (SELECT pg_temp.id('marko')::text), 'a teacher who cleared every criterion no longer appears');
 
 SELECT * FROM finish();
 ROLLBACK;
