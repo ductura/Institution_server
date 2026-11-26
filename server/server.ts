@@ -113,6 +113,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createRosterImportRoutesFor,
+  createIsvuSourceRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createProblemReportsRouteFor,
@@ -357,6 +358,8 @@ async function main(): Promise<void> {
       createAdminCourseRouteFor(databases.main),
       // The administrator imports a course's students from Merlin or ISVU in two steps (SRV-ADMIN-2, NF-7 OA-10).
       ...createRosterImportRoutesFor(databases.main),
+      // SRV-V22-ISVU-POPIS (val 22): the trial ISVU source's courses and the preview of a course's students; off (404) in production.
+      ...createIsvuSourceRoutesFor(databases.main, { local: SECURITY.local }),
       // The live view (B-LIVE): the owner publishes the last state of a work
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),

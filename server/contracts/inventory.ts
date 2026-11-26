@@ -1253,6 +1253,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116133893",
   },
+  // SRV-V22-ISVU-POPIS (val 22): the trial ISVU source's courses and the preview of a course's students; Ductus has no such route.
+  "app/api/institution/admin/isvu/courses/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7183812139",
+  },
+  "app/api/institution/admin/courses/[courseId]/isvu-roster-imports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7183812139",
+  },
   // DAN-843-1: Ductus has no operator route; the rows are those of the
   // function public.operator_log of this repository (S-1K.5-a, DAN-835-1).
   "app/api/ops/events/route.ts": {

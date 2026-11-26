@@ -30,6 +30,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createRosterImportRoutesFor,
+  createIsvuSourceRoutesFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
@@ -457,6 +458,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createRosterImportRoutesFor(databases.main)",
     ids: ["institution.roster-imports.post", "institution.roster-import-confirm.post"],
     routes: () => createRosterImportRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-V22-ISVU-POPIS: the trial ISVU source's courses and the preview of a course's students.
+    call: "...createIsvuSourceRoutesFor(databases.main, { local: SECURITY.local })",
+    ids: ["institution.isvu-courses.get", "institution.isvu-roster-imports.post"],
+    routes: () => createIsvuSourceRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // SRV-15: a course's seminar groups and their teachers.
@@ -1134,6 +1141,8 @@ describe("routes the entry point mounts itself", () => {
       "institution.admin-courses.post",
       "institution.roster-imports.post",
       "institution.roster-import-confirm.post",
+      "institution.isvu-courses.get",
+      "institution.isvu-roster-imports.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",

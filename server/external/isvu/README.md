@@ -14,7 +14,7 @@ Testovi: `isvu.test.ts` (adapter, potvrda, postavka, datoteke), `no-network.test
 
 ## Tko ga zove
 
-Za sada samo testovi. Rute u `server/http` dolaze u zadacima SRV-V22-ISVU-POPIS i SRV-V22-OCJENE-RUTA; tada `http` ulazi u popis pozivatelja i dopuštenih uvoza.
+`server/http/isvu-source` (SRV-V22-ISVU-POPIS: popis kolegija i pregled upisanih). Izvoz ocjena dolazi u SRV-V22-OCJENE-RUTA.
 
 ## Koje podatke dira
 

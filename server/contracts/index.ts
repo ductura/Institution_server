@@ -56,6 +56,9 @@ import {
   assignmentCopyRoutes,
   merlinRosterRoutes,
   rosterImportRoutes,
+  isvuCoursesGet,
+  isvuRosterImportsPost,
+  isvuSourceRoutes,
   merlinPackageRoutes,
   supportRoutes,
   problemReportsPost,
@@ -147,6 +150,7 @@ export {
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
 export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { AssistantSetting, assistantSettingGet } from "./routes/index.ts";
+export { isvuCoursesGet, isvuRosterImportsPost } from "./routes/index.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./routes/index.ts";
 export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { RESTORE_MAX_FROM_REVISION, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./routes/index.ts";
@@ -346,6 +350,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...assignmentCopyRoutes,
   ...merlinRosterRoutes,
   ...rosterImportRoutes,
+  ...isvuSourceRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
   problemReportsPost,

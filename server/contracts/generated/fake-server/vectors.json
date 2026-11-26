@@ -18819,6 +18819,760 @@
     }
   },
   {
+    "route": "institution.isvu-courses.get",
+    "name": "courses",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mode": "mock",
+        "courses": [
+          {
+            "sourceCourseKey": "SYN-101",
+            "name": "Izmišljeni seminar iz ekologije grada",
+            "academicYear": "2026/2027",
+            "enrolledCount": 3
+          },
+          {
+            "sourceCourseKey": "SYN-102",
+            "name": "Izmišljeni seminar iz urbane hidrologije",
+            "academicYear": "2026/2027",
+            "enrolledCount": 2
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "no-courses-that-year",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "academicYear": "2030/2031"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "mode": "mock",
+        "courses": []
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "unauthorized",
+    "request": {
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0001f1000001"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "teacher-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0001f1000002"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+        "sec-fetch-site": "cross-site"
+      },
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0001f1000003"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0001f1000005"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "faculty": "demo"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0001f1000004"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "invalid-year",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "academicYear": "2026-2027"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0001f1000004"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-courses.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+      },
+      "query": {
+        "academicYear": "2026/2027"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0001f1000005"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "preview",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "importId": "5d1c2b3a-4f5e-4a6b-9c7d-8e9f0a1b2c41",
+        "source": "isvu",
+        "expiresAt": "2026-11-26T10:30:00.000Z",
+        "counts": {
+          "new": 1,
+          "alreadyEnrolled": 1,
+          "unsuitable": 1
+        },
+        "rows": [
+          {
+            "line": 2,
+            "identifier": "demo-student-3@demo.ductus.test",
+            "givenName": "Lana",
+            "familyName": "Brezik",
+            "status": "new",
+            "reason": null
+          },
+          {
+            "line": 3,
+            "identifier": "demo-student-4@demo.ductus.test",
+            "givenName": "Niko",
+            "familyName": "Rastović",
+            "status": "already_enrolled",
+            "reason": null
+          },
+          {
+            "line": 4,
+            "identifier": "demo-izvor-1@demo.ductus.test",
+            "givenName": "Ela",
+            "familyName": "Probić",
+            "status": "unsuitable",
+            "reason": "unknown_account"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "preview-other-course",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-102"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "importId": "5d1c2b3a-4f5e-4a6b-9c7d-8e9f0a1b2c42",
+        "source": "isvu",
+        "expiresAt": "2026-11-26T10:30:00.000Z",
+        "counts": {
+          "new": 1,
+          "alreadyEnrolled": 0,
+          "unsuitable": 1
+        },
+        "rows": [
+          {
+            "line": 2,
+            "identifier": "demo-student-4@demo.ductus.test",
+            "givenName": "Niko",
+            "familyName": "Rastović",
+            "status": "new",
+            "reason": null
+          },
+          {
+            "line": 3,
+            "identifier": "demo-izvor-2@demo.ductus.test",
+            "givenName": "Tin",
+            "familyName": "Uzorak",
+            "status": "unsuitable",
+            "reason": "unknown_account"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000011f00001"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000011f00002"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000011f00003"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1025"
+      },
+      "rawBody": "{\"sourceCourseKey\":\"SYN-101\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000011f00004"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "39"
+      },
+      "rawBody": "{\"sourceCourseKey\":\"SYN-101\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000011f00005"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000011f00006"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "40"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000011f00007"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "29"
+      },
+      "rawBody": "{\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000011f00008"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000011f00009"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "courseId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "ima razmak"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000011f0000a"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"sourceCourseKey\":\"SYN-101\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000011f0000b"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"sourceCourseKey\":\"SYN-101\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000011f0000c"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000011f0000d"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-999"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000011f0000e"
+      }
+    }
+  },
+  {
+    "route": "institution.isvu-roster-imports.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "sourceCourseKey": "SYN-101"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000011f0000f"
+      }
+    }
+  },
+  {
     "route": "institution.legal-hold-release.post",
     "name": "released",
     "request": {
@@ -39434,7 +40188,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.154.0",
+        "apiVersion": "1.155.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -39450,7 +40204,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.154.0",
+        "apiVersion": "1.155.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
