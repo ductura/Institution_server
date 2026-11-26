@@ -442,23 +442,34 @@ describe("job queue: one job, one attempt at a time", () => {
     expect(waited[0]).toBeLessThan(900);
   });
 
-  it("W-4: a take that lasted longer than the deadline is stored as timeout and its handler is not run", async () => {
-    const def = definition();
-    const queue = await open(def, "workerA", { retryLimit: 0, expireSeconds: 1, deadlineMs: 300 });
-    await queue.enqueue(def.name, body(42));
-    let runs = 0;
-    const run = queue.runOnce(def.name, async () => {
-      runs += 1;
-      return { ok: true };
-    });
-    hold(350);
-    expect(await run).toEqual({ status: "failed", code: "timeout" });
-    expect(runs).toBe(0);
-    expect(await jobs(def.name)).toEqual([
-      { state: "failed", retry_count: 0, output: { code: "timeout" }, data: body(42) },
-    ]);
-    expect(fence).toEqual({ armed: [650], fired: [] });
-  });
+  it.each([
+    ["", 350],
+    [" (a database slower than the margin)", 700],
+  ])(
+    "W-4: a take that lasted longer than the deadline is stored as timeout and its handler is not run%s",
+    { repeats: 199 },
+    async (_label, heldMs) => {
+      const def = definition();
+      const queue = await open(def, "workerA", {
+        retryLimit: 0,
+        expireSeconds: 1,
+        deadlineMs: 300,
+      });
+      await queue.enqueue(def.name, body(42));
+      let runs = 0;
+      const run = queue.runOnce(def.name, async () => {
+        runs += 1;
+        return { ok: true };
+      });
+      hold(heldMs);
+      expect(await run).toEqual({ status: "failed", code: "timeout" });
+      expect(runs).toBe(0);
+      expect(await jobs(def.name)).toEqual([
+        { state: "failed", retry_count: 0, output: { code: "timeout" }, data: body(42) },
+      ]);
+      expect(fence).toEqual({ armed: [650], fired: [] });
+    },
+  );
 
   it("W-5: twenty enqueues of one subject from two workers leave one job", async () => {
     const def = definition();
