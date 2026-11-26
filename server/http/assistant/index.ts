@@ -40,9 +40,11 @@ import {
   createActorReader,
   createAssistantRequests,
   createAssistantTools,
+  createCourseAssistantPort,
   createStudentNoticeReader,
   STUDENT_NOTICE_NOT_FOUND,
   STUDENT_NOTICE_UNAUTHENTICATED,
+  type AssistantAvailability,
   type AssistantRefusal,
   type AssistantRejectReason,
   type AssistantRequests,
@@ -125,10 +127,22 @@ export type AssistantRouteTools = {
   readonly guardFor: (institutionSlug: string | null) => SearchGuard;
 };
 
+/**
+ * (b) and (c) of SRV-ASIST-PREKIDAC for a student of the assignment: the
+ * institution has a published cost configuration and the course did not switch
+ * the assistant off (app.my_assistant_available).
+ */
+export type AssistantAvailabilityReader = (
+  token: string,
+  assignmentId: string,
+) => Promise<AssistantAvailability>;
+
 export type AssistantRouteDeps = {
   readonly requests: AssistantRequests;
   readonly rules: AssignmentRulesReader;
   readonly provider: AssistantProvider | null;
+  /** A course switched off answers ai_disabled before any reservation. */
+  readonly availability: AssistantAvailabilityReader;
   /** Absent: no tool is ever permitted and every tool request ends the loop. */
   readonly tools?: AssistantRouteTools | null;
   readonly portTimeoutMs?: number;
@@ -443,6 +457,19 @@ function requestRoute(deps: AssistantRouteDeps): Route {
             conversationId: null,
           });
         }
+        // SRV-ASIST-PREKIDAC: a course switched off (or no published cost
+        // configuration) is off before any reservation. A stranger's assignment
+        // goes on, so begin_request answers it as before (forbidden).
+        const availability = await deps.availability(token, parsed.request.assignmentId);
+        if (availability.status === "unauthorized")
+          return sendProblem(response, 401, "unauthorized");
+        if (availability.status === "read" && !availability.available) {
+          return sendJson(response, 200, {
+            outcome: "ai_disabled",
+            requestId: null,
+            conversationId: null,
+          });
+        }
         const answer = await run(deps, deps.provider, token, parsed.request);
         if ("failure" in answer) {
           if (answer.failure === "unauthorized") return sendProblem(response, 401, "unauthorized");
@@ -524,15 +551,23 @@ export function assignmentRulesFrom(withActor: WithActor): AssignmentRulesReader
 }
 
 /**
- * The production routes over main's withActor. There is no provider adapter
- * and no provider configuration (OA-1, Q-10), so the request route answers
- * ai_disabled; the conversation route reads what the database holds.
+ * The provider of the production routes. There is no provider adapter and no
+ * provider configuration (OA-1, Q-10), so it is null; the availability route
+ * (SRV-ASIST-PREKIDAC, ../course-assistant.ts) reads the same value.
+ */
+export const PRODUCTION_ASSISTANT_PROVIDER: AssistantProvider | null = null;
+
+/**
+ * The production routes over main's withActor. Without a provider the request
+ * route answers ai_disabled; the conversation route reads what the database holds.
  */
 export function createAssistantRoutesFor(main: { withActor: WithActor }): Route[] {
   return createAssistantRoutes({
     requests: createAssistantRequests(main.withActor),
     rules: assignmentRulesFrom(main.withActor),
-    provider: null,
+    provider: PRODUCTION_ASSISTANT_PROVIDER,
+    availability: (token, assignmentId) =>
+      createCourseAssistantPort(main.withActor).available(token, assignmentId),
     tools: assistantRouteToolsFor(
       main.withActor,
       readFacultyAiSettings(resolve("config/faculties")),

@@ -211,8 +211,15 @@ SELECT bag_eq(
             ('begin_tool_step ductus_identity true search_path=""'),
             ('finish_tool_step ductus_identity true search_path=""'),
             -- SRV-1205: the worker's listing of due requests; 172 tests it.
-            ('sweep_due ductus_identity true search_path=""') $$,
-  'the schema has four trigger functions and, since SRV-1203, SRV-1205 and SRV-1207, the RPCs and their helpers');
+            ('sweep_due ductus_identity true search_path=""'),
+            -- SRV-ASIST-BROJAC: the request limit and its count; 256 tests them.
+            ('write_config_version_requests ductus_identity false search_path=""'),
+            ('publish_request_limit ductus_identity false search_path=""'),
+            ('requests_today ductus_identity false search_path=""'),
+            -- SRV-ASIST-LIMIT-ADMIN: the administrator reads and sets it; 257 tests them.
+            ('read_request_limit ductus_identity true search_path=""'),
+            ('set_request_limit ductus_identity true search_path=""') $$,
+  'the schema has four trigger functions and, since SRV-1203, SRV-1205, SRV-1207, SRV-ASIST-BROJAC and SRV-ASIST-LIMIT-ADMIN, the RPCs and their helpers');
 SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
@@ -228,8 +235,10 @@ SELECT bag_eq(
             ('ductus_app assistant.fail_request(uuid,text,bigint)'), ('ductus_app assistant.mark_outcome_unknown(uuid)'),
             ('ductus_app assistant.read_conversation(uuid)'),
             ('ductus_app assistant.publish_cost_config(integer,bigint,bigint,bigint)'),
+            -- SRV-ASIST-LIMIT-ADMIN: the administrator's request limit.
+            ('ductus_app assistant.read_request_limit()'), ('ductus_app assistant.set_request_limit(integer,integer)'),
             ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)') $$,
-  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, the worker the sweep and its listing (SRV-1205)');
+  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more and, since SRV-ASIST-LIMIT-ADMIN, two more, the worker the sweep and its listing (SRV-1205)');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT bag_eq(
@@ -269,7 +278,8 @@ SELECT bag_eq(
     ('cost_config_version.version_no integer not null'), ('cost_config_version.cap_micro bigint'),
     ('cost_config_version.cap_period text not null'), ('cost_config_version.student_day_micro bigint'),
     ('cost_config_version.student_assignment_day_micro bigint'), ('cost_config_version.reserve_micro bigint'),
-    ('cost_config_version.published_by uuid'), ('cost_config_version.published_at timestamp with time zone not null'),
+    ('cost_config_version.student_assignment_day_requests integer'),
+    ('cost_config_version.published_by uuid'),('cost_config_version.published_at timestamp with time zone not null'),
     ('assignment_tool_setting.assignment_id uuid not null'), ('assignment_tool_setting.institution_id uuid not null'),
     ('assignment_tool_setting.version_no integer not null'), ('assignment_tool_setting.tools text[] not null'),
     ('assignment_tool_setting.set_by uuid not null'),

@@ -24,6 +24,7 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { workExportSheetCsvRoutes } from "./work-export-sheet-csv.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";
 export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
@@ -98,6 +99,13 @@ export {
   WorkThesisFormInput,
   thesisRoutes,
 } from "./thesis.ts";
+export {
+  THESIS_TOPIC_DECISIONS,
+  THESIS_TOPIC_STATES,
+  ThesisTopicDecisionInput,
+  ThesisTopicInput,
+  thesisTopicRoutes,
+} from "./thesis-topic.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export {
@@ -137,6 +145,8 @@ export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-r
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
+export { courseAssistantRoutes } from "./course-assistant.ts";
+export { qualitativeMaterialsRoutes } from "./qualitative-materials.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {
@@ -153,6 +163,14 @@ export {
   RUBRIC_LEVELS,
   RUBRIC_MAX_CRITERIA,
 } from "./assignment-rubric.ts";
+export {
+  Questionnaire,
+  QuestionnaireInput,
+  QUESTIONNAIRE_KINDS,
+  QUESTIONNAIRE_MAX_BYTES,
+  QUESTIONNAIRE_STATES,
+  questionnaireRoutes,
+} from "./questionnaires.ts";
 export {
   AssignmentCodeTestsInput,
   assignmentCodeTestsRoutes,
@@ -257,6 +275,16 @@ export {
   practicePlacementsPost,
   practiceSignoffsPost,
 } from "./practice-journal.ts";
+export {
+  QUAL_CODES_MAX,
+  QUAL_CODE_DESCRIPTION_MAX,
+  QUAL_CODE_NAME_MAX,
+  qualitativeCodesRoutes,
+  studentQualCodeDelete,
+  studentQualCodePatch,
+  studentQualCodesGet,
+  studentQualCodesPost,
+} from "./qualitative-codes.ts";
 export {
   PEER_REVIEW_ALLOCATIONS_MAX,
   PEER_REVIEW_RUBRICS_MAX,

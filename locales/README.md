@@ -18,7 +18,6 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `adminSettings.*` (u `hr.ts` i `en.ts`): razlozi koje poslužitelj šalje uz kod na zaslonima administratora (SRV-ADMIN-3, `docs/contracts/admin-settings-v1.md`): `exportAlreadyOpen` uz 409 zahtjeva za izvoz podataka studenta i `retentionPeriod.*` uz stanje roka čuvanja. Ključeve vraćaju `server/contracts/routes/student-data-export.ts` i `server/database/retention-dry-run/index.ts`; sekcija je u `SOURCE_ADDITIONS`.
 - `slidesExport.*` (u `hr.ts` i `en.ts`): riječi koje ispisuje `.pptx` slajdova (`server/downloads/export/pptx.ts`, SRV-V13-IZVOZ-PPTX): `slide` uz slajd bez naslova i `presentation` uz prezentaciju bez naslova. Test `server/downloads/export/pptx.test.ts` čita ih iz kataloga; sekcija je u `SOURCE_ADDITIONS`.
 - `labels.*`: greške zapisa labela repoa (`scripts/engineering/bot-labels.ts`, DAN-724-2a2). Test `scripts/engineering/bot-labels.test.ts` provjerava da svaki kod ima tekst i da sekcija nema drugih ključeva.
-- `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
 ## Katalog sučelja (S-1L.1, DAN-768)
 

@@ -3,8 +3,8 @@
 // the same blocks, both from the document of the submitted revision. The
 // same document, names and labels give the same bytes, so the fingerprint a
 // roster names is the fingerprint of the file the package carries.
-import fontkit from "@pdf-lib/fontkit";
-import { PageSizes, PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import fontkit from "@cantoo/fontkit";
+import { PageSizes, PDFDocument, rgb, type PDFFont, type PDFPage } from "@cantoo/pdf-lib";
 
 import type { CanonicalDocumentV4, VersionedDocument } from "../../../domain/index.ts";
 import {
@@ -55,6 +55,8 @@ function blockText(block: ExportBlock): { size: number; lines: string[]; indent:
       return { size: BODY_SIZE, lines: [runs(block.runs)], indent: 0 };
     case "bullet":
       return { size: BODY_SIZE, lines: [`• ${runs(block.runs)}`], indent: 12 };
+    case "ordered":
+      return { size: BODY_SIZE, lines: [`${block.number}. ${runs(block.runs)}`], indent: 12 };
     case "quote":
       return { size: BODY_SIZE, lines: [runs(block.runs)], indent: 24 };
     case "code":

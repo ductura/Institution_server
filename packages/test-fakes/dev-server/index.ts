@@ -40,6 +40,7 @@ import { ORIGIN_HANDLERS } from "./origin-routes.ts";
 import { PRACTICE_HANDLERS } from "./practice-routes.ts";
 import { ANALYSIS_HANDLERS } from "./analysis-routes.ts";
 import { PEER_REVIEW_HANDLERS } from "./peer-review-routes.ts";
+import { QUALITATIVE_CODES_HANDLERS } from "./qualitative-codes-routes.ts";
 import { ASSISTANT_MATCH_HANDLERS } from "./assistant-match-routes.ts";
 import { INPUT_RHYTHM_HANDLERS } from "./input-rhythm-routes.ts";
 import { FACULTY_THRESHOLD_HANDLERS } from "./faculty-threshold-routes.ts";
@@ -47,6 +48,7 @@ import { TEACHER_SOURCE_HANDLERS } from "./teacher-source-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { ASSIGNMENT_RUBRIC_HANDLERS } from "./assignment-rubric-routes.ts";
 import { ASSIGNMENT_CODE_TESTS_HANDLERS } from "./assignment-code-tests-routes.ts";
+import { QUESTIONNAIRE_HANDLERS } from "./questionnaire-routes.ts";
 import { WORK_RUBRIC_HANDLERS } from "./work-rubric-routes.ts";
 import { MILESTONE_TEMPLATE_HANDLERS } from "./milestone-template-routes.ts";
 import { WORK_TEMPLATE_HANDLERS } from "./work-template-routes.ts";
@@ -57,6 +59,8 @@ import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.t
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
+import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
+import { QUALITATIVE_MATERIALS_HANDLERS } from "./qualitative-materials-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -68,6 +72,7 @@ import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { THESIS_HANDLERS } from "./thesis-routes.ts";
+import { THESIS_TOPIC_HANDLERS } from "./thesis-topic-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import { PORTABLE_RECORD_HANDLERS } from "./portable-record-routes.ts";
@@ -134,8 +139,10 @@ export const DEV_HANDLERS: Handlers = {
   ...MENTOR_NOTES_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...PEER_REVIEW_HANDLERS,
+  ...QUALITATIVE_CODES_HANDLERS,
   ...ANALYSIS_HANDLERS,
   ...THESIS_HANDLERS,
+  ...THESIS_TOPIC_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,
@@ -162,6 +169,7 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_RUBRIC_HANDLERS,
   ...ASSIGNMENT_CODE_TESTS_HANDLERS,
+  ...QUESTIONNAIRE_HANDLERS,
   ...WORK_RUBRIC_HANDLERS,
   ...WORK_TEMPLATE_HANDLERS,
   ...ASSIGNMENT_TEMPLATE_HANDLERS,
@@ -171,6 +179,8 @@ export const DEV_HANDLERS: Handlers = {
   ...DECLARATION_REQUIRED_HANDLERS,
   ...DECLARATION_QUESTION_HANDLERS,
   ...LATE_SUBMISSION_HANDLERS,
+  ...COURSE_ASSISTANT_HANDLERS,
+  ...QUALITATIVE_MATERIALS_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,

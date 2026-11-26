@@ -104,6 +104,11 @@ export function contractProblems(
   const contract = ROUTES.find((r) => r.id === route);
   if (contract === undefined) return [`no route ${route}`];
   const type = answer.headers["content-type"];
+  // A CSV answer of a route whose contract names no media type has "no text body" (Merlin roster).
+  const bare =
+    typeof type === "string" &&
+    type.startsWith("text/csv") &&
+    !contract.responses.some((s) => s.status === answer.status && s.contentType === "text/csv");
   const vector = {
     name: "lazni",
     kind: code === undefined ? "success" : "error",
@@ -111,9 +116,9 @@ export function contractProblems(
     request: {},
     response: {
       status: answer.status,
-      ...(typeof type === "string" ? { contentType: type.split(";")[0] } : {}),
+      ...(typeof type === "string" && !bare ? { contentType: type.split(";")[0] } : {}),
       headers: answer.headers,
-      ...(answer.json === undefined ? {} : { body: answer.json }),
+      ...(answer.json === undefined || bare ? {} : { body: answer.json }),
     },
   };
   return checkVectors(

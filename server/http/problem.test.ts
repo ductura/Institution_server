@@ -301,8 +301,6 @@ describe("sendJson", () => {
 
 // Only these files write JSON with writeJson: sendJson and sendProblem.
 const WRITERS = ["server/http/json.ts", "server/http/problem.ts"];
-// The transitional HTTP server is a smoke test only (docs/server-map.md, "Prelazno stanje").
-const LEGACY = ["server/app.ts"];
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -330,11 +328,7 @@ describe("server code", () => {
   it("never spells the old error body {error: ...} where it answers HTTP", () => {
     const old = files.filter((file) => {
       const text = readFileSync(join(root, file), "utf8");
-      return (
-        !LEGACY.includes(file) &&
-        /["']node:http["']/u.test(text) &&
-        /[{,]\s*error:\s*["'`]/u.test(text)
-      );
+      return /["']node:http["']/u.test(text) && /[{,]\s*error:\s*["'`]/u.test(text);
     });
     expect(old).toEqual([]);
   });

@@ -34,7 +34,7 @@ describe("classifyDiff: path to jobs", () => {
   });
 
   it.each([
-    ["server/access.ts"],
+    ["server/server.ts"],
     ["db/tests/00-environment.sql"],
     ["db/tests/README.md.sql"],
     ["package.json"],
@@ -54,8 +54,8 @@ describe("classifyDiff: path to jobs", () => {
   });
 
   it("one code file among documents needs the full profile", () => {
-    expect(classifyDiff(record("docs/PLAN.md") + record("server/app.ts"))).toBe("full");
-    expect(classifyDiff(record("server/app.ts") + record("README.md"))).toBe("full");
+    expect(classifyDiff(record("docs/PLAN.md") + record("server/server.ts"))).toBe("full");
+    expect(classifyDiff(record("server/server.ts") + record("README.md"))).toBe("full");
   });
 });
 
@@ -159,12 +159,17 @@ describe("ciProfile on real commits", () => {
   git("init", "-q");
   const base = commit("README.md", "a\n");
   const docs = commit("docs/PLAN.md", "b\n");
-  const code = commit("server/app.ts", "c\n");
+  const code = commit("server/server.ts", "c\n");
   const pr = (baseSha: string, headSha: string, baseRef = "main") =>
     ciProfile({ eventName: "pull_request", baseRef, baseSha, headSha, cwd: dir });
 
   it("a documents-only pull request into main is docs", () => {
     expect(pr(base, docs)).toBe("docs");
+  });
+
+  it("a documents-only pull request into the migration base is docs", () => {
+    expect(pr(base, docs, "migracija/kopija-ductus-backend")).toBe("docs");
+    expect(pr(base, code, "migracija/kopija-ductus-backend")).toBe("full");
   });
 
   it("a pull request with code is full", () => {
@@ -182,6 +187,18 @@ describe("ciProfile on real commits", () => {
     }
     expect(pr(base, docs, "feature")).toBe("full");
     expect(pr(base, docs, "Main")).toBe("full");
+    expect(pr(base, docs, "migracija/kopija-ductus-front")).toBe("full");
+    expect(pr(base, docs, "migracija/kopija-ductus-backend/x")).toBe("full");
+    for (const eventName of ["push", "schedule"]) {
+      expect(
+        ciProfile({
+          eventName,
+          baseRef: "migracija/kopija-ductus-backend",
+          baseSha: base,
+          headSha: docs,
+        }),
+      ).toBe("full");
+    }
   });
 
   it.each([
