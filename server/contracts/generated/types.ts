@@ -498,6 +498,13 @@ export type Operations = {
     success: { status: 201; body: { "code": string; "version": number; "title": string; "workTypes": ("bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis")[]; "active": boolean; "publishedAt": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
   };
+  "institution.thesis-overview.get": {
+    params: undefined;
+    query: { "stage"?: "none" | "submitted_to_office" | "defense_scheduled" | "defended"; "limit"?: string; "after"?: string };
+    body: undefined;
+    success: { status: 200; body: { "works": ({ "documentId": string | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentorName": { "givenName": string; "familyName": string } | null; "studentName": { "givenName": string; "familyName": string } | null; "stage": "none" | "submitted_to_office" | "defense_scheduled" | "defended"; "defenseAt": string | null; "topicState": "none" | "proposed" | "approved" | "returned"; "committeeSize": number })[]; "next": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.thesis-settings.get": {
     params: undefined;
     query: undefined;
@@ -2513,6 +2520,20 @@ export type Operations = {
     body: { "quote"?: string | null; "page"?: string | null; "note"?: string | null };
     success: { status: 201; body: { "id": string; "quote": string | null; "page": string | null; "note": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "work.thesis-committee.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "members": ({ "userId": string; "name": { "givenName": string; "familyName": string } | null; "role": "chair" | "member" })[]; "changedAt": string | null; "changedByPart": "faculty" | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.thesis-committee.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "members": ({ "userId": string; "role": "chair" | "member" })[] };
+    success: { status: 200; body: { "members": ({ "userId": string; "name": { "givenName": string; "familyName": string } | null; "role": "chair" | "member" })[]; "changedAt": string | null; "changedByPart": "faculty" | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "unsupported_media_type" | "invalid_input";
   };
   "work.thesis-form.put": {
     params: { "documentId": string; "code": string };
