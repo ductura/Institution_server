@@ -377,4 +377,31 @@ export const COLLABORATION_HANDLERS: Handlers = {
       body: { outcome: "applied", row_seq: found.seq, version: found.version, state: found.state },
     };
   },
+  // SRV-ED43-DORADA-POSALJI: the next round only when a request was opened or
+  // reopened since the previous one; the teacher 403, anybody else 404.
+  "collaboration.revision-send.post": ({ state, account, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === body.documentId);
+    const reader = readerOf(state, work, account);
+    if (work === undefined || reader === null) return { error: "not_found" };
+    if (reader !== "owner") return { error: "forbidden" };
+    if (work.submittedAt !== null) return { error: "not_allowed" };
+    const sends = state.revisionSends.filter((s) => s.documentId === work.documentId);
+    const last = sends.at(-1);
+    const open = state.revisionRequests.filter(
+      (r) => r.documentId === work.documentId && (r.state === "open" || r.state === "reopened"),
+    );
+    const fresh = open.some(
+      (r) => !(r.id in (last?.answered ?? {})) || r.seq > last!.answered[r.id]!,
+    );
+    if (!fresh || sends.length >= 1000) return { error: "not_allowed" };
+    const round = sends.length + 1;
+    state.revisionSends.push({
+      documentId: work.documentId,
+      round,
+      message: body.message,
+      answered: Object.fromEntries(open.map((r) => [r.id, r.seq])),
+    });
+    return { status: 200, body: { round } };
+  },
 };
