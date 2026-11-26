@@ -87,6 +87,7 @@ const row = (over: Partial<StudentAssignmentRow>): StudentAssignmentRow => ({
   dueAt: "2026-12-01T22:59:00.000Z",
   extendedDueAt: null,
   acknowledged: true,
+  isPractice: false,
   ...over,
 });
 
@@ -98,7 +99,11 @@ describe("GET /api/v1/student/assignments", () => {
 
     const rows = [
       row({}),
-      row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02", acknowledged: false }),
+      row({
+        assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02",
+        acknowledged: false,
+        isPractice: true,
+      }),
       row({
         assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03",
         courseId: "0b9f6c1e-1d2a-4c3b-8e4f-5a6b7c8d9e02",
@@ -121,8 +126,8 @@ describe("GET /api/v1/student/assignments", () => {
       name: "Izmišljeni kolegij Č",
       academicYear: "2026/2027",
       assignments: [
-        expect.objectContaining({ noticeFirst: false, extendedDueAt: null }),
-        expect.objectContaining({ noticeFirst: true }),
+        expect.objectContaining({ noticeFirst: false, extendedDueAt: null, isPractice: false }),
+        expect.objectContaining({ noticeFirst: true, isPractice: true }),
       ],
     });
   });

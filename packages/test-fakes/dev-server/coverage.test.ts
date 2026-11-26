@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
@@ -2755,6 +2755,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  "teacher.submission-notes.get": {
+    before: [NOTE],
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission-notes`,
+      as: "nastavnik",
+    },
+  },
   "teacher.mentorship-requests.get": {
     request: { path: "/api/v1/teacher/mentorship-requests", as: "nastavnik" },
   },
@@ -3199,6 +3206,22 @@ describe("student submission on the dev fake server", () => {
     expect(added.status).toBe(201);
     expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [JSON.parse(added.body)] });
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("lets the teacher read a student's notes, and no one else (SRV-F4-NAS-R11)", async () => {
+    const state = createState();
+    const read = SCENARIOS["teacher.submission-notes.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [] });
+    const added = await run(state, NOTE);
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [JSON.parse(added.body)] });
+    // A student is no reader; an unknown assignment or student is the same 404.
+    expect((await run(state, { ...read, as: "student" })).status).toBe(404);
+    expect(
+      (await run(state, { ...read, path: read.path.replace(IDS.student, randomUUID()) })).status,
+    ).toBe(404);
+    expect(
+      (await run(state, { ...read, path: read.path.replace(IDS.assignment, randomUUID()) })).status,
+    ).toBe(404);
   });
 });
 
