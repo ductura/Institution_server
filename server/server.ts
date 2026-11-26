@@ -107,6 +107,7 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  openAiProviderFrom,
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
@@ -303,6 +304,12 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  // F4-PM2-R11 (D-316): OpenAI behind the assistant port; null without a key and
+  // prices, so ai_disabled. Only metadata is logged, never text, key or identity.
+  const assistantProvider = openAiProviderFrom(process.env, {
+    record: (metadata) =>
+      console.info(JSON.stringify({ event: "assistant.provider_call", ...metadata })),
+  });
   const reminderCooldown = process.env.DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS;
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
@@ -498,7 +505,7 @@ async function main(): Promise<void> {
       // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
       ...createLateSubmissionRoutesFor(databases.main),
       // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
-      ...createCourseAssistantRoutesFor(databases.main),
+      ...createCourseAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.
       ...createQuestionnaireResponsesRoutesFor(databases.main),
       // SRV-V18-UPITNIK-IZVOZ: the author reads the answers as questionnaire-export-v1.
@@ -581,7 +588,7 @@ async function main(): Promise<void> {
         excludePracticeAssignment(route, databases.main),
       ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
-      ...createAssistantRoutesFor(databases.main),
+      ...createAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-ASIST-CITANJE: the student's own assistant conversations of an assignment.
       createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),
