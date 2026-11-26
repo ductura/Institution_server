@@ -30,3 +30,5 @@ docs/plan/PLAN-MIGRACIJE.md
 # Declaration forms: the server reads JCS bytes plus one newline and hashes them,
 # so a reformat makes the form unreadable (server/http/statement/form.ts).
 config/faculties/*/declaration/*.json
+# Lekta source excerpts, kept byte for byte: tests/unit/lekta/package.test.ts compares their sha256
+tests/unit/lekta/fixtures/

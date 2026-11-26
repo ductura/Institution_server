@@ -92,6 +92,7 @@ function parsed(answer: ReturnType<typeof answerFake>) {
   if (
     type === "image/jpeg" ||
     type === "text/csv" ||
+    type === "application/pdf" ||
     String(type).startsWith("application/vnd.openxmlformats-officedocument.")
   )
     return { ...answer, body: Buffer.from(body).toString("base64") };

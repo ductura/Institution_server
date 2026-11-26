@@ -129,6 +129,11 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../../locales/index.ts",
     name: "merlinHr",
   }),
+  // SRV-V13-RUTA-IZVOZ: the words the .pptx of a slides work prints.
+  "server/http/work-export-slides/index.ts": Object.freeze({
+    specifier: "../../../locales/index.ts",
+    name: "messagesHr",
+  }),
   // SRV-1531: the PDF of the interview preparation of a work.
   "server/http/work-interview/pdf/index.ts": Object.freeze({
     specifier: "../../../../locales/index.ts",

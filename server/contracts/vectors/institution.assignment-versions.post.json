@@ -631,6 +631,128 @@
           "requestId": "00000000-0000-4000-8000-000000000063"
         }
       }
+    },
+    {
+      "name": "published-kind-text",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "title": "Izmišljeni zadatak",
+          "instructions": "Izmišljene upute za pisanje.",
+          "workType": "essay",
+          "opensAt": "2026-11-20T08:00:00Z",
+          "dueAt": "2026-12-20T23:59:00+01:00",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "formatting"],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": null,
+          "documentKind": "text"
+        }
+      },
+      "response": {
+        "status": 201,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01",
+          "versionNo": 2
+        }
+      }
+    },
+    {
+      "name": "document-kind-unknown",
+      "kind": "error",
+      "request": {
+        "params": {
+          "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "title": "Izmišljeni zadatak",
+          "instructions": "Izmišljene upute za pisanje.",
+          "workType": "essay",
+          "opensAt": "2026-11-20T08:00:00Z",
+          "dueAt": "2026-12-20T23:59:00+01:00",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "formatting"],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": null,
+          "documentKind": "video"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000002106"
+        }
+      },
+      "code": "invalid_input"
+    },
+    {
+      "name": "document-kind-slides-not-stored",
+      "kind": "error",
+      "request": {
+        "params": {
+          "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "title": "Izmišljeni zadatak",
+          "instructions": "Izmišljene upute za pisanje.",
+          "workType": "essay",
+          "opensAt": "2026-11-20T08:00:00Z",
+          "dueAt": "2026-12-20T23:59:00+01:00",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "formatting"],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": null,
+          "documentKind": "slides"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000002107"
+        }
+      },
+      "code": "invalid_input"
     }
   ]
 }

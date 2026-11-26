@@ -26,6 +26,7 @@ export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { workExportSheetCsvRoutes } from "./work-export-sheet-csv.ts";
 export { workExportSheetXlsxRoutes } from "./work-export-sheet-xlsx.ts";
+export { workExportSlidesRoutes } from "./work-export-slides.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";
 export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
