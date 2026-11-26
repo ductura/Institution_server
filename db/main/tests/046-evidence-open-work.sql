@@ -131,6 +131,7 @@ SELECT bag_eq(
             ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
             ('app.read_own_reconstruction_checkpoint(text,bigint)'),
+            ('app.my_submission_reconstruction(uuid)'),
             -- SRV-1903: the student's two steps of a withdrawal.
             ('app.withdraw_submission(uuid,text,text)'), ('app.attach_withdrawal_receipt(uuid,text,jsonb)'),
             ('app.return_work_for_revision(text,text,timestamp with time zone)') $$,

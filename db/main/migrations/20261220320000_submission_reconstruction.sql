@@ -28,10 +28,15 @@ GRANT CREATE ON SCHEMA evidence, app TO ductus_evidence;
 
 SET LOCAL ROLE ductus_evidence;
 
+-- The key the verdict's foreign key carries the institution with.
+ALTER TABLE evidence.submission ADD CONSTRAINT evidence_submission_id_institution_key UNIQUE (id, institution_id);
+
 CREATE TABLE evidence.submission_reconstruction (
-  submission_id uuid PRIMARY KEY REFERENCES evidence.submission (id),
+  submission_id uuid PRIMARY KEY,
+  institution_id uuid NOT NULL,
   status text NOT NULL CHECK (status IN ('verified', 'mismatch')),
-  checked_at timestamptz NOT NULL DEFAULT pg_catalog.clock_timestamp()
+  checked_at timestamptz NOT NULL DEFAULT pg_catalog.clock_timestamp(),
+  FOREIGN KEY (submission_id, institution_id) REFERENCES evidence.submission (id, institution_id)
 );
 CREATE TRIGGER submission_reconstruction_immutable BEFORE UPDATE OR DELETE ON evidence.submission_reconstruction
   FOR EACH ROW EXECUTE FUNCTION evidence.reject_append_only_change();
@@ -148,13 +153,14 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   v_artifact text;
+  v_institution uuid;
   v_status text;
 BEGIN
   IF p_evidence_domain_id IS NULL OR p_submission_id IS NULL
      OR (p_content_hash IS NOT NULL AND p_content_hash !~ '^[0-9a-f]{64}$') THEN
     RAISE EXCEPTION 'invalid worker request' USING ERRCODE = '22023';
   END IF;
-  SELECT s.artifact_hash INTO v_artifact
+  SELECT s.artifact_hash, s.institution_id INTO v_artifact, v_institution
     FROM evidence.submission s
     JOIN evidence.submission_request q ON q.id = s.submission_request_id
     JOIN evidence.package k
@@ -164,8 +170,8 @@ BEGIN
     RETURN 'not_found';
   END IF;
   v_status := CASE WHEN p_content_hash IS NOT DISTINCT FROM v_artifact THEN 'verified' ELSE 'mismatch' END;
-  INSERT INTO evidence.submission_reconstruction (submission_id, status)
-  VALUES (p_submission_id, v_status)
+  INSERT INTO evidence.submission_reconstruction (submission_id, institution_id, status)
+  VALUES (p_submission_id, v_institution, v_status)
   ON CONFLICT (submission_id) DO NOTHING;
   RETURN CASE WHEN FOUND THEN v_status ELSE 'exists' END;
 END
@@ -191,7 +197,7 @@ BEGIN
     RETURN QUERY SELECT 'not_found'::text, NULL::text;
     RETURN;
   END IF;
-  SELECT pg_catalog.coalesce(r.status, 'pending') INTO v_state
+  SELECT COALESCE(r.status, 'pending') INTO v_state
     FROM evidence.submission s
     LEFT JOIN evidence.submission_reconstruction r ON r.submission_id = s.id
    WHERE s.assignment_id = p_assignment_id AND s.institution_id = v_actor.institution_id
@@ -220,6 +226,7 @@ DROP FUNCTION app.worker_record_submission_reconstruction(uuid, uuid, text);
 DROP FUNCTION app.worker_submission_record(uuid, uuid);
 DROP FUNCTION app.worker_submissions_to_reconstruct(uuid, integer);
 DROP TABLE evidence.submission_reconstruction;
+ALTER TABLE evidence.submission DROP CONSTRAINT evidence_submission_id_institution_key;
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA evidence, app FROM ductus_evidence;
