@@ -14,21 +14,23 @@ Samo analiza i prijedlog. Odluka Daniela 27. 11. 2026. („Da, smiješ”, „sv
 
 Klijentski IP je adresa socketa; `X-Forwarded-For` se čita samo od proxyja iz `TRUSTED_PROXIES` (`server/traffic/client-ip.ts`). Bez adrese svi dijele jedan bucket.
 
-| Ograničenje                      | Zadano                      | Gdje                                                                     | Što broji                                                                                   | Konfigurabilno                                      |
-| -------------------------------- | --------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `login_per_ip`                   | 30 u min (bucket 30, 0,5/s) | `server/traffic/rate-limit.ts`, korak 4 pipelinea                        | `GET`/`HEAD` `auth/login` i `auth/callback`; **oba troše isti bucket**, jedna prijava = 2   | `DUCTURA_RATE_LIMIT_LOGIN_PER_IP`                   |
-| `enroll_per_ip`                  | 60 u min                    | isto                                                                     | `POST institution/enrollments`                                                              | `DUCTURA_RATE_LIMIT_ENROLL_PER_IP`                  |
-| `save_per_ip`                    | 1200 u min (bucket 1200, 20/s) | isto                                                                  | `POST evidence/commit`                                                                      | `DUCTURA_RATE_LIMIT_SAVE_PER_IP`                    |
-| `default_per_ip`                 | 3000 u min (bucket 3000, 50/s) | isto                                                                  | **svaki drugi zahtjev**, i prijavljeni: `evidence/open`, `submission`, čitanja, odjava, javne rute; i svaki neprepoznat oblik staze | `DUCTURA_RATE_LIMIT_DEFAULT_PER_IP`   |
-| Javna provjera potvrde           | 30 u min                    | `server/http/public-verification.ts`, vlastiti limiter uz `default_per_ip` | samo adresa, sesija se ne čita                                                              | konstanta `PUBLIC_VERIFICATION_PER_MINUTE`, nije u okruženju |
-| Operatorske staze (`/api/v1/ops`) | prazan popis = nitko ne ograničen | `server/traffic/ip-rules.ts`, korak 3                              | dopušteni IP rasponi (ne ograničenje brzine, nego popis mreža)                              | postavka mreža; dobar uzor za popis raspona         |
-| `TRUSTED_PROXIES`                | prazno                      | `client-ip.ts`                                                           | što se uopće smatra „klijentskim IP-om”; ne širi od /8                                      | okruženje                                           |
+| Ograničenje                       | Zadano                            | Gdje                                                                       | Što broji                                                                                                                           | Konfigurabilno                                               |
+| --------------------------------- | --------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `login_per_ip`                    | 30 u min (bucket 30, 0,5/s)       | `server/traffic/rate-limit.ts`, korak 4 pipelinea                          | `GET`/`HEAD` `auth/login` i `auth/callback`; **oba troše isti bucket**, jedna prijava = 2                                           | `DUCTURA_RATE_LIMIT_LOGIN_PER_IP`                            |
+| `enroll_per_ip`                   | 60 u min                          | isto                                                                       | `POST institution/enrollments` (stara ruta; **studentska `POST student/enrollments` je klase `default`**)                           | `DUCTURA_RATE_LIMIT_ENROLL_PER_IP`                           |
+| `save_per_ip`                     | 1200 u min (bucket 1200, 20/s)    | isto                                                                       | `POST evidence/commit`                                                                                                              | `DUCTURA_RATE_LIMIT_SAVE_PER_IP`                             |
+| `default_per_ip`                  | 3000 u min (bucket 3000, 50/s)    | isto                                                                       | **svaki drugi zahtjev**, i prijavljeni: `evidence/open`, `submission`, čitanja, odjava, javne rute; i svaki neprepoznat oblik staze | `DUCTURA_RATE_LIMIT_DEFAULT_PER_IP`                          |
+| Javna provjera potvrde            | 30 u min                          | `server/http/public-verification.ts`, vlastiti limiter uz `default_per_ip` | samo adresa, sesija se ne čita                                                                                                      | konstanta `PUBLIC_VERIFICATION_PER_MINUTE`, nije u okruženju |
+| Operatorske staze (`/api/v1/ops`) | prazan popis = nitko ne ograničen | `server/traffic/ip-rules.ts`, korak 3                                      | dopušteni IP rasponi (ne ograničenje brzine, nego popis mreža)                                                                      | postavka mreža; dobar uzor za popis raspona                  |
+| `TRUSTED_PROXIES`                 | prazno                            | `client-ip.ts`                                                             | što se uopće smatra „klijentskim IP-om”; ne širi od /8                                                                              | okruženje                                                    |
 
 Vrijednosti su cijeli brojevi 1 do 100 000; izvan toga server ne starta. Svaki proces drži bucket u memoriji (nema dijeljenja između instanci). Odbijen zahtjev ne troši žetone, `Retry-After` je 1 do 60 s.
 
+**Klasifikacija upisa:** `classOf` (`server/traffic/rate-limit.ts`) u klasu `enroll` svrstava samo `POST /api/v1/institution/enrollments`. Ruta `POST /api/v1/student/enrollments` (`student.enrollments.post`, montirana kroz `createStudentWriteRoutesFor`) pada u `default`, pa ima 3000 po IP-u i 300 po računu i operaciji, ne 60 i 10. Varijable `ENROLL_*` je dakle ne mijenjaju.
+
 **Nije po IP-u, ali se ponaša slično:** upis kodom ima i ograničenje po korisniku u bazi (`enrollment_attempt_limit` po ustanovi, `too_many_attempts`); ono je po korisniku i NAT ga ne dira.
 
-**Već po korisniku** (`server/http/rate-limit/index.ts`): prozor od 60 s po paru (operacija, `actor.scope`), samo za rute koje traže sesiju. Zadano 120 (spremanje), 300 (ostalo), 10 (upis). Sesije istog računa dijele kvotu.
+**Već po korisniku** (`server/http/rate-limit/index.ts`): prozor od 60 s po paru (operacija, `actor.scope`), samo za rute koje traže sesiju. Zadano 120 (spremanje), 300 (ostalo), 10 (upis, samo stara ruta `institution/enrollments`). Sesije istog računa dijele kvotu.
 
 ### Redoslijed i posljedica
 
@@ -44,16 +46,29 @@ Model: token bucket, kapacitet jednak granici u minuti, dopuna granica/60 po sek
 
 ### 2.1 Spremanje (`save_per_ip`: 1200, 20/s)
 
-Stopa je N / T zahtjeva u sekundi (T je razmak spremanja jednog studenta). Dok je stopa iznad 20/s, bucket se prazni brzinom (stopa − 20)/s; nakon toga prolazi samo 20/s, a ostatak dobiva 429.
+**Model ravnomjernog prometa:** zahtjevi su ravnomjerno raspoređeni u vremenu. Stopa je N / T zahtjeva u sekundi (T je razmak spremanja jednog studenta). Dok je stopa iznad 20/s, bucket se prazni brzinom (stopa − 20)/s; nakon toga prolazi samo 20/s, a ostatak dobiva 429.
 
-| Studenata | Razmak spremanja | Stopa  | Ishod                                                           |
-| --------: | ---------------: | -----: | --------------------------------------------------------------- |
-|       300 |             30 s |  10/s  | Prolazi, rezerva 10/s.                                          |
-|       300 |             15 s |  20/s  | Točno na granici dopune, **bez rezerve**; svaki nalet daje 429. |
-|      1000 |             30 s | 33,3/s | Bucket prazan nakon **90 s**, zatim prolazi 60 %, 40 % dobiva 429. |
-|      1000 |             15 s | 66,7/s | Prazan nakon **26 s**, prolazi 30 %.                            |
-|      2000 |             30 s | 66,7/s | Prazan nakon **26 s**, prolazi 30 %.                            |
-|      2000 |             15 s |133,3/s | Prazan nakon **11 s**, prolazi 15 %.                            |
+| Studenata | Razmak spremanja |   Stopa | Ishod                                                              |
+| --------: | ---------------: | ------: | ------------------------------------------------------------------ |
+|       300 |             30 s |    10/s | Prolazi, rezerva 10/s.                                             |
+|       300 |             15 s |    20/s | Točno na granici dopune, **bez rezerve**; svaki nalet daje 429.    |
+|      1000 |             30 s |  33,3/s | Bucket prazan nakon **90 s**, zatim prolazi 60 %, 40 % dobiva 429. |
+|      1000 |             15 s |  66,7/s | Prazan nakon **26 s**, prolazi 30 %.                               |
+|      2000 |             30 s |  66,7/s | Prazan nakon **26 s**, prolazi 30 %.                               |
+|      2000 |             15 s | 133,3/s | Prazan nakon **11 s**, prolazi 15 %.                               |
+
+**Sinkronizirani nalet:** studenti koji spremaju istodobno (početak rada, rok, povratak mreže) šalju N zahtjeva odjednom svakih T sekundi. Prolazi samo što stane u bucket, a između naleta se dopuni 20 · T žetona (najviše 1200). Prvo odbijanje je zato ranije nego u modelu iznad.
+
+| Studenata | Razmak | Prvo odbijanje                              | Dugoročno prolazi            |
+| --------: | -----: | ------------------------------------------- | ---------------------------- |
+|       300 |   15 s | nikad (dopuni se svih 300 između naleta)    | 100 %                        |
+|       300 |   30 s | nikad                                       | 100 %                        |
+|      1000 |   30 s | drugi nalet, nakon 30 s (odbije se 200)     | 600 od 1000 po naletu (60 %) |
+|      1000 |   15 s | drugi nalet, nakon 15 s (odbije se 500)     | 300 od 1000 po naletu (30 %) |
+|      2000 |   30 s | **odmah**, prvi nalet: 1200 prolazi, 800 ne | 600 od 2000 (30 %)           |
+|      2000 |   15 s | **odmah**, prvi nalet: 1200 prolazi, 800 ne | 300 od 2000 (15 %)           |
+
+Dugoročni udio je isti u oba modela; razlika je u tome kad počinju odbijanja. Za početak nastave i rok vrijedi sinkronizirana tablica.
 
 Ograničenje po korisniku nije problem: 4 spremanja u minuti (svakih 15 s) prema 120 daje rezervu od 30 puta.
 
@@ -77,9 +92,9 @@ Pretpostavka (nije mjerena): otvaranje aplikacije i rada traži oko 20 zahtjeva 
 
 | Studenata | Nalet 20 zahtjeva po studentu | Vrijeme da se isprazni red | Stalno stanje, 3/min | Stalno stanje, 10/min |
 | --------: | ----------------------------: | -------------------------: | -------------------: | --------------------: |
-|       300 |                          6000 |                       60 s |        15/s od 50/s  |            50/s (granica) |
-|      1000 |                        20 000 |                      340 s |        50/s (granica)|                167/s (3,3×) |
-|      2000 |                        40 000 |                      740 s |        100/s (2×)    |                333/s (6,7×) |
+|       300 |                          6000 |                       60 s |         15/s od 50/s |        50/s (granica) |
+|      1000 |                        20 000 |                      340 s |       50/s (granica) |          167/s (3,3×) |
+|      2000 |                        40 000 |                      740 s |           100/s (2×) |          333/s (6,7×) |
 
 Preko 3000 u prvih nekoliko sekundi sve preko bucketa je 429 s `Retry-After` od 1 s, pa klijenti ponavljaju sinkronizirano.
 
@@ -105,16 +120,18 @@ Ostaje što je danas (spremanje 120, ostalo 300, upis 10 u minuti po paru operac
 
 Podiže se IP prag kroz postojeće varijable (`DUCTURA_RATE_LIMIT_*`), uz ciljnu populaciju 2000 studenata i spremanje svakih 15 s.
 
-| Varijabla                     | Zadano | Preporuka | Obrazloženje                                                                                              |
-| ----------------------------- | -----: | --------: | --------------------------------------------------------------------------------------------------------- |
-| `…_SAVE_PER_IP`               |   1200 |    12 000 | 2000 × 4 spremanja u minuti = 8000, plus 50 % za ponovno slanje nakon prekida veze.                       |
-| `…_DEFAULT_PER_IP`            |   3000 |    60 000 | 2000 × 10 u minuti = 20 000 stalno; nalet 2000 × 20 = 40 000 stane u bucket.                              |
-| `…_LOGIN_PER_IP`              |     30 |       600 | 2000 studenata uđe za oko 7 minuta (300 prijava u minuti); 300 studenata za 1 minutu. Vidi napomenu niže. |
-| `…_ENROLL_PER_IP`             |     60 |     1 200 | Početak kolegija: cijela grupa upisuje kod u prvoj minuti; po korisniku ostaje 10 u minuti i ograničenje u bazi. |
-| `…_SAVE_PER_ACCOUNT`          |    120 |       120 | bez promjene                                                                                              |
-| `…_DEFAULT_PER_ACCOUNT`       |    300 |       300 | bez promjene                                                                                              |
-| `…_ENROLL_PER_ACCOUNT`        |     10 |        10 | bez promjene                                                                                              |
-| Javna provjera potvrde        |     30 |        30 | namjerno stroga, ne dijeli se; javna ruta bez sesije (stranica `/provjera`). Zasebno razmotriti ako fakultet provjerava skupno. |
+| Varijabla               | Zadano | Preporuka | Obrazloženje                                                                                                                                                                                                                   |
+| ----------------------- | -----: | --------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `…_SAVE_PER_IP`         |   1200 |    12 000 | 2000 × 4 spremanja u minuti = 8000, plus 50 % za ponovno slanje nakon prekida veze.                                                                                                                                            |
+| `…_DEFAULT_PER_IP`      |   3000 |    60 000 | 2000 × 10 u minuti = 20 000 stalno; nalet 2000 × 20 = 40 000 stane u bucket.                                                                                                                                                   |
+| `…_LOGIN_PER_IP`        |     30 |       600 | 2000 studenata uđe za oko 7 minuta (300 prijava u minuti); 300 studenata za 1 minutu. Vidi napomenu niže.                                                                                                                      |
+| `…_ENROLL_PER_IP`       |     60 |     1 200 | Početak kolegija: cijela grupa upisuje kod u prvoj minuti; vrijedi samo za staru rutu `institution/enrollments`; studentska ruta je `default` (vidi napomenu niže), a po korisniku je ograničena u bazi (`too_many_attempts`). |
+| `…_SAVE_PER_ACCOUNT`    |    120 |       120 | bez promjene                                                                                                                                                                                                                   |
+| `…_DEFAULT_PER_ACCOUNT` |    300 |       300 | bez promjene                                                                                                                                                                                                                   |
+| `…_ENROLL_PER_ACCOUNT`  |     10 |        10 | bez promjene                                                                                                                                                                                                                   |
+| Javna provjera potvrde  |     30 |        30 | namjerno stroga, ne dijeli se; javna ruta bez sesije (stranica `/provjera`). Zasebno razmotriti ako fakultet provjerava skupno.                                                                                                |
+
+**Upis studentskom rutom:** faza 1 (samo varijable) ne može je odvojiti od ostalog prometa jer je klase `default`: tamo vrijedi 60 000 po IP-u i 300 po računu. Odvajanje (npr. preslikavanje `POST /api/v1/student/enrollments` u klasu `enroll` uz 10 po računu) traži promjenu `CLASS_ROUTES` i ide u fazu 2. Do tada je upis zaštićen ograničenjem po korisniku u bazi.
 
 Sve su vrijednosti unutar 1 do 100 000.
 
@@ -135,9 +152,9 @@ Sve su vrijednosti unutar 1 do 100 000.
 
 | Studenata iza jedne adrese | Spremanje po IP-u | Ostalo po IP-u | Prijava po IP-u (faza 2: raspon fakulteta) |
 | -------------------------: | ----------------: | -------------: | -----------------------------------------: |
-|                    do 300  |             3 000 |         12 000 |                                        240 |
-|                   do 1000  |             6 000 |         30 000 |                                        480 |
-|                   do 2000  |            12 000 |         60 000 |                                        600 |
+|                     do 300 |             3 000 |         12 000 |                                        240 |
+|                    do 1000 |             6 000 |         30 000 |                                        480 |
+|                    do 2000 |            12 000 |         60 000 |                                        600 |
 
 Spremanje: 300 × 4 = 1200 u minuti, 1000 × 4 = 4000, 2000 × 4 = 8000 (svakih 15 s), pa je prag najmanje 2,5× veći. „Ostalo”: nalet od 20 zahtjeva po studentu (6000, 20 000, 40 000), prag je 1,5× do 2× nalet. Prijava: 2 žetona po prijavi, cilj je da se razred prijavi u 1 do 7 minuta.
 
