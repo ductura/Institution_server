@@ -129,4 +129,4 @@ Prijava uspijeva samo za domenu koja u bazi ima ustanovu (`identity.institution.
 - `scripts/lokalno/lokalno.integration.test.ts`: simulator kao zaseban proces s varijablama koje mu daje `pnpm lokalno`, rute prijave servera s varijablama servera, i tok login → simulator (obrazac i imenovani račun) → callback → kolačić `__Host-ductus_session`. Baza je u memoriji.
 - `packages/test-fakes/oidc/simulated-accounts.test.ts`: obrazac, oznake računa i datoteka računa.
 
-Cijeli tok na pravom PostgreSQL-u provjerava se ručno: `pnpm lokalno --izravno`, zatim u pregledniku `http://localhost:4000/api/v1/auth/login?returnTo=/app/web/`, prijava demo računom ili domenom iz `seed.sql`; odgovor callbacka je 303 na `/app/web/` s kolačićem sesije. Domena bez ustanove daje 403.
+Cijeli tok na pravom PostgreSQL-u provjerava se ručno: `pnpm lokalno --izravno`, zatim u pregledniku `http://localhost:4000/api/v1/auth/login?returnTo=/app/web/ (preslikava se na /aplikacija/)`, prijava demo računom ili domenom iz `seed.sql`; odgovor callbacka je 303 na `/aplikacija/` s kolačićem sesije. Domena bez ustanove daje 403.

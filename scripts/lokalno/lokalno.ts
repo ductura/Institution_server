@@ -221,7 +221,7 @@ async function main(): Promise<void> {
       `  Server:            http://localhost:${options.serverPort} (preglednik: ${options.origin})`,
       `  Simulator AAI@EduHr: ${options.issuer}`,
       `  Spremište dokaza:  lokalni S3 na http://127.0.0.1:${PORTS.s3}, razvojni ključ za potpis`,
-      `  Prijava:           ${options.origin}/api/v1/auth/login?returnTo=/app/web/`,
+      `  Prijava:           ${options.origin}/api/v1/auth/login?returnTo=/aplikacija/`,
       `  Token provisioninga: .local/${TOKEN_FILE}`,
       options.accountsFile === undefined
         ? "  Računi simulatora: demo računi i obrazac (domena + uloga)"

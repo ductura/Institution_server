@@ -51,3 +51,15 @@ export {
   type ProviderEntryRule,
   type PurposeCatalogVersion,
 } from "../../domain/index.ts";
+// The OpenAI adapter (F4-PM2-R11, D-316): composed only with a key, a model
+// and prices from the environment; without them the port stays ai_disabled.
+export {
+  costOf,
+  createOpenAiAssistant,
+  OPENAI_BASE_URL,
+  type OpenAiAssistantDeps,
+  type OpenAiCallMetadata,
+  type OpenAiTransport,
+  type OpenAiTransportRequest,
+  type OpenAiTransportResponse,
+} from "./openai-assistant.ts";

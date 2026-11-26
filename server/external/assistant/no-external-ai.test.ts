@@ -36,6 +36,10 @@ const AI_HOST =
 
 const files = walk(ROOT).filter((file) => file !== SELF);
 
+// F4-PM2-R11 (D-316): the one file that may name the provider's API host is
+// the OpenAI adapter; it opens no connection itself (the transport is handed in).
+const HOST_ALLOWED = ["server/external/assistant/openai-assistant.ts"];
+
 describe("no external AI in this repo (acceptance 2)", () => {
   it("scans the repo", () => {
     expect(files.length).toBeGreaterThan(100);
@@ -84,7 +88,7 @@ describe("no external AI in this repo (acceptance 2)", () => {
 
   it("no file names the API host of an AI provider", () => {
     const found = files.filter((file) => AI_HOST.test(readFileSync(join(ROOT, file), "utf8")));
-    expect(found).toEqual([]);
+    expect(found).toEqual(HOST_ALLOWED);
   });
 
   it("the patterns do catch what they are for", () => {
@@ -129,7 +133,7 @@ describe("the assistant code opens no network and reads no secret (S1, M9)", () 
     expect(text).not.toMatch(/process\.env|\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource/u);
   });
 
-  it("the synthetic adapter is the only adapter", () => {
+  it("the synthetic and the OpenAI adapter are the only adapters", () => {
     const adapterFiles = readdirSync(join(ROOT, "server/external/assistant"))
       .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
       .sort();
@@ -137,10 +141,14 @@ describe("the assistant code opens no network and reads no secret (S1, M9)", () 
     expect(adapterFiles).toEqual([
       "index.ts",
       "institution-setting.ts",
+      "openai-assistant.ts",
       "provider-port.ts",
       "synthetic-assistant.ts",
     ]);
     const exported = readFileSync(join(ROOT, "server/external/assistant/index.ts"), "utf8");
-    expect(exported.match(/\bcreate[A-Z]\w*Assistant\b/gu)).toEqual(["createSyntheticAssistant"]);
+    expect(exported.match(/\bcreate[A-Z]\w*Assistant\b/gu)).toEqual([
+      "createSyntheticAssistant",
+      "createOpenAiAssistant",
+    ]);
   });
 });
