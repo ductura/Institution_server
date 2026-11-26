@@ -8,7 +8,12 @@ export type StackEnv = (typeof STACK_ENVS)[number];
 export type Command = "up" | "down" | "status";
 // Ports 3000 to 3004 belong to other stacks on the same machine; never ours.
 export const FORBIDDEN_PORTS: readonly number[] = [3000, 3001, 3002, 3003, 3004];
-export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180, s3: 4191 } as const;
+// Linux hands outgoing connections a source port from 32768-60999; a listener
+// default inside it can find its port held by a client of the same job (CI: the
+// PostgreSQL of the stack, FATAL could not create any TCP/IP sockets). Every
+// default stays below the range.
+export const EPHEMERAL_PORTS = { from: 32_768, to: 60_999 } as const;
+export const DEFAULT_PORTS = { postgres: 25360, server: 4100, oidc: 4180, s3: 4191 } as const;
 // Ports the Fetch standard blocks (undici refuses them with "bad port"): the
 // server reaches the local S3 through fetch, so none of these may be a stack port.
 export const FETCH_BAD_PORTS: readonly number[] = [
