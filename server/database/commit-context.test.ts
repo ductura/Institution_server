@@ -14,6 +14,10 @@ const TOKEN = "izmisljeni-token-konteksta-0000000000000001";
 // SRV-7F: the revision 0 hashes as contracts v1 and v3 write them.
 const V1_ZERO = "a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b";
 const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
+// SRV-V14-SHEET-COMMIT: the revision 0 of every spreadsheet work, and the
+// column of the work's kind (a computed key: the lint takes no snake_case key).
+const KIND = "document_kind";
+const SHEET_ZERO = "70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4";
 const CONTEXT: EvidenceCommitContext = {
   evidencePackageId: "pkg-1",
   institutionId: INSTITUTION,
@@ -21,6 +25,7 @@ const CONTEXT: EvidenceCommitContext = {
   evidenceProfileId: "standard-v1",
   maxPayloadBytes: 262144,
   transactionKnown: false,
+  documentKind: "text",
   documentSchemaVersion: 1,
   state: {
     currentRevision: 4,
@@ -31,13 +36,21 @@ const CONTEXT: EvidenceCommitContext = {
 };
 
 /** A withActor that answers the context statement and records what it was given. */
-function database(rows: unknown[], revisionZero: unknown[] = [{ content_hash: V1_ZERO }]) {
+function database(
+  rows: unknown[],
+  revisionZero: unknown[] = [{ content_hash: V1_ZERO }],
+  kind: unknown[] = [{ [KIND]: "text" }],
+) {
   const seen: { token: unknown; text: string; values: readonly unknown[] | undefined }[] = [];
   const withActor = (async (token, fn) => {
     const tx: ActorTransaction = {
       async query(text, values) {
         seen.push({ token, text, values });
-        const answer = text.includes("evidence.document_revision") ? revisionZero : rows;
+        const answer = text.includes("evidence.document_revision")
+          ? revisionZero
+          : text.includes("document_kind")
+            ? kind
+            : rows;
         return { rows: answer as never[], rowCount: answer.length };
       },
     };
@@ -88,10 +101,55 @@ describe("readContext", () => {
       status: "ok",
       context: { ...CONTEXT, documentSchemaVersion: 3 },
     });
-    expect(db.seen).toHaveLength(2);
-    expect(db.seen[1]?.text).toMatch(/evidence\.document_revision[\s\S]*revision = 0/);
+    expect(db.seen).toHaveLength(3);
+    expect(db.seen[2]?.text).toMatch(/evidence\.document_revision[\s\S]*revision = 0/);
+    expect(db.seen[2]?.values).toEqual(["doc-1"]);
+    expect(db.seen[2]?.token).toBe(TOKEN);
+  });
+
+  it("SRV-V14-SHEET-COMMIT: reads the kind of the work from evidence.document, in the same transaction", async () => {
+    const db = database([row]);
+    await readerOf(db).readContext(TOKEN, "doc-1", "tx-1");
+    expect(db.seen[1]?.text).toMatch(/SELECT document_kind FROM evidence\.document WHERE id = \$1/);
     expect(db.seen[1]?.values).toEqual(["doc-1"]);
     expect(db.seen[1]?.token).toBe(TOKEN);
+  });
+
+  it("SRV-V14-SHEET-COMMIT: names a spreadsheet work by its kind and its revision 0", async () => {
+    const db = database([row], [{ content_hash: SHEET_ZERO }], [{ [KIND]: "spreadsheet" }]);
+    expect(await readerOf(db).readContext(TOKEN, "doc-1", "tx-1")).toEqual({
+      status: "ok",
+      context: { ...CONTEXT, documentKind: "spreadsheet", documentSchemaVersion: 1 },
+    });
+  });
+
+  it.each([
+    ["a spreadsheet work with a text revision 0", "spreadsheet", V1_ZERO],
+    ["a spreadsheet work with a v3 revision 0", "spreadsheet", V3_ZERO],
+    ["a text work with the spreadsheet revision 0", "text", SHEET_ZERO],
+    ["a slides work, which this reader does not know yet", "slides", SHEET_ZERO],
+    ["a kind this server does not know", "drawing", V1_ZERO],
+    ["a kind that is an object key", "__proto__", V1_ZERO],
+    ["no kind", null, V1_ZERO],
+  ])("SRV-V14-SHEET-COMMIT: is unavailable for %s, never a guessed kind", async (_, kind, zero) => {
+    const db = database([row], [{ content_hash: zero }], [{ [KIND]: kind }]);
+    expect(await readerOf(db).readContext("t", "doc-1", "tx-1")).toEqual({
+      status: "unavailable",
+      stage: "context",
+      code: "context_malformed",
+    });
+  });
+
+  it.each([
+    ["no row", []],
+    ["two rows", [{ [KIND]: "text" }, { [KIND]: "text" }]],
+  ])("SRV-V14-SHEET-COMMIT: is unavailable for %s of the kind", async (_, kind) => {
+    const db = database([row], undefined, kind);
+    expect(await readerOf(db).readContext("t", "doc-1", "tx-1")).toEqual({
+      status: "unavailable",
+      stage: "context",
+      code: "context_malformed",
+    });
   });
 
   it.each([

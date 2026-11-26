@@ -317,4 +317,42 @@ export const revisionRequestsPost = defineRoute({
   ],
 });
 
-export const collaborationRoutes = [commentsPost, revisionRequestsPost] as const;
+// SRV-ED43-DORADA-POSALJI (Ductus#2058, BLOK ED-43; owner approval in chat on
+// 26 Nov 2026): "Pošalji doradu". The student owner sends the revision to the
+// teacher for review: the next round of the work and an optional message. A
+// route of its own, beside the actions of revision-requests, because a new
+// action would change that route's existing schemas (contracts:breaking).
+// Database: collaboration.revision_send and collaboration.send_revision
+// (20261220180000).
+
+/** The round of a sent revision of one work: 1, 2, 3 … */
+const Round = Type.Integer({ minimum: 1, maximum: 1000 });
+
+export const revisionSendPost = defineRoute({
+  id: "collaboration.revision-send.post",
+  method: "POST",
+  path: "/api/v1/revision-send",
+  inventory: "app/api/revision-send/route.ts",
+  access: "student_owner",
+  summary:
+    "The student owner of a work sends the revision to the teacher for review (BLOK ED-43): the body is the exact JCS bytes of {documentId, message}, the message to the teacher a revision text or null. The answer is 200 {round}, the next round of the work (1, 2, 3 ...). A round needs a revision request opened or reopened since the previous round, so a repeated send never skips a round: 409 not_allowed otherwise, also on a submitted work. The teacher of the work is 403; anybody else, an unknown work and a malformed id are 404.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 16 * 1024,
+    body: closed({ documentId: WorkId, message: Type.Union([RevisionText, Type.Null()]) }),
+  },
+  responses: [{ status: 200, description: "the round sent", body: closed({ round: Round }) }],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
+    error(403, "forbidden"),
+    error(409, "not_allowed"),
+    error(503, "unavailable"),
+  ],
+});
+
+export const collaborationRoutes = [commentsPost, revisionRequestsPost, revisionSendPost] as const;
