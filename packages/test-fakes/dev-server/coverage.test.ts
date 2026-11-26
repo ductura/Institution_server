@@ -147,6 +147,35 @@ const livePut: Step = {
   headers: { ...ORIGIN, "if-none-match": "*" },
   body: LIVE,
 };
+// SRV-ED42-PRIJEDLOZI: the live state and the pending suggestion of the suggestion scenarios.
+const SUGGESTION_ID = "5a5a5a5a-0000-4000-8000-000000000001";
+function prepareSuggestion(state: State) {
+  const work = state.works.find((w) => w.documentId === IDS.document)!;
+  work.live = {
+    json: JSON.stringify({
+      nodes: [
+        {
+          children: [{ marks: [], text: "Izmišljeno poglavlje.", type: "text" }],
+          id: ANCHOR.nodeId,
+          type: "paragraph",
+        },
+      ],
+      schemaVersion: 1,
+    }),
+    token: "00000000-0000-4000-8000-0000000000aa",
+  };
+  state.suggestions.push({
+    suggestionId: SUGGESTION_ID,
+    documentId: IDS.document,
+    authorId: IDS.teacher,
+    anchor: { ...ANCHOR, suffix: " poglavlje" },
+    text: "Izmišljena",
+    baseHash: "0".repeat(64),
+    state: "pending",
+    createdWindow: "2026-11-26T10:05:00.000Z",
+    decidedWindow: null,
+  });
+}
 const createRequest: Step = {
   path: "/api/v1/revision-requests/create",
   as: "nastavnik",
@@ -1014,6 +1043,39 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: "/api/v1/revision-requests/list",
       as: "student",
       body: { documentId: IDS.document },
+    },
+  },
+  // SRV-ED42-PRIJEDLOZI: a live state whose first paragraph holds the quote, and one pending suggestion.
+  "collaboration.suggestions-list.post": {
+    prepare: prepareSuggestion,
+    request: {
+      path: "/api/v1/suggestions/list",
+      as: "student",
+      body: { documentId: IDS.document },
+    },
+  },
+  "collaboration.suggestions.post": {
+    prepare: prepareSuggestion,
+    request: {
+      path: "/api/v1/suggestions",
+      as: "nastavnik",
+      body: { anchor: ANCHOR, documentId: IDS.document, text: "Izmišljena" },
+    },
+  },
+  "collaboration.suggestion-accept.post": {
+    prepare: prepareSuggestion,
+    request: {
+      path: "/api/v1/suggestions/accept",
+      as: "student",
+      body: { suggestionId: SUGGESTION_ID },
+    },
+  },
+  "collaboration.suggestion-reject.post": {
+    prepare: prepareSuggestion,
+    request: {
+      path: "/api/v1/suggestions/reject",
+      as: "student",
+      body: { suggestionId: SUGGESTION_ID },
     },
   },
   "collaboration.revision-send.post": {

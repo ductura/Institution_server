@@ -1077,6 +1077,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7178648513",
   },
+  // SRV-ED42-PRIJEDLOZI (Ductus#2058, PITANJE ED-42): a teacher's text suggestions; the student owner accepts or rejects.
+  "app/api/suggestions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7182025130",
+  },
+  "app/api/suggestions/list/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7182025130",
+  },
+  "app/api/suggestions/accept/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7182025130",
+  },
+  "app/api/suggestions/reject/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7182025130",
+  },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",

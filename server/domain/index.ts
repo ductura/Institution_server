@@ -2,6 +2,12 @@ export type { AppError, Result } from "./result.ts";
 export * from "./json/index.ts";
 export * from "./document/index.ts";
 export * from "./collaboration/index.ts";
+// SRV-ED42-PRIJEDLOZI: a teacher's suggestion applied to the live state on the student's acceptance.
+export {
+  applySuggestion,
+  type Suggestion,
+  type SuggestionChange,
+} from "./collaboration/suggestions/index.ts";
 export * from "./forensics/index.ts";
 export * from "./evidence/index.ts";
 export * from "./settings/index.ts";

@@ -3,7 +3,7 @@
 // §5a). It is never a mark in the editor schema and never a change of the
 // document: the work's text changes only when its student owner accepts the
 // suggestion, as the student's own write of the live state.
-import { isTextAnchorInput, type TextAnchor } from "../../domain/collaboration/index.ts";
+import { isTextAnchorInput, type TextAnchor } from "../index.ts";
 
 /** The longest suggested text, in code points (as the comment body). */
 export const SUGGESTION_TEXT_MAX = 2000;

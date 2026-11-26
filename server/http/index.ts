@@ -433,6 +433,7 @@ export {
   createDirectEditPutRoute,
   createDirectEditRoutesFor,
 } from "./direct-edit/index.ts";
+export { createSuggestionRoutesFor } from "./suggestions/index.ts";
 export {
   createImportConfirmRoute,
   createImportPostRoute,

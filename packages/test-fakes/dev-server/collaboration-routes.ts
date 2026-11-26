@@ -4,12 +4,15 @@
 // replay lands in the access log the student sees.
 import { createHash, randomUUID } from "node:crypto";
 
+import { applySuggestion, type CanonicalDocument } from "../../../server/domain/index.ts";
 import type { Operations } from "../../contracts/index.ts";
 import type { Context, Handlers } from "./server.ts";
 import {
   readerOf,
   recordOpening,
+  type DevSuggestion,
   type AccessEntry,
+  type Account,
   type RevisionRequest,
   type State,
 } from "./state.ts";
@@ -404,4 +407,109 @@ export const COLLABORATION_HANDLERS: Handlers = {
     });
     return { status: 200, body: { round } };
   },
+  // SRV-ED42-PRIJEDLOZI: a teacher's text suggestions, as the RPCs of
+  // 20261220190000: a teacher creates on the current live state, both sides
+  // list, only the owner decides, once; anybody else 404.
+  "collaboration.suggestions-list.post": ({ state, account, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === body.documentId);
+    if (readerOf(state, work, account) === null) return { error: "not_found" };
+    const suggestions = state.suggestions
+      .filter((g) => g.documentId === body.documentId)
+      .map(({ authorId, documentId: _d, ...view }) => ({
+        ...view,
+        isOwn: authorId === account.id,
+      }));
+    return { status: 200, body: { suggestions } };
+  },
+  "collaboration.suggestions.post": ({ state, account, body, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === body.documentId);
+    const reader = readerOf(state, work, account);
+    if (work === undefined || reader === null) return { error: "not_found" };
+    if (reader !== "teacher") return { error: "forbidden" };
+    if (work.submittedAt !== null || work.live === null) return { error: "conflict" };
+    const { anchor, text } = body;
+    if (text === anchor.quote || text.normalize("NFC") !== text) return { error: "invalid_input" };
+    const node = liveNodes(work.live.json).find((n) => n.id === anchor.nodeId);
+    const nodeText = node?.children.map((c) => c.text).join("") ?? "";
+    const stands =
+      node !== undefined &&
+      nodeText.slice(anchor.startHint, anchor.endHint) === anchor.quote &&
+      nodeText.slice(0, anchor.startHint).endsWith(anchor.prefix) &&
+      nodeText.startsWith(anchor.suffix, anchor.endHint);
+    const held = state.suggestions.filter((g) => g.documentId === work.documentId).length;
+    if (!stands || held >= 500) return { error: "conflict" };
+    const baseHash = createHash("sha256").update(work.live.json).digest("hex");
+    const suggestionId = randomUUID();
+    state.suggestions.push({
+      suggestionId,
+      documentId: work.documentId,
+      authorId: account.id,
+      anchor,
+      text,
+      baseHash,
+      state: "pending",
+      createdWindow: window(now),
+      decidedWindow: null,
+    });
+    return { status: 200, body: { suggestionId, baseHash } };
+  },
+  "collaboration.suggestion-accept.post": ({ state, account, body, now }) => {
+    const decided = decide(state, account, body.suggestionId);
+    if (!decided.ok) return { error: decided.error };
+    const { suggestion, work } = decided;
+    if (work.live === null) return { error: "conflict" };
+    const outcome = applySuggestion(JSON.parse(work.live.json) as CanonicalDocument, {
+      ...suggestion,
+      anchor: suggestion.anchor as Parameters<typeof applySuggestion>[1]["anchor"],
+      state: "pending",
+    });
+    if (!outcome.ok) return { error: "conflict" };
+    suggestion.state = "accepted";
+    suggestion.decidedWindow = window(now);
+    const baseHash = createHash("sha256").update(work.live.json).digest("hex");
+    return {
+      status: 200,
+      body: {
+        suggestionId: suggestion.suggestionId,
+        state: "accepted",
+        baseHash,
+        text: outcome.text,
+        change: outcome.change,
+      },
+    };
+  },
+  "collaboration.suggestion-reject.post": ({ state, account, body, now }) => {
+    const decided = decide(state, account, body.suggestionId);
+    if (!decided.ok) return { error: decided.error };
+    decided.suggestion.state = "rejected";
+    decided.suggestion.decidedWindow = window(now);
+    return { status: 204 };
+  },
 };
+
+/** The P-03 window of 5 minutes, as list_suggestions answers it. */
+const window = (now: Date) => new Date(Math.floor(now.getTime() / 300_000) * 300_000).toISOString();
+
+type LiveNode = { id: string; children: { text: string }[] };
+function liveNodes(json: string): LiveNode[] {
+  const nodes = (JSON.parse(json) as { nodes?: unknown }).nodes;
+  return Array.isArray(nodes) ? (nodes as LiveNode[]) : [];
+}
+
+/** The owner's pending suggestion, as decide_suggestion checks it. */
+function decide(state: State, account: Account | null, suggestionId: string) {
+  if (account === null) return { ok: false as const, error: "unauthorized" as const };
+  const suggestion = state.suggestions.find((g) => g.suggestionId === suggestionId);
+  const work = state.works.find((w) => w.documentId === suggestion?.documentId);
+  const reader = readerOf(state, work, account);
+  if (suggestion === undefined || work === undefined || reader === null) {
+    return { ok: false as const, error: "not_found" as const };
+  }
+  if (reader !== "owner") return { ok: false as const, error: "forbidden" as const };
+  if (suggestion.state !== "pending" || work.submittedAt !== null) {
+    return { ok: false as const, error: "conflict" as const };
+  }
+  return { ok: true as const, suggestion: suggestion as DevSuggestion, work };
+}

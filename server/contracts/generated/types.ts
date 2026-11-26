@@ -99,6 +99,34 @@ export type Operations = {
     success: { status: 200; body: { "round": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "forbidden" | "not_allowed" | "unavailable";
   };
+  "collaboration.suggestion-accept.post": {
+    params: undefined;
+    query: undefined;
+    body: { "suggestionId": string };
+    success: { status: 200; body: { "suggestionId": string; "state": "accepted"; "baseHash": string; "text": string; "change": { "source": "teacher-suggestion"; "suggestionId": string; "nodeId": string; "start": number; "end": number; "removed": string; "inserted": string } }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "collaboration.suggestion-reject.post": {
+    params: undefined;
+    query: undefined;
+    body: { "suggestionId": string };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
+  "collaboration.suggestions-list.post": {
+    params: undefined;
+    query: undefined;
+    body: { "documentId": string };
+    success: { status: 200; body: { "suggestions": ({ "suggestionId": string; "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "text": string; "state": "pending" | "accepted" | "rejected"; "isOwn": boolean; "baseHash": string; "createdWindow": string; "decidedWindow": string | null })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "collaboration.suggestions.post": {
+    params: undefined;
+    query: undefined;
+    body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "documentId": string; "text": string };
+    success: { status: 200; body: { "suggestionId": string; "baseHash": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable" | "forbidden" | "conflict";
+  };
   "course.aggregate.get": {
     params: { "id": string };
     query: { [key: string]: unknown };
