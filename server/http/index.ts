@@ -60,6 +60,7 @@ export { createAssistantMatchRoutesFor } from "./assistant-match/index.ts";
 export { createInputRhythmRoutesFor } from "./input-rhythm/index.ts";
 export { createRevisionRestoreRouteFor } from "./revision-restore/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
+export { createWorkRevisionDueRoutesFor } from "./work-revision-due/index.ts";
 export { createTeacherRoleRoutes, createTeacherRoleRoutesFor } from "./teacher-roles/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
@@ -91,14 +92,22 @@ export {
   createAssignmentCopyRouteFor,
 } from "./assignment-copy/index.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
-export { createTeacherDeclarationRouteFor } from "./teacher-declaration/index.ts";
+export {
+  createTeacherDeclarationConversationRouteFor,
+  createTeacherDeclarationRouteFor,
+} from "./teacher-declaration/index.ts";
 export { createTeacherSubmissionNotesRouteFor } from "./teacher-submission-notes/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,
   createMerlinPackageRoutesFor,
 } from "./merlin-packages/index.ts";
-export { createAssistantRoutes, createAssistantRoutesFor } from "./assistant/index.ts";
+export {
+  createAssistantRoutes,
+  createAssistantRoutesFor,
+  openAiProviderFrom,
+  type OpenAiEnv,
+} from "./assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
@@ -445,6 +454,7 @@ export {
   createMentorshipFollowRoutes,
   createMentorshipFollowRoutesFor,
 } from "./mentorship-follow/index.ts";
+export { createWorkPlanRoutes, createWorkPlanRoutesFor } from "./work-plan/index.ts";
 export {
   createSelfNoteSealedRoutes,
   createSelfNoteSealedRoutesFor,

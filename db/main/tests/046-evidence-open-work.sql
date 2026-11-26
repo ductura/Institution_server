@@ -135,7 +135,9 @@ SELECT bag_eq(
             ('app.read_own_reconstruction_checkpoint(text,bigint)'),
             -- SRV-1903: the student's two steps of a withdrawal.
             ('app.withdraw_submission(uuid,text,text)'), ('app.attach_withdrawal_receipt(uuid,text,jsonb)'),
-            ('app.return_work_for_revision(text,text,timestamp with time zone)') $$,
+            ('app.return_work_for_revision(text,text,timestamp with time zone)'),
+            -- F4-NAS-R16-SRV: the revision due date of the open return of a work.
+            ('app.read_work_revision_due(text)') $$,
   'the web role executes exactly the expected evidence RPCs');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
