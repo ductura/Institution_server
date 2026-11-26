@@ -2,8 +2,11 @@ import { createHash } from "node:crypto";
 
 import { canonicalizeJcs } from "../forensics/index.ts";
 
-import { MAX_SLIDES_SNAPSHOT_BYTES, type SlidesDocument } from "./schema.ts";
-import { validateSlidesDocument } from "./validate.ts";
+import {
+  MAX_SLIDES_SNAPSHOT_BYTES,
+  type SlidesDocument,
+  validateSlidesDocument,
+} from "./model/index.ts";
 
 export type SlidesSnapshotVerification =
   | { ok: true; document: SlidesDocument; text: string; sha256: string }

@@ -28,7 +28,7 @@ import {
   type SheetCell,
   type SheetCells,
   type SheetDocument,
-} from "./schema.ts";
+} from "./model/index.ts";
 
 export const SHEET_VALIDATION_CODES = [
   "SHEET_NOT_OBJECT",

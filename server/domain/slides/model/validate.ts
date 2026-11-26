@@ -3,8 +3,8 @@
 // text documents (forbidden code points, NFC, no edge white space), blocks in
 // the canonical order of the layout's slots. It never repairs: it refuses,
 // and a valid input comes back as a fresh copy holding only known keys.
-import { allowedCodePointLength, isWhiteSpaceCodePoint } from "../document/index.ts";
-import { hasOnlyKeys, isPlainObject, ownProperty } from "../json/index.ts";
+import { allowedCodePointLength, isWhiteSpaceCodePoint } from "../../document/index.ts";
+import { hasOnlyKeys, isPlainObject, ownProperty } from "../../json/index.ts";
 
 import {
   LAYOUT_SLOTS,
