@@ -35,12 +35,15 @@ SELECT id, CASE slug WHEN 'demo-fakultet' THEN 'Demo fakultet (test)' ELSE 'Demo
   FROM identity.institution WHERE slug IN ('demo-fakultet', 'demo-fakultet-b')
 ON CONFLICT (institution_id) DO NOTHING;
 
--- The invented bachelor thesis request can become a mentored work.
+-- The invented bachelor and master thesis requests can become mentored works
+-- (DEMO-POP-4: without a master thesis rule its approval is ZD503).
 INSERT INTO institution.faculty_work_rule (
   institution_id, work_type, ai_policy, ai_purposes, evidence_profile, import_allowed
 )
-SELECT id, 'bachelor_thesis', 'prohibited', ARRAY[]::text[], 'basic', false
-FROM identity.institution WHERE slug = 'demo-fakultet'
+SELECT i.id, t.work_type, 'prohibited', ARRAY[]::text[], 'basic', false
+FROM identity.institution i
+CROSS JOIN (VALUES ('bachelor_thesis'), ('master_thesis')) AS t(work_type)
+WHERE i.slug = 'demo-fakultet'
 ON CONFLICT (institution_id, work_type) DO NOTHING;
 
 -- Every invented institution with logins gets its one evidence domain, so
