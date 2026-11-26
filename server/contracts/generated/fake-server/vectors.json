@@ -40946,7 +40946,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.160.0",
+        "apiVersion": "1.161.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40962,7 +40962,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.160.0",
+        "apiVersion": "1.161.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -50122,7 +50122,8 @@
                 "noticeFirst": false,
                 "workType": "seminar_paper",
                 "mentor": null,
-                "extendedDueAt": "2026-12-08T22:59:00.000Z"
+                "extendedDueAt": "2026-12-08T22:59:00.000Z",
+                "isPractice": true
               },
               {
                 "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02",

@@ -56,6 +56,8 @@ const MyAssignment = closed({
   /** The kind of document the assignment asks for (SRV-V13-UGOVOR-VRSTA); absent means text. */
   documentKind: Type.Optional(DocumentKind),
   workKind: Type.Optional(WorkKind),
+  /** A practice assignment (F4-STU-R02): the work counts for nothing; absent means not one. */
+  isPractice: Type.Optional(Type.Boolean()),
 });
 
 const MyCourse = closed({
