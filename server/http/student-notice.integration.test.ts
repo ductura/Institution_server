@@ -98,6 +98,10 @@ describe("student.notice.get", () => {
   it("an answer outside the contract, or a throw, is 503", async () => {
     for (const bad of [
       async () => ({ ok: true, value: { ...storedOf(VECTORS[0]!.response.body), versionNo: 0 } }),
+      async () => ({
+        ok: true,
+        value: { ...storedOf(VECTORS[0]!.response.body), aiSummaryOnly: "true" },
+      }),
       () => Promise.reject(new Error("izmisljena greska")),
     ]) {
       answer = bad;

@@ -129,6 +129,7 @@ SELECT bag_eq(
             ('collaboration.list_work_rubric(text)'),
             ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
+            ('collaboration.create_comment_draft_v2(text,text,jsonb,text)'),
             ('collaboration.reply_comment_draft(text,uuid,text)'),
             ('collaboration.list_comment_drafts(text)'),
             ('collaboration.discard_comment_draft(uuid)'),

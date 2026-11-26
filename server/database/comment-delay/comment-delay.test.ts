@@ -33,6 +33,7 @@ const DRAFT = {
   anchor: ANCHOR,
   state: "open",
   createdWindow: AT,
+  kind: null,
 };
 
 describe("createCommentDelay", () => {
@@ -44,6 +45,39 @@ describe("createCommentDelay", () => {
     });
     expect(run.calls[0]!.text).toContain("collaboration.create_comment_draft($1, $2, $3::jsonb)");
     expect(run.calls[0]!.values).toEqual(["doc-a", "Tekst.", JSON.stringify(ANCHOR)]);
+  });
+
+  it("creates a general draft with a kind: a null anchor is SQL null, the kind is a parameter", async () => {
+    const general = scripted([{ id: ID }]);
+    expect(await general.port.createDraftWithKind("t", "doc-a", "Tekst.", null, "sugg")).toEqual({
+      status: "ok",
+      threadId: ID,
+    });
+    expect(general.calls[0]!.text).toContain("create_comment_draft_v2($1, $2, $3::jsonb, $4)");
+    expect(general.calls[0]!.values).toEqual(["doc-a", "Tekst.", null, "sugg"]);
+    const anchored = scripted([{ id: ID }]);
+    await anchored.port.createDraftWithKind("t", "doc-a", "Tekst.", ANCHOR, null);
+    expect(anchored.calls[0]!.values).toEqual(["doc-a", "Tekst.", JSON.stringify(ANCHOR), null]);
+    expect(
+      await scripted([], dbError("ZD422")).port.createDraftWithKind("t", "d", "x", null, null),
+    ).toEqual({
+      status: "invalid",
+    });
+    expect(await scripted([]).port.createDraftWithKind("t", "d", "x", null, null)).toEqual({
+      status: "unavailable",
+    });
+  });
+
+  it("lists the kind of a draft and refuses one outside the bank's kinds or a missing one", async () => {
+    expect(await scripted([{ ...DRAFT, kind: "must" }]).port.listDrafts("t", "d")).toMatchObject({
+      status: "ok",
+      drafts: [{ kind: "must" }],
+    });
+    for (const kind of ["other", undefined, 1]) {
+      expect(await scripted([{ ...DRAFT, kind }]).port.listDrafts("t", "d")).toEqual({
+        status: "unavailable",
+      });
+    }
   });
 
   it("drafts a reply, lists drafts, discards one and publishes", async () => {
