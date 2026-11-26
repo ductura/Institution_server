@@ -22,7 +22,9 @@ import {
 } from "../domain/forensics/evidence-receipt-verifier.ts";
 import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
+import { sheetRevisionZeroDocument, type SheetDocument } from "../domain/index.ts";
 
+import { capturingSheetReplayer } from "./sheet/index.ts";
 import {
   reconstructAndCompareEvidence,
   type EvidenceReceiptCheck,
@@ -203,4 +205,25 @@ function reconstructWith<TDocument>(
       expectedDocumentSha256: record.contentHash,
     },
   );
+}
+
+/**
+ * SRV-V14-SHEET-SUBMIT: the same reconstruction for a work of kind
+ * `spreadsheet`: revision 0 is the spreadsheet's, the steps are replayed with
+ * the sheet step format (a step of another format is a mismatch), and the
+ * document the record reproduces is returned with the outcome so it can be
+ * checked. The document is only meaningful when the outcome is a match.
+ */
+export async function reconstructSheetSubmission(
+  dependencies: { payloads: EvidencePayloadReader; keys: readonly EvidenceDomainKey[] },
+  record: SubmissionRecord,
+): Promise<{ outcome: EvidenceReconstructionOutcome; document: SheetDocument | null }> {
+  const captured = capturingSheetReplayer();
+  const outcome = await reconstructWith(
+    captured.replayer,
+    canonicalizeJcs(sheetRevisionZeroDocument() as unknown as JcsJsonValue),
+    dependencies,
+    record,
+  );
+  return { outcome, document: captured.last() };
 }
