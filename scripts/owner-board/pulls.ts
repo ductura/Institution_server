@@ -79,10 +79,20 @@ export type GetJson = (url: string) => Promise<unknown>;
 // GitHub's own field names are read by key, as its JSON writes them.
 type Json = Record<string, unknown>;
 const text = (value: unknown) => (typeof value === "string" ? value : "");
-const bodies = (list: unknown) =>
-  (list as { body?: string | null }[])
-    .map((entry) => entry.body ?? "")
-    .filter((body) => body !== "");
+/**
+ * The non-empty bodies of issue comments and reviews in the order they were
+ * written, so the latest verdict wins wherever it was posted.
+ */
+const bodies = (...lists: unknown[]) =>
+  lists
+    .flatMap((list) => list as Json[])
+    .map((entry) => ({
+      body: text(entry["body"]),
+      at: text(entry["created_at"]) || text(entry["submitted_at"]),
+    }))
+    .filter((entry) => entry.body !== "")
+    .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+    .map((entry) => entry.body);
 
 /** The open pull requests of `repo` (`owner/name`), read with GET requests only. */
 export async function readPulls(repo: string, get: GetJson): Promise<PullInput[]> {
@@ -106,7 +116,7 @@ export async function readPulls(repo: string, get: GetJson): Promise<PullInput[]
         headSha,
         updatedAt: text(pull["updated_at"]),
         body: text(pull["body"]),
-        comments: [...bodies(comments), ...bodies(reviews)],
+        comments: bodies(comments, reviews),
         checks: ((checks as Json)["check_runs"] as Json[]).map((run) =>
           typeof run["conclusion"] === "string" ? run["conclusion"] : null,
         ),

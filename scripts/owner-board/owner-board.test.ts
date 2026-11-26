@@ -174,6 +174,59 @@ test("stale issues are those started at least the given days ago, oldest first",
   );
 });
 
+test("a verdict in a review written before an issue comment does not outrank it", async () => {
+  const get = (url: string): Promise<unknown> => {
+    if (url.includes("/pulls?")) {
+      return Promise.resolve(
+        JSON.parse(
+          `[{"number":7,"title":"Izmišljeni PR","html_url":"https://github.com/izmisljeni/repo/pull/7",` +
+            `"draft":false,"updated_at":"2026-11-20T10:00:00Z","body":null,"head":{"sha":"${HEAD}"}}]`,
+        ),
+      );
+    }
+    if (url.includes("/check-runs")) return Promise.resolve(NO_RESULT_YET);
+    if (url.includes("/reviews")) {
+      return Promise.resolve(
+        JSON.parse('[{"body":"starija recenzija","submitted_at":"2026-11-20T09:00:00Z"}]'),
+      );
+    }
+    return Promise.resolve(
+      JSON.parse('[{"body":"noviji komentar","created_at":"2026-11-20T11:00:00Z"}]'),
+    );
+  };
+  const [read] = await readPulls("izmisljeni/repo", get);
+  assert.deepEqual(read?.comments, ["starija recenzija", "noviji komentar"]);
+});
+
+test("stale issues are filtered by Linear and read across every page", async () => {
+  const asked: string[] = [];
+  const node = (id: string) => ({
+    identifier: id,
+    title: "Izmišljeno",
+    url: `https://linear.app/x/${id}`,
+    startedAt: "2026-11-01T00:00:00Z",
+  });
+  const pages = [
+    { nodes: [node("DAN-1")], pageInfo: { hasNextPage: true, endCursor: "c1" } },
+    { nodes: [node("DAN-2")], pageInfo: { hasNextPage: false, endCursor: null } },
+  ];
+  const stale = await readStale(
+    (query) => {
+      asked.push(query);
+      return Promise.resolve({ data: { issues: pages[asked.length - 1] } });
+    },
+    new Date("2026-11-25T12:00:00Z"),
+    3,
+  );
+  assert.deepEqual(
+    stale.map((issue) => issue.id),
+    ["DAN-1", "DAN-2"],
+  );
+  assert.equal(asked.length, 2);
+  assert.ok(asked[0]!.includes('startedAt: { lte: "2026-11-22T12:00:00.000Z" }'));
+  assert.ok(asked[1]!.includes('after: "c1"'));
+});
+
 const NO_CHECKS: unknown = JSON.parse('{"check_runs":[]}');
 const NOW = new Date("2026-11-25T12:00:00Z");
 const ARGS = { state: "STATE.md", repos: ["izmisljeni/repo"], out: "x.html", staleDays: 3 };

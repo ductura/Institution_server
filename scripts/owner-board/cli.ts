@@ -39,16 +39,30 @@ export async function readStale(
   now: Date,
   staleDays: number,
 ): Promise<StaleIssue[]> {
-  const answer = (await post(
-    `{ issues(first: 100, filter: { state: { type: { eq: "started" } } }) { nodes { identifier title url startedAt } } }`,
-  )) as {
+  type Node = { identifier: string; title: string; url: string; startedAt: string | null };
+  type Page = {
     data: {
       issues: {
-        nodes: { identifier: string; title: string; url: string; startedAt: string | null }[];
+        nodes: Node[];
+        pageInfo?: { hasNextPage: boolean; endCursor: string | null };
       };
     };
   };
-  return answer.data.issues.nodes
+  // The age is filtered by Linear too, and every page is read, so no stale
+  // issue is left out when more than one page of issues is in progress.
+  const cutoff = new Date(now.getTime() - staleDays * DAY).toISOString();
+  const nodes: Node[] = [];
+  let after: string | null = null;
+  do {
+    const cursor: string = after === null ? "" : `, after: ${JSON.stringify(after)}`;
+    const answer = (await post(
+      `{ issues(first: 100${cursor}, filter: { state: { type: { eq: "started" } }, startedAt: { lte: ${JSON.stringify(cutoff)} } }) { nodes { identifier title url startedAt } pageInfo { hasNextPage endCursor } } }`,
+    )) as Page;
+    nodes.push(...answer.data.issues.nodes);
+    const info = answer.data.issues.pageInfo;
+    after = info?.hasNextPage === true ? info.endCursor : null;
+  } while (after !== null);
+  return nodes
     .filter((issue) => issue.startedAt !== null)
     .map((issue) => ({
       id: issue.identifier,
