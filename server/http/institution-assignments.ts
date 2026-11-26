@@ -56,7 +56,24 @@ const contractOf = (id: string) => ROUTES.find((route) => route.id === id)!;
 const optionalFlag = (body: object, key: string, value: unknown): boolean | null =>
   !Object.hasOwn(body, key) ? false : typeof value === "boolean" ? value : null;
 
-function parseCreateBody(value: unknown) {
+/**
+ * The optional documentKind (SRV-V13-VRSTA-POST): absent is "text", as in the reads.
+ * Anything but a known kind is the 422 of the contract. No RPC stores another kind
+ * yet (institution.assignment.document_kind has no writer, SRV-V13-MIG-VRSTA), so
+ * "slides" is refused too rather than made into a text assignment in silence.
+ */
+const KINDS_STORED: ReadonlySet<unknown> = new Set(["text"]);
+function withoutDocumentKind(value: unknown): { fields: unknown } | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return { fields: value };
+  const { documentKind, ...fields } = value as Record<string, unknown>;
+  if (Object.hasOwn(value, "documentKind") && !KINDS_STORED.has(documentKind)) return null;
+  return { fields };
+}
+
+function parseCreateBody(raw: unknown) {
+  const stripped = withoutDocumentKind(raw);
+  if (stripped === null) return null;
+  const value = stripped.fields;
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const { requestKey, isPractice, externalToolsAllowed, aiSummaryOnly, groupIds, ...fields } =
     value as Record<string, unknown>;
@@ -145,7 +162,9 @@ export function createInstitutionAssignmentRoutes(
       "institution.assignment-versions.post",
       "assignmentId",
       async (token, value, assignmentId) => {
-        const body = parseAssignmentVersionBody(value);
+        const stripped = withoutDocumentKind(value);
+        if (stripped === null) return null;
+        const body = parseAssignmentVersionBody(stripped.fields);
         if (body === null) return null;
         return options.assignments.publishVersion(
           token,

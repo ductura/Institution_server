@@ -12625,6 +12625,135 @@
     }
   },
   {
+    "route": "institution.assignment-versions.post",
+    "name": "published-kind-text",
+    "request": {
+      "params": {
+        "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "title": "Izmišljeni zadatak",
+        "instructions": "Izmišljene upute za pisanje.",
+        "workType": "essay",
+        "opensAt": "2026-11-20T08:00:00Z",
+        "dueAt": "2026-12-20T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "formatting"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": null,
+        "documentKind": "text"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01",
+        "versionNo": 2
+      }
+    }
+  },
+  {
+    "route": "institution.assignment-versions.post",
+    "name": "document-kind-unknown",
+    "request": {
+      "params": {
+        "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "title": "Izmišljeni zadatak",
+        "instructions": "Izmišljene upute za pisanje.",
+        "workType": "essay",
+        "opensAt": "2026-11-20T08:00:00Z",
+        "dueAt": "2026-12-20T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "formatting"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": null,
+        "documentKind": "video"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002106"
+      }
+    }
+  },
+  {
+    "route": "institution.assignment-versions.post",
+    "name": "document-kind-slides-not-stored",
+    "request": {
+      "params": {
+        "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "expectedVersion": 1,
+        "title": "Izmišljeni zadatak",
+        "instructions": "Izmišljene upute za pisanje.",
+        "workType": "essay",
+        "opensAt": "2026-11-20T08:00:00Z",
+        "dueAt": "2026-12-20T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "formatting"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": null,
+        "documentKind": "slides"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002107"
+      }
+    }
+  },
+  {
     "route": "institution.assignment.get",
     "name": "current",
     "request": {
@@ -15054,6 +15183,128 @@
         "messageKey": "errors.invalidInput",
         "status": 422,
         "requestId": "00000000-0000-4000-8000-000000002103"
+      }
+    }
+  },
+  {
+    "route": "institution.course-assignments.post",
+    "name": "created-kind-text",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
+        "title": "Seminarski rad: kućno kompostiranje",
+        "instructions": "Izmišljene upute za izmišljeni zadatak.",
+        "workType": "seminar_paper",
+        "opensAt": "2026-10-01T08:00:00+02:00",
+        "dueAt": "2027-01-31T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "literature_search"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": 2500,
+        "documentKind": "text"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      }
+    }
+  },
+  {
+    "route": "institution.course-assignments.post",
+    "name": "document-kind-unknown",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
+        "title": "Seminarski rad: kućno kompostiranje",
+        "instructions": "Izmišljene upute za izmišljeni zadatak.",
+        "workType": "seminar_paper",
+        "opensAt": "2026-10-01T08:00:00+02:00",
+        "dueAt": "2027-01-31T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": 2500,
+        "documentKind": "video"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002104"
+      }
+    }
+  },
+  {
+    "route": "institution.course-assignments.post",
+    "name": "document-kind-slides-not-stored",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
+        "title": "Seminarski rad: kućno kompostiranje",
+        "instructions": "Izmišljene upute za izmišljeni zadatak.",
+        "workType": "seminar_paper",
+        "opensAt": "2026-10-01T08:00:00+02:00",
+        "dueAt": "2027-01-31T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": 2500,
+        "documentKind": "slides"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002105"
       }
     }
   },
@@ -39434,7 +39685,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.154.0",
+        "apiVersion": "1.155.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -39450,7 +39701,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.154.0",
+        "apiVersion": "1.155.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
