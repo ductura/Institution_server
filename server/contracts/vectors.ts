@@ -35,6 +35,8 @@ const VectorSchema = closed({
         Type.Literal("text/html"),
         Type.Literal("image/jpeg"),
         Type.Literal("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        Type.Literal("text/csv"),
+        Type.Literal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
       ]),
     ),
     headers: Type.Optional(
@@ -68,7 +70,9 @@ export type Vector = {
       | "application/json"
       | "text/html"
       | "image/jpeg"
-      | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      | "text/csv"
+      | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     readonly headers?: Readonly<Record<string, string | readonly string[]>>;
     readonly body?: unknown;
   };
@@ -176,12 +180,17 @@ function checkVector(
 /** Base64 of bytes that start with the JPEG marker FF D8 FF. */
 const JPEG_BASE64 = /^\/9j\/[A-Za-z0-9+/]*={0,2}$/u;
 
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 /** Base64 of bytes that start with the ZIP marker "PK" 03 04 (a DOCX is a ZIP). */
 const ZIP_BASE64 = /^UEsDB[A-Za-z0-9+/]*={0,2}$/u;
 
+/** Base64 of bytes that start with the UTF-8 byte order mark EF BB BF (the CSV of a sheet). */
+const BOM_BASE64 = /^77u\/[A-Za-z0-9+/]*={0,2}$/u;
+
 function checkBody(
-  expected: TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE,
+  expected:
+    TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE | "text/csv" | typeof XLSX_TYPE,
   response: Vector["response"],
   check: SchemaCheck,
 ): string[] {
@@ -198,6 +207,20 @@ function checkBody(
       ZIP_BASE64.test(response.body)
       ? []
       : ["the contract answers with DOCX bytes"];
+  }
+  if (expected === XLSX_TYPE) {
+    return response.contentType === XLSX_TYPE &&
+      typeof response.body === "string" &&
+      ZIP_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with .xlsx bytes"];
+  }
+  if (expected === "text/csv") {
+    return response.contentType === "text/csv" &&
+      typeof response.body === "string" &&
+      BOM_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with CSV bytes"];
   }
   if (expected === "none") {
     return response.body === undefined && response.contentType === undefined

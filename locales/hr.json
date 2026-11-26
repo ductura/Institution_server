@@ -78,16 +78,6 @@
   "operatorAudit": {
     "operator_audit_refused": "Radnja nije izvršena jer se za nju ne može napraviti ispravan zapis u revizijskom tragu."
   },
-  "app": {
-    "login_required": "Prijava je obavezna.",
-    "not_found": "Nije pronađeno.",
-    "document_not_found": "Dokument ne postoji.",
-    "document_read_forbidden": "Nemate pristup ovom dokumentu.",
-    "document_write_forbidden": "Nemate pravo mijenjati ovaj dokument.",
-    "method_not_allowed": "Metoda nije podržana.",
-    "invalid_json": "Tijelo zahtjeva nije ispravan JSON objekt.",
-    "body_too_large": "Tijelo zahtjeva je preveliko."
-  },
   "openWork": {
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
     "not_found": "Ovaj zadatak nije pronađen.",

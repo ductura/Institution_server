@@ -21,6 +21,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
+  createRevisionSendRouteFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
   createConsultationSlotRoutesFor,
@@ -36,8 +37,11 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
@@ -67,6 +71,8 @@ import {
   createWorkVersionsRouteFor,
   createRevisionRestoreRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
+  createSheetXlsxRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -139,6 +145,10 @@ import {
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
+  createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -241,6 +251,12 @@ const SESSION_ROUTES = {
     path: "/api/v1/revision-requests/list",
     body: () => ({ documentId: randomUUID() }),
     live: 403,
+  },
+  // SRV-ED43-DORADA-POSALJI: a work that is not the caller's is 404.
+  "collaboration.revision-send.post": {
+    path: "/api/v1/revision-send",
+    body: () => ({ documentId: randomUUID(), message: null }),
+    live: 404,
   },
   // SRV-1105: a work it may not read is 404 for the list and for both writes.
   "work.consultation-records.get": {
@@ -561,6 +577,20 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V14-SHEET-CSV: the CSV of a work it may not read is 404, as a missing work.
+  "work.export-sheet-csv.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/csv`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V14-SHEET-XLSX: the .xlsx of a work it may not read is 404, as a missing work.
+  "work.export-sheet-xlsx.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/xlsx`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
   "student.portable-record.get": {
     method: "GET",
@@ -805,6 +835,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  "institution.teaching-team-candidates.get": {
+    method: "GET",
+    path: `/api/v1/courses/${randomUUID()}/team/candidates`,
+    body: () => undefined,
+    live: 403,
+  },
   "institution.teaching-team.post": {
     path: `/api/v1/courses/${randomUUID()}/team`,
     body: () => ({ assistantIds: [] }),
@@ -978,6 +1014,31 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK: a live session with no code of that id reads 404; the codebook itself is the caller's own.
+  "student.qual-codes.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/codes",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-codes.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/codes",
+    body: () => ({ name: "Izmišljeni kod nakon odjave" }),
+    live: 201,
+  },
+  "student.qual-code.patch": {
+    method: "PATCH",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => ({ name: "Izmišljeni novi naziv" }),
+    live: 404,
+  },
+  "student.qual-code.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-MENTOR-2: a live session with no part in any thesis.
   "institution.thesis-forms.get": {
     method: "GET",
@@ -1060,6 +1121,26 @@ const SESSION_ROUTES = {
     path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic/decision",
     body: () => ({ version: 1, decision: "approved" }),
     live: 404,
+  },
+  // SRV-V16-POVJERENSTVO-ZAPIS: a live session with no part in any thesis reads 404 on both.
+  "work.thesis-committee.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-committee",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.thesis-committee.put": {
+    method: "PUT",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-committee",
+    body: () => ({ members: [] }),
+    live: 404,
+  },
+  // SRV-V16-POPIS-FAKULTET: a live session of an account that is no administrator reads 403.
+  "institution.thesis-overview.get": {
+    method: "GET",
+    path: "/api/v1/institution/thesis-overview",
+    body: () => undefined,
+    live: 403,
   },
   "student.assignment-work.get": {
     method: "GET",
@@ -1656,6 +1737,91 @@ const SESSION_ROUTES = {
     path: `/api/v1/student/assignments/${randomUUID()}/assistant/requests`,
     body: () => undefined,
     live: 404,
+  },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE: a live session with no such questionnaire gets 404.
+  "student.questionnaires.get": {
+    method: "GET",
+    path: "/api/v1/student/questionnaires",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.questionnaire.get": {
+    method: "GET",
+    path: `/api/v1/student/questionnaires/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.questionnaire-responses.post": {
+    method: "POST",
+    path: `/api/v1/student/questionnaires/${randomUUID()}/responses`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  "teacher.questionnaire-manual-responses.post": {
+    method: "POST",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/responses/manual`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  // SRV-V18-UPITNIK-IZVOZ: a live session with no such questionnaire gets 404.
+  "teacher.questionnaire-export.get": {
+    method: "GET",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/export`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V18-KODIRANJE-GRADIVO: the student's own material; an id that is not theirs is 404.
+  "student.qual-materials.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/materials",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-materials.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/materials",
+    body: () => ({ title: "Izmišljeni intervju", kind: "interview", text: "Izmišljeni tekst." }),
+    live: 201,
+  },
+  "student.qual-material.get": {
+    method: "GET",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-material.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V18-KODIRANJE-OZNAKE: the passages and the export are the student's own; an id that is not theirs is 404.
+  "student.qual-segments.get": {
+    method: "GET",
+    path: `/api/v1/student/qual/materials/${randomUUID()}/segments`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-segments.post": {
+    method: "POST",
+    path: `/api/v1/student/qual/materials/${randomUUID()}/segments`,
+    body: () => ({
+      codeId: randomUUID(),
+      anchor: { paragraph: 0, start: 0, end: 10, quote: "Izmišljena" },
+    }),
+    live: 404,
+  },
+  "student.qual-segment.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/segments/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-export.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/export",
+    body: () => undefined,
+    live: 200,
   },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
@@ -2497,6 +2663,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createRevisionRequestsRouteFor",
+  "createRevisionSendRouteFor",
   "createWorkMessagesRoutesFor",
   "createMentorshipFollowRoutesFor",
   "createSelfNoteSealedRoutesFor",
@@ -2522,6 +2689,8 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createSheetCsvRouteFor",
+  "createSheetXlsxRouteFor",
   "createPortableRecordRouteFor",
   "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
@@ -2540,8 +2709,11 @@ const FACTORIES = [
   "createPracticeJournalRoutesFor",
   "createWorkTeamRoutesFor",
   "createPeerReviewRoutesFor",
+  "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
   "createThesisTopicRoutesFor",
+  "createThesisCommitteeRoutesFor",
+  "createThesisOverviewRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
@@ -2549,6 +2721,10 @@ const FACTORIES = [
   "createDeclarationQuestionRoutesFor",
   "createLateSubmissionRoutesFor",
   "createCourseAssistantRoutesFor",
+  "createQuestionnaireResponsesRoutesFor",
+  "createQuestionnaireExportRoutesFor",
+  "createQualitativeMaterialsRoutesFor",
+  "createQualitativeSegmentsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2639,6 +2815,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   createRevisionRequestsRouteFor(databases.main),
+  createRevisionSendRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
   ...createMentorshipFollowRoutesFor(databases.main),
   ...createSelfNoteSealedRoutesFor(databases.main),
@@ -2665,6 +2842,8 @@ const MOUNTED = [
   createWorkVersionsRouteFor(databases.main),
   createRevisionRestoreRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createSheetCsvRouteFor(databases.main),
+  createSheetXlsxRouteFor(databases.main),
   createPortableRecordRouteFor(databases.main, ORIGIN),
   ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
@@ -2683,8 +2862,11 @@ const MOUNTED = [
   ...createPracticeJournalRoutesFor(databases.main),
   ...createWorkTeamRoutesFor(databases.main),
   ...createPeerReviewRoutesFor(databases.main),
+  ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createThesisTopicRoutesFor(databases.main),
+  ...createThesisCommitteeRoutesFor(databases.main),
+  ...createThesisOverviewRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
@@ -2692,6 +2874,10 @@ const MOUNTED = [
   ...createDeclarationQuestionRoutesFor(databases.main),
   ...createLateSubmissionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
+  ...createQuestionnaireResponsesRoutesFor(databases.main),
+  ...createQuestionnaireExportRoutesFor(databases.main),
+  ...createQualitativeMaterialsRoutesFor(databases.main),
+  ...createQualitativeSegmentsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
@@ -2899,6 +3085,12 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
+  // The material kept through student.qual-materials.post refers to its owner.
+  await admin.query("DELETE FROM institution.qual_material WHERE institution_id = $1", [
+    institution,
+  ]);
+  // The live session of student.qual-codes.post made a code of its own: it refers to user_account too.
+  await admin.query("DELETE FROM institution.qual_code WHERE institution_id = $1", [institution]);
   // user_preference and problem_report refer to user_account, so they go first.
   for (const table of [
     "user_preference",

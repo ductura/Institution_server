@@ -1,5 +1,5 @@
-import fontkit from "@pdf-lib/fontkit";
-import { PageSizes, PDFDocument, rgb, type PDFPage } from "pdf-lib";
+import fontkit from "@cantoo/fontkit";
+import { PageSizes, PDFDocument, rgb, type PDFPage } from "@cantoo/pdf-lib";
 import { encode } from "uqr";
 
 import type { SignedSubmissionReceiptV2, SubmissionReceiptPayloadV2 } from "../../domain/index.ts";

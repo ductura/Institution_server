@@ -33,6 +33,25 @@ function job(name: string): string {
   return next < 0 ? CI.slice(start) : CI.slice(start, start + 1 + next);
 }
 
+// CI-BRZINA: a newer push to a pull request or the migration base cancels the
+// older run; a push to main never (its group is the run id).
+const CONCURRENCY = (prefix: string) =>
+  `\nconcurrency:\n  group: ${prefix}-\${{ github.event_name == 'pull_request' && github.ref || github.ref == 'refs/heads/migracija/kopija-ductus-backend' && github.ref || github.run_id }}\n  cancel-in-progress: \${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/migracija/kopija-ductus-backend' }}\n`;
+
+describe("concurrency", () => {
+  it("cancels older pull request and migration base runs, never main", () => {
+    const verapdf = readFileSync(resolve(ROOT, ".github/workflows/verapdf.yml"), "utf8");
+    for (const [prefix, text] of [
+      ["ci", CI],
+      ["verapdf", verapdf],
+    ] as const) {
+      expect(text).toContain(CONCURRENCY(prefix));
+      expect([...text.matchAll(/^concurrency:/gm)]).toHaveLength(1);
+      expect(text).not.toMatch(/cancel-in-progress:.*refs\/heads\/main/);
+    }
+  });
+});
+
 describe("ci.yml", () => {
   it("has exactly the jobs ci-ok knows, plus ci-ok", () => {
     const jobs = [...CI.split("\njobs:\n")[1]!.matchAll(/^ {2}([a-z][a-z0-9-]*):$/gm)].map(

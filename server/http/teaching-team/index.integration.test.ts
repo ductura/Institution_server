@@ -88,6 +88,58 @@ describe("teaching team routing", () => {
     );
   });
 
+  it("returns the holder's assistant candidates with only an ID and a name", async () => {
+    const candidates = [{ id: ASSISTANT, name: "Izmišljena Asistentica" }];
+    query.mockReturnValue([{ candidates }]);
+    const response = await call("GET", `${TEAM}/candidates`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ candidates });
+    expect(query).toHaveBeenCalledExactlyOnceWith(
+      TOKEN,
+      expect.stringContaining("institution.read_teaching_team_candidates"),
+      [COURSE],
+    );
+  });
+
+  it("returns an empty candidate list as an empty list", async () => {
+    query.mockReturnValue([{ candidates: [] }]);
+    const response = await call("GET", `${TEAM}/candidates`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ candidates: [] });
+  });
+
+  it.each([
+    ["an address", [{ id: ASSISTANT, name: "Izmišljena", email: "a@example.invalid" }]],
+    ["a malformed ID", [{ id: "x", name: "Izmišljena" }]],
+    ["no list", null],
+  ])("never passes a candidate answer with %s", async (_name, candidates) => {
+    query.mockReturnValue([{ candidates }]);
+    expect((await call("GET", `${TEAM}/candidates`)).status).toBe(503);
+  });
+
+  it.each([
+    ["ZD403", 403, "forbidden"],
+    ["ZD401", 401, "unauthorized"],
+  ])("maps the candidate RPC refusal %s", async (code, status, word) => {
+    query.mockImplementationOnce(() => {
+      throw Object.assign(new Error("refused"), { code });
+    });
+    const response = await call("GET", `${TEAM}/candidates`);
+    expect(response.status).toBe(status);
+    expect(await response.json()).toMatchObject({ code: word, status });
+  });
+
+  it("refuses the candidates without a session, cross-site or for a malformed course", async () => {
+    expect((await call("GET", `${TEAM}/candidates`, undefined, { cookie: "" })).status).toBe(401);
+    expect(
+      (await call("GET", `${TEAM}/candidates`, undefined, { "sec-fetch-site": "cross-site" }))
+        .status,
+    ).toBe(403);
+    expect((await call("GET", "/api/v1/courses/no/team/candidates")).status).toBe(422);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it("refuses a malformed course and a view answer outside the contract", async () => {
     expect((await call("GET", "/api/v1/courses/no/team/view")).status).toBe(422);
     query.mockReturnValue([{ view: { role: "holder", holderId: HOLDER } }]);

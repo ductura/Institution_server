@@ -4,9 +4,12 @@ on:
   pull_request:
 permissions:
   contents: read
+# CI-BRZINA: a newer push to a pull request or to the migration base cancels
+# the older run (its result is stale and it holds org runners); a push to
+# main never, each main run has its own group.
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.ref == 'refs/heads/migracija/kopija-ductus-backend' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/migracija/kopija-ductus-backend' }}
 # DAN-867: every run step is bash -eo pipefail (scripts/ci/shell.ts); without
 # it GitHub runs bash -e {0}, and a failed command in a pipe passes.
 defaults:

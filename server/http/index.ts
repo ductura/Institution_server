@@ -6,7 +6,10 @@ export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createSourceNotebookRoutesFor } from "./source-notebook/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
-export { createRevisionRequestsRouteFor } from "./revision-requests/index.ts";
+export {
+  createRevisionRequestsRouteFor,
+  createRevisionSendRouteFor,
+} from "./revision-requests/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createWorkInterviewRoutesFor } from "./work-interview/index.ts";
 export { createWorkInterviewPdfRouteFor } from "./work-interview/pdf/index.ts";
@@ -20,8 +23,11 @@ export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
+export { createQualitativeCodesRoutesFor } from "./qualitative-codes.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
 export { createThesisTopicRoutesFor } from "./thesis-topic/index.ts";
+export { createThesisCommitteeRoutesFor } from "./thesis-committee/index.ts";
+export { createThesisOverviewRoutesFor } from "./thesis-overview/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -105,7 +111,10 @@ export {
 } from "./teacher-submissions-bulk/index.ts";
 export {
   createSubmissionPackageRoutes,
+  createSheetCsvRoute,
+  createSheetCsvRouteFor,
   createSubmissionPackageRoutesFor,
+  createSheetXlsxRouteFor,
   createWorkPdfRouteFor,
   type SubmissionPackageRouteDeps,
 } from "./export/index.ts";
@@ -209,6 +218,18 @@ export {
 } from "./declaration-required.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
+export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
+export { createQualitativeSegmentsRoutesFor } from "./qualitative-segments.ts";
+export {
+  createQuestionnaireResponsesRoutes,
+  createQuestionnaireResponsesRoutesFor,
+  type QuestionnaireResponsesPort,
+} from "./questionnaire-responses.ts";
+export {
+  createQuestionnaireExportRoutes,
+  createQuestionnaireExportRoutesFor,
+  type QuestionnaireExportPort,
+} from "./questionnaire-export.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
@@ -296,6 +317,7 @@ export {
   createLayers,
   createPipeline,
   PIPELINE_STEPS,
+  trafficLogFor,
   type App,
   type Layer,
   type Layers,

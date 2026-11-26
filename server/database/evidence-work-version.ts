@@ -19,6 +19,28 @@ import type { ActorTransaction } from "./with-actor.ts";
 
 export type DocumentSchemaVersion = 1 | 2 | 3;
 
+/**
+ * The kinds of work whose revision 0 this file knows (SRV-V14-SHEET-COMMIT):
+ * text, and spreadsheet, whose one revision 0 is `sheetRevisionZeroDocument`
+ * of the sheet domain. A slides work has no revision 0 here yet.
+ */
+export type RevisionZeroKind = "text" | "spreadsheet";
+
+/**
+ * SHA-256 of the JCS bytes of the spreadsheet revision 0, lowercase hex
+ * (computed with `sha256sum`; a test checks it against the sheet domain).
+ * Written out, like the text hashes, so the hash that names a work is never
+ * recomputed from code that could change.
+ */
+export const SHEET_REVISION_ZERO_SHA256 =
+  "70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4";
+
+/**
+ * The version of the spreadsheet model of that revision 0 (the sheet
+ * domain's `SHEET_SCHEMA_VERSION`, `sheetSchemaVersion` of evidence.open.post).
+ */
+const SHEET_REVISION_ZERO_VERSION = 1;
+
 export type WorkVersion = {
   /** The schemaVersion of the work's revision 0, and so of every revision. */
   schemaVersion: DocumentSchemaVersion;
@@ -38,6 +60,18 @@ export function schemaVersionOfRevisionZero(hash: unknown): DocumentSchemaVersio
   return typeof hash === "string" ? (VERSION_BY_REVISION_ZERO.get(hash) ?? null) : null;
 }
 
+/**
+ * The version a revision-0 hash names for a work of this kind, or null. The
+ * kind and the hash must agree: a text hash on a spreadsheet work, or the
+ * spreadsheet hash on a text work, names no version.
+ */
+function versionOfKind(kind: RevisionZeroKind, hash: string): DocumentSchemaVersion | null {
+  if (kind === "spreadsheet") {
+    return hash === SHEET_REVISION_ZERO_SHA256 ? SHEET_REVISION_ZERO_VERSION : null;
+  }
+  return kind === "text" ? schemaVersionOfRevisionZero(hash) : null;
+}
+
 // Under RLS the session sees only its own institution's revisions of its own
 // documents (evidence_revision_read); revision 0 is never updated or deleted.
 const REVISION_ZERO_SQL = `SELECT content_hash FROM evidence.document_revision
@@ -46,15 +80,16 @@ const REVISION_ZERO_SQL = `SELECT content_hash FROM evidence.document_revision
 /**
  * The version of the caller's own document, read in the caller's transaction,
  * or null when there is not exactly one revision 0 or its hash is no known
- * revision 0.
+ * revision 0 of a work of `kind` (text unless named; SRV-V14-SHEET-COMMIT).
  */
 export async function readWorkVersion(
   tx: ActorTransaction,
   documentId: string,
+  kind: RevisionZeroKind = "text",
 ): Promise<WorkVersion | null> {
   const { rows } = await tx.query<Record<string, unknown>>(REVISION_ZERO_SQL, [documentId]);
   const hash = rows.length === 1 ? rows[0]?.content_hash : undefined;
   if (!isSha256Hex(hash)) return null;
-  const schemaVersion = schemaVersionOfRevisionZero(hash);
+  const schemaVersion = versionOfKind(kind, hash);
   return schemaVersion === null ? null : { schemaVersion, revisionZeroHash: hash };
 }

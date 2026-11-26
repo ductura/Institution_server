@@ -7,6 +7,9 @@ import { Duplex } from "node:stream";
 
 import { describe, expect, it } from "vitest";
 
+import type { LogWriter } from "../log/index.ts";
+import { parseAllowedNetworks, type RateLimiter } from "../traffic/index.ts";
+
 import {
   type App,
   createLayers,
@@ -15,6 +18,8 @@ import {
   type Layers,
   PIPELINE_STEPS,
   type Step,
+  trafficLogFor,
+  trafficRouteOf,
 } from "./pipeline.ts";
 import { SECURITY_HEADERS } from "./security-headers.ts";
 
@@ -245,5 +250,214 @@ describe("createLayers", () => {
     const post = exchange("POST");
     await pipeline(post.request, post.response);
     expect([post.response.statusCode, app]).toEqual([403, 1]);
+  });
+});
+
+// Step 5 (DAN-1536): the traffic record is written for every answered request
+// and never changes the answer.
+describe("step 5, the traffic record", () => {
+  const CANARY = "made-up-canary-1536";
+  type Written = { event: string; fields: Record<string, unknown> };
+  const ok = (): Promise<never> => Promise.resolve({ ok: true } as never);
+
+  async function runWith(trafficLog: LogWriter | undefined, url = "/api/v1/health", status = 204) {
+    const { request, response } = exchange("GET");
+    request.url = url;
+    request.headers.cookie = `session=${CANARY}`;
+    request.headers["x-forwarded-for"] = CANARY;
+    const app: App = async (_request, res) => {
+      res.statusCode = status;
+      res.end();
+    };
+    const layers = createLayers({
+      expectedOrigin: null,
+      ...(trafficLog === undefined ? {} : { trafficLog }),
+    });
+    await createPipeline(layers, app)(request, response);
+    response.emit("close");
+    return response;
+  }
+
+  it("writes one traffic.request for a success, with no body, cookie or query", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const response = await runWith(write, `/api/v1/health?token=${CANARY}`);
+    expect(response.statusCode).toBe(204);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.event).toBe("traffic.request");
+    expect(written[0]?.fields).toMatchObject({
+      method: "GET",
+      route: "/api/v1/health",
+      status: 204,
+    });
+    expect(JSON.stringify(written)).not.toContain(CANARY);
+  });
+
+  it("writes the record of an error answer with its status", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    await runWith(write, "/api/v1/health", 500);
+    expect(written[0]?.fields.status).toBe(500);
+  });
+
+  it.each([
+    [
+      "throws",
+      (): never => {
+        throw new Error(CANARY);
+      },
+    ],
+    ["rejects", () => Promise.reject(new Error(CANARY))],
+    ["never settles", () => new Promise<never>(() => undefined)],
+  ])("does not change the answer when the writer %s", async (_name, write) => {
+    const response = await runWith(write as unknown as LogWriter);
+    expect(response.statusCode).toBe(204);
+    expect(response.writableEnded).toBe(true);
+  });
+
+  it("records a request refused by the IP rules in step 3", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    request.url = "/api/v1/ops/ip-rules";
+    const layers = createLayers({
+      expectedOrigin: null,
+      trafficLog: write,
+      allowedNetworks: () => parseAllowedNetworks("203.0.113.0/24")!,
+    });
+    let app = 0;
+    await createPipeline(layers, async () => void (app += 1))(request, response);
+    response.emit("close");
+    expect([response.statusCode, app]).toEqual([403, 0]);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(403);
+  });
+
+  it("records a request refused by the rate limit in step 4", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    const rateLimiter = {
+      check: () => ({ allowed: false, bucket: "per_address", retryAfter: 5 }),
+    } as unknown as RateLimiter;
+    const layers = createLayers({ expectedOrigin: null, trafficLog: write, rateLimiter });
+    await createPipeline(layers, async () => undefined)(request, response);
+    response.emit("close");
+    expect(response.statusCode).toBe(429);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(429);
+  });
+
+  it("records the 500 answer of a layer that throws after step 5", async () => {
+    const written: Written[] = [];
+    const write: LogWriter = (input) => {
+      written.push(input as Written);
+      return ok();
+    };
+    const { request, response } = exchange("GET");
+    const layers = {
+      ...createLayers({ expectedOrigin: null, trafficLog: write }),
+      operatorPolicy: async (): Promise<"next"> => {
+        throw new Error(CANARY);
+      },
+    };
+    let app = 0;
+    await createPipeline(
+      layers,
+      async () => void (app += 1),
+      () => undefined,
+    )(request, response);
+    response.emit("close");
+    expect([response.statusCode, app]).toEqual([500, 0]);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.fields.status).toBe(500);
+    expect(JSON.stringify(written)).not.toContain(CANARY);
+  });
+
+  it("records nothing, and still answers, without a writer", async () => {
+    expect((await runWith(undefined)).statusCode).toBe(204);
+  });
+
+  it("names a route by its template and anything else as none", () => {
+    const at = (url: string) => trafficRouteOf({ url } as IncomingMessage);
+    expect(at("/api/v1/health?x=1")).toBe("/api/v1/health");
+    expect(at("/api/v1/works/abc-123/access")).toBe("/api/v1/works/{documentId}/access");
+    expect(at("/api/v1/works//access")).toBeNull();
+    expect(at("/api/v1/nope")).toBeNull();
+    expect(at("/api/v1/../health")).toBeNull();
+    expect(at(undefined as unknown as string)).toBeNull();
+  });
+});
+
+describe("trafficLogFor", () => {
+  const ISO = "2026-11-25T10:00:00.000Z";
+  const record = (extra: Record<string, unknown> = {}) => ({
+    time: ISO,
+    event: "traffic.request",
+    requestId: "11111111-1111-4111-8111-111111111111",
+    accountKind: "anonymous",
+    fields: {
+      method: "GET",
+      route: "/api/v1/health",
+      ip: "203.0.113.7",
+      status: 200,
+      durationMs: 3,
+      ipRule: "not_checked",
+      rateLimit: "not_checked",
+    },
+    ...extra,
+  });
+
+  it("inserts one log_entry row: the event as kind and the checked record as JSON", async () => {
+    const calls: [string, unknown[]][] = [];
+    const write = trafficLogFor({
+      query: (text, values) => {
+        calls.push([text, values]);
+        return Promise.resolve();
+      },
+    });
+    const result = await write(record());
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[0]).toBe(
+      "INSERT INTO public.log_entry (kind, payload) VALUES ($1, $2::jsonb)",
+    );
+    expect(calls[0]?.[1]?.[0]).toBe("traffic.request");
+    const payload = JSON.parse(String(calls[0]?.[1]?.[1])) as Record<string, unknown>;
+    expect(Object.keys(payload.fields as object).sort()).toEqual(
+      ["durationMs", "ip", "ipRule", "method", "rateLimit", "route", "status"].sort(),
+    );
+  });
+
+  it("refuses a route outside the contract, a body field and a cookie without writing", async () => {
+    let calls = 0;
+    const write = trafficLogFor({ query: () => void (calls += 1) });
+    const bad = record();
+    for (const fields of [
+      { ...bad.fields, route: "/api/v1/not-a-route" },
+      { ...bad.fields, body: "made-up-body" },
+      { ...bad.fields, cookie: "session=made-up" },
+    ]) {
+      expect((await write({ ...bad, fields })).ok).toBe(false);
+    }
+    expect(calls).toBe(0);
+  });
+
+  it("does not throw when the logs database rejects", async () => {
+    const write = trafficLogFor({ query: () => Promise.reject(new Error("made-up-db-down")) });
+    const result = await write(record());
+    expect(result.ok).toBe(false);
   });
 });

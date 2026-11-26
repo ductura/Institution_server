@@ -13,8 +13,13 @@ export {
   A4_PAGE,
   buildExportModel,
   renderDocx,
+  renderSheetCsv,
+  renderSheetCsvOfText,
+  renderSheetXlsx,
+  XLSX_TYPE,
   renderWorkDocx,
   type ExportLabels,
+  type SheetCsv,
 } from "./export/index.ts";
 // SRV-1902: the ZIP of all submissions of an assignment uses the same deterministic writer.
 export { writeZip, type ZipEntry } from "./export/index.ts";

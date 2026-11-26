@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6112);
+SELECT plan(6259);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -197,6 +197,8 @@ SELECT bag_eq(
         'mentorship_opening',
         -- SRV-V16-TEMA-PRIJEDLOG: the topic of a thesis; cells in 247-thesis-topic.sql.
         'work_thesis_topic_version', 'work_thesis_topic_decision',
+        -- SRV-V16-POVJERENSTVO-ZAPIS: the committee of a thesis as a list; cells in 248-thesis-committee.sql.
+        'work_thesis_committee_change', 'work_thesis_committee_member',
         -- SRV-V19-DNEVNIK-BAZA: the practice journal; cells in 247-practice-journal.sql.
         'practice_placement', 'practice_entry', 'practice_signoff',
         -- SRV-V19-GRUPA-BAZA: teams on an assignment; cells in 248-work-team.sql.
@@ -357,6 +359,8 @@ SELECT bag_eq(
     'mentorship_opening: mentorship_opening_owner ALL to ductus_identity',
     'work_thesis_topic_version: work_thesis_topic_version_owner ALL to ductus_identity',
     'work_thesis_topic_decision: work_thesis_topic_decision_owner ALL to ductus_identity',
+    'work_thesis_committee_change: work_thesis_committee_change_owner ALL to ductus_identity',
+    'work_thesis_committee_member: work_thesis_committee_member_owner ALL to ductus_identity',
     'practice_placement: practice_placement_owner ALL to ductus_identity',
     'practice_entry: practice_entry_owner ALL to ductus_identity',
     'practice_signoff: practice_signoff_owner ALL to ductus_identity',
@@ -432,6 +436,8 @@ SELECT bag_eq(
         'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O',
         'work_thesis_topic_version: work_thesis_topic_version_append_only 27 O', 'work_thesis_topic_version: work_thesis_topic_version_no_truncate 34 O',
         'work_thesis_topic_decision: work_thesis_topic_decision_append_only 27 O', 'work_thesis_topic_decision: work_thesis_topic_decision_no_truncate 34 O',
+        'work_thesis_committee_change: work_thesis_committee_change_append_only 27 O', 'work_thesis_committee_change: work_thesis_committee_change_no_truncate 34 O',
+        'work_thesis_committee_member: work_thesis_committee_member_append_only 27 O', 'work_thesis_committee_member: work_thesis_committee_member_no_truncate 34 O',
         'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O',
         'practice_placement: practice_placement_append_only 27 O', 'practice_placement: practice_placement_no_truncate 34 O',
         'practice_entry: practice_entry_append_only 27 O', 'practice_entry: practice_entry_no_truncate 34 O',
@@ -534,6 +540,7 @@ SELECT bag_eq(
     'course_groups(p_course_id uuid) definer app',
     'read_teaching_team(p_course_id uuid) definer app',
     'read_teaching_team_view(p_course_id uuid) definer app',
+    'read_teaching_team_candidates(p_course_id uuid) definer app',
     'lock_teaching_team(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'check_teaching_member_ids(p_ids uuid[])',
     'replace_course_assistants(p_course_id uuid, p_assistant_ids uuid[]) definer app',
@@ -697,6 +704,7 @@ SELECT bag_eq(
     'assignment_code_tests_role(p_assignment_id uuid)',
     'thesis_setting_now()',
     'thesis_topic_now(p_document_id text)',
+    'thesis_committee_now(p_document_id text)',
     'thesis_work_context(p_document_id text, OUT o_institution_id uuid, OUT o_user_id uuid, OUT o_part text, OUT o_work_type text)',
     'reject_milestone_template_change()',
     'reject_assignment_rubric_change()',
@@ -2126,8 +2134,8 @@ SELECT is(
      JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
      JOIN pg_constraint k ON k.conrelid = a.attrelid AND k.conname = t.constraint_name
     WHERE a.attrelid = t.relation::regclass AND a.attname = 'document_kind'),
-  $$true 'text'::text CHECK ((document_kind = ANY (ARRAY['text'::text, 'slides'::text])))$$,
-  format('SRV-V13-MIG-VRSTA: %s.document_kind is text or slides, never null, text by default', t.relation))
+  $$true 'text'::text CHECK ((document_kind = ANY (ARRAY['text'::text, 'slides'::text, 'spreadsheet'::text])))$$,
+  format('SRV-V13-MIG-VRSTA, SRV-V14-KIND: %s.document_kind is text, slides or spreadsheet, never null, text by default', t.relation))
 FROM (VALUES ('institution.assignment', 'assignment_document_kind_check'),
              ('evidence.document', 'document_document_kind_check')) AS t (relation, constraint_name);
 SELECT ok(NOT has_column_privilege('ductus_app', 'evidence.document'::regclass, 'document_kind', 'INSERT,UPDATE')
@@ -2142,6 +2150,31 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM pg_proc p WHERE p.oid = 'app.assignment_document_kind(uuid)'::regprocedure;
 SELECT is(app.assignment_document_kind(pg_temp.id('z1')) || ' ' || app.assignment_document_kind(gen_random_uuid()),
   'text text', 'SRV-V13-MIG-VRSTA: the bridge answers text for a text assignment and for an unknown one');
+
+-- 1i3a. SRV-V14-KIND: 'spreadsheet' is a third kind. The application role
+-- cannot write it; written by the table owner (inside this rolled-back transaction)
+-- it is read like any other kind: by the student and teacher of Z1 only, and
+-- a foreign assignment is no row at all (the same as 404 on the wire). A name
+-- outside the three is refused by the CHECK.
+SELECT ok(pg_temp.ask(c.actor, $q$ UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = {z1} $q$)
+    LIKE '42501: permission denied%',
+  format('SRV-V14-KIND: %s cannot set the spreadsheet kind of Z1', c.actor))
+FROM (VALUES ('vesna'), ('iva'), ('ana'), ('marko')) AS c (actor);
+SELECT throws_ok($q$ UPDATE institution.assignment SET document_kind = 'sheet' WHERE id = $q$ || quote_literal(pg_temp.id('z1')),
+  '23514', NULL, 'SRV-V14-KIND: a kind outside text, slides and spreadsheet is refused');
+SELECT lives_ok($q$ UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = $q$ || quote_literal(pg_temp.id('z1')),
+  'SRV-V14-KIND: the spreadsheet kind is accepted by the CHECK');
+SELECT is(
+  pg_temp.ask(c.actor, $q$ SELECT coalesce((SELECT a.document_kind FROM institution.assignment a WHERE a.id = {z1}), 'no row') $q$),
+  c.result, format('SRV-V14-KIND: %s reads the spreadsheet kind of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'spreadsheet'), ('marko', 'no row'), ('iva', 'no row'), ('ana', 'spreadsheet'),
+  ('dora', 'spreadsheet'), ('tomo', 'no row'), ('petra', 'no row'), ('boris', 'no row')
+) AS c (actor, result);
+SELECT is(app.assignment_document_kind(pg_temp.id('z1')), 'spreadsheet',
+  'SRV-V14-KIND: the bridge answers spreadsheet for a spreadsheet assignment');
+UPDATE institution.assignment SET document_kind = 'text' WHERE id = pg_temp.id('z1');
+SELECT is(app.assignment_document_kind(pg_temp.id('z1')), 'text', 'SRV-V14-KIND: and text again once restored');
 
 -- 1i2a. SRV-NF4-KASNA-POLJE: whether a submission after the deadline is
 -- allowed (institution.assignment.late_submission_allowed) is set only by the
@@ -2296,6 +2329,34 @@ SELECT is_empty(
        'app.set_work_thesis_topic(text,text,text)', 'app.decide_work_thesis_topic(text,integer,text,text)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-V16-TEMA-PRIJEDLOG: only ductus_app and the owner execute the thesis topic RPCs'
+);
+-- SRV-V16-POVJERENSTVO-ZAPIS: actor-level cases are in 248-thesis-committee.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_thesis_committee(text)', 'app.set_work_thesis_committee(text,jsonb)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V16-POVJERENSTVO-ZAPIS: only ductus_app and the owner execute the thesis committee RPCs'
+);
+-- SRV-V16-POPIS-FAKULTET: actor-level cases are in 249-thesis-overview.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_thesis_overview(text,integer,boolean,timestamptz,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-V16-POPIS-FAKULTET: only ductus_app and the owner execute the thesis overview RPC'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute app.thesis_work_documents'
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public' UNION ALL SELECT 'ductus_app') AS r
+     WHERE has_function_privilege(r.rolname, 'app.thesis_work_documents()', 'EXECUTE') $$,
+  'SRV-V16-POPIS-FAKULTET: only the identity owner and the evidence owner execute the document helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -2454,7 +2515,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
-                        'mentorship_opening', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'practice_placement', 'practice_entry', 'practice_signoff',
+                        'mentorship_opening', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'work_thesis_committee_change', 'work_thesis_committee_member', 'practice_placement', 'practice_entry', 'practice_signoff',
                         'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests',
                         'course_assistant_setting'])
                         WITH ORDINALITY AS t (tbl, n)
@@ -2462,7 +2523,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'work_thesis_committee_change', 'work_thesis_committee_member', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

@@ -64,8 +64,13 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
+  createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
@@ -254,6 +259,7 @@ const SRV_1407 = [
 const SRV_1408 = [
   "institution.teaching-team.get",
   "institution.teaching-team-view.get",
+  "institution.teaching-team-candidates.get",
   "institution.teaching-team.post",
   "institution.teaching-group-members.put",
 ];
@@ -291,6 +297,27 @@ const SRV_V19_RECENZIJA = [
   "student.peer-review.post",
   "student.peer-reviews-received.get",
 ];
+// SRV-V18-KODIRANJE-SIFRARNIK: the four routes of the codebook of qualitative coding.
+const SRV_V18_SIFRARNIK = [
+  "student.qual-codes.get",
+  "student.qual-codes.post",
+  "student.qual-code.patch",
+  "student.qual-code.delete",
+];
+// SRV-V18-KODIRANJE-GRADIVO: the four routes of the material of qualitative coding.
+const SRV_V18_GRADIVO = [
+  "student.qual-materials.get",
+  "student.qual-materials.post",
+  "student.qual-material.get",
+  "student.qual-material.delete",
+];
+// SRV-V18-KODIRANJE-OZNAKE: the passages marked in a material and the export of the coding.
+const SRV_V18_OZNAKE = [
+  "student.qual-segments.get",
+  "student.qual-segments.post",
+  "student.qual-segment.delete",
+  "student.qual-export.get",
+];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -308,6 +335,8 @@ const SRV_V16_TEMA = [
   "work.thesis-topic.put",
   "work.thesis-topic-decision.post",
 ];
+const SRV_V16_POVJERENSTVO = ["work.thesis-committee.get", "work.thesis-committee.put"];
+const SRV_V16_POPIS = ["institution.thesis-overview.get"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -671,6 +700,21 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createQualitativeCodesRoutesFor(databases.main)",
+    ids: SRV_V18_SIFRARNIK,
+    routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeMaterialsRoutesFor(databases.main)",
+    ids: SRV_V18_GRADIVO,
+    routes: () => createQualitativeMaterialsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeSegmentsRoutesFor(databases.main)",
+    ids: SRV_V18_OZNAKE,
+    routes: () => createQualitativeSegmentsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -679,6 +723,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createThesisTopicRoutesFor(databases.main)",
     ids: SRV_V16_TEMA,
     routes: () => createThesisTopicRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisCommitteeRoutesFor(databases.main)",
+    ids: SRV_V16_POVJERENSTVO,
+    routes: () => createThesisCommitteeRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisOverviewRoutesFor(databases.main)",
+    ids: SRV_V16_POPIS,
+    routes: () => createThesisOverviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -1149,8 +1203,13 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
       ...SRV_V19_RECENZIJA,
+      ...SRV_V18_SIFRARNIK,
+      ...SRV_V18_GRADIVO,
+      ...SRV_V18_OZNAKE,
       ...SRV_MENTOR_2,
       ...SRV_V16_TEMA,
+      ...SRV_V16_POVJERENSTVO,
+      ...SRV_V16_POPIS,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",

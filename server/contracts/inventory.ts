@@ -146,6 +146,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7076689558",
   },
+  // DEMO-POP-4-SRV (Ductus#2058): candidates for the assistant roster; Ductus has no such route.
+  "app/api/courses/[id]/team/candidates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7179269005",
+  },
   "app/api/courses/[id]/groups/[groupId]/members/route.ts": {
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
@@ -465,6 +470,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7146962118",
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK (Ductus#2058 c.7173077456, val 18): the codebook of a student's own qualitative coding; Ductus has no such route.
+  "app/api/student/qual/codes/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
+  "app/api/student/qual/codes/[id]/route.ts": {
+    methods: ["PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173077456",
+  },
   // SRV-V19-RECENZIJA-UGOVOR (Ductus#2055 c.7149250861, val 19): anonymous peer review among students; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/peer-review/route.ts": {
     methods: ["GET", "PUT"],
@@ -541,6 +555,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173074345",
   },
+  // SRV-V16-POVJERENSTVO-ZAPIS (val16-razlika): the committee of a thesis as a list kept with the work.
+  "app/api/works/[documentId]/thesis-committee/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173852373",
+  },
+  // SRV-V16-POPIS-FAKULTET (val16-razlika): the theses of the faculty for the registrar's office, read only.
+  "app/api/institution/thesis-overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7177488643",
+  },
   "app/api/works/[documentId]/assistant-match/explanation/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7092390512",
@@ -586,10 +610,54 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
   },
+  // SRV-V18-KODIRANJE-GRADIVO (Ductus#2055, val 18): the student's material for qualitative coding.
+  "app/api/student/qual/materials/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173076650",
+  },
+  "app/api/student/qual/materials/[id]/route.ts": {
+    methods: ["GET", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173076650",
+  },
+  // SRV-V18-KODIRANJE-OZNAKE (Ductus#2058, val 18): the passages a student marks in their own material and the export of the coding.
+  "app/api/student/qual/materials/[id]/segments/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
+  "app/api/student/qual/segments/[id]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
+  "app/api/student/qual/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173853108",
+  },
   // SRV-ASIST-LIMIT-ADMIN (Ductus#2055 T2, approved 25. 11.): the administrator's request limit.
   "app/api/institution/assistant/request-limit/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7162920212",
+  },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE (Ductus#2058; val 18, V18-1): a student answers an open questionnaire once; a teacher enters a sheet by hand.
+  "app/api/student/questionnaires/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/student/questionnaires/[id]/responses/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  "app/api/teacher/questionnaires/[id]/responses/manual/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173075839",
+  },
+  // SRV-V18-UPITNIK-IZVOZ (Ductus#2058; val 18, V18-4): the author reads the answers as questionnaire-export-v1.
+  "app/api/teacher/questionnaires/[id]/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173573927",
   },
   // PIL-P1-RITAM-PREDMET-SRV (Ductus#2052 c.7091841764): the switch of the rhythm per course; Ductus has no such route.
   "app/api/teacher/courses/[courseId]/input-rhythm/route.ts": {
@@ -755,6 +823,16 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/export/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
+  },
+  // SRV-V14-SHEET-CSV (val 14, docs/nalazi/val14-razlika.md decision 6): the CSV of one sheet of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/csv/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
+  },
+  // SRV-V14-SHEET-XLSX (val 14 decision 6, Ductus#2058 c.7173654855): the .xlsx of a saved version of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/xlsx/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654855",
   },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
@@ -993,6 +1071,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/return-for-revision/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7081618556",
+  },
+  // SRV-ED43-DORADA-POSALJI (Ductus#2058, BLOK ED-43): the student owner sends the revision for review.
+  "app/api/revision-send/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7178648513",
   },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],

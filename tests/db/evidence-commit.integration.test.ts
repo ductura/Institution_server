@@ -536,6 +536,8 @@ describe("evidence commit context over real PostgreSQL with RLS", () => {
         evidenceProfileId: "standard-v1",
         maxPayloadBytes: expect.any(Number),
         transactionKnown: false,
+        // SRV-V14-SHEET-COMMIT: the kind of the work, read from evidence.document.
+        documentKind: "text",
         // SRV-7F: a work opened today is v1, read from its revision 0.
         documentSchemaVersion: 1,
         state: {
@@ -552,6 +554,25 @@ describe("evidence commit context over real PostgreSQL with RLS", () => {
     );
     expect(read.status === "ok" && read.context.evidencePackageId).toBe(pkg.rows[0]?.id);
     expect(read.status === "ok" && read.context.maxPayloadBytes).toBe(pkg.rows[0]?.limit);
+  });
+
+  it("SRV-V14-SHEET-COMMIT: a spreadsheet kind on a text revision 0 is malformed, never a guess", async () => {
+    // Nothing makes a spreadsheet work yet (app.open_student_work), so the
+    // owner sets the kind of a text work for this read and puts it back.
+    await admin.query("UPDATE evidence.document SET document_kind = 'spreadsheet' WHERE id = $1", [
+      mia.documentId,
+    ]);
+    try {
+      expect(await readContext(token.mia, mia.documentId, `tx-${suffix}-k`)).toEqual({
+        status: "unavailable",
+        stage: "context",
+        code: "context_malformed",
+      });
+    } finally {
+      await admin.query("UPDATE evidence.document SET document_kind = 'text' WHERE id = $1", [
+        mia.documentId,
+      ]);
+    }
   });
 
   it("D9: another student's, an unknown and the teacher's document are the same not_found", async () => {

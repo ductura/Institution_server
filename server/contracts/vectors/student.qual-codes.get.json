@@ -1,0 +1,96 @@
+{
+  "route": "student.qual-codes.get",
+  "vectors": [
+    {
+      "name": "listed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "codes": [
+            {
+              "id": "00000000-0000-4000-8000-00000000c101",
+              "name": "Odnos prema mentoru",
+              "description": "Odlomci o odnosu s mentorom.",
+              "order": 1
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000000c102",
+              "name": "Vrijeme i rokovi",
+              "description": "",
+              "order": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "codes": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000007100"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-kodiranje-0000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000007101"
+        }
+      }
+    }
+  ]
+}
