@@ -160,8 +160,10 @@ SELECT bag_eq(
             ('collaboration.send_revision(text,text)'),
             ('collaboration.create_suggestion(text,jsonb,text,text)'),
             ('collaboration.list_suggestions(text)'),
-            ('collaboration.decide_suggestion(uuid,text)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the student criteria read of 168 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260');
+            ('collaboration.decide_suggestion(uuid,text)'),
+            ('collaboration.get_work_plan(text)'),
+            ('collaboration.put_work_plan(text,text,jsonb,jsonb)') $$,
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the student criteria read of 168 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260 and the two work plan RPCs of 261');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
@@ -169,7 +171,7 @@ SELECT bag_eq(
             ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)'),
             ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_work_rubric_levels(text,uuid)'), ('collaboration.delete_work_reviews(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)'),
             ('collaboration.delete_work_self_notes(text,uuid)'), ('collaboration.delete_work_items_seen(text,uuid)'),
-            ('collaboration.purge_orphan_work_data()') $$,
+            ('collaboration.delete_work_plans(text,uuid)'), ('collaboration.purge_orphan_work_data()') $$,
   'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 the criteria delete of 165, the direct-edit delete of 200 the review-mark delete of 201, the note-to-self and seen-mark deletes of 237 and the orphan work data purge of 239');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
