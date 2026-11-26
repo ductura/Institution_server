@@ -248,3 +248,51 @@ it.each([
   expect(response.status).toBe(422);
   expect(run).not.toHaveBeenCalled();
 });
+
+// SRV-F4-EDI-R07: the student's own conversations a declaration can attach.
+const CONVERSATION = {
+  conversationId: "00000000-0000-4000-8000-0000000000d1",
+  reason: "student_added",
+  throughSeq: 2,
+  messagesSha256: "c".repeat(64),
+};
+
+it("lists the conversations of the owner with the reference values and no cookie-less read", async () => {
+  const { url, run } = await serve({ status: "ok", body: { conversations: [CONVERSATION] } });
+  const response = await fetch(`${url}/declaration-conversations`, { headers: HEADERS });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ conversations: [CONVERSATION] });
+  expect(run).toHaveBeenCalledWith(expect.any(String), ID, "demo-fakultet", {
+    type: "conversations",
+  });
+  const anonymous = await fetch(`${url}/declaration-conversations`, {
+    headers: { origin: ORIGIN, "sec-fetch-site": "same-origin" },
+  });
+  expect(anonymous.status).toBe(401);
+  expect(run).toHaveBeenCalledTimes(1);
+});
+
+it("answers 404 for another student's or a missing assignment, and for a malformed id", async () => {
+  const { url, run } = await serve({ status: "not_found" });
+  const refused = await fetch(`${url}/declaration-conversations`, { headers: HEADERS });
+  expect(refused.status).toBe(404);
+  const bad = await fetch(url.replace(ID, "not-an-id") + "/declaration-conversations", {
+    headers: HEADERS,
+  });
+  expect(bad.status).toBe(404);
+  expect(run).toHaveBeenCalledTimes(1);
+});
+
+it("refuses a cross-site read and a response outside the contract", async () => {
+  const { url, run } = await serve({
+    status: "ok",
+    body: { conversations: [{ conversationId: 1 }] },
+  });
+  const cross = await fetch(`${url}/declaration-conversations`, {
+    headers: { ...HEADERS, "sec-fetch-site": "cross-site" },
+  });
+  expect(cross.status).toBe(403);
+  expect(run).not.toHaveBeenCalled();
+  const invalid = await fetch(`${url}/declaration-conversations`, { headers: HEADERS });
+  expect(invalid.status).toBe(503);
+});
