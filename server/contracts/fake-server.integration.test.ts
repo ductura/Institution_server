@@ -166,6 +166,7 @@ describe("fake server over HTTP", () => {
     // SRV-MENTOR-2: the five thesis writes (forms, setting, form state, consent, stage) five each.
     // SRV-V16-TEMA-PRIJEDLOG: work.thesis-topic.put and work.thesis-topic-decision.post five each.
     // SRV-V16-POVJERENSTVO-ZAPIS: work.thesis-committee.put five.
+    // SRV-ED43-DORADA-POSALJI: collaboration.revision-send.post five.
     // SRV-IZJAVA-PITANJE: teacher.declaration-question.put five.
     // SRV-ADMIN-1: support.problem-report-status.post five.
     // SRV-ADMIN-2: institution.roster-imports.post and institution.roster-import-confirm.post five each.
