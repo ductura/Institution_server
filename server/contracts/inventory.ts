@@ -146,6 +146,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7076689558",
   },
+  // DEMO-POP-4-SRV (Ductus#2058): candidates for the assistant roster; Ductus has no such route.
+  "app/api/courses/[id]/team/candidates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7179269005",
+  },
   "app/api/courses/[id]/groups/[groupId]/members/route.ts": {
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",

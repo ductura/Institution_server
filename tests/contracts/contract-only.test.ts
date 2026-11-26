@@ -258,6 +258,7 @@ const SRV_1407 = [
 const SRV_1408 = [
   "institution.teaching-team.get",
   "institution.teaching-team-view.get",
+  "institution.teaching-team-candidates.get",
   "institution.teaching-team.post",
   "institution.teaching-group-members.put",
 ];

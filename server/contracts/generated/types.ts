@@ -463,6 +463,13 @@ export type Operations = {
     success: { status: 200; body: { "updated": true }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "conflict";
   };
+  "institution.teaching-team-candidates.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "candidates": ({ "id": string; "name": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.teaching-team-view.get": {
     params: { "id": string };
     query: undefined;
