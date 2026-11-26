@@ -161,6 +161,7 @@ export { lateSubmissionRoutes } from "./late-submission.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
 export { questionnaireExportRoutes } from "./questionnaire-export.ts";
+export { collaborationSuggestionsRoutes } from "./collaboration-suggestions.ts";
 export { qualitativeMaterialsRoutes } from "./qualitative-materials.ts";
 export {
   QUAL_EXPORT_SEGMENTS_MAX,

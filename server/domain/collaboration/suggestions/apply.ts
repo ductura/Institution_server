@@ -4,15 +4,15 @@
 // is never touched, so a suggestion alone changes neither the work nor its
 // hash. The student's client publishes the result with its own PUT, so the
 // one writer of the work stays the student (§4.15 invariant 1).
-import { resolveTextAnchor } from "../../domain/collaboration/index.ts";
+import { resolveTextAnchor } from "../index.ts";
 import {
   MAX_DOCUMENT_SNAPSHOT_BYTES,
   validateDocument,
   type CanonicalDocument,
   type InlineNode,
   type NodeId,
-} from "../../domain/document/index.ts";
-import { canonicalizeJcs } from "../../domain/forensics/index.ts";
+} from "../../document/index.ts";
+import { canonicalizeJcs } from "../../forensics/index.ts";
 
 import type { Suggestion } from "./suggestion.ts";
 

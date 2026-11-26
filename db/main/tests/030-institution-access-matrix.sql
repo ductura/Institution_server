@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6259);
+SELECT plan(6261);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2806,6 +2806,29 @@ SELECT is(
   '2 6 3 4 6 3 4 4',
   'after every probe the fixture rows are all still there'
 );
+
+-- SRV-ED42-PRIJEDLOZI (20261220190000; behaviour in 260): a teacher's text
+-- suggestions. Forced RLS with the owner's policy alone, no runtime grant on
+-- the table; the three definer RPCs only for the web role, which decide the
+-- relation (teacher creates, student owner decides, both list).
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND ARRAY(SELECT p.policyname::text FROM pg_policies p
+      WHERE p.schemaname = 'collaboration' AND p.tablename = 'suggestion') = ARRAY['suggestion_owner']
+    AND NOT EXISTS (SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND r.rolname <> 'ductus_identity'
+      AND has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'))
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE'),
+  'collaboration.suggestion: forced RLS, suggestion_owner ALL to ductus_identity, no runtime grant')
+  FROM pg_class c WHERE c.oid = 'collaboration.suggestion'::regclass;
+SELECT bag_eq($$ SELECT p.oid::regprocedure::text, r.rolname::text FROM pg_proc p CROSS JOIN pg_roles r
+    WHERE p.oid IN ('collaboration.create_suggestion(text,jsonb,text,text)'::regprocedure,
+                    'collaboration.list_suggestions(text)'::regprocedure,
+                    'collaboration.decide_suggestion(uuid,text)'::regprocedure)
+      AND p.prosecdef AND r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin AND r.oid <> p.proowner
+      AND has_function_privilege(r.oid, p.oid, 'EXECUTE') $$,
+  $$ VALUES ('collaboration.create_suggestion(text,jsonb,text,text)', 'ductus_app'),
+            ('collaboration.list_suggestions(text)', 'ductus_app'),
+            ('collaboration.decide_suggestion(uuid,text)', 'ductus_app') $$,
+  'create_suggestion, list_suggestions and decide_suggestion: definer, executable only by the web role');
 
 SELECT * FROM finish();
 ROLLBACK;

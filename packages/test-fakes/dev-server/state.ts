@@ -252,6 +252,26 @@ export type Comment = {
   deletedAt: string | null;
 };
 
+/** SRV-ED42-PRIJEDLOZI: a teacher's text suggestion on a work, as collaboration.suggestion keeps it. */
+export type DevSuggestion = {
+  readonly suggestionId: string;
+  readonly documentId: string;
+  readonly authorId: string;
+  readonly anchor: {
+    readonly nodeId: string;
+    readonly quote: string;
+    readonly prefix: string;
+    readonly suffix: string;
+    readonly startHint: number;
+    readonly endHint: number;
+  };
+  readonly text: string;
+  readonly baseHash: string;
+  state: "pending" | "accepted" | "rejected";
+  readonly createdWindow: string;
+  decidedWindow: string | null;
+};
+
 /** SRV-ED43-DORADA-POSALJI: one sent round of a work, with the counters of the open requests it answered. */
 export type RevisionSend = {
   readonly documentId: string;
@@ -452,6 +472,7 @@ export type State = {
   threads: Map<string, "open" | "answered" | "resolved">;
   revisionRequests: RevisionRequest[];
   revisionSends: RevisionSend[];
+  suggestions: DevSuggestion[];
   /** The consultation records of the works (SRV-1105), additions in the order made. */
   consultations: Consultation[];
   /** The amendments and disputes of summary events of the works (SRV-1315). */
@@ -694,6 +715,7 @@ export function createState(
     threads: new Map(),
     revisionRequests: [],
     revisionSends: [],
+    suggestions: [],
     consultations: [],
     eventDisputes: [],
     milestoneProgress: new Map(),

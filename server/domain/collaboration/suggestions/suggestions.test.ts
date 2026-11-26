@@ -2,13 +2,9 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { createTextAnchor, type TextAnchor } from "../../domain/collaboration/index.ts";
-import {
-  newNodeId,
-  verifyDocumentSnapshot,
-  type CanonicalDocument,
-} from "../../domain/document/index.ts";
-import { canonicalizeJcs } from "../../domain/forensics/index.ts";
+import { createTextAnchor, type TextAnchor } from "../index.ts";
+import { newNodeId, verifyDocumentSnapshot, type CanonicalDocument } from "../../document/index.ts";
+import { canonicalizeJcs } from "../../forensics/index.ts";
 
 import {
   applySuggestion,

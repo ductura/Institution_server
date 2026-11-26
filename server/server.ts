@@ -126,6 +126,7 @@ import {
   createSelfNoteSealedRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createSuggestionRoutesFor,
   createImportRoutesFor,
   createConsultationRecordRoutesFor,
   createEventDisputeRoutesFor,
@@ -374,6 +375,8 @@ async function main(): Promise<void> {
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
       ...createDirectEditRoutesFor(databases.main),
+      // SRV-ED42-PRIJEDLOZI: a teacher's text suggestions; the student owner accepts or rejects.
+      ...createSuggestionRoutesFor(databases.main),
       // SRV-1803: a DOCX import into a work and its idempotent confirmation.
       ...createImportRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),

@@ -79,6 +79,7 @@ import {
   courseAssistantRoutes,
   questionnaireResponsesRoutes,
   questionnaireExportRoutes,
+  collaborationSuggestionsRoutes,
   qualitativeMaterialsRoutes,
   qualitativeSegmentsRoutes,
   originThresholdsRoutes,
@@ -417,6 +418,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...courseAssistantRoutes,
   ...questionnaireResponsesRoutes,
   ...questionnaireExportRoutes,
+  ...collaborationSuggestionsRoutes,
   ...qualitativeMaterialsRoutes,
   ...qualitativeSegmentsRoutes,
 ];

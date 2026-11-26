@@ -194,6 +194,74 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "collaboration.suggestion-accept.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['suggestionId'] === 'string') &&
+      local0.test(value['suggestionId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "collaboration.suggestion-reject.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['suggestionId'] === 'string') &&
+      local0.test(value['suggestionId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "collaboration.suggestions-list.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "collaboration.suggestions.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+  const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,500}(?![\s\S])/;
+  const local2 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  const local3 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  const local4 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local5 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,2000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) &&
+      (typeof nestedAnchor['nodeId'] === 'string') &&
+      local0.test(nestedAnchor['nodeId']) &&
+      (typeof nestedAnchor['quote'] === 'string') &&
+      local1.test(nestedAnchor['quote']) &&
+      (typeof nestedAnchor['prefix'] === 'string') &&
+      local2.test(nestedAnchor['prefix']) &&
+      (typeof nestedAnchor['suffix'] === 'string') &&
+      local3.test(nestedAnchor['suffix']) &&
+      (typeof nestedAnchor['startHint'] === 'number' && Number.isInteger(nestedAnchor['startHint'])) &&
+      nestedAnchor['startHint'] <= 1000000 &&
+      nestedAnchor['startHint'] >= 0 &&
+      (typeof nestedAnchor['endHint'] === 'number' && Number.isInteger(nestedAnchor['endHint'])) &&
+      nestedAnchor['endHint'] <= 1000000 &&
+      nestedAnchor['endHint'] >= 0 &&
+      Object.getOwnPropertyNames(value['anchor']).length === 6 &&
+      (typeof value['documentId'] === 'string') &&
+      local4.test(value['documentId']) &&
+      (typeof value['text'] === 'string') &&
+      local5.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
   "course.aggregate.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
