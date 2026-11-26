@@ -65,23 +65,26 @@ function setup(options: Options = {}) {
     return { rows };
   };
   const readKeys = vi.fn(async () => ({ status: "ok" as const, keys: [] }));
-  const run = (extra: Record<string, unknown> = {}) =>
-    runSubmissionVerdictPass({
-      query,
-      evidenceDomainId: DOMAIN,
-      payloads: new InMemoryEvidencePayloadStore(),
-      readKeys,
-      ...extra,
-    });
+  const run = (extra: Record<string, unknown> = {}, after: string | null = null) =>
+    runSubmissionVerdictPass(
+      {
+        query,
+        evidenceDomainId: DOMAIN,
+        payloads: new InMemoryEvidencePayloadStore(),
+        readKeys,
+        ...extra,
+      },
+      after,
+    );
   return { run, calls, readKeys };
 }
 
 describe("the worker's second reconstruction of a recorded submission (F4-PM2-R01)", () => {
   it("keeps NULL as the hash when the reconstruction does not match, and counts the database's verdict", async () => {
     const { run, calls } = setup();
-    expect(await run()).toEqual({ listed: 1, verified: 0, mismatch: 1, unavailable: 0 });
+    expect((await run()).pass).toEqual({ listed: 1, verified: 0, mismatch: 1, unavailable: 0 });
     expect(calls.map((c) => c.kind)).toEqual(["list", "record", "keep"]);
-    expect(calls[0]!.values).toEqual([DOMAIN, 100]);
+    expect(calls[0]!.values).toEqual([DOMAIN, 100, null]);
     expect(calls[2]!.values).toEqual([DOMAIN, SUB1, null]);
   });
 
@@ -92,18 +95,31 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
       documentSha256: "a".repeat(64),
     });
     const { run, calls } = setup({ keep: [{ outcome: "verified" }] });
-    expect(await run()).toEqual({ listed: 1, verified: 1, mismatch: 0, unavailable: 0 });
+    expect((await run()).pass).toEqual({ listed: 1, verified: 1, mismatch: 0, unavailable: 0 });
     expect(calls[2]!.values).toEqual([DOMAIN, SUB1, "a".repeat(64)]);
   });
 
   it("a verdict that already exists changes no count", async () => {
     const { run } = setup({ keep: [{ outcome: "exists" }] });
-    expect(await run()).toEqual({ listed: 1, verified: 0, mismatch: 0, unavailable: 0 });
+    expect((await run()).pass).toEqual({ listed: 1, verified: 0, mismatch: 0, unavailable: 0 });
+  });
+
+  it("a full page goes on after its last id, so older unavailable submissions do not hold back newer ones", async () => {
+    const { run, calls } = setup({ list: [{ submissionId: SUB1 }, { submissionId: SUB2 }] });
+    const first = await run({ batchLimit: 2 });
+    expect(first.next).toBe(SUB2);
+    await run({ batchLimit: 2 }, first.next);
+    expect(calls.filter((c) => c.kind === "list").map((c) => c.values[2])).toEqual([null, SUB2]);
+  });
+
+  it("a short page starts again from the beginning", async () => {
+    const { run } = setup();
+    expect((await run()).next).toBeNull();
   });
 
   it("nothing to reconstruct reads no key and no record", async () => {
     const { run, calls, readKeys } = setup({ list: [] });
-    expect(await run()).toEqual({ listed: 0, verified: 0, mismatch: 0, unavailable: 0 });
+    expect((await run()).pass).toEqual({ listed: 0, verified: 0, mismatch: 0, unavailable: 0 });
     expect(calls.map((c) => c.kind)).toEqual(["list"]);
     expect(readKeys).not.toHaveBeenCalled();
   });
@@ -111,14 +127,14 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
   it("an outage of the storage keeps no verdict", async () => {
     override.next = () => ({ status: "unavailable", stage: "storage", reason: "x" });
     const { run, calls } = setup();
-    expect(await run()).toEqual({ listed: 1, verified: 0, mismatch: 0, unavailable: 1 });
+    expect((await run()).pass).toEqual({ listed: 1, verified: 0, mismatch: 0, unavailable: 1 });
     expect(calls.map((c) => c.kind)).toEqual(["list", "record"]);
   });
 
   it("a reconstruction that throws keeps no verdict", async () => {
     override.next = () => Promise.reject(new Error("izmišljen kvar"));
     const { run } = setup();
-    expect(await run()).toMatchObject({ unavailable: 1, mismatch: 0, verified: 0 });
+    expect((await run()).pass).toMatchObject({ unavailable: 1, mismatch: 0, verified: 0 });
   });
 
   it("keys that are unavailable leave every submission for a later pass", async () => {
@@ -126,7 +142,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
       list: [{ submissionId: SUB1 }, { submissionId: SUB2 }],
     });
     readKeys.mockResolvedValueOnce({ status: "unavailable", reason: "x" } as never);
-    expect(await run()).toEqual({ listed: 2, verified: 0, mismatch: 0, unavailable: 2 });
+    expect((await run()).pass).toEqual({ listed: 2, verified: 0, mismatch: 0, unavailable: 2 });
     expect(calls.map((c) => c.kind)).toEqual(["list"]);
   });
 
@@ -139,7 +155,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
     ["a verdict the database refuses", { keep: [{ outcome: "not_found" }] }],
     ["a verdict write that fails", { failOn: "keep" }],
   ])("%s is left for a later pass", async (_name, options) => {
-    expect(await setup(options).run()).toEqual({
+    expect((await setup(options).run()).pass).toEqual({
       listed: 1,
       verified: 0,
       mismatch: 0,
@@ -148,14 +164,14 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
   });
 
   it("a list that fails or has a row of another shape trusts nothing", async () => {
-    expect(await setup({ failOn: "list" }).run()).toEqual({
+    expect((await setup({ failOn: "list" }).run()).pass).toEqual({
       listed: 0,
       verified: 0,
       mismatch: 0,
       unavailable: 0,
     });
     const odd = setup({ list: [{ submissionId: SUB1 }, { submissionId: "pkg-1" }] });
-    expect(await odd.run()).toEqual({ listed: 0, verified: 0, mismatch: 0, unavailable: 0 });
+    expect((await odd.run()).pass).toEqual({ listed: 0, verified: 0, mismatch: 0, unavailable: 0 });
     expect(odd.calls.map((c) => c.kind)).toEqual(["list"]);
   });
 

@@ -6,7 +6,11 @@
 // `intervalMs`; one structured log line per pass carries counts only, never an
 // id, text or hash. A submission whose reconstruction could not run keeps no
 // verdict and is tried again in a later pass.
-import { runSubmissionVerdictPass, type SubmissionVerdictDeps } from "../../evidence/index.ts";
+import {
+  runSubmissionVerdictPass,
+  type SubmissionVerdictDeps,
+  type SubmissionVerdictPass,
+} from "../../evidence/index.ts";
 import type { LogEvent } from "../../log/index.ts";
 
 export const SUBMISSION_VERDICT_PASS_EVENT = "worker.submission_verdict.pass";
@@ -29,7 +33,7 @@ export type SubmissionVerdictWorkerDeps = {
 
 export type SubmissionVerdictWorker = {
   /** Join a running pass or start one now. Null when stopped and idle, or when the pass failed. */
-  runPass(): Promise<Awaited<ReturnType<typeof runSubmissionVerdictPass>> | null>;
+  runPass(): Promise<SubmissionVerdictPass | null>;
   start(): void;
   /** No pass is started after this; resolves once the running pass has ended. */
   stop(): Promise<void>;
@@ -54,14 +58,17 @@ export function createSubmissionVerdictWorker(
     throw new RangeError("submissionVerdictWorker: invalid config");
   }
   const timers = deps.timers ?? DEFAULT_TIMERS;
-  let running: ReturnType<SubmissionVerdictWorker["runPass"]> | null = null;
+  let running: Promise<SubmissionVerdictPass | null> | null = null;
   let timer: unknown = null;
+  // Where the next pass goes on; null starts from the oldest submission again.
+  let cursor: string | null = null;
   let started = false;
   let stopped = false;
 
-  async function pass() {
+  async function pass(): Promise<SubmissionVerdictPass | null> {
     try {
-      const done = await runSubmissionVerdictPass(deps.verdict);
+      const { pass: done, next } = await runSubmissionVerdictPass(deps.verdict, cursor);
+      cursor = next;
       deps.log(done.unavailable === 0 ? "info" : "warn", SUBMISSION_VERDICT_PASS_EVENT, {
         ...done,
       });
@@ -73,7 +80,7 @@ export function createSubmissionVerdictWorker(
     }
   }
 
-  function runPass() {
+  function runPass(): Promise<SubmissionVerdictPass | null> {
     if (running === null) {
       if (stopped) return Promise.resolve(null);
       running = pass().finally(() => {

@@ -24,7 +24,7 @@ CREATE FUNCTION pg_temp.record_verdict(p_domain text, p_submission text, p_hash 
 $$;
 CREATE FUNCTION pg_temp.listed(p_domain text) RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.worker(format(
-    $q$ SELECT count(*)::text FROM app.worker_submissions_to_reconstruct(%L::uuid, 10) $q$, p_domain))
+    $q$ SELECT count(*)::text FROM app.worker_submissions_to_reconstruct(%L::uuid, 10, NULL) $q$, p_domain))
 $$;
 
 \set d1 '00000000-0000-4000-8000-0000000000d1'
@@ -51,7 +51,7 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
 FROM pg_class c WHERE c.oid = 'evidence.submission_reconstruction'::regclass;
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
-      WHERE p.oid IN ('app.worker_submissions_to_reconstruct(uuid,integer)'::regprocedure,
+      WHERE p.oid IN ('app.worker_submissions_to_reconstruct(uuid,integer,uuid)'::regprocedure,
                       'app.worker_submission_record(uuid,uuid)'::regprocedure,
                       'app.worker_record_submission_reconstruction(uuid,uuid,text)'::regprocedure,
                       'app.my_submission_reconstruction(uuid)'::regprocedure)
@@ -60,7 +60,7 @@ SELECT is_empty(
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_retention', 'ductus_auth', 'ductus_identity', 'ductus_test_stranger']) AS r
-      WHERE p.oid IN ('app.worker_submissions_to_reconstruct(uuid,integer)'::regprocedure,
+      WHERE p.oid IN ('app.worker_submissions_to_reconstruct(uuid,integer,uuid)'::regprocedure,
                       'app.worker_submission_record(uuid,uuid)'::regprocedure,
                       'app.worker_record_submission_reconstruction(uuid,uuid,text)'::regprocedure)
         AND has_function_privilege(r, p.oid, 'EXECUTE') $$,
@@ -73,13 +73,19 @@ SELECT is_empty(
 -- The worker of the domain lists it; another domain and invalid input do not.
 SELECT is(pg_temp.listed(:'d1'), '1', 'the worker of the domain lists the submission without a verdict');
 SELECT is(pg_temp.listed(:'d2'), '0', 'the worker of another domain lists nothing of it');
-SELECT matches(pg_temp.worker($$ SELECT * FROM app.worker_submissions_to_reconstruct(NULL, 10) $$), '^22023', 'NULL domain is invalid');
-SELECT matches(pg_temp.worker(format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 0) $$, :'d1')),
+SELECT matches(pg_temp.worker($$ SELECT * FROM app.worker_submissions_to_reconstruct(NULL, 10, NULL) $$), '^22023', 'NULL domain is invalid');
+SELECT matches(pg_temp.worker(format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 0, NULL) $$, :'d1')),
   '^22023', 'limit 0 is invalid');
-SELECT matches(pg_temp.worker(format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 1001) $$, :'d1')),
+SELECT matches(pg_temp.worker(format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 1001, NULL) $$, :'d1')),
   '^22023', 'limit 1001 is invalid');
-SELECT matches(pg_temp.ask('ana', format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 10) $$, :'d1')),
+SELECT matches(pg_temp.ask('ana', format($$ SELECT * FROM app.worker_submissions_to_reconstruct(%L::uuid, 10, NULL) $$, :'d1')),
   'permission denied', 'the web role cannot list');
+
+-- The cursor: after the submission's own id nothing is listed, after a smaller id it is.
+SELECT is(pg_temp.worker(format($$ SELECT count(*)::text FROM app.worker_submissions_to_reconstruct(%L::uuid, 10, %L::uuid) $$, :'d1', pg_temp.sid())),
+  '0', 'after the last id nothing is listed');
+SELECT is(pg_temp.worker(format($$ SELECT count(*)::text FROM app.worker_submissions_to_reconstruct(%L::uuid, 10, '00000000-0000-0000-0000-000000000000') $$, :'d1')),
+  '1', 'after a smaller id it is listed');
 
 -- The record: the domain of another worker reads not_found.
 SELECT is(pg_temp.worker(format($$ SELECT outcome FROM app.worker_submission_record(%L::uuid, %L::uuid) $$, :'d2', pg_temp.sid())),

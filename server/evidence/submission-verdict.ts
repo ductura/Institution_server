@@ -49,7 +49,7 @@ export type SubmissionVerdictPass = {
 };
 
 const LIST_SQL =
-  'SELECT submission_id AS "submissionId" FROM app.worker_submissions_to_reconstruct($1::uuid, $2::integer)';
+  'SELECT submission_id AS "submissionId" FROM app.worker_submissions_to_reconstruct($1::uuid, $2::integer, $3::uuid)';
 const RECORD_SQL = `SELECT outcome, institution_id AS "institutionId", evidence_package_id AS "evidencePackageId",
        evidence_domain_id AS "evidenceDomainId", document_id AS "documentId", principal_id AS "principalId",
        revision::text AS "revision", content_hash AS "contentHash", head_segment_hash AS "headSegmentHash",
@@ -145,7 +145,8 @@ async function readRecord(deps: SubmissionVerdictDeps, submissionId: string): Pr
 /** One pass over the submissions without a verdict. Never throws: a fault is a count. */
 export async function runSubmissionVerdictPass(
   deps: SubmissionVerdictDeps,
-): Promise<SubmissionVerdictPass> {
+  after: string | null = null,
+): Promise<{ pass: SubmissionVerdictPass; next: string | null }> {
   const pass: SubmissionVerdictPass = { listed: 0, verified: 0, mismatch: 0, unavailable: 0 };
   const limit = deps.batchLimit ?? 100;
   if (
@@ -157,20 +158,23 @@ export async function runSubmissionVerdictPass(
     throw new RangeError("submissionVerdict: invalid configuration");
   let ids: string[];
   try {
-    const { rows } = await deps.query(LIST_SQL, [deps.evidenceDomainId, limit]);
+    const { rows } = await deps.query(LIST_SQL, [deps.evidenceDomainId, limit, after]);
     ids = rows
       .map((row) => (row as { submissionId?: unknown }).submissionId)
       .filter((id): id is string => typeof id === "string" && UUID.test(id));
-    if (ids.length !== rows.length) return pass; // a row of another shape: nothing is trusted
+    if (ids.length !== rows.length) return { pass, next: after }; // a row of another shape: nothing is trusted
   } catch {
-    return pass;
+    return { pass, next: after };
   }
   pass.listed = ids.length;
-  if (ids.length === 0) return pass;
+  // A full page may have more behind it: the next pass goes on after its last id, so a
+  // submission that cannot be reconstructed now never holds back the newer ones.
+  const next = ids.length === limit ? (ids[ids.length - 1] ?? null) : null;
+  if (ids.length === 0) return { pass, next: null };
   const keys = await deps.readKeys(deps.evidenceDomainId).catch(() => null);
   if (keys === null || keys.status !== "ok") {
     pass.unavailable = ids.length;
-    return pass;
+    return { pass, next: after };
   }
   for (const id of ids) {
     const read = await readRecord(deps, id);
@@ -205,5 +209,5 @@ export async function runSubmissionVerdictPass(
       pass.unavailable += 1;
     }
   }
-  return pass;
+  return { pass, next };
 }

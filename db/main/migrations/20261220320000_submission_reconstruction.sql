@@ -48,8 +48,9 @@ ALTER TABLE evidence.submission_reconstruction FORCE ROW LEVEL SECURITY;
 CREATE POLICY evidence_submission_reconstruction_owner ON evidence.submission_reconstruction
   TO ductus_evidence USING (true) WITH CHECK (true);
 
--- Oldest submission first; 1 to 1000 ids per call.
-CREATE FUNCTION app.worker_submissions_to_reconstruct(p_evidence_domain_id uuid, p_limit integer)
+-- By id, after p_after (NULL starts at the beginning), so the worker can walk past
+-- submissions it cannot reconstruct now and still reach newer ones; 1 to 1000 ids per call.
+CREATE FUNCTION app.worker_submissions_to_reconstruct(p_evidence_domain_id uuid, p_limit integer, p_after uuid)
 RETURNS TABLE (submission_id uuid)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
@@ -64,13 +65,14 @@ BEGIN
       JOIN evidence.package k
         ON k.document_id = q.document_id AND k.institution_id = q.institution_id AND k.principal_id = q.principal_id
      WHERE k.evidence_domain_id = p_evidence_domain_id
+       AND (p_after IS NULL OR s.id > p_after)
        AND NOT EXISTS (SELECT 1 FROM evidence.submission_reconstruction r WHERE r.submission_id = s.id)
-     ORDER BY s.recorded_at, s.id
+     ORDER BY s.id
      LIMIT p_limit;
 END
 $$;
-REVOKE ALL ON FUNCTION app.worker_submissions_to_reconstruct(uuid, integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION app.worker_submissions_to_reconstruct(uuid, integer) TO ductus_worker;
+REVOKE ALL ON FUNCTION app.worker_submissions_to_reconstruct(uuid, integer, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.worker_submissions_to_reconstruct(uuid, integer, uuid) TO ductus_worker;
 
 -- Outcomes: found, not_found (no such submission in this domain), unavailable
 -- (no package or more than one, or no receipt names the submitted revision).
@@ -224,7 +226,7 @@ SET LOCAL ROLE ductus_evidence;
 DROP FUNCTION app.my_submission_reconstruction(uuid);
 DROP FUNCTION app.worker_record_submission_reconstruction(uuid, uuid, text);
 DROP FUNCTION app.worker_submission_record(uuid, uuid);
-DROP FUNCTION app.worker_submissions_to_reconstruct(uuid, integer);
+DROP FUNCTION app.worker_submissions_to_reconstruct(uuid, integer, uuid);
 DROP TABLE evidence.submission_reconstruction;
 ALTER TABLE evidence.submission DROP CONSTRAINT evidence_submission_id_institution_key;
 RESET ROLE;
