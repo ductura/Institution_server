@@ -1164,6 +1164,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051",
   },
+  // F4-NAS-R04-SRV (D-41): Ductus has no teacher read of the attached conversations.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/conversations/[conversationId]/route.ts":
+    {
+      methods: ["GET"],
+      source: "danielrisavi77-create/Ductus#2058:issuecomment-7196020811",
+    },
   // SRV-F4-NAS-R11 (Ductus#2058, NAS-51, C-4): the notes a student kept beside a submission, read by its teacher; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-notes/route.ts": {
     methods: ["GET"],

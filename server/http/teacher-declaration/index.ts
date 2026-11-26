@@ -15,6 +15,8 @@ import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import { sendJson, sendProblem, type Route } from "../index.ts";
 
+export { createTeacherDeclarationConversationRouteFor } from "./conversation.ts";
+
 const ID = "teacher.declaration.get";
 
 export function createTeacherDeclarationRoute(read: TeacherDeclarationReader): Route {

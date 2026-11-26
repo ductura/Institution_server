@@ -135,6 +135,15 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     // transaction as app.teacher_declaration; the read writes the 'declaration' access-log row.
     callers: ["server/database/teacher-declaration/index.ts"],
   },
+  {
+    fn: "app.teacher_declaration_conversation",
+    returns: "content",
+    surfaces: ["declaration"],
+    proof: "db/main/tests/261-teacher-declaration-conversation.sql",
+    // F4-NAS-R04-SRV: the course teacher reads a conversation attached to the bound declaration,
+    // up to its throughSeq; the read writes the 'declaration' access-log row.
+    callers: ["server/database/teacher-declaration/conversation.ts"],
+  },
 ];
 
 export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
