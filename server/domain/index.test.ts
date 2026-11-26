@@ -76,6 +76,7 @@ describe("server/domain imports nothing outside itself", () => {
       "forensics",
       "jobs",
       "json",
+      "lekta",
       "notice",
       "ops",
       "peer-review",
