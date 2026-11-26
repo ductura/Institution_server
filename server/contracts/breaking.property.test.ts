@@ -121,7 +121,8 @@ describe("a new field in a oneOf branch of the real contract", () => {
   // Each run edits and compares the whole published contract twice, so the
   // time grows with the contract: 3 s locally on main, 5.2 to 5.7 s on CI
   // runners (DAN-826-2b, ductura/server#196). An explicit limit, as
-  // shutdown.property.test.ts has; no run is dropped.
+  // shutdown.property.test.ts has; no run is dropped. SRV-ED42-PRIJEDLOZI:
+  // the contract has grown to about 30 s on CI runners, so the limit is 60 s.
   it("an optional one is safe, a required one is reported", () => {
     fc.assert(
       fc.property(
@@ -144,5 +145,5 @@ describe("a new field in a oneOf branch of the real contract", () => {
         },
       ),
     );
-  }, 30_000);
+  }, 60_000);
 });

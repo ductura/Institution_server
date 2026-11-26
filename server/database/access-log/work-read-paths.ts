@@ -210,6 +210,19 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     note: "a teacher's direct edit; the answer is an outcome and a write token, never the text",
     callers: ["server/database/direct-edit/direct-edit.ts"],
   },
+  // SRV-ED42-PRIJEDLOZI: a teacher's text suggestions (20261220190000).
+  {
+    fn: "collaboration.create_suggestion",
+    why: "no_content",
+    note: "a teacher's suggestion is bound to the hash of the live state; the answer is the new id, never the text",
+    callers: ["server/database/suggestions/suggestions.ts"],
+  },
+  {
+    fn: "collaboration.decide_suggestion",
+    why: "owner_only",
+    note: "only the student owner decides; accept answers the owner's own live state to apply the suggestion to",
+    callers: ["server/database/suggestions/suggestions.ts"],
+  },
   {
     fn: "collaboration.list_direct_edit_record",
     why: "no_content",
