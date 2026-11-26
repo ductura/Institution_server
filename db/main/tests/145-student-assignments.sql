@@ -8,7 +8,7 @@
 BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
-SELECT plan(26);
+SELECT plan(28);
 
 -- K1: Vesna holds it, Marko collaborates, Nina is a member whose teacher role
 -- nobody confirmed. Group A: Ana, taught by Marko; group B: Dora, by Vesna.
@@ -63,6 +63,14 @@ SELECT is(
   'K1 2026/2027 Z1 essay 2 none t',
   'Ana: course, academic year, title, work type and current version; no extended deadline is stored'
 );
+-- F4-STU-R02: whether the assignment is a practice one (20261220210000).
+SELECT is(pg_temp.read('ana', 's.is_practice::text'), 'false', 'Ana: Z1 is no practice assignment');
+-- The fixture's Z3 becomes a practice assignment; the status is immutable
+-- (assignment_practice_immutable), so only for this setup, as in 031.
+SET LOCAL session_replication_role = replica;
+UPDATE institution.assignment SET is_practice = true WHERE id = pg_temp.id('z3');
+SET LOCAL session_replication_role = origin;
+SELECT is(pg_temp.read('tomo', 's.is_practice::text'), 'true', 'Tomo: Z3 of his course is a practice assignment');
 SELECT is(pg_temp.read('ana', 's.groups::text'), '{"Grupa A"}', 'Ana: her own group only');
 SELECT is(pg_temp.read('dora', 's.groups::text'), '{"Grupa B"}', 'Dora: her own group only');
 SELECT is(pg_temp.read('ana', 's.mentors::text'), jsonb_build_array(pg_temp.person('marko', 'Marko Izmišljena'))::text,
