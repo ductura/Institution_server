@@ -1,5 +1,5 @@
 -- F4-NAS-R01 (Ductus#2055): the teacher of an assignment reads back whether a
--- submission after its deadline is allowed (20261220220000), so the form
+-- submission after its deadline is allowed (20261220310000), so the form
 -- shows the value in force. Only the teacher of the assignment reads it; a
 -- teacher of another course, a student, the administrator and an unknown
 -- assignment read the same not_found (C-23). Synthetic rows only; everything

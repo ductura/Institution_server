@@ -89,7 +89,7 @@ export type Operations = {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;
     body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "body": string; "documentId": string; "revision"?: number } | { "body": string; "threadId": string } | { "threadId": string } | { "commentId": string } | { "documentId": string } | { "anchor": null; "body": string; "documentId": string; "revision"?: number };
-    success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null; "revision"?: number | null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string; "revision"?: number | null })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
+    success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null; "kind"?: "must" | "sugg" | "q" | "praise" | null; "revision"?: number | null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string; "kind"?: "must" | "sugg" | "q" | "praise" | null; "revision"?: number | null })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "not_found" | "unavailable";
   };
   "collaboration.revision-requests.post": {
@@ -2108,11 +2108,18 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
   };
+  "work.comment-drafts-second.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "text": string; "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number } | null; "kind"?: "must" | "sugg" | "q" | "praise" | null };
+    success: { status: 201; body: { "threadId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.comment-drafts.get": {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
+    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "kind"?: "must" | "sugg" | "q" | "praise" | null })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.comment-drafts.post": {

@@ -491,6 +491,11 @@ const SESSION_ROUTES = {
     }),
     live: 404,
   },
+  "work.comment-drafts-second.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts/v2`,
+    body: () => ({ text: "Izmišljen opći komentar.", anchor: null, kind: "q" }),
+    live: 404,
+  },
   "work.comment-draft.delete": {
     method: "DELETE",
     path: `/api/v1/comment-drafts/${randomUUID()}`,

@@ -927,6 +927,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
+  "app/api/works/[documentId]/comment-drafts/v2/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058 (F4-EDI-R20-SRV, EDI-R20, Q-6)",
+  },
   "app/api/comment-drafts/[commentId]/route.ts": {
     methods: ["DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",

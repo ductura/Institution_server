@@ -4,7 +4,7 @@ import { verifyDocumentSnapshot } from "../../evidence/index.ts";
 const LIST = `SELECT thread_id AS "threadId", comment_id AS "commentId",
   comment_position AS position, author_role AS "authorRole", is_own AS "isOwn",
   body, anchor, state, created_window AS "createdWindow", deleted_window AS "deletedWindow",
-  revision FROM collaboration.list_comments($1)`;
+  revision, kind FROM collaboration.list_comments($1)`;
 // INT-15-SRV: every new thread names a revision (the teacher must, the
 // student may); the RPC checks that it exists and that the caller may read it.
 const CREATE = "SELECT collaboration.create_revision_comment($1, $2, $3::jsonb, $4) AS id";
