@@ -74,6 +74,23 @@ export const TEACHING_TEAM_HANDLERS: Handlers = {
       .sort();
     return { status: 200, body: { holderId: course.holderId, assistantIds } };
   },
+  "institution.teaching-team-candidates.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const course = courseFor(state, params.id);
+    if (course?.holderId !== account.id || !account.roles.includes("teacher")) {
+      return { error: "forbidden" };
+    }
+    const candidates = state.accounts
+      .filter(
+        (a) =>
+          a.roles.includes("teacher") &&
+          a.id !== course.holderId &&
+          course.teachingAssistants?.get(a.id) !== true,
+      )
+      .map((a) => ({ id: a.id, name: nameOf(state, a.id) }))
+      .sort((x, y) => x.name.localeCompare(y.name) || x.id.localeCompare(y.id));
+    return { status: 200, body: { candidates } };
+  },
   "institution.teaching-team.post": ({ state, account, params, body }) => {
     if (account === null) return { error: "unauthorized" };
     const course = courseFor(state, params.id);
