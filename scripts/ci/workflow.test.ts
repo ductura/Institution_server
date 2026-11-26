@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DATABASES } from "../db/index.ts";
+import { DEFAULT_PORTS, EPHEMERAL_PORTS } from "../stack/index.ts";
 import { jobsFor, POSTGRES_MAJOR } from "./index.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
@@ -170,6 +171,19 @@ describe("ci.yml", () => {
     expect(migrate).toBeGreaterThan(bootstrap);
     expect(count).toBeGreaterThan(migrate);
     expect(tests).toBeGreaterThan(count);
+  });
+
+  // SRV-CI-VS1-PORT: a listener inside the ephemeral range can find its port
+  // held by an outgoing connection of the same job (runs 45839389209 and
+  // 45841997971: the old default port already taken). The VS-1 steps use the stack
+  // default, which lies below that range, and name it nowhere else.
+  it("the database job runs the VS-1 stack on its default PostgreSQL port, outside the ephemeral range", () => {
+    const database = job("database");
+    const port = DEFAULT_PORTS.postgres;
+    expect(port < EPHEMERAL_PORTS.from || port > EPHEMERAL_PORTS.to).toBe(true);
+    expect(database).toContain(`@127.0.0.1:${port}/ductus" -tAc 'SELECT 1'`);
+    expect(database).toContain(`for port in ${port} 4100 4180 4191`);
+    expect(database).not.toContain("54360");
   });
 
   // ZEL-SRV-PGCTL: `pg_ctl: could not start server` names no reason; the job
