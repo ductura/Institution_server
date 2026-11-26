@@ -488,7 +488,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
       (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
       (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['expectedVersion', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'documentKind'].includes(key))
+      (value['workKind'] !== undefined ? ((((value['workKind'] === 'text')) || ((value['workKind'] === 'slides')) || ((value['workKind'] === 'spreadsheet')))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['expectedVersion', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'documentKind', 'workKind'].includes(key))
     )
   }
   })(),
@@ -581,8 +582,9 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['externalToolsAllowed'] !== undefined ? ((typeof value['externalToolsAllowed'] === 'boolean')) : true) &&
       (value['aiSummaryOnly'] !== undefined ? ((typeof value['aiSummaryOnly'] === 'boolean')) : true) &&
       (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
+      (value['workKind'] !== undefined ? ((((value['workKind'] === 'text')) || ((value['workKind'] === 'slides')) || ((value['workKind'] === 'spreadsheet')))) : true) &&
       (value['isPractice'] !== undefined ? ((typeof value['isPractice'] === 'boolean')) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'documentKind', 'isPractice'].includes(key))
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'documentKind', 'workKind', 'isPractice'].includes(key))
     )
   }
   })(),
