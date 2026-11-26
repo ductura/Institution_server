@@ -111,6 +111,7 @@ export {
   createSheetCsvRoute,
   createSheetCsvRouteFor,
   createSubmissionPackageRoutesFor,
+  createSheetXlsxRouteFor,
   createWorkPdfRouteFor,
   type SubmissionPackageRouteDeps,
 } from "./export/index.ts";
@@ -215,6 +216,17 @@ export {
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
+export { createQualitativeSegmentsRoutesFor } from "./qualitative-segments.ts";
+export {
+  createQuestionnaireResponsesRoutes,
+  createQuestionnaireResponsesRoutesFor,
+  type QuestionnaireResponsesPort,
+} from "./questionnaire-responses.ts";
+export {
+  createQuestionnaireExportRoutes,
+  createQuestionnaireExportRoutesFor,
+  type QuestionnaireExportPort,
+} from "./questionnaire-export.ts";
 export {
   createQuestionnaireResponsesRoutes,
   createQuestionnaireResponsesRoutesFor,

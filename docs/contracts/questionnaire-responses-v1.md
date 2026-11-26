@@ -1,6 +1,6 @@
 # Ispunjavanje upitnika v1
 
-Zadatak: SRV-V18-UPITNIK-ISPUNJAVANJE `srv-v18-upitnik-ispunjavanje` (Ductus#2058, nalog c.7173075839; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1 i V18-2, §5 zadatak 3). Status: **aditivno, unatrag kompatibilno** (API 1.150.0, četiri nove rute, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-BAZA i SRV-V18-UPITNIK-AUTOR (API 1.142.0) (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`). Upitnike izrađuje i objavljuje SRV-V18-UPITNIK-AUTOR; izvoz je SRV-V18-UPITNIK-IZVOZ.
+Zadatak: SRV-V18-UPITNIK-ISPUNJAVANJE `srv-v18-upitnik-ispunjavanje` (Ductus#2058, nalog c.7173075839; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1 i V18-2, §5 zadatak 3). Status: **aditivno, unatrag kompatibilno** (API 1.142.0, četiri nove rute, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-BAZA (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`). Upitnike izrađuje i objavljuje SRV-V18-UPITNIK-AUTOR; izvoz je SRV-V18-UPITNIK-IZVOZ.
 
 ## Načela
 
@@ -67,4 +67,4 @@ POST /api/v1/student/questionnaires/00000000-0000-4000-8000-0000000000b1/respons
 
 ## Testovi
 
-`server/http/questionnaire-responses.integration.test.ts` (loš ulaz, neispravan id, 401, preslikavanje grešaka baze, odgovor izvan ugovora), vektori u `server/contracts/vectors/`, `packages/test-fakes/dev-server/questionnaire-responses-routes.ts` (lažni dev server), `tests/db/logout-old-cookie.integration.test.ts` (401 za staru sesiju), adapter `server/database/questionnaire/questionnaire.test.ts` i pgTAP `db/main/tests/247-questionnaire.sql` (SRV-V18-UPITNIK-BAZA).
+`server/http/questionnaire-responses.integration.test.ts` (loš ulaz, neispravan id, 401, preslikavanje grešaka baze, odgovor izvan ugovora), vektori u `server/contracts/vectors/`, `packages/test-fakes/dev-server/questionnaire-routes.ts` (lažni dev server), `tests/db/logout-old-cookie.integration.test.ts` (401 za staru sesiju), adapter `server/database/questionnaire/questionnaire.test.ts` i pgTAP `db/main/tests/247-questionnaire.sql` (SRV-V18-UPITNIK-BAZA).

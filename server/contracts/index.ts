@@ -78,12 +78,15 @@ import {
   lateSubmissionRoutes,
   courseAssistantRoutes,
   questionnaireResponsesRoutes,
+  questionnaireExportRoutes,
   qualitativeMaterialsRoutes,
+  qualitativeSegmentsRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workExportDocxRoutes,
   workExportSheetCsvRoutes,
+  workExportSheetXlsxRoutes,
   portableRecordRoutes,
   submissionPackageRoutes,
   teacherSubmissionsBulkRoutes,
@@ -378,6 +381,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...versionsRoutes,
   ...workExportDocxRoutes,
   ...workExportSheetCsvRoutes,
+  ...workExportSheetXlsxRoutes,
   ...portableRecordRoutes,
   ...submissionPackageRoutes,
   ...teacherSubmissionsBulkRoutes,
@@ -412,7 +416,9 @@ export const ROUTES: readonly RouteContract[] = [
   ...lateSubmissionRoutes,
   ...courseAssistantRoutes,
   ...questionnaireResponsesRoutes,
+  ...questionnaireExportRoutes,
   ...qualitativeMaterialsRoutes,
+  ...qualitativeSegmentsRoutes,
 ];
 
 /**

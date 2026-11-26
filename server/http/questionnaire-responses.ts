@@ -119,9 +119,6 @@ function writeRoute(
     async handle(request, response, params) {
       const token = liveSessionTokenFromCookie(request.headers.cookie);
       if (token === undefined) return refuse(response, 401, "unauthorized");
-      // A malformed id is 404 whatever the body is (C-23), so it is read first.
-      const id = idOf(params?.id);
-      if (id === null) return sendProblem(response, 404, "not_found");
       const types = request.headersDistinct["content-type"];
       if (
         types?.length !== 1 ||
@@ -136,6 +133,8 @@ function writeRoute(
       if (!Value.Check(contract.request.body!, json.value)) {
         return sendProblem(response, 422, "invalid_input");
       }
+      const id = idOf(params?.id);
+      if (id === null) return sendProblem(response, 404, "not_found");
       await guarded(response, contract.id, async () => {
         await store(token, id, (json.value as Answers).answers);
         response.writeHead(204, { "cache-control": "no-store" });

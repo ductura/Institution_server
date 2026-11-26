@@ -62,6 +62,7 @@ import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
 import { QUESTIONNAIRE_RESPONSE_HANDLERS } from "./questionnaire-responses-routes.ts";
 import { QUALITATIVE_MATERIALS_HANDLERS } from "./qualitative-materials-routes.ts";
+import { QUALITATIVE_SEGMENTS_HANDLERS } from "./qualitative-segments-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { SUPPORT_INBOX_HANDLERS } from "./support-inbox-routes.ts";
 import { RETENTION_HANDLERS } from "./retention-routes.ts";
@@ -187,6 +188,7 @@ export const DEV_HANDLERS: Handlers = {
   ...COURSE_ASSISTANT_HANDLERS,
   ...QUESTIONNAIRE_RESPONSE_HANDLERS,
   ...QUALITATIVE_MATERIALS_HANDLERS,
+  ...QUALITATIVE_SEGMENTS_HANDLERS,
   ...OPS_HANDLERS,
   ...SUPPORT_INBOX_HANDLERS,
   ...RETENTION_HANDLERS,
