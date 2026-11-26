@@ -21,13 +21,18 @@ import {
 } from "../index.ts";
 
 // GET and PUT /api/v1/teacher/works/{documentId}/working-criteria[/{criterionId}]
-// (SRV-1107, B-9): the teacher's private working note of six criteria. The
-// session decides who asks; the RPCs decide the relation to the work. Nothing
-// of the work is read, and the answer never reaches a student: a student, another
-// teacher, an unknown work and an unknown criterion all read the same 404.
+// (SRV-1107): the teacher's working note of six criteria. The session decides
+// who asks; the RPCs decide the relation to the work. Nothing of the work is
+// read: a student, another teacher, an unknown work and an unknown criterion
+// all read the same 404 here.
+// GET /api/v1/student/works/{documentId}/working-criteria (SRV-ED35, Daniel's
+// decision of 26. 11. 2026 replacing B-9): the student who owns the work reads
+// every teacher's criteria, each teacher separately; anyone else reads 404.
 const LIST = ROUTES.find((route) => route.id === "teacher.working-criteria.get")!;
 const SAVE = ROUTES.find((route) => route.id === "teacher.working-criterion.put")!;
+const STUDENT = ROUTES.find((route) => route.id === "student.working-criteria.get")!;
 const LIST_BODY = LIST.responses.find((response) => response.status === 200)!.body!;
+const STUDENT_BODY = STUDENT.responses.find((response) => response.status === 200)!.body!;
 const SAVE_BODY = SAVE.responses.find((response) => response.status === 200)!.body!;
 
 const JSON_MEDIA_TYPE = /^application\/json(?:\s*;\s*charset\s*=\s*utf-8)?$/iu;
@@ -78,6 +83,44 @@ export function createTeacherWorkingCriteriaRoutesFor({
         };
         if (!Value.Check(LIST_BODY, body)) {
           return unavailable(response, LIST.id, new Error("invalid working criteria"));
+        }
+        sendJson(response, 200, body);
+      },
+    },
+    {
+      contract: STUDENT,
+      async handle(request, response, params) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const documentId = workIdFromPath(params?.documentId ?? "");
+        if (documentId === null) return sendProblem(response, 404, "not_found");
+        const result = await criteria.forStudent(token, documentId);
+        if (result.status !== "ok") {
+          if (result.status === "unauthenticated") {
+            return sendProblem(response, 401, "unauthorized");
+          }
+          if (result.status === "unavailable") {
+            return unavailable(response, STUDENT.id, new Error("working criteria unavailable"));
+          }
+          return sendProblem(response, 404, "not_found");
+        }
+        const body = {
+          teachers: result.teachers.map(({ teacherId, teacherName, criteria: own }) => ({
+            teacherId,
+            teacherName:
+              teacherName === null
+                ? null
+                : { givenName: teacherName.givenName, familyName: teacherName.familyName },
+            criteria: own.map(({ id, label, assessment, note }) => ({
+              id,
+              label,
+              assessment,
+              note,
+            })),
+          })),
+        };
+        if (!Value.Check(STUDENT_BODY, body)) {
+          return unavailable(response, STUDENT.id, new Error("invalid working criteria"));
         }
         sendJson(response, 200, body);
       },

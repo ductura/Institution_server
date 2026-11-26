@@ -1914,6 +1914,12 @@ const SESSION_ROUTES = {
     body: () => ({ assessment: 1, note: null }),
     live: 404,
   },
+  "student.working-criteria.get": {
+    method: "GET",
+    path: "/api/v1/student/works/izmisljeni-rad-0001/working-criteria",
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.work-rubric.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001/rubric",

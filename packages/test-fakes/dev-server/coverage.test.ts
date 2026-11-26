@@ -2609,6 +2609,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assessment: 1, note: "Izmišljena napomena." },
     },
   },
+  "student.working-criteria.get": {
+    request: { path: `/api/v1/student/works/${IDS.document}/working-criteria`, as: "student" },
+  },
   "teacher.work-rubric.get": {
     request: { path: `/api/v1/teacher/works/${IDS.document}/rubric`, as: "nastavnik" },
   },

@@ -64,6 +64,8 @@
     "@ductura/test-fakes": "workspace:*",
     "@fast-check/vitest": "0.5.0",
     "@smithy/signature-v4": "5.7.4",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/node": "^24.19.2",
     "@types/oidc-provider": "9.12.1",
     "@types/pg": "8.23.1",
