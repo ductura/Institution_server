@@ -23,10 +23,13 @@ import { createLayers, type Layers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
 
 const EXPIRES = new Date("2030-01-01T12:00:00Z");
+const OIDC_ISSUED_AT_MS = Date.parse("2026-11-25T12:00:00.000Z");
+const OIDC_EXPIRES_AT_MS = OIDC_ISSUED_AT_MS + 1_000; // One-second TTL in expired mode.
 
 let app: Running | undefined;
 let provider: Server | undefined;
 afterEach(async () => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   await app?.close();
   if (provider) await new Promise<void>((done) => provider?.close(() => done()));
@@ -43,16 +46,19 @@ type Stack = {
 
 /**
  * The server first (its port names the callback), then the provider that
- * knows that callback. `delayUserinfo` holds the userinfo request back, so
- * the tokens of the expired mode are past their lifetime when they are used.
+ * knows that callback. `userinfoAtMs` freezes Date for the app and provider
+ * during issuance and explicitly sets the time of the real /me request.
+ * Network I/O and timers still run normally.
  * `checkOrigin` gives the origin check of POST routes the server's own
  * origin (the sign-out tests); every other test keeps `expectedOrigin: null`.
  */
 async function stack(
   mode: FakeOidcMode,
-  delayUserinfo = 0,
-  { checkOrigin = false }: { checkOrigin?: boolean } = {},
+  { checkOrigin = false, userinfoAtMs }: { checkOrigin?: boolean; userinfoAtMs?: number } = {},
 ): Promise<Stack> {
+  if (userinfoAtMs !== undefined) {
+    vi.useFakeTimers({ toFake: ["Date"], now: OIDC_ISSUED_AT_MS });
+  }
   const opened: OpenSessionInput[] = [];
   const closed: string[] = [];
   const logged: string[] = [];
@@ -63,16 +69,16 @@ async function stack(
   const env: Record<string, string | undefined> = { NODE_ENV: "test" };
   const load = (): AuthDeps => {
     const config = loadAuthConfig(env);
-    const slow: typeof fetch = async (input, init) => {
-      const url = new URL(input instanceof Request ? input.url : String(input));
-      if (delayUserinfo > 0 && url.pathname === "/me") {
-        await new Promise((done) => setTimeout(done, delayUserinfo));
+    const fetchAtUserinfoTime: typeof fetch = (input, init) => {
+      if (userinfoAtMs !== undefined) {
+        const url = new URL(input instanceof Request ? input.url : String(input));
+        if (url.pathname === "/me") vi.setSystemTime(userinfoAtMs);
       }
       return fetch(input, init);
     };
     return {
       config,
-      oidc: createOidcClient(config, slow),
+      oidc: createOidcClient(config, fetchAtUserinfoTime),
       openSession: async (input) => {
         opened.push(input);
         return { ok: true, expires: EXPIRES };
@@ -230,7 +236,7 @@ describe("login against the fake OIDC provider in each of its modes", () => {
   });
 
   it("expired: tokens past their lifetime when used end on the 400 page, with no session", async () => {
-    const { origin, opened, logged } = await stack("expired", 1_500);
+    const { origin, opened, logged } = await stack("expired", { userinfoAtMs: OIDC_EXPIRES_AT_MS });
     const { answer } = await signIn(origin, "demo-teacher");
     // Refused where the tokens are used (userinfo answers 401), not anywhere earlier.
     const cookies = await expectPage(answer, 400, logged);
@@ -311,7 +317,7 @@ describe("the login routes over HTTP", () => {
   });
 
   it("expired, used at once: the same mode signs in, so only the lifetime refuses above", async () => {
-    const { origin, opened } = await stack("expired");
+    const { origin, opened } = await stack("expired", { userinfoAtMs: OIDC_EXPIRES_AT_MS - 1 });
     const { answer } = await signIn(origin, "demo-teacher");
     expect(answer.status).toBe(303);
     expect(opened).toHaveLength(1);
@@ -348,7 +354,7 @@ describe("signing out against the fake OIDC provider", () => {
   });
 
   it("the sign-out goes on to end the provider session, so the next login asks again", async () => {
-    const { origin, closed } = await stack("success", 0, { checkOrigin: true });
+    const { origin, closed } = await stack("success", { checkOrigin: true });
     const { browser: b, issuer } = await signedIn(origin);
     const out = await signOut(b, origin);
     expect(out.status).toBe(303);
@@ -392,7 +398,7 @@ describe("signing out against the fake OIDC provider", () => {
   });
 
   it("a sign-out that never reaches the provider still makes the next login ask again, once", async () => {
-    const { origin, opened } = await stack("success", 0, { checkOrigin: true });
+    const { origin, opened } = await stack("success", { checkOrigin: true });
     const { browser: b } = await signedIn(origin);
     // INT-20e: the login attempt signedIn left in the jar goes with the sign-out.
     expect(b.jar.has(LOGIN_COOKIE_NAME)).toBe(true);
