@@ -860,6 +860,16 @@ export {
   type WorkPlace,
 } from "./mentorship-follow/index.ts";
 export {
+  createWorkPlanStore,
+  type PlanPurpose,
+  type PlanTerm,
+  type WorkPlan,
+  type WorkPlanAnswer,
+  type WorkPlanInput,
+  type WorkPlanRefusal,
+  type WorkPlanStore,
+} from "./work-plan/index.ts";
+export {
   createSelfNoteSealed,
   type SealedNote,
   type SealedRefusal,

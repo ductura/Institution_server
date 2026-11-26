@@ -68,6 +68,7 @@ import {
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
   createQualitativeCodesRoutesFor,
+  createWorkPlanRoutesFor,
   createQualitativeMaterialsRoutesFor,
   createQualitativeSegmentsRoutesFor,
   createThesisRoutesFor,
@@ -321,6 +322,8 @@ const SRV_V18_OZNAKE = [
   "student.qual-segment.delete",
   "student.qual-export.get",
 ];
+// SRV-F4-PM2-R15: the two routes of the plan of a work.
+const SRV_F4_PLAN = ["work.plan.get", "work.plan.put"];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -733,6 +736,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createQualitativeSegmentsRoutesFor(databases.main)",
     ids: SRV_V18_OZNAKE,
     routes: () => createQualitativeSegmentsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createWorkPlanRoutesFor(databases.main)",
+    ids: SRV_F4_PLAN,
+    routes: () => createWorkPlanRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createThesisRoutesFor(databases.main)",
@@ -1233,6 +1241,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V18_SIFRARNIK,
       ...SRV_V18_GRADIVO,
       ...SRV_V18_OZNAKE,
+      ...SRV_F4_PLAN,
       ...SRV_MENTOR_2,
       ...SRV_V16_TEMA,
       ...SRV_V16_POVJERENSTVO,

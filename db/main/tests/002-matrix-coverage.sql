@@ -130,6 +130,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('collaboration', 'work_item_seen', '237-mentorship-self-note-overview.sql'),
     ('collaboration', 'work_message', '164-work-message-access.sql'),
     ('collaboration', 'work_review', '201-comment-delay-bank.sql'),
+    ('collaboration', 'work_plan', '261-work-plan.sql'),
     ('collaboration', 'work_rubric_level', '251-work-rubric-level.sql'),
     ('collaboration', 'work_self_note', '237-mentorship-self-note-overview.sql'),
     ('declaration', 'conversation_attachment', '030-institution-access-matrix.sql'),
@@ -306,7 +307,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 210, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 211, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');
