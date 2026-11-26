@@ -44,6 +44,11 @@ export type OpenedWork = {
   snapshot: string;
   receiptKeys: ReceiptKey[];
   submitted: boolean;
+  /**
+   * IZV-RUTE-1a: `acceptedAt` of the newest signed receipt of the work's package (the signed
+   * minute, as the receipt carries it), or null while no receipt of the work is signed.
+   */
+  lastSignedAt: string | null;
 };
 
 const error = (code: string, messageKey: string): AppError => ({ code, messageKey });
@@ -94,8 +99,21 @@ const OPEN_SQL = `SELECT outcome, document_id, evidence_profile_id, current_revi
 // DAN-289 O2: whether the caller's own work for the assignment is submitted.
 const SUBMITTED_SQL = "SELECT app.work_submitted($1::uuid) AS submitted";
 // Under RLS the session sees only its own packages; the first one, as the open RPC picks it.
-const DOMAIN_SQL = `SELECT evidence_domain_id::text AS evidence_domain_id FROM evidence.package
- WHERE document_id = $1 ORDER BY created_at, id LIMIT 1`;
+// IZV-RUTE-1a: with it, the signed minute of that package's newest signed receipt (by the
+// sequence its segment ends at); a receipt still pending signature is not counted.
+const DOMAIN_SQL = `SELECT p.evidence_domain_id::text AS evidence_domain_id,
+       (SELECT r.receipt_payload::jsonb->>'acceptedAt'
+          FROM evidence.receipt r
+          JOIN evidence.segment s
+            ON s.id = r.segment_id AND s.evidence_package_id = r.evidence_package_id
+           AND s.institution_id = r.institution_id
+         WHERE r.evidence_package_id = p.id AND r.institution_id = p.institution_id
+           AND r.status = 'signed'
+         ORDER BY s.sequence_to DESC LIMIT 1) AS last_signed_at
+  FROM evidence.package p
+ WHERE p.document_id = $1 ORDER BY p.created_at, p.id LIMIT 1`;
+/** The receipt's own form of `acceptedAt`: UTC, to the minute. */
+const SIGNED_MINUTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/;
 // ISO 8601 in UTC with milliseconds, formatted by the database, never by a driver's time zone.
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const iso = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', ${ISO})`;
@@ -214,6 +232,13 @@ async function open(
   const domainId = domain.rows[0]?.evidence_domain_id;
   // The id comes from the server's own package row; another form is a fault.
   if (!isEvidenceDomainId(domainId)) return malformed();
+  const lastSignedAt = domain.rows[0]?.last_signed_at;
+  if (!(
+    lastSignedAt === null ||
+    (typeof lastSignedAt === "string" && SIGNED_MINUTE.test(lastSignedAt))
+  )) {
+    return malformed();
+  }
   const keys = await receiptKeys(tx, domainId);
   if (keys === null) return malformed();
   return {
@@ -230,6 +255,7 @@ async function open(
       snapshot: row.snapshot,
       receiptKeys: keys,
       submitted,
+      lastSignedAt,
     },
   };
 }

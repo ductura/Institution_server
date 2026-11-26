@@ -143,6 +143,8 @@ import {
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
@@ -814,6 +816,12 @@ const SESSION_ROUTES = {
   "institution.teaching-team-view.get": {
     method: "GET",
     path: `/api/v1/courses/${randomUUID()}/team/view`,
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.teaching-team-candidates.get": {
+    method: "GET",
+    path: `/api/v1/courses/${randomUUID()}/team/candidates`,
     body: () => undefined,
     live: 403,
   },
@@ -1711,6 +1719,38 @@ const SESSION_ROUTES = {
   "student.assignment-assistant-requests.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/assistant/requests`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE: a live session with no such questionnaire gets 404.
+  "student.questionnaires.get": {
+    method: "GET",
+    path: "/api/v1/student/questionnaires",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.questionnaire.get": {
+    method: "GET",
+    path: `/api/v1/student/questionnaires/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.questionnaire-responses.post": {
+    method: "POST",
+    path: `/api/v1/student/questionnaires/${randomUUID()}/responses`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  "teacher.questionnaire-manual-responses.post": {
+    method: "POST",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/responses/manual`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  // SRV-V18-UPITNIK-IZVOZ: a live session with no such questionnaire gets 404.
+  "teacher.questionnaire-export.get": {
+    method: "GET",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/export`,
     body: () => undefined,
     live: 404,
   },
@@ -2635,6 +2675,8 @@ const FACTORIES = [
   "createDeclarationQuestionRoutesFor",
   "createLateSubmissionRoutesFor",
   "createCourseAssistantRoutesFor",
+  "createQuestionnaireResponsesRoutesFor",
+  "createQuestionnaireExportRoutesFor",
   "createQualitativeMaterialsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
@@ -2783,6 +2825,8 @@ const MOUNTED = [
   ...createDeclarationQuestionRoutesFor(databases.main),
   ...createLateSubmissionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
+  ...createQuestionnaireResponsesRoutesFor(databases.main),
+  ...createQuestionnaireExportRoutesFor(databases.main),
   ...createQualitativeMaterialsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),

@@ -312,7 +312,7 @@ describe("Ductus open-route: the route over the real opener", () => {
               : text.includes("evidence.document_revision")
                 ? revisionZero
                 : text.includes("evidence.package")
-                  ? [{ evidence_domain_id: DOMAIN }]
+                  ? [{ evidence_domain_id: DOMAIN, last_signed_at: "2026-11-20T09:41:00.000Z" }]
                   : [KEY];
           return { rows: rows as never[], rowCount: rows.length };
         },
@@ -341,6 +341,7 @@ describe("Ductus open-route: the route over the real opener", () => {
       revisionZeroHash: V3_ZERO,
       receiptKeys: [expect.objectContaining({ keyId: "kljuc-r", purpose: "receipt" })],
       submitted: false,
+      lastSignedAt: "2026-11-20T09:41:00.000Z",
     });
     expect(answer.body).not.toMatch(/package|institution/i);
     expect(seen.map((q) => q.values)).toEqual([

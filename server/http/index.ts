@@ -216,6 +216,16 @@ export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./lat
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
 export {
+  createQuestionnaireResponsesRoutes,
+  createQuestionnaireResponsesRoutesFor,
+  type QuestionnaireResponsesPort,
+} from "./questionnaire-responses.ts";
+export {
+  createQuestionnaireExportRoutes,
+  createQuestionnaireExportRoutesFor,
+  type QuestionnaireExportPort,
+} from "./questionnaire-export.ts";
+export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
 } from "./declaration-question.ts";
