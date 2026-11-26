@@ -7,11 +7,16 @@ const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
 const STUDENT = "00000000-0000-4000-8000-0000000000b1";
 const NOTE = "00000000-0000-4000-8000-0000000000c1";
 
-function setup(rows: object[] | Error) {
+const TEACHER = "00000000-0000-4000-8000-0000000000d1";
+
+function setup(rows: object[] | Error, actor: string = TEACHER) {
   const calls: (readonly unknown[] | undefined)[] = [];
   const withActor: WithActor = async (_token, run) =>
     run({
-      async query<Row>(_sql: string, params?: readonly unknown[]) {
+      async query<Row>(sql: string, params?: readonly unknown[]) {
+        if (sql.includes("current_actor")) {
+          return { rows: [{ user_id: actor }] as Row[], rowCount: 1 };
+        }
         if (rows instanceof Error) throw rows;
         calls.push(params);
         return { rows: rows as Row[], rowCount: rows.length };
@@ -69,4 +74,10 @@ it("is unavailable for a malformed row", async () => {
   for (const one of bad) {
     expect(await setup([one]).read("s", ASSIGNMENT, STUDENT)).toEqual({ status: "unavailable" });
   }
+});
+
+it("refuses the caller's own notes without reading them, as the database would serve them", async () => {
+  const { read, calls } = setup([row(NOTE, "Izmišljena napomena.", new Date())], STUDENT);
+  expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "not_found" });
+  expect(calls).toEqual([]);
 });
