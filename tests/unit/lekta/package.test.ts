@@ -3,11 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  loadFpzgPackageV1,
-  parseLektaPackage,
-  ruleById,
-} from "../../../server/domain/lekta/index.ts";
+import { parseLektaPackage, ruleById } from "../../../server/domain/lekta/index.ts";
 
 const loaded = parseLektaPackage(
   JSON.parse(
