@@ -733,6 +733,39 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 6
     )
   }),
+  "institution.isvu-courses.get:query": (() => {
+  const local0 = /^\d{4}\/\d{4}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['academicYear'] === 'string') &&
+      local0.test(value['academicYear']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.isvu-roster-imports.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.isvu-roster-imports.post:body": (() => {
+  const local0 = /^[A-Za-z0-9._-]{1,64}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['sourceCourseKey'] === 'string') &&
+      local0.test(value['sourceCourseKey']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "institution.legal-hold-release.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

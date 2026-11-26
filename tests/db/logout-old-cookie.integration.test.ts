@@ -14,6 +14,7 @@ import {
   createAdminCourseRouteFor,
   createEnrollmentCodeStateRouteFor,
   createRosterImportRoutesFor,
+  createIsvuSourceRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createAssignmentGradeRouteFor,
   createAttachmentRoutesFor,
@@ -2645,6 +2646,18 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
+  // SRV-V22-ISVU-POPIS: the trial ISVU source; not an administrator, so 403 (before the setting is read).
+  "institution.isvu-courses.get": {
+    method: "GET",
+    path: "/api/v1/institution/admin/isvu/courses?academicYear=2026%2F2027",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.isvu-roster-imports.post": {
+    path: `/api/v1/institution/admin/courses/${COURSE}/isvu-roster-imports`,
+    body: () => ({ sourceCourseKey: "SYN-101" }),
+    live: 403,
+  },
   // SRV-1304: the administrator's retention dry run; not an administrator, so 403.
   "institution.retention.get": {
     method: "GET",
@@ -2693,6 +2706,7 @@ const FACTORIES = [
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createRosterImportRoutesFor",
+  "createIsvuSourceRoutesFor",
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createRevisionRequestsRouteFor",
@@ -2846,6 +2860,7 @@ const MOUNTED = [
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createRosterImportRoutesFor(databases.main),
+  ...createIsvuSourceRoutesFor(databases.main),
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   createRevisionRequestsRouteFor(databases.main),

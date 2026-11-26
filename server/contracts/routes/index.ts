@@ -283,6 +283,12 @@ export {
   ROSTER_IMPORT_SOURCES,
   rosterImportRoutes,
 } from "./roster-import.ts";
+export {
+  ISVU_COURSES_MAX,
+  isvuCoursesGet,
+  isvuRosterImportsPost,
+  isvuSourceRoutes,
+} from "./isvu-source.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";

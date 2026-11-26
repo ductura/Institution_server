@@ -360,7 +360,12 @@ export {
 } from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
-export { createRosterImportRoutes, createRosterImportRoutesFor } from "./roster-imports.ts";
+export {
+  createRosterImportRoutes,
+  createRosterImportRoutesFor,
+  previewAnswer as rosterPreviewAnswer,
+} from "./roster-imports.ts";
+export { createIsvuSourceRoutes, createIsvuSourceRoutesFor } from "./isvu-source/index.ts";
 export { createLegalHoldRoutes, createLegalHoldRoutesFor } from "./legal-hold/index.ts";
 export {
   createInstitutionGroupRoutes,
