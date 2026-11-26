@@ -26,6 +26,25 @@ export {
   type OperatorAudit,
   type OperatorAuditOptions,
 } from "./operator-audit.ts";
+export {
+  createUncaughtCapture,
+  errorClassOf,
+  errorSiteOf,
+  installUncaughtCapture,
+  siteOfFrames,
+  stderrSyncSink,
+  UNCAUGHT_ERROR_CLASSES,
+  UNCAUGHT_ORIGINS,
+  UNCAUGHT_WINDOW_MS,
+  UNKNOWN_SITE,
+  type StackFrame,
+  type UncaughtCapture,
+  type UncaughtCaptureOptions,
+  type UncaughtErrorClass,
+  type UncaughtGroup,
+  type UncaughtOrigin,
+  type UncaughtTarget,
+} from "./uncaught.ts";
 export { isSensitiveKey, redact, redactString, REDACTED, stripUrl } from "./redact.ts";
 export {
   ADMIN_LOG_ACTIONS,

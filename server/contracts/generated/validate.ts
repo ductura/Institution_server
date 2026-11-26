@@ -118,6 +118,20 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "client.error.post:body": (() => {
+  const local0 = /^(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['appVersion'] === 'string') &&
+      local0.test(value['appVersion']) &&
+      (((value['errorClass'] === 'type_error')) || ((value['errorClass'] === 'range_error')) || ((value['errorClass'] === 'reference_error')) || ((value['errorClass'] === 'syntax_error')) || ((value['errorClass'] === 'other'))) &&
+      (((value['kind'] === 'error')) || ((value['kind'] === 'unhandledrejection')) || ((value['kind'] === 'render'))) &&
+      (((value['page'] === 'home')) || ((value['page'] === 'how_it_works')) || ((value['page'] === 'work')) || ((value['page'] === 'enroll')) || ((value['page'] === 'assignments')) || ((value['page'] === 'assignment_courses')) || ((value['page'] === 'assignment_works')) || ((value['page'] === 'teacher')) || ((value['page'] === 'teacher_fast_path')) || ((value['page'] === 'teacher_mentorships')) || ((value['page'] === 'institution')) || ((value['page'] === 'institution_courses')) || ((value['page'] === 'institution_users')) || ((value['page'] === 'institution_rules')) || ((value['page'] === 'other'))) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
   "collaboration.comments.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -488,7 +502,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
       (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
       (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['expectedVersion', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'documentKind'].includes(key))
+      (value['workKind'] !== undefined ? ((((value['workKind'] === 'text')) || ((value['workKind'] === 'slides')) || ((value['workKind'] === 'spreadsheet')))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['expectedVersion', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'documentKind', 'workKind'].includes(key))
     )
   }
   })(),
@@ -581,8 +596,9 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['externalToolsAllowed'] !== undefined ? ((typeof value['externalToolsAllowed'] === 'boolean')) : true) &&
       (value['aiSummaryOnly'] !== undefined ? ((typeof value['aiSummaryOnly'] === 'boolean')) : true) &&
       (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
+      (value['workKind'] !== undefined ? ((((value['workKind'] === 'text')) || ((value['workKind'] === 'slides')) || ((value['workKind'] === 'spreadsheet')))) : true) &&
       (value['isPractice'] !== undefined ? ((typeof value['isPractice'] === 'boolean')) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'documentKind', 'isPractice'].includes(key))
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'documentKind', 'workKind', 'isPractice'].includes(key))
     )
   }
   })(),

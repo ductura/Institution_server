@@ -13,6 +13,7 @@
     "build:check-source-maps": "node --input-type=module -e \"import { readFileSync, readdirSync } from 'node:fs'; import { dirname } from 'node:path'; import { OUTFILE } from './scripts/build/index.ts'; const maps = readdirSync(dirname(OUTFILE), { recursive: true }).filter((path) => path.toLowerCase().endsWith('.map')); if (maps.length) throw new Error('Production build contains source maps: ' + maps.join(', ')); if (readFileSync(OUTFILE, 'utf8').includes('\\n//# sourceMappingURL=data:')) throw new Error('Production build contains an inline source map');\"",
     "start": "node --disallow-code-generation-from-strings dist/server.js",
     "stack:vs1": "node scripts/stack/vs1.ts",
+    "owner:board": "node scripts/owner-board/cli.ts",
     "lokalno": "node scripts/lokalno/lokalno.ts",
     "stog:gore": "node scripts/lokalno/stog.ts gore",
     "stog:dolje": "node scripts/lokalno/stog.ts dolje",

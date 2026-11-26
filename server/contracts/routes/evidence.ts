@@ -2,7 +2,7 @@ import { Type, type TSchema } from "@sinclair/typebox";
 
 import { closed, defineRoute, type ErrorSpec, messageKeyOf } from "../schema/index.ts";
 
-import { DocumentKind } from "./shared.ts";
+import { DocumentKind, WorkKind } from "./shared.ts";
 
 // Port of Ductus src/server/evidence/{open,commit}-route.ts and ingest-http.ts at
 // d52a92c3 (docs/BACKEND.md 4.13). These two routes answer every refusal as
@@ -172,9 +172,12 @@ export const open = defineRoute({
         // sends it, optional only for contracts:breaking. For "slides" the version of the
         // slides schema is slidesSchemaVersion and schemaVersion is absent.
         documentKind: Type.Optional(DocumentKind),
+        workKind: Type.Optional(WorkKind),
         slidesSchemaVersion: Type.Optional(Type.Literal(1)),
         // SRV-V14-KIND: for "spreadsheet" the version of the sheet model is sheetSchemaVersion
-        // (1) and schemaVersion is absent; sent only together with documentKind "spreadsheet".
+        // (1) and schemaVersion is absent; sent only together with workKind "spreadsheet".
+        // SRV-V14-KIND-ENUM: workKind is the kind of the work, always sent; documentKind is
+        // sent only for "text" and "slides" (kind = workKind ?? documentKind ?? "text").
         sheetSchemaVersion: Type.Optional(Type.Literal(1)),
         /** Exact JCS bytes of the snapshot of currentRevision. */
         document: Base64,
