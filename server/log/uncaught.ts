@@ -1,4 +1,6 @@
-import { logEvent, type LogEvent } from "./logger.ts";
+import { writeSync } from "node:fs";
+
+import { createLogger, type LogEvent, type LogSink } from "./logger.ts";
 
 /**
  * Errors nobody caught (DAN-1567): `uncaughtException` and
@@ -57,37 +59,68 @@ export function errorClassOf(error: unknown): UncaughtErrorClass {
 /** The engine's own getter of `stack`, the same function on every error. */
 const NATIVE_STACK = Object.getOwnPropertyDescriptor(new Error("probe"), "stack")?.get;
 
-// A frame of this repository's own code: a relative path of plain characters
-// under one of its folders, then the line. Function names, absolute paths,
-// node: and node_modules frames never match.
-const OWN_FRAME =
-  /(?:^|[\/(\s])((?:server|scripts|packages|dist)\/[A-Za-z0-9_.\/-]{1,160}\.(?:ts|js|mjs)):(\d{1,7}):\d{1,7}\)?$/;
+// A file of this repository's own code: a relative path of plain characters
+// under one of its folders. Absolute prefixes are dropped; node: and
+// node_modules files never match.
+const OWN_FILE =
+  /(?:^|\/)((?:server|scripts|packages|dist)\/[A-Za-z0-9_.\/-]{1,160}\.(?:ts|js|mjs))$/;
 
 /** Where nothing of our own code is on the stack, or the stack cannot be read safely. */
 export const UNKNOWN_SITE = "unknown";
 
+/** One frame as the engine reports it: a file name or URL and a line. */
+export type StackFrame = { file: string | null; line: number | null };
+
+/** The first of `frames` in this repository's code, as `server/area/file.ts:12`. */
+export function siteOfFrames(frames: readonly StackFrame[]): string {
+  for (const { file, line } of frames.slice(0, 50)) {
+    if (typeof file !== "string" || file.includes("node_modules")) continue;
+    if (typeof line !== "number" || !Number.isInteger(line) || line < 1 || line > 9_999_999)
+      continue;
+    const own = OWN_FILE.exec(file);
+    if (own !== null) return `${own[1]}:${line}`;
+  }
+  return UNKNOWN_SITE;
+}
+
+type CallSite = { getFileName(): string | null; getLineNumber(): number | null };
+const PREPARE = "prepareStackTrace";
+
 /**
- * The first frame of this repository's code on the stack of `error`, as
- * `server/area/file.ts:12`. The stack is read only as an own string or
- * through the engine's own getter, so no code of the value runs; the message
- * line and every other frame are dropped. Never throws.
+ * The place `error` was thrown at. The frames come from the engine as
+ * structured call sites, never from the text of the stack: the text begins
+ * with the message, and a message of several lines can look like a frame.
+ * Reading them does not format the error, so no getter of its name or
+ * message runs. An error whose stack someone already read, replaced or
+ * defined (no engine getter, or a stack already turned into text) is
+ * `unknown`. Never throws. Afterwards the error's own `stack` is empty.
  */
 export function errorSiteOf(error: unknown): string {
   try {
     if (!(error instanceof Error)) return UNKNOWN_SITE;
     const property = Object.getOwnPropertyDescriptor(error, "stack");
-    let stack: unknown;
-    if (property !== undefined && "value" in property) stack = property.value;
-    else if (property?.get !== undefined && property.get === NATIVE_STACK) {
-      stack = Reflect.apply(property.get, error, []);
+    if (NATIVE_STACK === undefined || property?.get !== NATIVE_STACK) return UNKNOWN_SITE;
+    const previous = Object.getOwnPropertyDescriptor(Error, PREPARE);
+    let sites: readonly CallSite[] | null = null;
+    Object.defineProperty(Error, PREPARE, {
+      configurable: true,
+      writable: true,
+      value: (_error: unknown, callSites: readonly CallSite[]) => {
+        sites = callSites;
+        return "";
+      },
+    });
+    try {
+      Reflect.apply(NATIVE_STACK, error, []);
+    } finally {
+      if (previous === undefined) Reflect.deleteProperty(Error, PREPARE);
+      else Object.defineProperty(Error, PREPARE, previous);
     }
-    if (typeof stack !== "string") return UNKNOWN_SITE;
-    for (const line of stack.split("\n").slice(0, 50)) {
-      if (!line.startsWith("    at ") || line.includes("node_modules")) continue;
-      const frame = OWN_FRAME.exec(line);
-      if (frame !== null) return `${frame[1]}:${frame[2]}`;
-    }
-    return UNKNOWN_SITE;
+    const read = sites as readonly CallSite[] | null;
+    if (read === null) return UNKNOWN_SITE;
+    return siteOfFrames(
+      read.slice(0, 50).map((site) => ({ file: site.getFileName(), line: site.getLineNumber() })),
+    );
   } catch {
     return UNKNOWN_SITE;
   }
@@ -122,8 +155,23 @@ export type UncaughtCapture = {
 
 export const UNCAUGHT_WINDOW_MS = 60_000;
 
+/**
+ * Writes the line to stderr before it returns. The process exits right after
+ * the line is written, and `console.error` to a pipe may still be on its way
+ * then; a crash must not lose the one line that says it happened.
+ */
+export const stderrSyncSink: LogSink = (_level, line) => {
+  try {
+    writeSync(2, `${line}\n`);
+  } catch {
+    // A stderr that cannot take a synchronous write (EAGAIN on a full pipe).
+    console.error(line);
+  }
+};
+const fatalLog = createLogger(stderrSyncSink);
+
 export function createUncaughtCapture(options: UncaughtCaptureOptions = {}): UncaughtCapture {
-  const log = options.log ?? logEvent;
+  const log = options.log ?? fatalLog;
   const now = options.now ?? (() => Date.now());
   const windowMs = options.windowMs ?? UNCAUGHT_WINDOW_MS;
   const groups = new Map<string, UncaughtGroup & { openedAt: number; repeats: number }>();
