@@ -630,6 +630,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createStatementRoutesFor(databases.main)",
     ids: [
       "student.declaration.get",
+      "student.declaration-conversations.get",
       "student.declaration.put",
       "student.declaration-attachments.post",
     ],
@@ -1205,6 +1206,7 @@ describe("routes the entry point mounts itself", () => {
       "student.assistant-request.post",
       "student.assistant-conversation.get",
       "student.declaration.get",
+      "student.declaration-conversations.get",
       "student.declaration.put",
       "student.declaration-attachments.post",
       ...SRV_31,

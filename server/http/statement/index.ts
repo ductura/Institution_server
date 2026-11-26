@@ -37,6 +37,7 @@ const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const READ = "student.declaration.get";
 const SAVE = "student.declaration.put";
 const UPLOAD = "student.declaration-attachments.post";
+const CONVERSATIONS = "student.declaration-conversations.get";
 
 /** A plain JSON object, so its own questionAnswer key can be set apart. */
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -92,14 +93,18 @@ function sendRefusal(
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
-  return [READ, SAVE, UPLOAD].map((id) => {
+  return [READ, CONVERSATIONS, SAVE, UPLOAD].map((id) => {
     const contract = ROUTES.find((route) => route.id === id);
     if (contract === undefined) throw new Error(`Missing contract for ${id}`);
     return {
       contract,
       async handle(request, response, params) {
         const site = request.headersDistinct["sec-fetch-site"];
-        if (id === READ && site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        if (
+          (id === READ || id === CONVERSATIONS) &&
+          site !== undefined &&
+          (site.length !== 1 || site[0] !== "same-origin")
+        ) {
           return sendProblem(response, 403, "forbidden");
         }
         const token = liveSessionTokenFromCookie(request.headers.cookie);
@@ -109,8 +114,9 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           if (slug === null) return refuse(response, 401, "unauthorized");
           const assignmentId = params?.assignmentId ?? "";
           if (!UUID.test(assignmentId)) return refuse(response, 404, "not_found");
-          let op: StatementOperation = { type: "read" };
-          if (id !== READ) {
+          let op: StatementOperation =
+            id === CONVERSATIONS ? { type: "conversations" } : { type: "read" };
+          if (id !== READ && id !== CONVERSATIONS) {
             const format = mediaType(request);
             if (id === UPLOAD && !isExternalFormat(format))
               return refuse(response, 415, "unsupported_media_type");
