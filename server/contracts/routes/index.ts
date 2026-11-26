@@ -165,6 +165,7 @@ export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-r
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
+export { submissionReconstructionRoutes } from "./submission-reconstruction.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
 export { questionnaireExportRoutes } from "./questionnaire-export.ts";
