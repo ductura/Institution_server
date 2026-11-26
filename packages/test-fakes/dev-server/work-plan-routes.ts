@@ -1,6 +1,6 @@
 // SRV-F4-PM2-R15 on the dev fake server: the plan of a work behind the panel
 // "Struktura" (work.plan.get, work.plan.put). Invented data only. The real rules
-// are the RPCs of 20261220210000: the plan is the owner's alone (anyone else,
+// are the RPCs of 20261220380000: the plan is the owner's alone (anyone else,
 // the mentor and the teachers included, reads 404), it is written whole, a block
 // id and a term (case aside) appear once (422 otherwise), and a plan with no
 // question, no purpose and no term is not kept.

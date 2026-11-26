@@ -22,7 +22,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // whose chapter is gone is the client's to drop.
 //
 // Identity, role and institution are never in a request: the RPCs of
-// 20261220210000 take them from the session (server/database/work-plan).
+// 20261220380000 take them from the session (server/database/work-plan).
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 const END = "(?![\\s\\S])";

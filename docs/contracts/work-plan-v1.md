@@ -1,6 +1,6 @@
 # Plan rada v1
 
-Zadatak: F4-PM2-R15-SRV `f4-pm2-r15-srv` (Ductus#2059, nalog c.7199153557; redak PM2-R15 pregleda funkcija prije F4, korak M5.14b plana). Status: **aditivno, unatrag kompatibilno** (API 1.162.0). Baza je `20261220210000_work_plan.sql` (tablica `collaboration.work_plan`, RPC `get_work_plan`, `put_work_plan`, `delete_work_plans`); rute su montirane iz `server/http/work-plan/` (`createWorkPlanRoutesFor(databases.main)`). Lažni dev server ih odgovara izmišljenim podacima.
+Zadatak: F4-PM2-R15-SRV `f4-pm2-r15-srv` (Ductus#2059, nalog c.7199153557; redak PM2-R15 pregleda funkcija prije F4, korak M5.14b plana). Status: **aditivno, unatrag kompatibilno** (API 1.162.0). Baza je `20261220380000_work_plan.sql` (tablica `collaboration.work_plan`, RPC `get_work_plan`, `put_work_plan`, `delete_work_plans`); rute su montirane iz `server/http/work-plan/` (`createWorkPlanRoutesFor(databases.main)`). Lažni dev server ih odgovara izmišljenim podacima.
 
 ## Načela
 

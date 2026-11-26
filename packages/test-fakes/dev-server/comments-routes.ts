@@ -15,9 +15,10 @@ type Draft = {
   readonly commentId: string;
   readonly position: number;
   readonly text: string;
-  readonly anchor: Record<string, unknown>;
+  readonly anchor: Record<string, unknown> | null;
   readonly state: "open";
   readonly createdWindow: string;
+  readonly kind?: "must" | "sugg" | "q" | "praise" | null;
   readonly authorId: string;
   readonly documentId: string;
 };
@@ -76,7 +77,12 @@ export const COMMENTS_HANDLERS: Handlers = {
     );
     return {
       status: 200,
-      body: { drafts: own.map(({ authorId: _author, documentId: _document, ...draft }) => draft) },
+      body: {
+        drafts: own.map(({ authorId: _author, documentId: _document, kind, ...draft }) => ({
+          ...draft,
+          kind: kind ?? null,
+        })),
+      },
     };
   },
   "work.comment-drafts.post": ({ state, account, params, body, now }) => {
@@ -116,6 +122,26 @@ export const COMMENTS_HANDLERS: Handlers = {
       createdWindow: windowOf(now),
     });
     return { status: 201, body: { commentId } };
+  },
+  "work.comment-drafts-second.post": ({ state, account, params, body, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (readerOf(state, work, account) !== "teacher") return { error: "not_found" };
+    if (body.text.trim() === "") return { error: "invalid_input" };
+    const threadId = nextId(state);
+    draftsOf(state).push({
+      threadId,
+      commentId: nextId(state),
+      position: 1,
+      text: body.text,
+      anchor: body.anchor === null ? null : { ...body.anchor },
+      state: "open",
+      createdWindow: windowOf(now),
+      kind: body.kind ?? null,
+      authorId: account.id,
+      documentId: work!.documentId,
+    });
+    return { status: 201, body: { threadId } };
   },
   "work.comment-draft.delete": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };

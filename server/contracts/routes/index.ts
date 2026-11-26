@@ -27,6 +27,7 @@ export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { sourceNotebookRoutes } from "./source-notebook.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
+export { teacherSubmissionNotesGet } from "./teacher-submission-notes.ts";
 export { RESTORE_MAX_FROM_REVISION, versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { workExportSheetCsvRoutes } from "./work-export-sheet-csv.ts";

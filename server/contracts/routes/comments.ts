@@ -56,6 +56,9 @@ const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
 const literals = <T extends string>(values: readonly T[]) =>
   Type.Union(values.map((value) => Type.Literal(value)));
 
+/** The kinds of the comment bank (Q-6); a comment may carry one. */
+const TEMPLATE_KIND = literals(["must", "sugg", "q", "praise"]);
+
 const Draft = closed({
   threadId: Id,
   commentId: Id,
@@ -67,6 +70,8 @@ const Draft = closed({
   state: literals(["open", "answered", "resolved"]),
   /** The 5-minute window of writing (P-03), never the exact instant. */
   createdWindow: Instant,
+  /** Optional in the schema only so older clients stay valid; the server always sends it (null = no kind). */
+  kind: Type.Optional(Type.Union([TEMPLATE_KIND, Type.Null()])),
 });
 
 export const workCommentDraftsGet = defineRoute({
@@ -120,6 +125,36 @@ export const workCommentDraftsPost = defineRoute({
     error(422, "invalid_input"),
     error(404, "not_found"),
     error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
+export const workCommentDraftsSecondPost = defineRoute({
+  id: "work.comment-drafts-second.post",
+  method: "POST",
+  path: "/api/v1/works/{documentId}/comment-drafts/v2",
+  inventory: "app/api/works/[documentId]/comment-drafts/v2/route.ts",
+  access: "course_teacher",
+  summary:
+    "Writes a draft thread the student does not see until the teacher publishes (D-51), as work.comment-drafts.post does for a new thread, and more: {text, anchor, kind?} where anchor is a text anchor or null (a general comment on the whole work, no paragraph) and kind, one of must, sugg, q, praise (the kinds of the comment bank), is optional (missing or null is none; EDI-R20). 201 {threadId}. The kind is shown to the student when the draft is published. A reply is drafted on work.comment-drafts.post. The text is 1 to 2000 characters with a non-space, NFC, no control character but newline and tab, no bidi control; at most 8 KiB, sent as application/json. At most 500 drafts of one teacher on one work (422). Only a teacher of the work may; every other caller gets 404.",
+  request: {
+    params: closed({ documentId: WorkId }),
+    contentType: "application/json",
+    maxBodyBytes: 8 * 1024,
+    body: closed({
+      text: CommentText,
+      anchor: Type.Union([TextAnchor, Type.Null()]),
+      kind: Type.Optional(Type.Union([TEMPLATE_KIND, Type.Null()])),
+    }),
+  },
+  responses: [{ status: 201, description: "the new draft thread", body: closed({ threadId: Id }) }],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
     error(503, "unavailable"),
   ],
 });
@@ -203,7 +238,6 @@ export const workCommentsPublishSelectedPost = defineRoute({
   ],
 });
 
-const TEMPLATE_KIND = literals(["must", "sugg", "q", "praise"]);
 /**
  * SRV-V17-BANK-EDIT: a short label of the teacher's on an entry, 1 to 40 code
  * points with a non-space and no control character (null = none). NFC and
@@ -390,6 +424,7 @@ export const workChangesSinceReviewGet = defineRoute({
 export const commentsRoutes = [
   workCommentDraftsGet,
   workCommentDraftsPost,
+  workCommentDraftsSecondPost,
   workCommentDraftDelete,
   workCommentsPublishPost,
   workCommentsPublishSelectedPost,

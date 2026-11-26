@@ -1,5 +1,5 @@
 -- SRV-F4-PM2-R15 (Ductus#2059; plan M5.14b, D-234, D-250): the plan of a work
--- behind the panel "Struktura" (20261220210000): the question of the work, the
+-- behind the panel "Struktura" (20261220380000): the question of the work, the
 -- purpose of each chapter and the glossary, kept per work for the student who
 -- owns it. Personas of institution.inc and evidence-acceptance.inc, all
 -- invented: Ana writes doc-a in Vesna's course K1, Tomo writes doc-b in

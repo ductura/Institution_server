@@ -1,4 +1,4 @@
-// SRV-F4-PM2-R15 over a real database (20261220210000): the port of the plan of
+// SRV-F4-PM2-R15 over a real database (20261220380000): the port of the plan of
 // a work as the routes call it. The rules themselves are
 // db/main/tests/261-work-plan.sql; this checks the mapping of real rows.
 // Invented personas of the fixtures.

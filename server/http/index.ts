@@ -92,6 +92,7 @@ export {
 } from "./assignment-copy/index.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createTeacherDeclarationRouteFor } from "./teacher-declaration/index.ts";
+export { createTeacherSubmissionNotesRouteFor } from "./teacher-submission-notes/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,

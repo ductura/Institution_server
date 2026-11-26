@@ -1,5 +1,5 @@
 // SRV-F4-PM2-R15 (Ductus#2059; plan M5.14b, D-234): the database port of the plan
-// of a work (20261220210000), the question, the purpose of each chapter and the
+// of a work (20261220380000), the question, the purpose of each chapter and the
 // glossary behind the panel "Struktura". Each call is one withActor transaction
 // over one RPC of schema collaboration; the RPC decides who may: the student who
 // owns the work, alone, decided on every call (C-23). Nothing here reads or

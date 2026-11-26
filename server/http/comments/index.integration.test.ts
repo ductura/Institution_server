@@ -65,12 +65,16 @@ it("lists the caller's drafts, the same rows with the window as an ISO instant",
       anchor: ANCHOR,
       state: "open",
       createdWindow: AT,
+      kind: "q",
     }),
   );
   const response = await fetch(`${base()}${DRAFTS}`, { headers: cookie });
   expect(response.status).toBe(200);
-  const { drafts } = (await response.json()) as { drafts: { createdWindow: string }[] };
+  const { drafts } = (await response.json()) as {
+    drafts: { createdWindow: string; kind: string | null }[];
+  };
   expect(drafts).toHaveLength(1);
+  expect(drafts[0]!.kind).toBe("q");
   expect(drafts[0]!.createdWindow).toBe("2026-11-21T09:00:00.000Z");
 });
 
@@ -104,6 +108,75 @@ it.each([
   expect(query).not.toHaveBeenCalled();
 });
 
+describe("a draft with a kind and a general draft (EDI-R20)", () => {
+  const SECOND = `${DRAFTS}/v2`;
+  const sql = () => query.mock.calls[0]!;
+
+  it("opens a general draft: a null anchor reaches the database as SQL null, with the kind", async () => {
+    query.mockResolvedValueOnce(rows({ id: ID }));
+    const answer = await send("POST", SECOND, {
+      text: "Opći komentar.",
+      anchor: null,
+      kind: "praise",
+    });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({ threadId: ID });
+    expect(sql()[0]).toContain("create_comment_draft_v2");
+    expect(sql()[1]).toEqual(["izmisljeni-rad", "Opći komentar.", null, "praise"]);
+  });
+
+  it("opens an anchored draft, and a missing kind is none", async () => {
+    query.mockResolvedValueOnce(rows({ id: ID }));
+    const answer = await send("POST", SECOND, { text: "Napomena.", anchor: ANCHOR });
+    expect(answer.status).toBe(201);
+    expect(sql()[1]).toEqual(["izmisljeni-rad", "Napomena.", JSON.stringify(ANCHOR), null]);
+  });
+
+  it("refuses a kind outside the bank's, a missing anchor key and extra keys before the database", async () => {
+    for (const body of [
+      { text: "Napomena.", anchor: null, kind: "other" },
+      { text: "Napomena.", kind: "q" },
+      { text: "Napomena.", anchor: null, extra: 1 },
+      { text: "   ", anchor: null },
+    ]) {
+      expect((await send("POST", SECOND, body)).status).toBe(422);
+    }
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 for a work the caller does not teach and 422 when the database says invalid", async () => {
+    query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD403" }));
+    expect((await send("POST", SECOND, { text: "Napomena.", anchor: null })).status).toBe(404);
+    query.mockRejectedValueOnce(Object.assign(new Error("x"), { code: "ZD422" }));
+    expect((await send("POST", SECOND, { text: "Napomena.", anchor: null })).status).toBe(422);
+  });
+
+  it("answers 401 without a session cookie", async () => {
+    const answer = await fetch(`${base()}${SECOND}`, {
+      method: "POST",
+      headers: { origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ text: "Napomena.", anchor: null }),
+    });
+    expect(answer.status).toBe(401);
+  });
+
+  it("an unexpected kind in a row of the list is unavailable", async () => {
+    query.mockResolvedValueOnce(
+      rows({
+        threadId: ID,
+        commentId: ID,
+        position: 1,
+        text: "x",
+        anchor: null,
+        state: "open",
+        createdWindow: AT,
+        kind: "nesto",
+      }),
+    );
+    expect((await fetch(`${base()}${DRAFTS}`, { headers: cookie })).status).toBe(503);
+  });
+});
+
 it("publishes the drafts and answers how many, and 409 when there is none", async () => {
   query.mockResolvedValueOnce(rows({ published: 3 }));
   const response = await send("POST", "/works/izmisljeni-rad/comments/publish");
@@ -124,6 +197,7 @@ describe("publish-selected", () => {
     anchor: ANCHOR,
     state: "open",
     createdWindow: AT,
+    kind: null,
   });
 
   // The first query takes the lock of the drafts (one void row), then the list, then the publish.

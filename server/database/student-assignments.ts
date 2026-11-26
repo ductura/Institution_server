@@ -20,6 +20,8 @@ export type StudentAssignmentRow = {
   readonly dueAt: string;
   readonly extendedDueAt: string | null;
   readonly acknowledged: boolean;
+  /** A practice assignment (F4-STU-R02, 20261220210000). */
+  readonly isPractice: boolean;
 };
 
 export type StudentAssignmentsRead =
@@ -30,7 +32,7 @@ export type StudentAssignmentsReader = (token: string) => Promise<StudentAssignm
 
 const SQL = `SELECT assignment_id AS "assignmentId", course_id AS "courseId", course_name AS "courseName",
   academic_year AS "academicYear", title, work_type AS "workType", due_at AS "dueAt",
-  extended_due_at AS "extendedDueAt", acknowledged
+  extended_due_at AS "extendedDueAt", acknowledged, is_practice AS "isPractice"
   FROM institution.student_assignments()
   ORDER BY course_name COLLATE "hr-x-icu", course_id, due_at, assignment_id`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -55,7 +57,8 @@ function rowOf(row: Record<string, unknown>): StudentAssignmentRow | null {
     !text(workType) ||
     dueAt === null ||
     (row.extendedDueAt !== null && extendedDueAt === null) ||
-    typeof row.acknowledged !== "boolean"
+    typeof row.acknowledged !== "boolean" ||
+    typeof row.isPractice !== "boolean"
   ) {
     return null;
   }
@@ -63,6 +66,7 @@ function rowOf(row: Record<string, unknown>): StudentAssignmentRow | null {
     ...{ assignmentId, courseId, courseName, academicYear, title, workType, dueAt },
     extendedDueAt,
     acknowledged: row.acknowledged,
+    isPractice: row.isPractice,
   };
 }
 
