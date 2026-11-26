@@ -494,6 +494,13 @@ const DRAFT_STEP: Step = {
     },
   },
 };
+// F4-EDI-R20-SRV: a general draft (no anchor) with a kind.
+const GENERAL_DRAFT_STEP: Step = {
+  path: `/api/v1/works/${IDS.document}/comment-drafts/v2`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { text: "Izmišljen opći komentar o radu.", anchor: null, kind: "praise" },
+};
 const BANK_STEP: Step = {
   path: "/api/v1/teacher/comment-bank",
   as: "nastavnik",
@@ -2415,6 +2422,7 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `/api/v1/works/${IDS.document}/comment-drafts`, as: "nastavnik" },
   },
   "work.comment-drafts.post": { request: DRAFT_STEP },
+  "work.comment-drafts-second.post": { request: GENERAL_DRAFT_STEP },
   "work.comment-draft.delete": {
     before: [DRAFT_STEP],
     request: {

@@ -104,6 +104,7 @@ SELECT bag_eq(
             ('collaboration.list_work_rubric(text)'),
             ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
+            ('collaboration.create_comment_draft_v2(text,text,jsonb,text)'),
             ('collaboration.reply_comment_draft(text,uuid,text)'),
             ('collaboration.list_comment_drafts(text)'),
             ('collaboration.discard_comment_draft(uuid)'),
@@ -136,7 +137,7 @@ SELECT bag_eq(
             ('collaboration.create_suggestion(text,jsonb,text,text)'),
             ('collaboration.list_suggestions(text)'),
             ('collaboration.decide_suggestion(uuid,text)') $$,
-  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the student criteria read of 168 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260');
+  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the student criteria read of 168 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260 and the draft with a kind of 261');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,
@@ -159,7 +160,7 @@ SELECT ok(NOT has_schema_privilege('ductus_evidence', 'collaboration', 'USAGE')
 SELECT is(pg_get_function_arguments('collaboration.create_comment(text,text,jsonb)'::regprocedure),
   'p_document_id text, p_body text, p_anchor jsonb', 'no RPC takes an author: it comes from the session (attack 3)');
 SELECT is(pg_get_function_result('collaboration.list_comments(text)'::regprocedure),
-  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint)',
+  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint, kind text)',
   'list_comments returns no person id, exact time or document content (attack 8); the thread''s revision is a number (231)');
 
 -- Creating a thread: the teacher of the assignment's course and, since

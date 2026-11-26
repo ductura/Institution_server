@@ -19,7 +19,12 @@ export type CommentDraft = {
   readonly anchor: Readonly<Record<string, unknown>> | null;
   readonly state: "open" | "answered" | "resolved";
   readonly createdWindow: string;
+  /** The kind the teacher gave the draft (EDI-R20); null for none. */
+  readonly kind: CommentKind | null;
 };
+
+/** The kinds of the comment bank (Q-6). */
+export type CommentKind = "must" | "sugg" | "q" | "praise";
 
 export type CommentDelayRefusal = {
   readonly status: "unauthenticated" | "not_found" | "invalid" | "conflict" | "unavailable";
@@ -38,6 +43,17 @@ export type CommentDelay = {
     documentId: string,
     text: string,
     anchor: Readonly<Record<string, unknown>>,
+  ): Promise<CommentDelayResult<{ threadId: string }>>;
+  /**
+   * A draft thread with a kind, and with an anchor that may be null (a general
+   * comment on the whole work). invalid for a kind outside the bank's kinds.
+   */
+  createDraftWithKind(
+    token: string,
+    documentId: string,
+    text: string,
+    anchor: Readonly<Record<string, unknown>> | null,
+    kind: CommentKind | null,
   ): Promise<CommentDelayResult<{ threadId: string }>>;
   replyDraft(
     token: string,
@@ -69,9 +85,10 @@ export type CommentDelay = {
 
 const SQL = {
   createDraft: "SELECT collaboration.create_comment_draft($1, $2, $3::jsonb) AS id",
+  createDraftWithKind: "SELECT collaboration.create_comment_draft_v2($1, $2, $3::jsonb, $4) AS id",
   replyDraft: "SELECT collaboration.reply_comment_draft($1, $2::uuid, $3) AS id",
   listDrafts:
-    'SELECT thread_id AS "threadId", comment_id AS "commentId", comment_position AS position, body AS text, anchor, state, created_window AS "createdWindow" FROM collaboration.list_comment_drafts($1)',
+    'SELECT thread_id AS "threadId", comment_id AS "commentId", comment_position AS position, body AS text, anchor, state, created_window AS "createdWindow", kind FROM collaboration.list_comment_drafts($1)',
   discardDraft: "SELECT collaboration.discard_comment_draft($1::uuid)",
   publish: "SELECT collaboration.publish_comments($1) AS published",
   // The key of create, discard and publish_comments, so no draft of this teacher on this work
@@ -123,7 +140,10 @@ const revision = (value: unknown): number => {
 };
 
 function toDraft(row: Record<string, unknown>): CommentDraft {
-  const { anchor, state, position } = row;
+  const { anchor, state, position, kind } = row;
+  if (kind !== null && kind !== "must" && kind !== "sugg" && kind !== "q" && kind !== "praise") {
+    throw new Malformed();
+  }
   if (anchor !== null && (typeof anchor !== "object" || Array.isArray(anchor))) {
     throw new Malformed();
   }
@@ -137,6 +157,7 @@ function toDraft(row: Record<string, unknown>): CommentDraft {
     anchor: anchor as Record<string, unknown> | null,
     state,
     createdWindow: instant(row.createdWindow),
+    kind,
   };
 }
 
@@ -172,6 +193,20 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
         status: "ok" as const,
         threadId: text(
           (await one(tx, SQL.createDraft, [documentId, body, JSON.stringify(anchor)])).id,
+        ),
+      })),
+    createDraftWithKind: (token, documentId, body, anchor, kind) =>
+      run(token, async (tx) => ({
+        status: "ok" as const,
+        threadId: text(
+          (
+            await one(tx, SQL.createDraftWithKind, [
+              documentId,
+              body,
+              anchor === null ? null : JSON.stringify(anchor),
+              kind,
+            ])
+          ).id,
         ),
       })),
     replyDraft: (token, documentId, threadId, body) =>
