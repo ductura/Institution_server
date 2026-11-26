@@ -17,6 +17,7 @@ const ENTRIES = [
   "/services",
   "/fido2",
   "/hostile-inputs",
+  "/invented-works",
   "/pglite",
   "/dev-server",
 ];
@@ -30,7 +31,7 @@ function load(specifier: string, nodeEnv: string | undefined) {
 }
 
 describe("@ductura/test-fakes as a package", () => {
-  it("exports exactly the root and the eight modules", () => {
+  it("exports exactly the root and the nine modules", () => {
     const own = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
       exports: Record<string, string>;
     };
