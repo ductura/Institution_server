@@ -147,6 +147,7 @@ import {
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -1787,6 +1788,34 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V18-KODIRANJE-OZNAKE: the passages and the export are the student's own; an id that is not theirs is 404.
+  "student.qual-segments.get": {
+    method: "GET",
+    path: `/api/v1/student/qual/materials/${randomUUID()}/segments`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-segments.post": {
+    method: "POST",
+    path: `/api/v1/student/qual/materials/${randomUUID()}/segments`,
+    body: () => ({
+      codeId: randomUUID(),
+      anchor: { paragraph: 0, start: 0, end: 10, quote: "Izmišljena" },
+    }),
+    live: 404,
+  },
+  "student.qual-segment.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/segments/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-export.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/export",
+    body: () => undefined,
+    live: 200,
+  },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
   "course.aggregate.get": {
     method: "GET",
@@ -2687,6 +2716,7 @@ const FACTORIES = [
   "createQuestionnaireResponsesRoutesFor",
   "createQuestionnaireExportRoutesFor",
   "createQualitativeMaterialsRoutesFor",
+  "createQualitativeSegmentsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2838,6 +2868,7 @@ const MOUNTED = [
   ...createQuestionnaireResponsesRoutesFor(databases.main),
   ...createQuestionnaireExportRoutesFor(databases.main),
   ...createQualitativeMaterialsRoutesFor(databases.main),
+  ...createQualitativeSegmentsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),

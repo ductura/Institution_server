@@ -46,6 +46,7 @@ import {
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDirectEditRoutesFor,
   createDownloadsManifestRoute,
@@ -631,6 +632,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createQuestionnaireResponsesRoutesFor", () => createQuestionnaireResponsesRoutesFor(STAND_IN)],
   ["createQuestionnaireExportRoutesFor", () => createQuestionnaireExportRoutesFor(STAND_IN)],
   ["createQualitativeMaterialsRoutesFor", () => createQualitativeMaterialsRoutesFor(STAND_IN)],
+  ["createQualitativeSegmentsRoutesFor", () => createQualitativeSegmentsRoutesFor(STAND_IN)],
   ["createProcessSummaryRouteFor", () => [createProcessSummaryRouteFor(STAND_IN, STAND_IN, {})]],
   [
     "createProcessSummaryDetailsRouteFor",
