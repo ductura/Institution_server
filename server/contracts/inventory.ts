@@ -79,6 +79,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@333e163:docs/DECISIONS.md#D-300",
   },
+  // DAN-1568: Ductus has no client error route; the shape is the ticket's.
+  "app/api/client-error/route.ts": {
+    methods: ["POST"],
+    source: "linear:DAN-1568",
+  },
   // DAN-840: Ductus has no WebAuthn route; the network engineer signs in with
   // AAI@EduHr and FIDO2 (D-297), the second factor of an AAI@EduHr session.
   "app/api/auth/webauthn/challenge/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },

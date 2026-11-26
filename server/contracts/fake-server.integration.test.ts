@@ -79,9 +79,10 @@ describe("fake server over HTTP", () => {
     // Five framing vectors per guarded mutation route: 36 on main, +5 revision-requests, +25 enrolment, notice and work language, +40 institution;
     // the submission and the replay (DAN-818), as the evidence routes, have two each (timeout and bad-request);
     // the client context (DAN-846) has four (no session, so no unauthorized vector);
+    // the client error (DAN-1568) has four, as the client context;
     // the three WebAuthn routes (DAN-840-1) have four each, framing only: timeout, length twice, stream;
     // teacher.assignment-submissions.post (DAN-903-1) five, as the fast path.
-    expect(VECTORS.length - overHttp.length).toBe(131);
+    expect(VECTORS.length - overHttp.length).toBe(135);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

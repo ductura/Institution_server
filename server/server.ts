@@ -17,6 +17,7 @@ import {
   type AreaWithRoutes,
   createAuthRoutes,
   createClientContextRoute,
+  createClientErrorRoute,
   createDownloadsManifestRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
@@ -122,6 +123,9 @@ async function main(): Promise<void> {
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
+      // An error nobody caught in the browser (DAN-1568): closed codes only,
+      // written as one line of the process log until a log writer is wired.
+      createClientErrorRoute(),
       createEvidenceOpenRoute(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),

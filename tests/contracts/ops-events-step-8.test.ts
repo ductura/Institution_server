@@ -23,6 +23,7 @@ import {
   AREA_NAMES,
   createAuthRoutes,
   createClientContextRoute,
+  createClientErrorRoute,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
@@ -402,6 +403,7 @@ const STAND_IN = {} as never;
 const ENTRY_ROUTES: Readonly<Record<string, () => readonly Route[]>> = {
   createHealthRoute: () => [createHealthRoute({ health: STAND_IN, serverVersion: "0.0.0" })],
   createClientContextRoute: () => [createClientContextRoute()],
+  createClientErrorRoute: () => [createClientErrorRoute()],
   createEvidenceOpenRoute: () => [createEvidenceOpenRoute(STAND_IN)],
   createDownloadsManifestRoute: () => [createDownloadsManifestRoute()],
   createSettingsValuesPutRoute: () => [createSettingsValuesPutRoute({ writer: STAND_IN })],

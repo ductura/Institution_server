@@ -8,6 +8,13 @@ export {
   type ClientContext,
   type ClientContextOptions,
 } from "./client-context.ts";
+export {
+  CLIENT_ERROR_MAX_BYTES,
+  createClientErrorRoute,
+  parseClientError,
+  type ClientError,
+  type ClientErrorOptions,
+} from "./client-error.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
 export {
   finishLogin,
