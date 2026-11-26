@@ -57,6 +57,11 @@ if (!Number.isSafeInteger(duration) || duration < 1 || duration > 3_600)
 const longestChain = Math.max(...Array.from(students, (student) => student.commits.length));
 
 const FAILED = "http_req_failed";
+const DROPPED = "dropped_iterations";
+const ROUTES: Record<string, string[]> = {
+  pisci: ["commit", "submission"],
+  zahtjevi: ["assignments", "open"],
+};
 const writers = {
   executor: "per-vu-iterations",
   vus: students.length,
@@ -75,7 +80,16 @@ const requests = {
 export const options = {
   scenarios: { [load]: load === "pisci" ? writers : requests },
   // Any failed request or check ends k6 with a non-zero code, as in ISTR-9.
-  thresholds: { [FAILED]: ["rate==0"], checks: ["rate==1"] },
+  thresholds: {
+    [FAILED]: ["rate==0"],
+    checks: ["rate==1"],
+    // A dropped arrival means the server was not tested at the asked rate.
+    ...(load === "zahtjevi" ? { [DROPPED]: ["count==0"] } : {}),
+    // Never failing; they only make k6 keep p50/p95/p99 per route in the summary.
+    ...Object.fromEntries(
+      (ROUTES[load] ?? []).map((name) => [`http_req_duration{name:${name}}`, ["max>=0"]]),
+    ),
+  },
   summaryTrendStats: ["p(50)", "p(95)", "p(99)", "max", "count"],
 };
 
@@ -177,7 +191,12 @@ export function handleSummary(data: Summary): Record<string, string> {
   const out = env.IZLAZ;
   const picked: Record<string, unknown> = { oznaka: env.OZNAKA ?? "", opterecenje: load };
   for (const [name, metric] of Object.entries(data.metrics))
-    if (name.startsWith("http_req_duration") || name === FAILED || name === "http_reqs")
+    if (
+      name.startsWith("http_req_duration") ||
+      name === FAILED ||
+      name === "http_reqs" ||
+      name === DROPPED
+    )
       picked[name] = metric?.values;
   return out === undefined ? {} : { [out]: JSON.stringify(picked, null, 2) };
 }

@@ -23,7 +23,7 @@ Zadatak: DAN-895, odluka Daniela 27. 11. 2026. (chat orkestratora: „Da, smije�
 
 **(b) 1000 zahtjeva u sekundi (`zahtjevi`).** `constant-arrival-rate`, `STOPA` zahtjeva u sekundi (zadano 1000), `TRAJANJE_S` sekundi (zadano 120). Stopa je zadana dolascima, pa spor poslužitelj ne može usporiti generator i sakriti zagušenje. Smjesa: 70 % `GET student/assignments`, 30 % `evidence/open` (`start: true`) na već otvoren rad. Samo čitanje, bez pisanja evidencije, pa se (a) i (b) ne miješaju.
 
-Pragovi su kao u ISTR-9: `http_req_failed rate==0` i `checks rate==1`, pa svaka greška (i 429) daje k6 izlaz različit od 0.
+Pragovi su kao u ISTR-9: `http_req_failed rate==0` i `checks rate==1`, pa svaka greška (i 429) daje k6 izlaz različit od 0. Za (b) je dodan i `dropped_iterations count==0`: ako generator ne uspije ostvariti traženu stopu (svi VU-ovi zauzeti), pokret pada, a ne prolazi kao uspješan. Za svaku rutu postoji podmetrika `http_req_duration{name:<ruta>}` s p50/p95/p99 u sažetku i u JSON-u `IZLAZ`.
 
 ## Parametri: 1, 2 i 4 kopije web procesa i workera
 
@@ -38,7 +38,7 @@ Pragovi su kao u ISTR-9: `http_req_failed rate==0` i `checks rate==1`, pa svaka 
 | `zahtjevi-w2-r2`  | (b)         |   2 |      2 |
 | `zahtjevi-w4-r4`  | (b)         |   4 |      4 |
 
-Pokret se ne smije ponavljati na istim studentima: svaki pokret troši pripremljene lance, pa treba novu pripremu (`--pokret=<oznaka>`). Kopije dijele jednu bazu; ispred web kopija je balanser opterećenja, a svaka kopija sluša na vlastitom portu ili instanci. Kako se kopije stvarno pokreću ovisi o okruženju koje Daniel odobri (u repou je samo jedna web usluga, `render.yaml`).
+Pokret se ne smije ponavljati na istim studentima: svaki pokret troši pripremljene lance, pa treba novu pripremu (`--pokret=<identifikator>`; identifikator je oznaka bez crtica, `preparationId()` u planu, npr. `pw1r1` ili `zw4r4`, jer priprema prihvaća samo `a-z0-9` do 12 znakova). Kopije dijele jednu bazu; ispred web kopija je balanser opterećenja, a svaka kopija sluša na vlastitom portu ili instanci. Kako se kopije stvarno pokreću ovisi o okruženju koje Daniel odobri (u repou je samo jedna web usluga, `render.yaml`).
 
 ## Izlaz
 
@@ -67,7 +67,7 @@ Isto vrijedi za pripremu: `login_per_ip` je 30 u minuti, jedna prijava troši dv
 ## Postupak (kad Daniel odobri okruženje)
 
 1. Podigni poslužitelj i bazu za jedan red iz matrice, na odvojenim strojevima.
-2. Na generatoru: `node scripts/load/priprema.ts --korisnika=1000 --spremanja=20 --velicina=1500 --pokret=<oznaka>`.
+2. Priprema ide **na stroju poslužitelja**, ne na generatoru: `priprema.ts` se uvijek prijavljuje na `http://localhost:4000` i lažni OIDC na `:8090` (`scripts/lokalno/config.ts`), a samo lokalno smije (`assertLocal`). Pokreni je ondje: `node scripts/load/priprema.ts --korisnika=1000 --spremanja=20 --velicina=1500 --pokret=<identifikator>`. Datoteka `.local/load/<identifikator>.json` sadrži kolačiće sesija izmišljenih računa: prenosi se na generator sigurnim kanalom (npr. `scp`), nikad u repo ni u chat, i briše nakon pokreta. Udaljeni cilj pripreme namjerno nije dodan.
 3. Na trećem stroju: `node scripts/load/opt-1000-baza.ts --baza-env=… --oznaka=<oznaka> --trajanje=<s>`.
 4. Na generatoru: `k6 run -e OPTEREĆENJE=… -e PODACI=… -e IZVOR=… -e OZNAKA=<oznaka> -e IZLAZ=… [-e STOPA=1000 -e TRAJANJE_S=120] [-e ZAGLAVLE=1] scripts/load/opt-1000.ts`.
 5. Ponovi za sve redove matrice, svaki s novom pripremom, jedan po jedan.

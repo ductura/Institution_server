@@ -8,6 +8,7 @@ import {
   dryRun,
   forwardedFor,
   maxDurationSeconds,
+  preparationId,
 } from "./opt-1000-plan.ts";
 import { parseLoadFlags } from "./priprema.ts";
 
@@ -97,5 +98,19 @@ describe("priprema --velicina", () => {
     expect(parseLoadFlags(["--pokret=a1", "--velicina=1500"]).size).toBe(1500);
     expect(parseLoadFlags(["--pokret=a1"]).size).toBe(0);
     expect(() => parseLoadFlags(["--pokret=a1", "--velicina=2001"])).toThrow();
+  });
+});
+
+describe("preparationId", () => {
+  it("turns every label of the matrix into an id priprema.ts accepts", () => {
+    for (const run of buildMatrix()) {
+      const id = preparationId(run.label);
+      expect(parseLoadFlags([`--pokret=${id}`]).run).toBe(id);
+    }
+    expect(preparationId("pisci-w1-r1")).toBe("pw1r1");
+  });
+
+  it("refuses a label that cannot become one", () => {
+    expect(() => preparationId("Pisci w1")).toThrow(RangeError);
   });
 });

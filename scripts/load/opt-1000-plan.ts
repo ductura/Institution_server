@@ -71,3 +71,13 @@ export function maxDurationSeconds(saves: number): number {
   const [, longest] = SAVE_GAP_S;
   return Math.ceil(longest + saves * longest + (saves + 1) * 30 + 120);
 }
+
+/** The id `priprema.ts --pokret` accepts (a-z, 0-9, at most 12) for a run label: the label without dashes, "pisci" as "p" and "zahtjevi" as "z". */
+export function preparationId(label: string): string {
+  const id = label
+    .replace(/^pisci/u, "p")
+    .replace(/^zahtjevi/u, "z")
+    .replaceAll("-", "");
+  if (!/^[a-z0-9]{1,12}$/u.test(id)) throw new RangeError("label has no valid preparation id");
+  return id;
+}
