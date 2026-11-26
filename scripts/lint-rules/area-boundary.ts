@@ -67,6 +67,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     ...["external/srce-auth", "external/storage", "external/keys", "external/email"],
     "external/assistant",
     "external/assistant-tools",
+    "external/isvu",
     "identity",
     "import",
   ],

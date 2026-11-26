@@ -344,6 +344,20 @@ export type Operations = {
     success: { status: 201; body: { "versionNo": number; "publishedAt": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "invalid_work_type" | "invalid_ai_policy" | "invalid_ai_purposes" | "invalid_evidence_profile" | "conflict" | "unavailable";
   };
+  "institution.isvu-courses.get": {
+    params: undefined;
+    query: { "academicYear": string };
+    body: undefined;
+    success: { status: 200; body: { "mode": "mock"; "courses": ({ "sourceCourseKey": string; "name": string; "academicYear": string; "enrolledCount": number })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "invalid_input" | "unavailable";
+  };
+  "institution.isvu-roster-imports.post": {
+    params: { "courseId": string };
+    query: undefined;
+    body: { "sourceCourseKey": string };
+    success: { status: 200; body: { "importId": string; "source": "isvu"; "expiresAt": string; "counts": { "new": number; "alreadyEnrolled": number; "unsuitable": number }; "rows": ({ "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "new"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "already_enrolled"; "reason": null } | { "line": number; "identifier": string; "givenName": string; "familyName": string; "status": "unsuitable"; "reason": "invalid_identifier" | "missing_name" | "duplicate" | "unknown_account" | "ineligible_account" | "name_mismatch" | "removed" | "course_teacher" })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "not_found" | "unavailable";
+  };
   "institution.legal-hold-release.post": {
     params: { "holdId": string };
     query: undefined;

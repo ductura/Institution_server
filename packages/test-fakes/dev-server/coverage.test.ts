@@ -1158,6 +1158,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: {},
     },
   },
+  // SRV-V22-ISVU-POPIS: the trial source's courses of a year, and the preview of one course's students.
+  "institution.isvu-courses.get": {
+    request: {
+      path: "/api/v1/institution/admin/isvu/courses?academicYear=2026%2F2027",
+      as: "administrator",
+    },
+  },
+  "institution.isvu-roster-imports.post": {
+    request: {
+      path: `/api/v1/institution/admin/courses/${IDS.course}/isvu-roster-imports`,
+      as: "administrator",
+      body: { sourceCourseKey: "SYN-101" },
+    },
+  },
   "institution.admin-courses.get": {
     request: {
       path: "/api/v1/institution/admin/courses",
