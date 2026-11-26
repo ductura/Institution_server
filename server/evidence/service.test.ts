@@ -120,6 +120,7 @@ function setup(
 ) {
   const queries: { kind: string; values: readonly unknown[] }[] = [];
   const zeroReads: { kind: string; values: readonly unknown[] }[] = [];
+  const kindReads: { kind: string; values: readonly unknown[] }[] = [];
   const withActor: WithActor = async (_token, fn) => {
     const tx: ActorTransaction = {
       async query(text, values = []) {
@@ -127,15 +128,23 @@ function setup(
           ? "context"
           : text.includes("evidence.document_revision")
             ? "revision0"
-            : "commit";
-        // The read of revision 0 is kept apart, so `queries` stays context and commit.
-        (kind === "revision0" ? zeroReads : queries).push({ kind, values });
+            : text.includes("document_kind")
+              ? "kind"
+              : "commit";
+        // The reads of revision 0 and of the work's kind (SRV-V14-SHEET-COMMIT)
+        // are kept apart, so `queries` stays context and commit.
+        (kind === "revision0" ? zeroReads : kind === "kind" ? kindReads : queries).push({
+          kind,
+          values,
+        });
         const row =
           kind === "context"
             ? snake(contextRow)
             : kind === "revision0"
               ? { content_hash: revisionZero }
-              : snake(STALE);
+              : kind === "kind"
+                ? snake({ documentKind: "text" })
+                : snake(STALE);
         const rows = [row] as never[];
         return { rows, rowCount: 1 };
       },
@@ -754,10 +763,13 @@ describe("createEvidenceService().commit signing", () => {
     const withActor: WithActor = async (_token, fn) => {
       const tx: ActorTransaction = {
         async query(text) {
-          // SRV-7F: the context's read of revision 0 names a v1 work.
+          // SRV-7F: the context's read of revision 0 names a v1 work, and its
+          // read of the kind a text work (SRV-V14-SHEET-COMMIT).
           const row = text.includes("evidence.document_revision")
             ? { content_hash: V1_ZERO }
-            : snake(CONTEXT_ROW);
+            : text.includes("document_kind")
+              ? snake({ documentKind: "text" })
+              : snake(CONTEXT_ROW);
           return { rows: [row] as never[], rowCount: 1 };
         },
       };
