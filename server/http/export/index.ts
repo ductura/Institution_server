@@ -93,3 +93,6 @@ export {
 } from "./submission-package.ts";
 // SRV-V14-SHEET-CSV: the CSV of one sheet of a spreadsheet work.
 export { createSheetCsvRoute, createSheetCsvRouteFor } from "./sheet-csv.ts";
+
+// SRV-V14-SHEET-XLSX: the .xlsx of a saved version of a spreadsheet work.
+export { createSheetXlsxRoute, createSheetXlsxRouteFor } from "./sheet-xlsx.ts";

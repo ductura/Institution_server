@@ -816,6 +816,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654054",
   },
+  // SRV-V14-SHEET-XLSX (val 14 decision 6, Ductus#2058 c.7173654855): the .xlsx of a saved version of a spreadsheet work; Ductus has no such route.
+  "app/api/works/[documentId]/export/xlsx/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654855",
+  },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
     methods: ["GET"],

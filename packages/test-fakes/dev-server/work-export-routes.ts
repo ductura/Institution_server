@@ -18,6 +18,8 @@ import {
   buildExportModel,
   renderDocx,
   renderSheetCsv,
+  renderSheetXlsx,
+  XLSX_TYPE,
 } from "../../../server/downloads/index.ts";
 import type { Handlers } from "./server.ts";
 import { readerOf } from "./state.ts";
@@ -90,6 +92,25 @@ export const WORK_EXPORT_HANDLERS: Handlers = {
         "content-disposition": 'attachment; filename="rad.csv"',
       },
       body: new Blob([csv.bytes], { type: "text/csv" }),
+    };
+  },
+  // SRV-V14-SHEET-XLSX: the .xlsx of a spreadsheet work; a text work is the same 404 as another's.
+  "work.export-sheet-xlsx.get": ({ state, account, params, query }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) === null)
+      return { error: "not_found" };
+    const asked = query.versionId === undefined ? work.revision : Number(query.versionId);
+    if (work.revision < 1 || asked !== work.revision) return { error: "not_found" };
+    const xlsx = renderSheetXlsx({ body: Buffer.from(work.document, "base64").toString("utf8") });
+    if (xlsx.status !== "rendered") return { error: "not_found" };
+    return {
+      status: 200,
+      headers: {
+        "cache-control": "private, no-store",
+        "x-export-sheet-sha256": xlsx.sheetSha256,
+      },
+      body: new Blob([xlsx.bytes], { type: XLSX_TYPE }),
     };
   },
 };
