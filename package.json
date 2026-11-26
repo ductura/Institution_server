@@ -12,6 +12,7 @@
     "build": "node scripts/build/server.ts",
     "start": "node --disallow-code-generation-from-strings dist/server.js",
     "stack:vs1": "node scripts/stack/vs1.ts",
+    "evidence:verify": "node scripts/evidence-verify/cli.ts",
     "lokalno": "node scripts/lokalno/lokalno.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --flag unstable_native_nodejs_ts_config -c eslint.config.ts --max-warnings 0 .",
