@@ -2141,13 +2141,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "student.questionnaire-responses.post:body": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       Array.isArray(value['answers']) &&
       value['answers'].length <= 40 &&
       value['answers'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && value['value'].length <= 2000 && value['value'].length >= 1) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && local1.test(value['value'])) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }
@@ -3097,13 +3098,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "teacher.questionnaire-manual-responses.post:body": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       Array.isArray(value['answers']) &&
       value['answers'].length <= 40 &&
       value['answers'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && value['value'].length <= 2000 && value['value'].length >= 1) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['questionId'] === 'string') && local0.test(value['questionId']) && (((typeof value['value'] === 'string') && local1.test(value['value'])) || (Number.isFinite(value['value'])) || (Array.isArray(value['value']) && value['value'].length <= 20 && value['value'].length >= 1 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 40 && value.length >= 1))) { return false }; return true; })(value['value']))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['answers']) &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }

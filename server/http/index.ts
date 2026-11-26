@@ -228,11 +228,6 @@ export {
   type QuestionnaireExportPort,
 } from "./questionnaire-export.ts";
 export {
-  createQuestionnaireResponsesRoutes,
-  createQuestionnaireResponsesRoutesFor,
-  type QuestionnaireResponsesPort,
-} from "./questionnaire-responses.ts";
-export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
 } from "./declaration-question.ts";
