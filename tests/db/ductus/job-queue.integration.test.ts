@@ -450,9 +450,12 @@ describe("job queue: one job, one attempt at a time", () => {
     { repeats: 199 },
     async (_label, heldMs) => {
       const def = definition();
+      // The fence is a real timer, and the take is the hold plus however long the
+      // database takes to answer. A long expiry puts the fence (2650 ms) far past
+      // the hold, so a slow database cannot fire it.
       const queue = await open(def, "workerA", {
         retryLimit: 0,
-        expireSeconds: 1,
+        expireSeconds: 5,
         deadlineMs: 300,
       });
       await queue.enqueue(def.name, body(42));
@@ -467,7 +470,7 @@ describe("job queue: one job, one attempt at a time", () => {
       expect(await jobs(def.name)).toEqual([
         { state: "failed", retry_count: 0, output: { code: "timeout" }, data: body(42) },
       ]);
-      expect(fence).toEqual({ armed: [650], fired: [] });
+      expect(fence).toEqual({ armed: [2650], fired: [] });
     },
   );
 
