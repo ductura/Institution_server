@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.157.0",
+    "version": "1.158.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -12099,6 +12099,22 @@
                         }
                       ]
                     },
+                    "workKind": {
+                      "anyOf": [
+                        {
+                          "const": "text",
+                          "type": "string"
+                        },
+                        {
+                          "const": "slides",
+                          "type": "string"
+                        },
+                        {
+                          "const": "spreadsheet",
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "slidesSchemaVersion": {
                       "const": 1,
                       "type": "number"
@@ -17020,6 +17036,22 @@
                         "type": "string"
                       }
                     ]
+                  },
+                  "workKind": {
+                    "anyOf": [
+                      {
+                        "const": "text",
+                        "type": "string"
+                      },
+                      {
+                        "const": "slides",
+                        "type": "string"
+                      },
+                      {
+                        "const": "spreadsheet",
+                        "type": "string"
+                      }
+                    ]
                   }
                 }
               }
@@ -20378,6 +20410,22 @@
                       },
                       {
                         "const": "slides",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "workKind": {
+                    "anyOf": [
+                      {
+                        "const": "text",
+                        "type": "string"
+                      },
+                      {
+                        "const": "slides",
+                        "type": "string"
+                      },
+                      {
+                        "const": "spreadsheet",
                         "type": "string"
                       }
                     ]
@@ -67822,6 +67870,22 @@
                           "type": "string"
                         }
                       ]
+                    },
+                    "workKind": {
+                      "anyOf": [
+                        {
+                          "const": "text",
+                          "type": "string"
+                        },
+                        {
+                          "const": "slides",
+                          "type": "string"
+                        },
+                        {
+                          "const": "spreadsheet",
+                          "type": "string"
+                        }
+                      ]
                     }
                   }
                 }
@@ -68426,6 +68490,22 @@
                               },
                               {
                                 "const": "slides",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "workKind": {
+                            "anyOf": [
+                              {
+                                "const": "text",
+                                "type": "string"
+                              },
+                              {
+                                "const": "slides",
+                                "type": "string"
+                              },
+                              {
+                                "const": "spreadsheet",
                                 "type": "string"
                               }
                             ]
@@ -71169,6 +71249,22 @@
                                     },
                                     {
                                       "const": "slides",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "workKind": {
+                                  "anyOf": [
+                                    {
+                                      "const": "text",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "slides",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "spreadsheet",
                                       "type": "string"
                                     }
                                   ]
@@ -186335,6 +186431,22 @@
                             },
                             {
                               "const": "slides",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "workKind": {
+                          "anyOf": [
+                            {
+                              "const": "text",
+                              "type": "string"
+                            },
+                            {
+                              "const": "slides",
+                              "type": "string"
+                            },
+                            {
+                              "const": "spreadsheet",
                               "type": "string"
                             }
                           ]

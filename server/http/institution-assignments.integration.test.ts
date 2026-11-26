@@ -103,6 +103,13 @@ const withoutRequestId = (body: unknown) =>
   Object.fromEntries(
     Object.entries(body as Record<string, unknown>).filter(([k]) => k !== "requestId"),
   );
+/** The content the port gets: the body without the key and the setup fields. */
+const base_without_ids = (body: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(body).filter(
+      ([k]) => !["requestKey", "externalToolsAllowed", "aiSummaryOnly", "groupIds"].includes(k),
+    ),
+  );
 const NO_SETUP = { externalToolsAllowed: false, aiSummaryOnly: false };
 const tokenOf = (v: Vector) => v.request.headers.cookie!.slice("__Host-ductus_session=".length);
 
@@ -241,6 +248,27 @@ describe("the arguments of the port", () => {
     const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
     expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(422);
     expect(calls).toEqual([]);
+  });
+
+  // SRV-V14-KIND-ENUM: workKind beside documentKind; workKind wins, a difference is 422.
+  it.each([
+    ["workKind text alone", { workKind: "text" }, 201],
+    ["workKind and documentKind both text", { workKind: "text", documentKind: "text" }, 201],
+    ["workKind text, documentKind slides", { workKind: "text", documentKind: "slides" }, 422],
+    ["workKind spreadsheet, not stored yet", { workKind: "spreadsheet" }, 422],
+    ["workKind unknown", { workKind: "video" }, 422],
+    ["workKind not a string", { workKind: 1 }, 422],
+  ])("create: %s is %i", async (_name, extra, status) => {
+    const v = CREATE.find((x) => x.kind === "success")!;
+    createAnswer = () => ({ status: "created", id: v.response.body.id as string });
+    await start(v.request.headers.origin!);
+    const base = v.request.body as Record<string, unknown>;
+    const body = { ...base, ...extra };
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(status);
+    expect(calls.length).toBe(status === 201 ? 1 : 0);
+    // The kind fields never reach the port as content.
+    if (status === 201) expect(calls[0]![4]).toEqual(base_without_ids(base));
   });
 
   it("create: no key, or a key that is not a UUID, is 422 before the port", async () => {

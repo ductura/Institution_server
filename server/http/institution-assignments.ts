@@ -57,16 +57,22 @@ const optionalFlag = (body: object, key: string, value: unknown): boolean | null
   !Object.hasOwn(body, key) ? false : typeof value === "boolean" ? value : null;
 
 /**
- * The optional documentKind (SRV-V13-VRSTA-POST): absent is "text", as in the reads.
- * Anything but a known kind is the 422 of the contract. No RPC stores another kind
- * yet (institution.assignment.document_kind has no writer, SRV-V13-MIG-VRSTA), so
- * "slides" is refused too rather than made into a text assignment in silence.
+ * The optional documentKind (SRV-V13-VRSTA-POST) and workKind (SRV-V14-KIND-ENUM): both
+ * absent is "text", as in the reads. workKind wins over documentKind; both present and
+ * different is the 422 of the contract, as is anything but a known kind. No RPC stores
+ * another kind yet (institution.assignment.document_kind has no writer, SRV-V13-MIG-VRSTA),
+ * so "slides" and "spreadsheet" are refused too rather than made into a text assignment
+ * in silence.
  */
 const KINDS_STORED: ReadonlySet<unknown> = new Set(["text"]);
 function withoutDocumentKind(value: unknown): { fields: unknown } | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return { fields: value };
-  const { documentKind, ...fields } = value as Record<string, unknown>;
-  if (Object.hasOwn(value, "documentKind") && !KINDS_STORED.has(documentKind)) return null;
+  const { documentKind, workKind, ...fields } = value as Record<string, unknown>;
+  const hasDocumentKind = Object.hasOwn(value, "documentKind");
+  const hasWorkKind = Object.hasOwn(value, "workKind");
+  if (hasDocumentKind && hasWorkKind && documentKind !== workKind) return null;
+  const kind = hasWorkKind ? workKind : documentKind;
+  if ((hasDocumentKind || hasWorkKind) && !KINDS_STORED.has(kind)) return null;
   return { fields };
 }
 

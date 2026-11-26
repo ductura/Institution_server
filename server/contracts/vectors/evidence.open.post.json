@@ -201,6 +201,58 @@
       }
     },
     {
+      "name": "opened-spreadsheet-work-kind",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+          "start": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "opened",
+          "documentId": "dokument-izmisljeni-zv-1",
+          "evidenceProfileId": "standard-v1",
+          "currentRevision": 0,
+          "documentHash": "df89679f4a77a27f4c669a12c443a728423d36f1247b693733c96b455f172535",
+          "headSegmentHash": null,
+          "lastSequenceTo": 0,
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOltdLCJpZCI6IjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyIsInR5cGUiOiJwYXJhZ3JhcGgifSx7ImNoaWxkcmVuIjpbXSwiaWQiOiI4YjNlMmQ3MS02YzRmLTRhOTAtYjVkMi1lMTdmMGE5YzNiNDYiLCJ0eXBlIjoicGFyYWdyYXBoIn1dLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+          "receiptKeys": [
+            {
+              "algorithm": "Ed25519",
+              "keyId": "ductus-golden-rfc8032-test-1",
+              "keyVersion": "1",
+              "encoding": "spki-der",
+              "keyBase64Url": "MCowBQYDK2VwAyEA11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+              "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+              "purpose": "receipt",
+              "validFrom": "2026-01-01T00:00:00.000Z",
+              "validTo": null,
+              "revokedAt": null
+            }
+          ],
+          "submitted": false,
+          "lastSignedAt": null,
+          "workKind": "spreadsheet",
+          "sheetSchemaVersion": 1
+        }
+      }
+    },
+    {
       "name": "forbidden",
       "kind": "error",
       "code": "forbidden",
