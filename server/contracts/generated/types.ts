@@ -729,6 +729,13 @@ export type Operations = {
     success: { status: 200; body: { "notifications": ({ "id": string; "targetId": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "topic": string | null; "mentorName": { "givenName": string; "familyName": string } | null; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
+  "notifications.messages-and-slots.list.get": {
+    params: undefined;
+    query: { "before"?: string };
+    body: undefined;
+    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "message_posted" | "slot_requested" | "slot_proposed"; "targetId": string; "documentId": string; "slotId": string | null; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "notifications.read.post": {
     params: { "id": string };
     query: undefined;

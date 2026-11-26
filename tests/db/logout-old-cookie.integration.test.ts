@@ -463,6 +463,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  "notifications.messages-and-slots.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications/messages-and-slots",
+    body: () => undefined,
+    live: 200,
+  },
   "notifications.read.post": {
     path: `/api/v1/notifications/${randomUUID()}/read`,
     body: () => undefined,
