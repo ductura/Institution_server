@@ -272,6 +272,24 @@ export const EVENT_CATALOG = {
       screen: code("compact", "medium", "expanded"),
     },
   },
+  // An error nobody caught in the browser (DAN-1568): closed kinds only, no
+  // message, stack or address. The lists equal CLIENT_ERROR_VALUES of
+  // server/contracts (checked in http).
+  "client.error_reported": {
+    actors: ANYONE,
+    fields: {
+      appVersion: VERSION,
+      errorClass: code("type_error", "range_error", "reference_error", "syntax_error", "other"),
+      kind: code("error", "unhandledrejection", "render"),
+      page: code(
+        ...["home", "how_it_works", "work", "enroll"],
+        ...["assignments", "assignment_courses", "assignment_works"],
+        ...["teacher", "teacher_fast_path", "teacher_mentorships"],
+        ...["institution", "institution_courses", "institution_users", "institution_rules"],
+        "other",
+      ),
+    },
+  },
   // Legal texts (D-301).
   "legal.text_published": {
     actors: ["institution_admin", "app_admin"],

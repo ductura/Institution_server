@@ -100,6 +100,7 @@ SELECT bag_eq(
             ('collaboration.list_work_messages(text)'),
             ('collaboration.list_working_criteria(text)'),
             ('collaboration.save_working_criterion(text,text,smallint,text)'),
+            ('collaboration.student_working_criteria(text)'),
             ('collaboration.list_work_rubric(text)'),
             ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
@@ -135,7 +136,7 @@ SELECT bag_eq(
             ('collaboration.create_suggestion(text,jsonb,text,text)'),
             ('collaboration.list_suggestions(text)'),
             ('collaboration.decide_suggestion(uuid,text)') $$,
-  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260');
+  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the student criteria read of 168 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259 and the three suggestion RPCs of 260');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,

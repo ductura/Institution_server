@@ -380,6 +380,32 @@ export const TEACHER_HANDLERS: Handlers = {
       body: { id: known[0], label: known[1], assessment: body.assessment, note: body.note },
     };
   },
+  // SRV-ED35: the owner student reads each teacher's criteria separately.
+  "student.working-criteria.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || work.studentId !== account.id) return { error: "not_found" };
+    const stored = WORKING_CRITERIA.get(state) ?? new Map<string, CriterionValue>();
+    const teachers = state.accounts
+      .filter((teacher) =>
+        CRITERIA.some(([id]) => stored.has(`${teacher.id}:${work.documentId}:${id}`)),
+      )
+      .sort(
+        (a, b) =>
+          a.familyName.localeCompare(b.familyName) ||
+          a.givenName.localeCompare(b.givenName) ||
+          a.id.localeCompare(b.id),
+      )
+      .map((teacher) => ({
+        teacherId: teacher.id,
+        teacherName: { givenName: teacher.givenName, familyName: teacher.familyName },
+        criteria: CRITERIA.map(([id, label]) => {
+          const value = stored.get(`${teacher.id}:${work.documentId}:${id}`);
+          return { id, label, assessment: value?.assessment ?? null, note: value?.note ?? null };
+        }),
+      }));
+    return { status: 200, body: { teachers } };
+  },
   "teacher.mentorship.get": ({ state, account, params }) => {
     const m = state.mentorships.find(
       (x) => x.id === params.mentorshipId && x.mentorId === account?.id,

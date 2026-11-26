@@ -1022,6 +1022,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "client.error.post": {
+    request: {
+      path: "/api/v1/client-error",
+      body: { appVersion: "1.4.0", errorClass: "type_error", kind: "error", page: "assignments" },
+    },
+  },
   "collaboration.comments.post": {
     before: [
       commit("izmisljena-transakcija-1", 0),
@@ -2602,6 +2608,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
       body: { assessment: 1, note: "Izmišljena napomena." },
     },
+  },
+  "student.working-criteria.get": {
+    request: { path: `/api/v1/student/works/${IDS.document}/working-criteria`, as: "student" },
   },
   "teacher.work-rubric.get": {
     request: { path: `/api/v1/teacher/works/${IDS.document}/rubric`, as: "nastavnik" },

@@ -1,7 +1,10 @@
-// SRV-1107 (Ductus#2051, B-9): the database port of the teacher's private
-// working criteria (20261121150000). Each call is one withActor transaction
-// over one RPC of schema collaboration; the RPCs decide who may (a teacher of
-// the work, and only the author reads the rows). The answer is a closed
+// SRV-1107 (Ductus#2051): the database port of the teacher's working criteria
+// (20261121150000). Each call is one withActor transaction over one RPC of
+// schema collaboration; the RPCs decide who may (a teacher of the work, and
+// only the author reads the rows as a teacher). Since Daniel's decision of
+// 26. 11. 2026 (Ductus#2058 c.7192734757, replacing B-9) the student who owns
+// the work reads every teacher's criteria too, each teacher separately
+// (20261220200000). The answer is a closed
 // status, never a database message or SQLSTATE: ZD401 is unauthenticated,
 // ZD403 not_found (one answer for "not yours", "not there" and "no relation",
 // C-23), ZD422 invalid, anything else unavailable. A row of an unexpected shape
@@ -48,10 +51,25 @@ export type TeacherWorkingCriteria = {
     assessment: Assessment | null,
     note: string | null,
   ): Promise<{ readonly status: "saved"; readonly criterion: WorkingCriterion } | Refusal>;
+  /** The owner student's read: each teacher's six criteria, never merged. */
+  forStudent(
+    token: string,
+    documentId: string,
+  ): Promise<{ readonly status: "ok"; readonly teachers: readonly TeacherCriteria[] } | Refusal>;
 };
+
+export type TeacherCriteria = {
+  readonly teacherId: string;
+  readonly teacherName: { readonly givenName: string; readonly familyName: string } | null;
+  readonly criteria: readonly WorkingCriterion[];
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const SQL = {
   list: "SELECT criterion_id AS id, assessment, note FROM collaboration.list_working_criteria($1)",
+  forStudent:
+    "SELECT teacher_id, given_name, family_name, criterion_id AS id, assessment, note FROM collaboration.student_working_criteria($1)",
   save: "SELECT criterion_id AS id, assessment, note FROM collaboration.save_working_criterion($1, $2, $3::smallint, $4)",
 } as const;
 
@@ -65,6 +83,46 @@ function codeOf(thrown: unknown): unknown {
   } catch {
     return undefined;
   }
+}
+
+/** Six criteria in the fixed order, or the answer is unavailable. */
+function inOrder(criteria: readonly WorkingCriterion[]): readonly WorkingCriterion[] {
+  const ordered = WORKING_CRITERIA.every((known, index) => criteria[index]?.id === known.id);
+  if (criteria.length !== WORKING_CRITERIA.length || !ordered) throw new Malformed();
+  return criteria;
+}
+
+/** Consecutive rows of one teacher form one entry; a teacher seen twice is malformed. */
+function byTeacher(rows: readonly Record<string, unknown>[]): TeacherCriteria[] {
+  const teachers: TeacherCriteria[] = [];
+  let index = 0;
+  while (index < rows.length) {
+    const first = rows[index]!;
+    const teacherId = first.teacher_id;
+    if (typeof teacherId !== "string" || !UUID.test(teacherId)) throw new Malformed();
+    if (teachers.some((teacher) => teacher.teacherId === teacherId)) throw new Malformed();
+    const { given_name: given, family_name: family } = first;
+    if ((given === null) !== (family === null)) throw new Malformed();
+    if (given !== null && (typeof given !== "string" || typeof family !== "string")) {
+      throw new Malformed();
+    }
+    const own = rows.slice(index, index + WORKING_CRITERIA.length);
+    if (
+      own.some(
+        (row) =>
+          row.teacher_id !== teacherId || row.given_name !== given || row.family_name !== family,
+      )
+    ) {
+      throw new Malformed();
+    }
+    teachers.push({
+      teacherId,
+      teacherName: given === null ? null : { givenName: given, familyName: family as string },
+      criteria: inOrder(own.map(toCriterion)),
+    });
+    index += WORKING_CRITERIA.length;
+  }
+  return teachers;
 }
 
 function refusal(thrown: unknown): Refusal {
@@ -103,11 +161,14 @@ export function createTeacherWorkingCriteria(withActor: WithActor): TeacherWorki
   return {
     list: (token, documentId) =>
       run(token, async (tx) => {
-        const criteria = (await rowsOf(tx, SQL.list, [documentId])).map(toCriterion);
-        const inOrder = WORKING_CRITERIA.every((known, index) => criteria[index]?.id === known.id);
-        if (criteria.length !== WORKING_CRITERIA.length || !inOrder) throw new Malformed();
+        const criteria = inOrder((await rowsOf(tx, SQL.list, [documentId])).map(toCriterion));
         return { status: "ok" as const, criteria };
       }),
+    forStudent: (token, documentId) =>
+      run(token, async (tx) => ({
+        status: "ok" as const,
+        teachers: byTeacher(await rowsOf(tx, SQL.forStudent, [documentId])),
+      })),
     save: (token, documentId, criterionId, assessment, note) =>
       run(token, async (tx) => {
         const rows = await rowsOf(tx, SQL.save, [documentId, criterionId, assessment, note]);

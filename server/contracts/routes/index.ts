@@ -3,7 +3,12 @@ export { attachmentRoutes, workAttachmentGet, workAttachmentPost } from "./attac
 export { downloadsRoutes } from "./downloads.ts";
 export { receiptPdfRoutes } from "./receipt-pdf.ts";
 export { workExportRoutes } from "./work-export.ts";
-export { CLIENT_APP_VERSION_PATTERN, CLIENT_CONTEXT_VALUES, clientRoutes } from "./client.ts";
+export {
+  CLIENT_APP_VERSION_PATTERN,
+  CLIENT_CONTEXT_VALUES,
+  CLIENT_ERROR_VALUES,
+  clientRoutes,
+} from "./client.ts";
 export { evidenceRoutes, MAX_COMMIT_BODY_BYTES } from "./evidence.ts";
 export {
   ERROR_CATALOG_DATA,

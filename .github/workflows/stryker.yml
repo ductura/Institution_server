@@ -1,0 +1,76 @@
+name: Stryker, moduli povjerenja
+
+# ISTR-5 (plan ISTRAZIVANJE-2511): mutacijski testovi modula povjerenja
+# (server/domain/forensics, scripts/evidence-verify, scripts/engineering/risk-floor.ts),
+# konfiguracija u stryker.config.ts. Samo u CI-ju, tjedno i ručno; nije u ci-ok
+# i ne blokira spajanje. Prag se zasad samo mjeri (break: null); prijedlog
+# praga tek nakon dva pokreta. Izvještaj (HTML, JSON i popis kandidata za
+# testove) je artefakt pokreta.
+on:
+  schedule:
+    - cron: "41 2 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stryker
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  stryker:
+    name: Stryker, moduli povjerenja
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Mutacijski testovi
+        run: pnpm exec stryker run stryker.config.ts
+      - name: Score po datoteci i kandidati za testove
+        if: ${{ !cancelled() && hashFiles('reports/mutation/mutation.json') != '' }}
+        run: |
+          jq -r '
+            def count($s): [.[] | select(.status == $s)] | length;
+            def score($k; $t; $s; $n):
+              if ($k + $t + $s + $n) == 0 then "n/a"
+              else "\((($k + $t) * 1000 / ($k + $t + $s + $n) | round) / 10) %" end;
+            "## Mutation score po datoteci",
+            "",
+            "| Datoteka | Ubijeni | Istek | Preživjeli | Bez pokrivenosti | Score |",
+            "|---|---|---|---|---|---|",
+            (.files | to_entries | sort_by(.key)[]
+              | .key as $f | .value.mutants
+              | count("Killed") as $k | count("Timeout") as $t
+              | count("Survived") as $s | count("NoCoverage") as $n
+              | "| `\($f)` | \($k) | \($t) | \($s) | \($n) | \(score($k; $t; $s; $n)) |"),
+            "",
+            "## Kandidati za testove (preživjeli i nepokriveni mutanti)",
+            "",
+            (.files | to_entries | sort_by(.key)[]
+              | .key as $f | .value.mutants
+              | sort_by(.location.start.line, .location.start.column)[]
+              | select(.status == "Survived" or .status == "NoCoverage")
+              | "- `\($f):\(.location.start.line):\(.location.start.column)` \(.status) \(.mutatorName): `\((.replacement // "") | gsub("[`\n]"; " ") | .[0:80])`")
+          ' reports/mutation/mutation.json > reports/mutation/kandidati.md
+          head -n 400 reports/mutation/kandidati.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Izvještaj
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: stryker-moduli-povjerenja
+          path: reports/mutation/
+          if-no-files-found: warn
+          retention-days: 90

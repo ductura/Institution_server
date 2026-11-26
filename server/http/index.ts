@@ -1,5 +1,7 @@
 // Public interface of server/http, the only composition root; only the entry
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
+// DAN-1567: server.ts imports only http, settings and config.
+export { installUncaughtCapture } from "../log/index.ts";
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
@@ -105,6 +107,13 @@ export {
   type ClientContext,
   type ClientContextOptions,
 } from "./client-context.ts";
+export {
+  CLIENT_ERROR_MAX_BYTES,
+  createClientErrorRoute,
+  parseClientError,
+  type ClientError,
+  type ClientErrorOptions,
+} from "./client-error.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
 export {
   createTeacherSubmissionsBulkRoutes,

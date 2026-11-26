@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { DocumentKind } from "./shared.ts";
+import { DocumentKind, WorkKind } from "./shared.ts";
 import { WorkId } from "./versions.ts";
 
 const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
@@ -56,6 +56,7 @@ export const workVersionGet = defineRoute({
           }),
           // SRV-V13-UGOVOR-VRSTA: the kind of the work; absent means text.
           documentKind: Type.Optional(DocumentKind),
+          workKind: Type.Optional(WorkKind),
         }),
         closed({
           from: Revision,

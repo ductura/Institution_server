@@ -36,6 +36,7 @@ export const ACCOUNT_HANDLERS: Handlers = {
     },
   }),
   "client.context.post": () => ({ status: 204 }),
+  "client.error.post": () => ({ status: 204 }),
   "downloads.manifest.get": () => ({ status: 200, body: { packages: [] } }),
 
   "auth.login.get": ({ query }) => {

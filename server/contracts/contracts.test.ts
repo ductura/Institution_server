@@ -86,6 +86,7 @@ describe("route inventory", () => {
     ).toEqual(["app/api/student/assignments/route.ts: methods none, inventory GET"]);
     expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
       "client.context.post: app/api/client-context/route.ts is not in the inventory",
+      "client.error.post: app/api/client-error/route.ts is not in the inventory",
       "auth.webauthn-challenge.post: app/api/auth/webauthn/challenge/route.ts is not in the inventory",
       "auth.webauthn-registration.post: app/api/auth/webauthn/registration/route.ts is not in the inventory",
       "auth.webauthn-assertion.post: app/api/auth/webauthn/assertion/route.ts is not in the inventory",
@@ -155,6 +156,7 @@ describe("route inventory", () => {
       "work.origin-thresholds.get: app/api/works/[documentId]/origin-thresholds/route.ts is not in the inventory",
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
+      "student.working-criteria.get: app/api/student/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.assignment-rubric.get: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "teacher.assignment-rubric.put: app/api/teacher/assignments/[assignmentId]/rubric/route.ts is not in the inventory",
       "student.assignment-rubric.get: app/api/student/assignments/[assignmentId]/rubric/route.ts is not in the inventory",

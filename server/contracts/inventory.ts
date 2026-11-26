@@ -289,6 +289,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@333e163:docs/DECISIONS.md#D-300",
   },
+  // DAN-1568: Ductus has no client error route; the shape is the ticket's.
+  "app/api/client-error/route.ts": {
+    methods: ["POST"],
+    source: "linear:DAN-1568",
+  },
   // DAN-840: Ductus has no WebAuthn route; the network engineer signs in with
   // AAI@EduHr and FIDO2 (D-297), the second factor of an AAI@EduHr session.
   "app/api/auth/webauthn/challenge/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
@@ -709,6 +714,12 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts": {
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
+  },
+  // SRV-ED35-KRITERIJI-STUDENT (Daniel 26. 11. 2026, replacing B-9): the owner
+  // student reads each teacher's working criteria; no Ductus route.
+  "app/api/student/works/[documentId]/working-criteria/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",
   },
   // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run; no Ductus route.
   "app/api/institution/retention/route.ts": {
