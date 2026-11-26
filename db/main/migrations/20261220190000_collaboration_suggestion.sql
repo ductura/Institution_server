@@ -81,9 +81,7 @@ LANGUAGE sql IMMUTABLE SET search_path = '' AS $$ SELECT 500 $$;
 
 -- A teacher of the work suggests a text for an anchored quote of the live
 -- state whose hash is p_base_hash. Order: session, scope and relation, input,
--- the lock of the work, submitted, the live state, the bound, write. The lock
--- makes two creates of the same work wait for each other, so the bound is
--- counted with every earlier create committed and never passed.
+-- submitted, the live state, the bound, write.
 CREATE FUNCTION collaboration.create_suggestion(
   p_document_id text, p_anchor jsonb, p_text text, p_base_hash text
 ) RETURNS uuid
@@ -112,8 +110,6 @@ BEGIN
      OR coalesce(p_base_hash !~ '^[0-9a-f]{64}$', true) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
-  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
-    'collaboration.suggestion:' || scope.institution_id || ':' || p_document_id, 0));
   IF app.document_submitted(p_document_id) THEN
     RAISE EXCEPTION 'not allowed' USING ERRCODE = 'ZD409';
   END IF;
@@ -122,6 +118,11 @@ BEGIN
   IF v_hash IS DISTINCT FROM p_base_hash THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
+  -- Two creates on the same work wait for each other here, so the bound is
+  -- counted by one of them at a time (a transaction-level lock, released at
+  -- its end).
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('collaboration.suggestion:' || scope.institution_id::text || ':' || p_document_id, 0));
   IF (SELECT count(*) FROM collaboration.suggestion s
        WHERE s.document_id = p_document_id AND s.institution_id = scope.institution_id)
      >= collaboration.suggestion_max() THEN
@@ -179,8 +180,8 @@ DECLARE
   actor record;
   v_row record;
   v_role text;
-  -- Typed, not a record: a reject leaves them NULL, and the answer below
-  -- never reads a record that was not assigned.
+  -- Typed, not a record: a reject never assigns them, and the answer still
+  -- names them (an unassigned record has no fields to name).
   v_live_hash text;
   v_live_body text;
 BEGIN
