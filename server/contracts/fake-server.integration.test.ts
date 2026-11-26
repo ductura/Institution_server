@@ -165,6 +165,8 @@ describe("fake server over HTTP", () => {
     // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV: work.assistant-match-explanation.post five.
     // SRV-MENTOR-2: the five thesis writes (forms, setting, form state, consent, stage) five each.
     // SRV-V16-TEMA-PRIJEDLOG: work.thesis-topic.put and work.thesis-topic-decision.post five each.
+    // SRV-V16-POVJERENSTVO-ZAPIS: work.thesis-committee.put five.
+    // SRV-ED43-DORADA-POSALJI: collaboration.revision-send.post five.
     // SRV-IZJAVA-PITANJE: teacher.declaration-question.put five.
     // SRV-ADMIN-1: support.problem-report-status.post five.
     // SRV-ADMIN-2: institution.roster-imports.post and institution.roster-import-confirm.post five each.
@@ -190,7 +192,7 @@ describe("fake server over HTTP", () => {
     // SRV-V18-UPITNIK-AUTOR: teacher.questionnaires.post, teacher.questionnaire.patch and teacher.questionnaire-state.post five each.
     // SRV-V18-KODIRANJE-GRADIVO: student.qual-materials.post and student.qual-material.delete five each.
     // SRV-V18-KODIRANJE-SIFRARNIK: student.qual-codes.post, student.qual-code.patch and student.qual-code.delete five each.
-    expect(VECTORS.length - overHttp.length).toBe(866);
+    expect(VECTORS.length - overHttp.length).toBe(871);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
