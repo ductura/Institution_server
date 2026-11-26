@@ -1,0 +1,403 @@
+{
+  "packageVersion": "1.0.0",
+  "lektaCommit": "c445a7193f08",
+  "jezik": "hr",
+  "fakultet": "fpzg",
+  "izvori": [
+    {
+      "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+      "sha256": "61b370836d73036ee1383b0124227e2e315bfabd345609d705f5edb7a9a4f1e8"
+    },
+    {
+      "datoteka": ".claude/katedra-pkg/fpzg-diplomski/assets/fpzg-diplomski.json",
+      "sha256": "923b19d16487aa4d93cd50ebc5134e8563946de809b4a100dcb0a98efcc61729"
+    },
+    {
+      "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/struktura.md",
+      "sha256": "bf84bb8fc9cfbc89076864fc80a666159f534fb63923622d6e7080a664c27aef"
+    },
+    {
+      "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/stranice-i-izvori.md",
+      "sha256": "9fd2caccdd044752e2e5b93d708c58b4d464bddd32a18efcb0d4aff2ba3242c5"
+    },
+    {
+      "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+      "sha256": "28a0dbe4a4edbfb6a7dddaee7745073898d09782c811609f13a8cd0aec25ec6f"
+    },
+    {
+      "datoteka": "data/profiles/fpzg-partial.json",
+      "sha256": "03e7c27d3bea579cedb539e0c45e894feccc392c640570993154911b7f7a8374"
+    }
+  ],
+  "pravila": [
+    {
+      "id": "fpzg.stranica.format",
+      "podrucje": "stranica",
+      "opis": "Format stranice je A4.",
+      "vrijednost": "A4",
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": "data/profiles/fpzg-partial.json",
+        "lokator": "requireA4"
+      }
+    },
+    {
+      "id": "fpzg.stranica.margine_cm",
+      "podrucje": "stranica",
+      "opis": "Margine su 2,54 cm sa sve četiri strane (mjera obranjenog rada; Upute margine ne propisuju).",
+      "vrijednost": {
+        "gore": 2.54,
+        "desno": 2.54,
+        "dolje": 2.54,
+        "lijevo": 2.54
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Stranica i osnovni tekst"
+      }
+    },
+    {
+      "id": "fpzg.tekst.font",
+      "podrucje": "tekst",
+      "opis": "Font cijelog teksta je Times New Roman.",
+      "vrijednost": ["Times New Roman"],
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "format.font"
+      }
+    },
+    {
+      "id": "fpzg.tekst.velicina_pt",
+      "podrucje": "tekst",
+      "opis": "Veličina slova osnovnog teksta je 12 pt.",
+      "vrijednost": 12,
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "format.velicina_pt"
+      }
+    },
+    {
+      "id": "fpzg.tekst.prored",
+      "podrucje": "tekst",
+      "opis": "Prored osnovnog teksta je 1,5.",
+      "vrijednost": 1.5,
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "format.prored"
+      }
+    },
+    {
+      "id": "fpzg.tekst.poravnanje",
+      "podrucje": "tekst",
+      "opis": "Osnovni tekst je obostrano poravnat.",
+      "vrijednost": "obostrano",
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "format.poravnanje"
+      }
+    },
+    {
+      "id": "fpzg.tekst.odlomak_redaka",
+      "podrucje": "tekst",
+      "opis": "Prosječna duljina odlomka je od 5 do 15 redaka.",
+      "vrijednost": {
+        "min": 5,
+        "max": 15
+      },
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "format.odlomak"
+      }
+    },
+    {
+      "id": "fpzg.tekst.razmak_odlomaka_pt",
+      "podrucje": "tekst",
+      "opis": "Odlomci se odvajaju razmakom od 6 pt, bez uvlake prvog retka.",
+      "vrijednost": 6,
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Odvajanje odlomaka"
+      }
+    },
+    {
+      "id": "fpzg.naslov.razina_1",
+      "podrucje": "tekst",
+      "opis": "Naslov prve razine je 14 pt podebljano, pisan rečenično.",
+      "vrijednost": {
+        "pt": 14,
+        "podebljano": true
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Naslovi"
+      }
+    },
+    {
+      "id": "fpzg.naslov.razina_2",
+      "podrucje": "tekst",
+      "opis": "Naslov druge razine je 12 pt podebljano, pisan rečenično.",
+      "vrijednost": {
+        "pt": 12,
+        "podebljano": true
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Naslovi"
+      }
+    },
+    {
+      "id": "fpzg.prikaz.natpis",
+      "podrucje": "prikazi",
+      "opis": "Natpis prikaza stoji iznad prikaza, 11 pt podebljano, u obliku „Tablica 1. Naslov”; prihvaćaju se točka i dvotočka.",
+      "vrijednost": {
+        "polozaj": "iznad",
+        "pt": 11,
+        "razdjelnici": [".", ":"]
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": "data/profiles/fpzg-partial.json",
+        "lokator": "struktura.prikazi"
+      }
+    },
+    {
+      "id": "fpzg.prikaz.izvor",
+      "podrucje": "prikazi",
+      "opis": "Izvor prikaza stoji ispod prikaza, običnim pismom od 10 pt, kao puna rečenica.",
+      "vrijednost": {
+        "polozaj": "ispod",
+        "pt": 10
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": "data/profiles/fpzg-partial.json",
+        "lokator": "struktura.prikazi"
+      }
+    },
+    {
+      "id": "fpzg.prikaz.spomen_u_tekstu",
+      "podrucje": "prikazi",
+      "opis": "Svaki prikaz mora biti spomenut u tekstu.",
+      "vrijednost": true,
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.prikazi.mora_biti_spomenut_u_tekstu"
+      }
+    },
+    {
+      "id": "fpzg.opseg.seminarski",
+      "podrucje": "opseg",
+      "opis": "Seminarski rad ima 1500 do 3000 riječi i najmanje 6 izvora (naslijeđena procjena, nije u Uputama).",
+      "vrijednost": {
+        "rijeci": [1500, 3000],
+        "izvori_min": 6,
+        "razina_nalaza": "za_potvrdu"
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.opseg.seminarski"
+      }
+    },
+    {
+      "id": "fpzg.opseg.zavrsni",
+      "podrucje": "opseg",
+      "opis": "Završni rad ima 25 do 30 stranica i najmanje 15 izvora (naslijeđena procjena, nije u Uputama).",
+      "vrijednost": {
+        "stranice": [25, 30],
+        "izvori_min": 15,
+        "razina_nalaza": "za_potvrdu"
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.opseg.zavrsni"
+      }
+    },
+    {
+      "id": "fpzg.opseg.diplomski",
+      "podrucje": "opseg",
+      "opis": "Diplomski rad ima 10000 do 15000 riječi (politologija 10000 do 12000, novinarstvo 12000 do 15000) i najmanje 15 izvora, od toga tri knjige.",
+      "vrijednost": {
+        "rijeci": [10000, 15000],
+        "izvori_min": 15,
+        "razina_nalaza": "krsenje"
+      },
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.opseg.diplomski"
+      }
+    },
+    {
+      "id": "fpzg.opseg.esej",
+      "podrucje": "opseg",
+      "opis": "Esej nema propisan opseg; mjeri se samo protiv raspona koji je zadao korisnik.",
+      "vrijednost": {
+        "razina_nalaza": "obavijest"
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.opseg.esej"
+      }
+    },
+    {
+      "id": "fpzg.struktura.obavezni_dijelovi",
+      "podrucje": "struktura",
+      "opis": "Obavezni dijelovi rada, redom kako ih navode Upute.",
+      "vrijednost": [
+        "naslovnica (vanjska)",
+        "naslovnica (unutarnja)",
+        "izjava o autorstvu",
+        "sadržaj",
+        "popis ilustracija (ako postoje)",
+        "uvod",
+        "tijelo teksta",
+        "zaključak",
+        "popis literature",
+        "prilozi (ako postoje)",
+        "sažetak i ključne riječi"
+      ],
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "struktura.obavezni_dijelovi"
+      }
+    },
+    {
+      "id": "fpzg.struktura.redoslijed_obranjenog",
+      "podrucje": "struktura",
+      "opis": "Redoslijed dijelova u obranjenom radu; sažetak i summary idu na kraj.",
+      "vrijednost": [
+        "naslovnica (vanjska)",
+        "naslovnica (unutarnja)",
+        "izjava o akademskoj cestitosti",
+        "sadrzaj",
+        "uvod",
+        "tijelo teksta",
+        "zakljucak",
+        "literatura",
+        "popis tablica",
+        "popis grafikona",
+        "prilozi",
+        "sazetak i kljucne rijeci",
+        "summary and keywords"
+      ],
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/assets/fpzg-diplomski.json",
+        "lokator": "struktura.redoslijed"
+      }
+    },
+    {
+      "id": "fpzg.struktura.numeracija_stranica",
+      "podrucje": "struktura",
+      "opis": "Broj stranice je u podnožju, u sredini; predtekst nema broja, a tijelo počinje od 1.",
+      "vrijednost": {
+        "polozaj": "podnozje sredina",
+        "predtekst_bez_broja": true,
+        "tijelo_pocinje_od": 1
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/assets/fpzg-diplomski.json",
+        "lokator": "struktura.numeracija_stranica"
+      }
+    },
+    {
+      "id": "fpzg.naslovnica.polja",
+      "podrucje": "naslovnica",
+      "opis": "Polja naslovnice: sveučilište, fakultet, studij, ime studenta, naslov, vrsta rada, mjesto, mjesec i godina; unutarnja dodaje mentora i studenta; JMBAG se ne navodi.",
+      "vrijednost": {
+        "vanjska": [
+          "sveuciliste",
+          "fakultet",
+          "studij",
+          "student",
+          "naslov",
+          "vrsta_rada",
+          "mjesto",
+          "mjesec_godina"
+        ],
+        "unutarnja": [
+          "sveuciliste",
+          "fakultet",
+          "studij",
+          "naslov",
+          "vrsta_rada",
+          "mentor",
+          "student",
+          "mjesto",
+          "mjesec_godina"
+        ],
+        "jmbag": false,
+        "naslov_pt": 16,
+        "vrsta_rada_pt": 13
+      },
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Naslovnice"
+      }
+    },
+    {
+      "id": "fpzg.naslovnica.izjava",
+      "podrucje": "naslovnica",
+      "opis": "Izjava se zove „Izjava o akademskoj čestitosti”, na vlastitoj stranici, kao samostalan podebljan redak.",
+      "vrijednost": "Izjava o akademskoj čestitosti",
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/kucni-stil.md",
+        "lokator": "Naslovnice"
+      }
+    },
+    {
+      "id": "fpzg.citat.stil",
+      "podrucje": "citiranje",
+      "opis": "Citatni stil je autor-godina s dvotočkom pred stranicom, bez „str.”: (Becker, 2007: 9).",
+      "vrijednost": {
+        "stil": "autor-godina",
+        "u_tekstu": "(Becker, 2007: 9)",
+        "tocka_iza_godine": false
+      },
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "citiranje"
+      }
+    },
+    {
+      "id": "fpzg.citat.popis_literature",
+      "podrucje": "citiranje",
+      "opis": "Popis literature: Prezime, Ime (Godina) Naslov. Mjesto: Nakladnik.; puno ime autora, godina bez točke.",
+      "vrijednost": "Šiber, Ivan (2003) Politički marketing. Zagreb: Politička kultura.",
+      "status": "potvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/katedra-lite/references/fakulteti/fpzg.json",
+        "lokator": "citiranje.popis_primjer"
+      }
+    },
+    {
+      "id": "fpzg.citat.stranica_uz_tvrdnju",
+      "podrucje": "citiranje",
+      "opis": "Uz specifičnu tvrdnju ide točna stranica; stranica koja nije viđena u izvoru ne upisuje se.",
+      "vrijednost": true,
+      "status": "nepotvrdeno",
+      "izvor": {
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/references/stranice-i-izvori.md",
+        "lokator": "Željezno pravilo"
+      }
+    }
+  ]
+}
