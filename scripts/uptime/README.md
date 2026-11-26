@@ -1,6 +1,6 @@
 # scripts/uptime
 
-Periodična provjera dostupnosti izvana (DAN-1567, dio 3). Workflow `Provjera dostupnosti` (`.github/workflows/uptime.yml`) svakih 15 minuta jednom pogleda `/api/v1/ready`.
+Periodična provjera dostupnosti izvana (DAN-1567, dio 3). Workflow `Provjera dostupnosti` (`.github/workflows/ready-probe.yml`) svakih 15 minuta jednom pogleda `/api/v1/ready`.
 
 - Odgovor 200: ništa, ili zatvaranje otvorenog issuea uz jedan komentar.
 - Bilo što drugo (drugi status, preusmjeravanje, nema veze, nema odgovora u 10 s): otvara se jedan issue „Poslužitelj ne odgovara na provjeru spremnosti”, a svaka sljedeća neuspjela provjera prepisuje njegovo tijelo (prvi pad, zadnja provjera, broj uzastopnih padova, zadnji ishod). Nema novog issuea ni komentara po provjeri.

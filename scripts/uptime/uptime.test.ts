@@ -224,7 +224,7 @@ test("a bad setting stops before any request, and a failed record is exit 1 with
 
 test("the workflow runs only with the variable set, on a schedule, and may write issues only", () => {
   const text = readFileSync(
-    resolve(import.meta.dirname, "../../.github/workflows/uptime.yml"),
+    resolve(import.meta.dirname, "../../.github/workflows/ready-probe.yml"),
     "utf8",
   );
   const workflow = parse(text, { uniqueKeys: true, merge: false }) as {
