@@ -3,13 +3,25 @@
 // Exit code 0 when the record verifies, 1 otherwise. No network, no database.
 // SRV-1312: the unpacked portable record of a submission, with the same CLI:
 //   node scripts/evidence-verify/index.ts --record <directory>
+// DAN-1563: the evidence chain of one work from its files (segments, receipts,
+// Merkle proof) against public keys given apart from the package:
+//   node scripts/evidence-verify/index.ts --chain <directory> --public-keys keys.json [--json]
 import { open, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 
+import { runChainVerify } from "./chain.ts";
 import { runPortableRecordVerify, type ListDirectory } from "./portable-record.ts";
 import { runEvidenceVerify, type ReadFile } from "./verify.ts";
 
+export {
+  CHAIN_MANIFEST,
+  CHAIN_MANIFEST_FORMAT,
+  CHAIN_USAGE,
+  parseChainArgs,
+  runChainVerify,
+  type ChainOutcome,
+} from "./chain.ts";
 export { runEvidenceVerify, parseArgs, parseEntries, USAGE, type VerifyOutcome } from "./verify.ts";
 export {
   checkDailyRootSignature,
@@ -51,14 +63,18 @@ export const listLocalDirectory: ListDirectory = async (path) => {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
-  const outcome =
-    argv[0] === "--record"
+  const chain = argv.includes("--chain");
+  const outcome = chain
+    ? await runChainVerify(argv, { readFile: readLocalFile, join })
+    : argv[0] === "--record"
       ? await runPortableRecordVerify(argv, {
           readFile: readLocalFile,
           listDirectory: listLocalDirectory,
           join,
         })
       : await runEvidenceVerify(argv, readLocalFile);
-  (outcome.exitCode === 0 ? process.stdout : process.stderr).write(`${outcome.line}\n`);
+  // --json is for a program: its one object goes to stdout whatever the answer.
+  const toStdout = outcome.exitCode === 0 || (chain && argv.includes("--json"));
+  (toStdout ? process.stdout : process.stderr).write(`${outcome.line}\n`);
   process.exitCode = outcome.exitCode;
 }
