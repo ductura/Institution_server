@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.153.1",
+    "version": "1.153.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -82178,7 +82178,8 @@
                         "value": {
                           "anyOf": [
                             {
-                              "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,2000}(?![\\s\\S])",
+                              "minLength": 1,
+                              "maxLength": 2000,
                               "type": "string"
                             },
                             {
@@ -82844,7 +82845,8 @@
                       "type": "string"
                     },
                     "title": {
-                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                      "minLength": 1,
+                      "maxLength": 200,
                       "type": "string"
                     },
                     "participated": {
@@ -82900,7 +82902,8 @@
                             ]
                           },
                           "text": {
-                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,500}(?![\\s\\S])",
+                            "minLength": 1,
+                            "maxLength": 500,
                             "type": "string"
                           },
                           "options": {
@@ -82922,7 +82925,8 @@
                                       "type": "string"
                                     },
                                     "label": {
-                                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,120}(?![\\s\\S])",
+                                      "minLength": 1,
+                                      "maxLength": 120,
                                       "type": "string"
                                     }
                                   }
@@ -83135,7 +83139,8 @@
                             "type": "string"
                           },
                           "title": {
-                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,200}(?![\\s\\S])",
+                            "minLength": 1,
+                            "maxLength": 200,
                             "type": "string"
                           },
                           "participated": {
@@ -118960,7 +118965,8 @@
                         "value": {
                           "anyOf": [
                             {
-                              "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,2000}(?![\\s\\S])",
+                              "minLength": 1,
+                              "maxLength": 2000,
                               "type": "string"
                             },
                             {

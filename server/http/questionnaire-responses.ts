@@ -13,9 +13,11 @@
 // is checked against its contract; a body outside it is 422 before the database.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
+import { CODE_POINT, END } from "../contracts/routes/teacher.ts";
 import { createQuestionnaireStore, type WithActor } from "../database/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
@@ -29,6 +31,36 @@ import { refuse } from "./security-headers.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+// The contract (OpenAPI) bounds a text answer with maxLength, which counts UTF-16
+// units; the domain and the database count Unicode code points. The body is
+// therefore checked here with a code-point bound (same error, 422), so a text of
+// 2000 code points with an emoji is not refused. The contract schema is not
+// changed (a changed schema would break clients).
+const BODY = Type.Object(
+  {
+    answers: Type.Array(
+      Type.Object(
+        {
+          questionId: Type.String({
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          }),
+          value: Type.Union([
+            Type.String({ pattern: `^(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,2000}${END}` }),
+            Type.Number(),
+            Type.Array(Type.String({ minLength: 1, maxLength: 40 }), {
+              minItems: 1,
+              maxItems: 20,
+            }),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
+      { minItems: 1, maxItems: 40 },
+    ),
+  },
+  { additionalProperties: false },
+);
 
 function contractOf(id: string) {
   const contract = ROUTES.find((route) => route.id === id);
@@ -133,7 +165,7 @@ function writeRoute(
       if (!raw.ok) return refuse(response, raw.status, raw.reason);
       const json = parseJson(raw.bytes);
       if (!json.ok) return sendProblem(response, 400, "invalid_json");
-      if (!Value.Check(contract.request.body!, json.value)) {
+      if (!Value.Check(BODY, json.value)) {
         return sendProblem(response, 422, "invalid_input");
       }
       await guarded(response, contract.id, async () => {
