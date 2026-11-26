@@ -111,6 +111,7 @@ export {
   createSheetCsvRoute,
   createSheetCsvRouteFor,
   createSubmissionPackageRoutesFor,
+  createSheetXlsxRouteFor,
   createWorkPdfRouteFor,
   type SubmissionPackageRouteDeps,
 } from "./export/index.ts";

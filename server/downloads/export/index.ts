@@ -8,6 +8,13 @@ export {
   type ExportRun,
 } from "./model.ts";
 export { renderWorkDocx, type WorkDocx, type WorkDocxInput } from "./work-docx.ts";
+export {
+  renderSheetXlsx,
+  sheetXlsxBytes,
+  XLSX_TYPE,
+  type SheetXlsx,
+  type SheetXlsxInput,
+} from "./sheet-xlsx.ts";
 export { writeZip, type ZipEntry } from "./zip.ts";
 export { plainDecimal, renderSheetCsv, renderSheetCsvOfText, type SheetCsv } from "./sheet-csv.ts";
 export {

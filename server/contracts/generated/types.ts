@@ -2164,6 +2164,13 @@ export type Operations = {
     success: { status: 200; body: Blob; headers: { "content-disposition"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
+  "work.export-sheet-xlsx.get": {
+    params: { "documentId": string };
+    query: { "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-sheet-sha256"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.export.get": {
     params: { "documentId": string };
     query: { "format": "docx" | "pdf"; "versionId"?: string };
