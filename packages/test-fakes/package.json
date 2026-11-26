@@ -12,6 +12,7 @@
     "./services": "./services/index.ts",
     "./fido2": "./fido2/index.ts",
     "./hostile-inputs": "./hostile-inputs/index.ts",
+    "./invented-works": "./invented-works/index.ts",
     "./pglite": "./pglite/index.ts",
     "./dev-server": "./dev-server/index.ts"
   },
