@@ -26,16 +26,25 @@ export type GitHub = (
 
 type Json = Record<string, unknown>;
 
-/** The open issue of the probe: ours by author and exact title, never a pull request. */
+const PAGE = 100;
+
+/**
+ * The open issue of the probe: ours by author and exact title, never a pull
+ * request. Every page is read, so a full first page never hides it.
+ */
 export async function findOpenIssue(github: GitHub, repo: string): Promise<OpenIssue | null> {
   const creator = encodeURIComponent(ISSUE_AUTHOR);
-  const list = (await github(
-    "GET",
-    `/repos/${repo}/issues?state=open&creator=${creator}&per_page=100`,
-  )) as Json[];
-  const found = list.find(
-    (issue) => issue["title"] === ISSUE_TITLE && issue["pull_request"] === undefined,
-  );
+  let found: Json | undefined;
+  for (let page = 1; found === undefined; page += 1) {
+    const list = (await github(
+      "GET",
+      `/repos/${repo}/issues?state=open&creator=${creator}&per_page=${PAGE}&page=${page}`,
+    )) as Json[];
+    found = list.find(
+      (issue) => issue["title"] === ISSUE_TITLE && issue["pull_request"] === undefined,
+    );
+    if (list.length < PAGE) break;
+  }
   if (found === undefined) return null;
   const body = found["body"];
   return { number: Number(found["number"]), body: typeof body === "string" ? body : "" };

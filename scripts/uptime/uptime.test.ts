@@ -143,9 +143,27 @@ test("the issue is ours by author and exact title, and never a pull request", as
   assert.deepEqual(await findOpenIssue(github, REPO), { number: 3, body: "" });
   assert.equal(
     calls[0]!.path,
-    `/repos/${REPO}/issues?state=open&creator=${encodeURIComponent(ISSUE_AUTHOR)}&per_page=100`,
+    `/repos/${REPO}/issues?state=open&creator=${encodeURIComponent(ISSUE_AUTHOR)}&per_page=100&page=1`,
   );
   assert.equal(await findOpenIssue(fakeGitHub([]).github, REPO), null);
+});
+
+test("the issue is found past a full first page", async () => {
+  const other = Array.from({ length: 100 }, (_, i) => ({
+    number: 100 + i,
+    title: "Drugo",
+    body: "",
+  }));
+  const paths: string[] = [];
+  const github: GitHub = (_method, path) => {
+    paths.push(path);
+    return Promise.resolve(
+      path.endsWith("&page=1") ? other : [{ number: 7, title: ISSUE_TITLE, body: "b" }],
+    );
+  };
+  assert.deepEqual(await findOpenIssue(github, REPO), { number: 7, body: "b" });
+  assert.equal(paths.length, 2);
+  assert.ok(paths[1]!.endsWith("&page=2"));
 });
 
 test("a run records the look: opens, rewrites, closes with a comment, or does nothing", async () => {
