@@ -12,10 +12,11 @@ import {
   MAX_SLIDES_SNAPSHOT_BYTES,
   type Slide,
   type SlideBlock,
+  type SlideStep,
   type SlidesDocument,
-} from "./schema.ts";
-import { slideTextSha256, type SlideStep } from "./steps.ts";
-import { validateSlidesDocument } from "./validate.ts";
+  validateSlidesDocument,
+} from "./model/index.ts";
+import { slideTextSha256 } from "./step-hash.ts";
 
 export type ApplySlideStepErrorCode =
   | "document_invalid"

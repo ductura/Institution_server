@@ -1,7 +1,10 @@
 // SRV-V13-KORACI-SLAJD (val 13): the serialised editing step of a slides
-// document, format `ductus-slide-steps-v1`. Pure: no clock, no I/O. The
-// editor's capture and the server's replayer both read steps through
-// `parseSlideStep`, so neither can accept a shape the other does not know.
+// document, format `ductus-slide-steps-v1`. Pure: no clock, no I/O and no Node
+// module (SRV-V14-PARSERI-BEZ-NODE). The editor's capture, the evidence segment
+// check (server/domain/forensics/evidence-segment-v2.ts) and the server's
+// replayer all read steps through `parseSlideStep`, so none can accept a shape
+// another does not know. The hash a removal carries is computed in
+// ../step-hash.ts, never here.
 //
 // Rules, as for the text steps (server/domain/document/edit-step.ts):
 //   - every object has a closed set of keys: an unknown field, `__proto__`
@@ -14,10 +17,8 @@
 //   - a block in a step is checked by the document validator itself, so a step
 //     cannot carry a block the document would refuse;
 //   - the result is a fresh copy built from known fields only.
-import { createHash } from "node:crypto";
-
-import { canonicalizeJcs } from "../forensics/index.ts";
-import { hasOnlyKeys, isPlainObject, ownProperty } from "../json/index.ts";
+import { canonicalizeJcs } from "../../forensics/index.ts";
+import { hasOnlyKeys, isPlainObject, ownProperty } from "../../json/index.ts";
 
 import {
   SLIDE_LAYOUTS,
@@ -150,11 +151,6 @@ function isLayout(value: unknown): value is SlideLayout {
 /** Well-formed Unicode (no lone surrogate) and no NUL; never normalised. */
 function isWellFormedText(value: unknown): value is string {
   return typeof value === "string" && !/\p{Cs}/u.test(value) && !value.includes("\u0000");
-}
-
-/** SHA-256 (lowercase hex) of the UTF-8 bytes of a text; the `removedSha256` of text and notes. */
-export function slideTextSha256(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
 /**
@@ -297,7 +293,7 @@ export function parseSlideSteps(raw: unknown): SlideStepsParse {
     steps.push(parsed.step);
   }
   // The steps are fresh known-keys copies of valid input, so the JCS form cannot throw.
-  if (Buffer.byteLength(canonicalizeJcs(steps), "utf8") > MAX_SLIDE_STEPS_BYTES) {
+  if (new TextEncoder().encode(canonicalizeJcs(steps)).byteLength > MAX_SLIDE_STEPS_BYTES) {
     return { ok: false, error: "too_large" };
   }
   return { ok: true, steps };
