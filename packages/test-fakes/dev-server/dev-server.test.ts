@@ -148,6 +148,20 @@ describe("dev fake server: platform and institution", () => {
     const me = await send(state, "/api/v1/me", { headers: await signIn(state, "bez-uloge") });
     expect(me.json).toMatchObject({ roles: ["teacher"] });
   });
+
+  it("answers one 404 for the administrator themself, a student and a missing person", async () => {
+    const state = createState();
+    const headers = await signIn(state, "administrator");
+    for (const id of [IDS.admin, IDS.student, "00000000-0000-4000-8000-00000000dead"]) {
+      const answer = await send(state, `/api/v1/institution/teachers/${id}/role-confirmation`, {
+        body: {},
+        headers,
+      });
+      expect(answer.status).toBe(404);
+    }
+    const student = await send(state, "/api/v1/me", { headers: await signIn(state, "student") });
+    expect((student.json as { roles: string[] }).roles).not.toContain("teacher");
+  });
 });
 
 describe("dev fake server: institution rules as the database keeps them", () => {
