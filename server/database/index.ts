@@ -644,6 +644,7 @@ export {
   type WorkingCriterionId,
 } from "./teacher-working-criteria/index.ts";
 export type { CommentTemplate, TeacherNote, TeacherNotes, TemplateKind } from "./teacher-notes.ts";
+export { createWorkRevisionDue, type WorkRevisionDue } from "./work-revision-due/index.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the

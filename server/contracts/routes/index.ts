@@ -191,6 +191,7 @@ export {
 } from "./assistant-setting.ts";
 export { EXPORT_ALREADY_OPEN, EXPORT_ALREADY_OPEN_KEY } from "./student-data-export.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export { workRevisionDueRoutes } from "./work-revision-due.ts";
 export { workRubricRoutes } from "./work-rubric.ts";
 export {
   AssignmentRubricInput,

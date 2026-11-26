@@ -48,6 +48,7 @@ import {
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
+  createWorkRevisionDueRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
   createSourceNotebookRoutesFor,
@@ -352,6 +353,8 @@ async function main(): Promise<void> {
       ...createTeacherSourceRoutesFor(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
+      // The revision due date of a returned work (F4-NAS-R16-SRV, NAS-R16).
+      ...createWorkRevisionDueRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
       // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
       createPublicVerificationRouteFor(databases.main),

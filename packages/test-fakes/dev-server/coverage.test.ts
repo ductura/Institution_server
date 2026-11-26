@@ -1917,6 +1917,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { comment: "Doradi uvod.", revisionDueAt: "2026-12-10T12:00:00Z" },
     },
   },
+  "work.revision-due.get": {
+    before: SUBMIT_STEPS,
+    request: { path: `/api/v1/works/${IDS.document}/revision-due`, as: "student" },
+  },
   "work.milestones.delete": {
     request: {
       method: "DELETE",

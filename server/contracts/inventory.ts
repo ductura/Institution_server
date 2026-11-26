@@ -726,6 +726,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",
   },
+  // F4-NAS-R16-SRV (NAS-R16, Ductus#2058): the revision due date of a work; no Ductus route.
+  "app/api/works/[documentId]/revision-due/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196662679",
+  },
   // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run; no Ductus route.
   "app/api/institution/retention/route.ts": {
     methods: ["GET"],
