@@ -1,6 +1,6 @@
 # Izvoz upitnika v1
 
-Zadatak: SRV-V18-UPITNIK-IZVOZ `srv-v18-upitnik-izvoz` (Ductus#2058, nalog c.7173573927; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1, V18-4, V18-6, §5 zadatak 4). Status: **aditivno, unatrag kompatibilno** (API 1.143.0, jedna nova ruta, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-ISPUNJAVANJE (granano iz njegove grane) i o SRV-V18-UPITNIK-BAZA (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`, domena `buildQuestionnaireExport`).
+Zadatak: SRV-V18-UPITNIK-IZVOZ `srv-v18-upitnik-izvoz` (Ductus#2058, nalog c.7173573927; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1, V18-4, V18-6, §5 zadatak 4). Status: **aditivno, unatrag kompatibilno** (API minor s ovom rutom: 1.147.0 na bazi u trenutku pregleda; jedna nova ruta, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-ISPUNJAVANJE (granano iz njegove grane) i o SRV-V18-UPITNIK-BAZA (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`, domena `buildQuestionnaireExport`).
 
 ## Načela
 

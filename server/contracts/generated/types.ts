@@ -1714,7 +1714,7 @@ export type Operations = {
     query: { "includeText"?: "true" | "false"; [key: string]: unknown };
     body: undefined;
     success: { status: 200; body: { "schema": "questionnaire-export-v1"; "questionnaireId": string; "variables": ({ "questionId": string; "order": number; "kind": "single" | "multiple" | "scale" | "number" | "text"; "label": string; "options": ({ "code": string; "label": string })[] })[]; "rows": ({ "n": number; "values": { [key: string]: unknown } })[]; "responseCount": number; "includesText": boolean }; headers: {  } };
-    errorCode: "unauthorized" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "not_found" | "conflict" | "unavailable";
   };
   "teacher.questionnaire-manual-responses.post": {
     params: { "id": string };

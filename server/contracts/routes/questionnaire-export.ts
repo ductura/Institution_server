@@ -57,7 +57,7 @@ export const teacherQuestionnaireExportGet = defineRoute({
   inventory: "app/api/teacher/questionnaires/[id]/export/route.ts",
   access: "course_teacher",
   summary:
-    "The answers of a questionnaire as questionnaire-export-v1, for a teacher of its course: {schema, questionnaireId, variables[{questionId, order, kind, label, options}], rows[{n, values{questionId: value|null}}], responseCount, includesText}. A row is one sheet with no person and no time; n is the position of the sheet in the order of a hash of its id, never of the time it came in, and the same sheets give the same bytes. A question without an answer on a sheet is null. Free-text questions are left out (includesText false) unless the query is includeText=true; any other value of includeText is 422 invalid_input, and any other parameter is 422 too. Fewer sheets than the least number for an export (5) is 409 conflict and returns nothing. The export has no grade, rank, sum or comparison of a person and is not sent to any service; the web builds CSV from it. A student, a teacher of another course, an unknown and a malformed questionnaire id return the same 404.",
+    "The answers of a questionnaire as questionnaire-export-v1, for a teacher of its course: {schema, questionnaireId, variables[{questionId, order, kind, label, options}], rows[{n, values{questionId: value|null}}], responseCount, includesText}. A row is one sheet with no person and no time; n is the position of the sheet in the order of a hash of its id, never of the time it came in, and the same sheets give the same bytes. A question without an answer on a sheet is null. Free-text questions are left out (includesText false) unless the query is includeText=true; any other value of includeText is 422 invalid_input, and any other parameter is 422 too. A read that is not same-origin (Sec-Fetch-Site other than same-origin) is 403 forbidden. Fewer sheets than the least number for an export (5) is 409 conflict and returns nothing. The export has no grade, rank, sum or comparison of a person and is not sent to any service; the web builds CSV from it. A student, a teacher of another course, an unknown and a malformed questionnaire id return the same 404.",
   request: {
     params: closed({ id: Uuid }),
     query: Type.Object({
@@ -80,6 +80,7 @@ export const teacherQuestionnaireExportGet = defineRoute({
   ],
   errors: [
     error(401, "unauthorized"),
+    error(403, "forbidden"),
     error(422, "invalid_input"),
     error(404, "not_found"),
     error(409, "conflict"),

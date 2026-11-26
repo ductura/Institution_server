@@ -115393,7 +115393,7 @@
     "/api/v1/teacher/questionnaires/{id}/export": {
       "get": {
         "operationId": "teacher.questionnaire-export.get",
-        "summary": "The answers of a questionnaire as questionnaire-export-v1, for a teacher of its course: {schema, questionnaireId, variables[{questionId, order, kind, label, options}], rows[{n, values{questionId: value|null}}], responseCount, includesText}. A row is one sheet with no person and no time; n is the position of the sheet in the order of a hash of its id, never of the time it came in, and the same sheets give the same bytes. A question without an answer on a sheet is null. Free-text questions are left out (includesText false) unless the query is includeText=true; any other value of includeText is 422 invalid_input, and any other parameter is 422 too. Fewer sheets than the least number for an export (5) is 409 conflict and returns nothing. The export has no grade, rank, sum or comparison of a person and is not sent to any service; the web builds CSV from it. A student, a teacher of another course, an unknown and a malformed questionnaire id return the same 404.",
+        "summary": "The answers of a questionnaire as questionnaire-export-v1, for a teacher of its course: {schema, questionnaireId, variables[{questionId, order, kind, label, options}], rows[{n, values{questionId: value|null}}], responseCount, includesText}. A row is one sheet with no person and no time; n is the position of the sheet in the order of a hash of its id, never of the time it came in, and the same sheets give the same bytes. A question without an answer on a sheet is null. Free-text questions are left out (includesText false) unless the query is includeText=true; any other value of includeText is 422 invalid_input, and any other parameter is 422 too. A read that is not same-origin (Sec-Fetch-Site other than same-origin) is 403 forbidden. Fewer sheets than the least number for an export (5) is 409 conflict and returns nothing. The export has no grade, rank, sum or comparison of a person and is not sent to any service; the web builds CSV from it. A student, a teacher of another course, an unknown and a malformed questionnaire id return the same 404.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/questionnaires/[id]/export/route.ts",
         "parameters": [
@@ -115622,6 +115622,42 @@
               }
             }
           },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found",
             "content": {
@@ -115772,6 +115808,11 @@
             "status": 401,
             "code": "unauthorized",
             "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
           },
           {
             "status": 422,
