@@ -5,3 +5,8 @@ export {
   type SheetCommitVerdict,
 } from "./commit-dispatch.ts";
 export { replaySheetSegments, sheetStepReplayer } from "./reconstruct.ts";
+export {
+  capturingSheetReplayer,
+  checkSheetSubmission,
+  type SheetSubmissionCheck,
+} from "./submit-check.ts";
