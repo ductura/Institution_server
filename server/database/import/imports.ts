@@ -28,6 +28,24 @@ export type ImportConfirmed =
   | { readonly status: "confirmed" | "already-confirmed"; readonly eventId: string }
   | { readonly status: "rejected"; readonly code: ImportConfirmRejection };
 
+/** The state of an import as the database derives it (confirmed, expired or pending). */
+export type ImportState = "pending" | "confirmed" | "expired";
+/** The metadata of one import of a work; never its manifest, a hash or any content. */
+export type ImportListed = {
+  readonly importId: string;
+  readonly importKind: "file-upload" | "cloud-version";
+  readonly fileFormat: "docx" | "pdf";
+  readonly rawByteLength: number;
+  /** Normalised (D-292), or null. */
+  readonly fileName: string | null;
+  readonly baseRevision: number;
+  readonly preparedAt: string;
+  readonly state: ImportState;
+  readonly confirmedAt: string | null;
+  readonly eventId: string | null;
+};
+export type ImportList = { readonly status: "listed"; readonly imports: readonly ImportListed[] };
+
 export type PrepareImportInput = {
   readonly documentId: string;
   readonly importId: string;
@@ -47,6 +65,8 @@ export type Imports = {
     importId: string,
     manifestSha256: string,
   ): Promise<ImportConfirmed | ImportRefusal>;
+  /** The imports of a work, newest first, for its student owner and a teacher of its assignment. */
+  list(token: string, documentId: string): Promise<ImportList | ImportRefusal>;
 };
 
 const SQL = {
@@ -54,7 +74,13 @@ const SQL = {
   prepare:
     'SELECT outcome, base_revision AS "baseRevision", prepared_at AS "preparedAt" FROM collaboration.prepare_import($1, $2, $3, $4, $5)',
   confirm: 'SELECT outcome, event_id AS "eventId" FROM collaboration.confirm_import($1, $2, $3)',
+  list: `SELECT import_id AS "importId", import_kind AS "importKind", file_format AS "fileFormat",
+       raw_byte_length AS "rawByteLength", file_name AS "fileName", base_revision AS "baseRevision",
+       prepared_at AS "preparedAt", state, confirmed_at AS "confirmedAt", event_id AS "eventId"
+  FROM collaboration.list_imports($1)`,
 } as const;
+/** The database returns at most this many imports of one work. */
+const MAX_LISTED = 200;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const REJECTIONS: readonly string[] = [
@@ -95,6 +121,39 @@ function revisionOf(value: unknown): number {
   return number;
 }
 
+function instantOf(value: unknown): string {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) throw new Malformed();
+  return value.toISOString();
+}
+
+function listedOf(row: Record<string, unknown>): ImportListed {
+  const { importId, importKind, fileFormat, rawByteLength, fileName, state, eventId } = row;
+  if (typeof importId !== "string" || !UUID.test(importId)) throw new Malformed();
+  if (importKind !== "file-upload" && importKind !== "cloud-version") throw new Malformed();
+  if (fileFormat !== "docx" && fileFormat !== "pdf") throw new Malformed();
+  if (typeof rawByteLength !== "number" || !Number.isSafeInteger(rawByteLength))
+    throw new Malformed();
+  if (fileName !== null && typeof fileName !== "string") throw new Malformed();
+  if (state !== "pending" && state !== "confirmed" && state !== "expired") throw new Malformed();
+  // A confirmation has a time and one event id; nothing else has either.
+  const confirmed = state === "confirmed";
+  if (confirmed !== (row.confirmedAt !== null) || confirmed !== (eventId !== null))
+    throw new Malformed();
+  if (confirmed && (typeof eventId !== "string" || !UUID.test(eventId))) throw new Malformed();
+  return {
+    importId,
+    importKind,
+    fileFormat,
+    rawByteLength,
+    fileName,
+    baseRevision: revisionOf(row.baseRevision),
+    preparedAt: instantOf(row.preparedAt),
+    state,
+    confirmedAt: confirmed ? instantOf(row.confirmedAt) : null,
+    eventId: confirmed ? (eventId as string) : null,
+  };
+}
+
 export function createImports(withActor: WithActor): Imports {
   async function one(
     token: string,
@@ -115,6 +174,18 @@ export function createImports(withActor: WithActor): Imports {
     "status" in value;
 
   return {
+    async list(token, documentId) {
+      try {
+        return await withActor(token, async (tx: ActorTransaction) => {
+          const rows = (await tx.query<Record<string, unknown>>(SQL.list, [documentId])).rows;
+          if (rows.length > MAX_LISTED) throw new Malformed();
+          return { status: "listed" as const, imports: rows.map(listedOf) };
+        });
+      } catch (thrown) {
+        return refusal(thrown);
+      }
+    },
+
     async gate(token, documentId) {
       const row = await one(token, SQL.gate, [documentId]);
       if (isRefusal(row)) return row;

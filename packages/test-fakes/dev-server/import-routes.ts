@@ -27,6 +27,9 @@ type Prepared = {
   readonly manifestSha256: string;
   readonly preparedAt: number;
   readonly baseRevision: number;
+  readonly rawByteLength: number;
+  readonly fileName: string | null;
+  confirmedAt: number | null;
   eventId: string | null;
 };
 
@@ -62,6 +65,37 @@ function takesImport(state: State, work: Work): boolean {
 }
 
 export const IMPORT_HANDLERS: Handlers = {
+  // The student owner and a teacher of the assignment read the metadata only.
+  "work.imports.get": ({ state, account, params, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find((w) => w.documentId === params.documentId);
+    if (work === undefined || readerOf(state, work, account) === null)
+      return { error: "not_found" };
+    const listed = [...importsOf(state).entries()]
+      .filter(([, prepared]) => prepared.documentId === work.documentId)
+      .reverse()
+      .map(([importId, prepared]) => {
+        const confirmed = prepared.eventId !== null && prepared.confirmedAt !== null;
+        const expired = now.getTime() - prepared.preparedAt >= IMPORT_PENDING_LIFETIME_MS;
+        return {
+          importId,
+          importKind: "file-upload" as const,
+          fileFormat: "docx" as const,
+          rawByteLength: prepared.rawByteLength,
+          fileName: prepared.fileName,
+          baseRevision: prepared.baseRevision,
+          preparedAt: new Date(prepared.preparedAt).toISOString(),
+          state: confirmed
+            ? ("confirmed" as const)
+            : expired
+              ? ("expired" as const)
+              : ("pending" as const),
+          confirmedAt: confirmed ? new Date(prepared.confirmedAt!).toISOString() : null,
+          eventId: confirmed ? prepared.eventId : null,
+        };
+      });
+    return { status: 200, body: { imports: listed } };
+  },
   "work.imports.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find((w) => w.documentId === params.documentId);
@@ -89,6 +123,9 @@ export const IMPORT_HANDLERS: Handlers = {
       manifestSha256: preview.manifestSha256,
       preparedAt: now.getTime(),
       baseRevision: work.revision,
+      rawByteLength: preview.rawByteLength,
+      fileName: preview.fileName,
+      confirmedAt: null,
       eventId: null,
     });
     return {
@@ -131,6 +168,7 @@ export const IMPORT_HANDLERS: Handlers = {
     if (!takesImport(state, work)) return { error: "import_not_allowed" };
     if (work.revision !== prepared.baseRevision) return { error: "import_revision_changed" };
     prepared.eventId = randomUUID();
+    prepared.confirmedAt = now.getTime();
     return { status: 200, body: { importId: params.importId, eventId: prepared.eventId } };
   },
 };

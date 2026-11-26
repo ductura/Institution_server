@@ -1,0 +1,143 @@
+{
+  "route": "work.imports.get",
+  "vectors": [
+    {
+      "name": "owner-or-teacher-lists-imports",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "imports": [
+            {
+              "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+              "importKind": "file-upload",
+              "fileFormat": "docx",
+              "rawByteLength": 18432,
+              "fileName": "izmisljeni-esej.docx",
+              "baseRevision": 3,
+              "preparedAt": "2026-11-20T10:15:00.000Z",
+              "state": "confirmed",
+              "confirmedAt": "2026-11-20T10:21:30.000Z",
+              "eventId": "1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9"
+            },
+            {
+              "importId": "2c6d3b8f-4a2e-4d9f-8b7c-2e3f4a5b6c7d",
+              "importKind": "file-upload",
+              "fileFormat": "pdf",
+              "rawByteLength": 52311,
+              "fileName": null,
+              "baseRevision": 0,
+              "preparedAt": "2026-11-18T09:00:00.000Z",
+              "state": "expired",
+              "confirmedAt": null,
+              "eventId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "none-yet",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0002"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "imports": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-001740000001"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nema"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-001740000002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-001740000003"
+        }
+      }
+    }
+  ]
+}

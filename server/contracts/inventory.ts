@@ -980,8 +980,9 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
   // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  // SRV-F4-PM2-R14-SRV (Ductus#2059 c.7202802486): GET, the list of the imports of a work.
   "app/api/works/[documentId]/imports/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
   },
   "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
