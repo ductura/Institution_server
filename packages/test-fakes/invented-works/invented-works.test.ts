@@ -162,6 +162,16 @@ describe("generateInventedWork: simulated writing", () => {
     expect(gaps.every((gap) => gap >= 0)).toBe(true);
   });
 
+  it.each([1, 2, 5, 8])(
+    "gives exactly the %i sessions asked for, also in a short paper",
+    (sessions) => {
+      for (const chapters of [0, 2]) {
+        const short = generateInventedWork({ seed: "kratko", chapters, sessions });
+        expect(new Set(short.segments.map((segment) => segment.sessionId)).size).toBe(sessions);
+      }
+    },
+  );
+
   it("sequence numbers run on without a gap across the segments", () => {
     events.forEach((event, at) => expect(event.sequence).toBe(at + 1));
   });
@@ -204,4 +214,4 @@ describe("generateInventedWork: invented data only", () => {
   });
 });
 
-const GOLDEN_SHA256 = "d9add358e6ccce960328ce87474dcfa2a9154cf334fed9dca34b25babf7f4f97";
+const GOLDEN_SHA256 = "22f529d96d11ce503589749827b843dd9a1dfb66356cde4fb96cec7016ae1d2c";

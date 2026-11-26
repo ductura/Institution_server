@@ -389,23 +389,30 @@ export function generateInventedWork(options: InventedWorkOptions): InventedWork
     text: "",
   });
 
-  // The sections are shared out over the sessions in order; each later session
-  // begins with a look back at what is already written.
-  const sessionOf = (section: number): number => Math.floor((section * sessions) / sections.length);
+  // The blocks (title, headings, paragraphs) are shared out over the sessions
+  // in order, so every requested session happens, short papers included; each
+  // later session begins with a look back at what is already written.
+  type Unit = { text: string; heading: boolean; careful: boolean };
+  const units: Unit[] = sections.slice(1).flatMap((section) => [
+    { text: section.heading, heading: true, careful: true },
+    ...section.paragraphs.map((text) => ({
+      text,
+      heading: false,
+      careful: section.kind === "literature",
+    })),
+  ]);
+  const sessionOf = (unit: number): number => Math.floor((unit * sessions) / (units.length + 1));
   writer.makeHeading(0, 1);
   write(writer, random, 0, title, false);
-  sections.slice(1).forEach((section, at) => {
+  units.forEach((unit, at) => {
     if (sessionOf(at + 1) !== sessionOf(at)) {
       writer.newSession(random.int(3 * 3600, 3 * 86400));
       revise(writer, random);
-    }
-    writer.split(writer.blocks.length - 1, randomUuid(random), 2);
-    write(writer, random, writer.blocks.length - 1, section.heading, true);
-    for (const paragraph of section.paragraphs) {
+    } else if (!unit.heading) {
       writer.pause(random.int(5, 40));
-      writer.split(writer.blocks.length - 1, randomUuid(random));
-      write(writer, random, writer.blocks.length - 1, paragraph, section.kind === "literature");
     }
+    writer.split(writer.blocks.length - 1, randomUuid(random), unit.heading ? 2 : undefined);
+    write(writer, random, writer.blocks.length - 1, unit.text, unit.careful);
   });
 
   const documentId = `dokument-izmisljeni-${sha256(seed).slice(0, 12)}`;

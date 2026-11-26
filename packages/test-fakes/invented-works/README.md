@@ -17,6 +17,7 @@ const work = generateInventedWork({ seed: "moje-sjeme", chapters: 3, sessions: 4
 
 ## Pravila
 
+- Ne objavljuje se u tarballu (kao `dev-server` i `pglite`): generator uvozi `server/domain` i serverski replayer, pa ga potrošači unutar ovog repoa koriste kroz `@ductura/test-fakes/invented-works`, a `release.ts` i `scripts/release` ga namjerno ne sadrže.
 - Isto sjeme i iste mogućnosti daju bajt-identičan `serializeInventedWork` na svakom računalu: samo cjelobrojna aritmetika (`random.ts`), nikad `Math.random`, sat ni okolina. Vremena su pomak od fiksnog izmišljenog datuma.
 - Generator ništa ne potpisuje i ne čita nikakav ključ. Potpis (potvrdu) dodaje pozivatelj ključem iz fixturea.
 - Sav tekst, imena i adrese su izmišljeni (`corpus.ts`); test provjerava rječnik zabranjenih izraza (`scripts/forbidden-terms`) i nečitljive znakove nad cijelim izlazom.
