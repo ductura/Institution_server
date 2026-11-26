@@ -72,7 +72,7 @@ Dugoročni udio je isti u oba modela; razlika je u tome kad počinju odbijanja. 
 
 Ograničenje po korisniku nije problem: 4 spremanja u minuti (svakih 15 s) prema 120 daje rezervu od 30 puta.
 
-ISTR-9 potvrđuje isto: 100 studenata spremanjem svake sekunde iscrpilo bi bucket za oko 15 s (1200 / (100 − 20)).
+Usporedba s ISTR-9: ondje piše da bi rok duži od oko 30 s sa 100 studenata koji spremaju svake sekunde iscrpio bucket. Isti model daje 1200 / (100 − 20) = 15 s, a ne 30 s. ISTR-9 je zaokružio grublje; ovdje vrijedi 15 s, a smjer zaključka (bucket se iscrpi) je isti.
 
 ### 2.2 Prijava na početku nastave (`login_per_ip`: 30, dvije po prijavi)
 
@@ -156,7 +156,7 @@ Sve su vrijednosti unutar 1 do 100 000.
 |                    do 1000 |             6 000 |         30 000 |                                        480 |
 |                    do 2000 |            12 000 |         60 000 |                                        600 |
 
-Spremanje: 300 × 4 = 1200 u minuti, 1000 × 4 = 4000, 2000 × 4 = 8000 (svakih 15 s), pa je prag najmanje 2,5× veći. „Ostalo”: nalet od 20 zahtjeva po studentu (6000, 20 000, 40 000), prag je 1,5× do 2× nalet. Prijava: 2 žetona po prijavi, cilj je da se razred prijavi u 1 do 7 minuta.
+Spremanje: 300 × 4 = 1200 u minuti, 1000 × 4 = 4000, 2000 × 4 = 8000 (svakih 15 s), pa je prag najmanje 1,5× veći (3000 / 1200 = 2,5×, 6000 / 4000 = 1,5×, 12 000 / 8000 = 1,5×). „Ostalo”: nalet od 20 zahtjeva po studentu (6000, 20 000, 40 000), prag je 1,5× do 2× nalet. Prijava: 2 žetona po prijavi, cilj je da se razred prijavi u 1 do 7 minuta.
 
 ## 4. Otvoreno i odluke za vlasnika
 
