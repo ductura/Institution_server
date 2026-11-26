@@ -289,6 +289,7 @@ export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
+  CLIENT_ERROR_VALUES,
   MAX_COMMIT_BODY_BYTES,
 } from "./routes/index.ts";
 export { checkInventory } from "./check.ts";
