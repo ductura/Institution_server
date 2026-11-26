@@ -1,6 +1,6 @@
 # server/domain/sheet/formula
 
-Računalo formula za tablični dokument (val 14, SRV-V14-SHEET-FORMULAS, odluka 3). Samo čiste funkcije bez I/O-a, bez sata, slučajnosti i mreže; uvozi samo `../schema.ts`. Rezultat formule nikad nije pohranjen kao istina (odluka 4): server ga uvijek ponovno računa iz teksta formule. Nema rute ni ugovora; izvoz CSV/.xlsx i predaja koriste `computeSheet` u svojim zadacima.
+Računalo formula za tablični dokument (val 14, SRV-V14-SHEET-FORMULAS, odluka 3). Samo čiste funkcije bez I/O-a, bez sata, slučajnosti i mreže; uvozi samo model kroz `../index.ts` (tip i A1 reference iz `../model/schema.ts`). Rezultat formule nikad nije pohranjen kao istina (odluka 4): server ga uvijek ponovno računa iz teksta formule. Nema rute ni ugovora; izvoz CSV/.xlsx i predaja koriste `computeSheet` u svojim zadacima.
 
 ## Jezik formula
 

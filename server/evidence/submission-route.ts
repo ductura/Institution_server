@@ -75,7 +75,10 @@ export async function handleSubmissionRequest(
     return reply(422, { status: "invalid" });
   }
 
-  const outcome = await submitWork(deps, read.token, { documentId, revision });
+  // The log travels with the dependencies: the reconstruction of a spreadsheet work
+  // marks "calculation aligned" there (codes only, SRV-V14-SHEET-SUBMIT).
+  const withLog: SubmissionRouteDeps = { ...deps, log };
+  const outcome = await submitWork(withLog, read.token, { documentId, revision });
   // A blocked submission is an incident without content: the reason code only (D2, G2).
   if (outcome.status === "unavailable")
     log("submission", outcome.status, outcome.stage, outcome.code);
