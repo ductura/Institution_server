@@ -130,6 +130,7 @@ import {
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createMentorshipFollowRoutesFor,
+  createWorkPlanRoutesFor,
   createSelfNoteSealedRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
@@ -397,6 +398,8 @@ async function main(): Promise<void> {
       ...createWorkMessagesRoutesFor(databases.main),
       // SRV-MENTOR-3: note to self and reading place (MK-9), seen marks (MK-11), the mentor's overview (MK-8).
       ...createMentorshipFollowRoutesFor(databases.main),
+      // SRV-F4-PM2-R15: the plan of a work behind the panel Struktura (D-234).
+      ...createWorkPlanRoutesFor(databases.main),
       // SRV-NF6-SIFRA: the note to self sealed on the device and the wrapped note key (B2).
       ...createSelfNoteSealedRoutesFor(databases.main),
       ...createNotificationsRoutesFor(databases.main, reminderCooldown),

@@ -2542,6 +2542,20 @@ export type Operations = {
     success: { status: 200; body: { "comparison": ({ "origin": "typed" | "assistant_inserted" | "assistant_match" | "imported_file" | "pasted_known" | "pasted_unknown"; "state": "in_line" | "for_review" | "exceeded" })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "work.plan.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[]; "updatedAt": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.plan.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[] };
+    success: { status: 200; body: { "question": string | null; "purposes": ({ "nodeId": string; "purpose": string })[]; "terms": ({ "term": string; "definition": string; "kind": "term" | "abbreviation" })[]; "updatedAt": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.reading-place.delete": {
     params: { "documentId": string };
     query: undefined;
