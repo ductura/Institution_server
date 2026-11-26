@@ -126,6 +126,7 @@ describe("SRV-09: the student's assignments from the seed", () => {
           noticeFirst: false,
           workType: "seminar_paper",
           extendedDueAt: null,
+          isPractice: false,
         },
       ],
     });
