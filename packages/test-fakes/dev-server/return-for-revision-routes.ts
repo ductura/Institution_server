@@ -54,7 +54,7 @@ export const RETURN_FOR_REVISION_HANDLERS: Handlers = {
       return { error: "not_found" };
     }
     const last = state.workReturns.filter((entry) => entry.documentId === work.documentId).at(-1);
-    if (last === undefined || work.state === "submitted") {
+    if (last === undefined || last.closed === true || work.state === "submitted") {
       return { status: 200, body: { returned: null } };
     }
     return {

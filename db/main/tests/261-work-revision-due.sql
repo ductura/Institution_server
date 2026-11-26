@@ -12,7 +12,9 @@ SELECT no_plan();
 
 CREATE FUNCTION pg_temp.due(p_actor text, p_doc text DEFAULT 'doc-a') RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask(p_actor, format(
-    'SELECT concat_ws('' '', outcome, attempt, to_char(revision_due_at AT TIME ZONE ''UTC'', ''YYYY-MM-DD HH24:MI''), returned_at IS NOT NULL) FROM app.read_work_revision_due(%L)', p_doc))
+    'SELECT CASE WHEN outcome <> ''ok'' THEN outcome ELSE concat_ws('' '', outcome, attempt, '
+    || 'to_char(revision_due_at AT TIME ZONE ''UTC'', ''YYYY-MM-DD HH24:MI''), (returned_at IS NOT NULL)::text) END '
+    || 'FROM app.read_work_revision_due(%L)', p_doc))
 $$;
 
 -- 1. Catalogue: SECURITY DEFINER of the evidence role, empty search_path, web role only.
@@ -40,10 +42,6 @@ SELECT is(pg_temp.ask('ana', $$ SELECT outcome || ' ' || revision FROM app.reque
 SELECT is(pg_temp.ask('ana', format(
     'SELECT outcome FROM app.record_submission((SELECT id FROM evidence.submission_request), %L)', pg_temp.h('d'))),
   'recorded', 'fixture: her submission is recorded');
-CREATE TEMP TABLE snap AS
-  SELECT (SELECT count(*) FROM evidence.submission_return) AS returns,
-         (SELECT count(*) FROM audit.access_log) AS log;
-
 -- 3. Submitted, not returned: an ok answer with nothing open, for the owner and the teacher.
 SELECT is(pg_temp.due(a.name), 'ok false', a.name || ' reads no open return of a submitted work')
 FROM (VALUES ('ana'), ('vesna')) AS a (name);
@@ -53,6 +51,10 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT outcome FROM app.return_work_for_revisi
   'returned', 'fixture: Vesna returns the work with a revision due date');
 SELECT is(pg_temp.due(a.name), 'ok 1 2027-01-15 12:00 true', a.name || ' reads the round and the due date')
 FROM (VALUES ('ana'), ('vesna')) AS a (name);
+
+CREATE TEMP TABLE snap AS
+  SELECT (SELECT count(*) FROM evidence.submission_return) AS returns,
+         (SELECT count(*) FROM audit.access_log) AS log;
 
 -- 5. Nobody else reads it, and the answer is the same as for an unknown work.
 SELECT is(pg_temp.due(a.name), 'not_found', a.name || ' reads nothing of Ana''s work')
