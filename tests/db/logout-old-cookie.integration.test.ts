@@ -36,7 +36,9 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
+  createThesisTopicRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
@@ -66,6 +68,7 @@ import {
   createWorkVersionsRouteFor,
   createRevisionRestoreRouteFor,
   createWorkExportRouteFor,
+  createSheetCsvRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -140,6 +143,7 @@ import {
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
+  createQualitativeMaterialsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
@@ -562,6 +566,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V14-SHEET-CSV: the CSV of a work it may not read is 404, as a missing work.
+  "work.export-sheet-csv.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export/csv`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
   "student.portable-record.get": {
     method: "GET",
@@ -979,6 +990,31 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V18-KODIRANJE-SIFRARNIK: a live session with no code of that id reads 404; the codebook itself is the caller's own.
+  "student.qual-codes.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/codes",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-codes.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/codes",
+    body: () => ({ name: "Izmišljeni kod nakon odjave" }),
+    live: 201,
+  },
+  "student.qual-code.patch": {
+    method: "PATCH",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => ({ name: "Izmišljeni novi naziv" }),
+    live: 404,
+  },
+  "student.qual-code.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/codes/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-MENTOR-2: a live session with no part in any thesis.
   "institution.thesis-forms.get": {
     method: "GET",
@@ -1042,6 +1078,24 @@ const SESSION_ROUTES = {
     method: "PUT",
     path: "/api/v1/works/izmisljeni-rad-0001/thesis-stage",
     body: () => ({ stage: "submitted_to_office" }),
+    live: 404,
+  },
+  // SRV-V16-TEMA-PRIJEDLOG: a live session with no part in any thesis reads 404 on all three.
+  "work.thesis-topic.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.thesis-topic.put": {
+    method: "PUT",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic",
+    body: () => ({ title: "Izmišljena tema rada" }),
+    live: 404,
+  },
+  "work.thesis-topic-decision.post": {
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic/decision",
+    body: () => ({ version: 1, decision: "approved" }),
     live: 404,
   },
   "student.assignment-work.get": {
@@ -1669,6 +1723,31 @@ const SESSION_ROUTES = {
   "teacher.questionnaire-export.get": {
     method: "GET",
     path: `/api/v1/teacher/questionnaires/${randomUUID()}/export`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-V18-KODIRANJE-GRADIVO: the student's own material; an id that is not theirs is 404.
+  "student.qual-materials.get": {
+    method: "GET",
+    path: "/api/v1/student/qual/materials",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.qual-materials.post": {
+    method: "POST",
+    path: "/api/v1/student/qual/materials",
+    body: () => ({ title: "Izmišljeni intervju", kind: "interview", text: "Izmišljeni tekst." }),
+    live: 201,
+  },
+  "student.qual-material.get": {
+    method: "GET",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.qual-material.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/qual/materials/${randomUUID()}`,
     body: () => undefined,
     live: 404,
   },
@@ -2537,6 +2616,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createSheetCsvRouteFor",
   "createPortableRecordRouteFor",
   "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
@@ -2555,7 +2635,9 @@ const FACTORIES = [
   "createPracticeJournalRoutesFor",
   "createWorkTeamRoutesFor",
   "createPeerReviewRoutesFor",
+  "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
+  "createThesisTopicRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
@@ -2565,6 +2647,7 @@ const FACTORIES = [
   "createCourseAssistantRoutesFor",
   "createQuestionnaireResponsesRoutesFor",
   "createQuestionnaireExportRoutesFor",
+  "createQualitativeMaterialsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
@@ -2681,6 +2764,7 @@ const MOUNTED = [
   createWorkVersionsRouteFor(databases.main),
   createRevisionRestoreRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createSheetCsvRouteFor(databases.main),
   createPortableRecordRouteFor(databases.main, ORIGIN),
   ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
@@ -2699,7 +2783,9 @@ const MOUNTED = [
   ...createPracticeJournalRoutesFor(databases.main),
   ...createWorkTeamRoutesFor(databases.main),
   ...createPeerReviewRoutesFor(databases.main),
+  ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
+  ...createThesisTopicRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
@@ -2709,6 +2795,7 @@ const MOUNTED = [
   ...createCourseAssistantRoutesFor(databases.main),
   ...createQuestionnaireResponsesRoutesFor(databases.main),
   ...createQuestionnaireExportRoutesFor(databases.main),
+  ...createQualitativeMaterialsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
@@ -2916,6 +3003,12 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
+  // The material kept through student.qual-materials.post refers to its owner.
+  await admin.query("DELETE FROM institution.qual_material WHERE institution_id = $1", [
+    institution,
+  ]);
+  // The live session of student.qual-codes.post made a code of its own: it refers to user_account too.
+  await admin.query("DELETE FROM institution.qual_code WHERE institution_id = $1", [institution]);
   // user_preference and problem_report refer to user_account, so they go first.
   for (const table of [
     "user_preference",

@@ -37,6 +37,8 @@ describe("server/downloads public interface", () => {
       "renderDocx",
       "renderInterviewPdf",
       "renderReceiptPdf",
+      "renderSheetCsv",
+      "renderSheetCsvOfText",
       "renderWorkDocx",
       "verifyPortableRecord",
       "writeZip",

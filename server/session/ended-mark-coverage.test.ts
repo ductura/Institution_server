@@ -36,12 +36,12 @@ describe("ended sessions outside server/session (DAN-99)", () => {
   it("finds the server files on disk, the session area among them", () => {
     expect(SERVER_FILES).toEqual(
       expect.arrayContaining([
-        "server/app.ts",
+        "server/server.ts",
         "server/session/ended-mark.ts",
         "server/session/session-token.ts",
       ]),
     );
-    expect(OUTSIDE_SESSION).toContain("server/app.ts");
+    expect(OUTSIDE_SESSION).toContain("server/server.ts");
     expect(OUTSIDE_SESSION.some((file) => file.startsWith("server/session/"))).toBe(false);
   });
 
