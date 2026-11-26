@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { MUTATION_GUARD } from "./shared.ts";
+import { DocumentKind, MUTATION_GUARD } from "./shared.ts";
 import { assignmentGradeGet } from "./assignments.ts";
 import { Name } from "./teacher.ts";
 
@@ -134,6 +134,12 @@ const ASSIGNMENT_CONTENT = {
   wordMax: WordBound,
 };
 
+/** What the two writes add to the content (SRV-V13-VRSTA-POST); the reads carry it already. */
+const ASSIGNMENT_KIND = {
+  /** The kind of document the assignment asks for; absent means text, as in the reads. */
+  documentKind: Type.Optional(DocumentKind),
+};
+
 export const assignmentVersionsPost = defineRoute({
   id: "institution.assignment-versions.post",
   method: "POST",
@@ -149,6 +155,7 @@ export const assignmentVersionsPost = defineRoute({
     body: closed({
       expectedVersion: Type.Integer({ minimum: 1, maximum: MAX_VERSION }),
       ...ASSIGNMENT_CONTENT,
+      ...ASSIGNMENT_KIND,
     }),
   },
   responses: [
@@ -428,6 +435,7 @@ export const courseAssignmentsPost = defineRoute({
       requestKey: Uuid,
       ...ASSIGNMENT_CONTENT,
       ...ASSIGNMENT_SETUP,
+      ...ASSIGNMENT_KIND,
       isPractice: Type.Optional(Type.Boolean({ default: false })),
     }),
   },

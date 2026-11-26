@@ -24,6 +24,7 @@ const PORTABLE_RECORD = "server/http/portable-record/index.ts";
 const SUBMISSION_PACKAGE = "server/http/export/submission-package.ts";
 const SUBMISSIONS_BULK = "server/http/teacher-submissions-bulk/index.ts";
 const INTERVIEW_PDF = "server/http/work-interview/pdf/index.ts";
+const WORK_EXPORT_SLIDES = "server/http/work-export-slides/index.ts";
 const RULES = ["local/area-boundary", "local/no-dynamic-load"];
 
 async function ruleIds(file: string, code: string): Promise<string[]> {
@@ -44,6 +45,7 @@ describe("the locales imports of the login page and receipt PDF", () => {
       [MERLIN]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
       [WORK_EXPORT]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
       [INTERVIEW_PDF]: { specifier: "../../../../locales/index.ts", name: "interviewPdfHr" },
+      [WORK_EXPORT_SLIDES]: { specifier: "../../../locales/index.ts", name: "messagesHr" },
       [PORTABLE_RECORD]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },
       [SUBMISSION_PACKAGE]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },
       [SUBMISSIONS_BULK]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },

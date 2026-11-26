@@ -158,6 +158,7 @@ import {
   createWorkExportRouteFor,
   createSheetCsvRouteFor,
   createSheetXlsxRouteFor,
+  createWorkExportSlidesRouteFor,
   createWorkInterviewPdfRouteFor,
   createWorkInterviewRoutesFor,
   createWorkMessagesRoutesFor,
@@ -606,6 +607,10 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createWorkExportRouteFor", () => [createWorkExportRouteFor(STAND_IN)]],
   ["createSheetCsvRouteFor", () => [createSheetCsvRouteFor(STAND_IN)]],
   ["createSheetXlsxRouteFor", () => [createSheetXlsxRouteFor(STAND_IN)]],
+  [
+    "createWorkExportSlidesRouteFor",
+    () => [createWorkExportSlidesRouteFor(STAND_IN, {}, process.cwd())],
+  ],
   ["createPortableRecordRouteFor", () => [createPortableRecordRouteFor(STAND_IN, STAND_IN)]],
   ["createSubmissionPackageRoutesFor", () => createSubmissionPackageRoutesFor(STAND_IN, STAND_IN)],
   ["createWorkPdfRouteFor", () => [createWorkPdfRouteFor(STAND_IN, undefined)]],

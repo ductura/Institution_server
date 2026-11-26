@@ -487,7 +487,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['importAllowed'] === 'boolean') &&
       (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
       (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
-      Object.getOwnPropertyNames(value).length === 12
+      (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['expectedVersion', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'documentKind'].includes(key))
     )
   }
   })(),
@@ -579,8 +580,9 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['groupIds'] !== undefined ? (Array.isArray(value['groupIds']) && value['groupIds'].length <= 20 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local5.test(value)))) { return false }; return true; })(value['groupIds'])) : true) &&
       (value['externalToolsAllowed'] !== undefined ? ((typeof value['externalToolsAllowed'] === 'boolean')) : true) &&
       (value['aiSummaryOnly'] !== undefined ? ((typeof value['aiSummaryOnly'] === 'boolean')) : true) &&
+      (value['documentKind'] !== undefined ? ((((value['documentKind'] === 'text')) || ((value['documentKind'] === 'slides')))) : true) &&
       (value['isPractice'] !== undefined ? ((typeof value['isPractice'] === 'boolean')) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'isPractice'].includes(key))
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly', 'documentKind', 'isPractice'].includes(key))
     )
   }
   })(),
@@ -4278,6 +4280,28 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (value['versionId'] !== undefined ? ((typeof value['versionId'] === 'string') && local0.test(value['versionId'])) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['versionId'].includes(key))
+    )
+  }
+  })(),
+  "work.export-slides.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.export-slides.get:query": (() => {
+  const local0 = /^[1-9][0-9]{0,15}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['format'] === 'pptx')) || ((value['format'] === 'pdf'))) &&
+      (value['versionId'] !== undefined ? ((typeof value['versionId'] === 'string') && local0.test(value['versionId'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['format', 'versionId'].includes(key))
     )
   }
   })(),

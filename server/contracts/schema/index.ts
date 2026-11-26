@@ -44,6 +44,15 @@ export type ErrorSpec = {
   readonly body?: TSchema | "none" | "html";
 };
 
+/** The binary media types a success can answer with. */
+export type BinaryContentType =
+  | "image/jpeg"
+  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  | "text/csv"
+  | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  | "application/pdf";
+
 export type SuccessSpec = {
   readonly status: number;
   readonly description: string;
@@ -53,11 +62,7 @@ export type SuccessSpec = {
    * A binary body of this media type instead of JSON (SRV-1102: the JPEG of a
    * source proof; SRV-1310: the DOCX of a work). Such an answer has no `body` schema.
    */
-  readonly contentType?:
-    | "image/jpeg"
-    | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    | "text/csv"
-    | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  readonly contentType?: BinaryContentType | readonly BinaryContentType[];
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
 };
