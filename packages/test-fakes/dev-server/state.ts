@@ -487,6 +487,8 @@ export type State = {
     comment: string;
     revisionDueAt: string | null;
     returnedAt: string;
+    /** True once the student submitted again: the return is no longer open (F4-NAS-R16-SRV). */
+    closed?: boolean;
   }[];
 };
 
