@@ -133,6 +133,11 @@ export const STATEMENT_HANDLERS: Handlers = {
       ? { error: "not_found" }
       : { status: 200, body: answerOf(ctx.state, work) };
   },
+  // The dev server keeps no assistant conversations (as student.assistant-conversations.get).
+  "student.declaration-conversations.get": (ctx) =>
+    workOf(ctx) === undefined
+      ? { error: "not_found" }
+      : { status: 200, body: { conversations: [] } },
   "student.declaration.put": (ctx) => {
     const work = workOf(ctx);
     if (work === undefined) return { error: "not_found" };

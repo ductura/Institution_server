@@ -80,6 +80,11 @@ const QuestionAnswer = Type.Union([
   Type.Null(),
 ]);
 const PutAnswer = Type.Union([closed({ questionId: QuestionId, text: AnswerText }), Type.Null()]);
+const ConversationReason = Type.Union(
+  ["transferred_deleted", "transferred", "pasted_known", "student_added"].map((reason) =>
+    Type.Literal(reason),
+  ),
+);
 const Put = closed({
   baseVersion: DraftVersion,
   revision: Version,
@@ -276,8 +281,38 @@ export const studentDeclarationAttachmentsPost = defineRoute({
   ],
   errors: UPLOAD_ERRORS,
 });
+export const studentDeclarationConversationsGet = defineRoute({
+  id: "student.declaration-conversations.get",
+  method: "GET",
+  path: `${URL}/declaration-conversations`,
+  inventory: `${INVENTORY}/declaration-conversations/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "List the student's own assistant conversations of this assignment that a declaration can attach, each with the throughSeq and messagesSha256 of a reference. The declaration PUT does not accept conversation attachments yet. Only conversations with a message; never another student's.",
+  request: { params: Params },
+  responses: [
+    {
+      status: 200,
+      body: closed({
+        conversations: Type.Array(
+          closed({
+            conversationId: ID,
+            reason: ConversationReason,
+            throughSeq: Version,
+            messagesSha256: SHA256,
+          }),
+          { maxItems: 200 },
+        ),
+      }),
+      description: "Attachable conversations",
+      headers: ["cache-control"],
+    },
+  ],
+  errors: READ_ERRORS,
+});
 export const statementRoutes = [
   studentDeclarationGet,
+  studentDeclarationConversationsGet,
   studentDeclarationPut,
   studentDeclarationAttachmentsPost,
 ] as const;

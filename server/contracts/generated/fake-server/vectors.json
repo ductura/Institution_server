@@ -40946,7 +40946,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.165.0",
+        "apiVersion": "1.166.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40962,7 +40962,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.165.0",
+        "apiVersion": "1.166.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -52171,6 +52171,131 @@
         "code": "attachments_too_large",
         "messageKey": "errors.attachmentsTooLarge",
         "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-conversations.get",
+    "name": "success",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "conversations": [
+          {
+            "conversationId": "00000000-0000-4000-8000-0000000000d1",
+            "reason": "student_added",
+            "throughSeq": 2,
+            "messagesSha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.declaration-conversations.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-conversations.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-conversations.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "student.declaration-conversations.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "sec-fetch-site": "cross-site",
+        "cookie": "__Host-ductus_session=VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
         "requestId": "00000000-0000-4000-8000-000000000000"
       }
     }

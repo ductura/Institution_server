@@ -129,6 +129,8 @@ SELECT bag_eq(
             ('declaration.submission_gate(text,bigint)'),
             -- SRV-IZJAVA-PITANJE: the declaration save with the answer to the teacher's question.
             ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
+            -- SRV-F4-EDI-R07: the student's own conversations a declaration can attach.
+            ('declaration.list_conversations(uuid)'),
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
             ('app.read_own_reconstruction_checkpoint(text,bigint)'),
             -- SRV-1903: the student's two steps of a withdrawal.
