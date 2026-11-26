@@ -1,0 +1,202 @@
+{
+  "route": "work.thesis-committee.get",
+  "vectors": [
+    {
+      "name": "none",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "members": [],
+          "changedAt": null,
+          "changedByPart": null
+        }
+      }
+    },
+    {
+      "name": "named",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-mentora-zavrsni-0000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "members": [
+            {
+              "userId": "00000000-0000-4000-8000-000000000101",
+              "name": {
+                "givenName": "Marko",
+                "familyName": "Izmi\u0161ljeni\u0107"
+              },
+              "role": "chair"
+            },
+            {
+              "userId": "00000000-0000-4000-8000-000000000102",
+              "name": {
+                "givenName": "Vesna",
+                "familyName": "Izmi\u0161ljani\u0107"
+              },
+              "role": "member"
+            }
+          ],
+          "changedAt": "2026-11-25T10:00:00.000Z",
+          "changedByPart": "faculty"
+        }
+      }
+    },
+    {
+      "name": "name-unknown",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "members": [
+            {
+              "userId": "00000000-0000-4000-8000-000000000101",
+              "name": {
+                "givenName": "Marko",
+                "familyName": "Izmi\u0161ljeni\u0107"
+              },
+              "role": "chair"
+            },
+            {
+              "userId": "00000000-0000-4000-8000-000000000102",
+              "name": null,
+              "role": "member"
+            }
+          ],
+          "changedAt": "2026-11-25T10:00:00.000Z",
+          "changedByPart": "faculty"
+        }
+      }
+    },
+    {
+      "name": "emptied",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-referade-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "members": [],
+          "changedAt": "2026-11-25T11:00:00.000Z",
+          "changedByPart": "faculty"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000248001"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-tudi"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000248002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "doc-izmisljeni-zavrsni-1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-zavrsni-000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000248003"
+        }
+      }
+    }
+  ]
+}
