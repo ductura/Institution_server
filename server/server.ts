@@ -54,6 +54,7 @@ import {
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createSheetCsvRouteFor,
+  createSheetXlsxRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
   createTeacherSubmissionsBulkRoutesFor,
@@ -149,6 +150,7 @@ import {
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
@@ -409,6 +411,8 @@ async function main(): Promise<void> {
       createWorkExportRouteFor(databases.main),
       // SRV-V14-SHEET-CSV: the CSV of one sheet of a spreadsheet work, the same readers as the DOCX.
       createSheetCsvRouteFor(databases.main),
+      // SRV-V14-SHEET-XLSX: the .xlsx of a saved version of a spreadsheet work, formulas computed again.
+      createSheetXlsxRouteFor(databases.main),
       // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
       createPortableRecordRouteFor(databases.main, APP_ORIGIN),
       // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
@@ -468,6 +472,8 @@ async function main(): Promise<void> {
       ...createQuestionnaireExportRoutesFor(databases.main),
       // SRV-V18-KODIRANJE-GRADIVO: the student's own material for qualitative coding.
       ...createQualitativeMaterialsRoutesFor(databases.main),
+      // SRV-V18-KODIRANJE-OZNAKE: the passages a student marks and the export of the coding.
+      ...createQualitativeSegmentsRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),

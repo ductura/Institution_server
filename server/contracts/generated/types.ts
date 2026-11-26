@@ -1163,6 +1163,13 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "name": string; "description": string; "order": number }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
   };
+  "student.qual-export.get": {
+    params: undefined;
+    query: { "materialId"?: string };
+    body: undefined;
+    success: { status: 200; body: { "schema": "qualitative-export-v1"; "codebook": ({ "code": string; "name": string; "description": string })[]; "segments": ({ "material": string; "code": string; "paragraph": number; "start": number; "end": number; "quote": string; "memo": string | null })[]; "counts": ({ "code": string; "material": string; "n": number })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable" | "not_found" | "invalid_input";
+  };
   "student.qual-material.delete": {
     params: { "id": string };
     query: undefined;
@@ -1190,6 +1197,27 @@ export type Operations = {
     body: { "title": string; "kind": "interview" | "note"; "text": string };
     success: { status: 201; body: { "id": string; "title": string; "kind": "interview" | "note"; "text": string; "createdOn": string; "segmentCount": number; "locked": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "unsupported_media_type" | "invalid_json" | "conflict" | "invalid_input";
+  };
+  "student.qual-segment.delete": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "not_found";
+  };
+  "student.qual-segments.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "segments": ({ "id": string; "codeId": string; "paragraph": number; "start": number; "end": number; "quote": string; "memo": string | null; "createdOn": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable" | "not_found";
+  };
+  "student.qual-segments.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "codeId": string; "anchor": { "paragraph": number; "start": number; "end": number; "quote": string }; "memo"?: string };
+    success: { status: 201; body: { "id": string; "codeId": string; "paragraph": number; "start": number; "end": number; "quote": string; "memo": string | null; "createdOn": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unavailable" | "not_found" | "unsupported_media_type" | "invalid_json" | "conflict" | "invalid_input";
   };
   "student.questionnaire-responses.post": {
     params: { "id": string };
@@ -2162,6 +2190,13 @@ export type Operations = {
     query: { "sheet"?: string };
     body: undefined;
     success: { status: 200; body: Blob; headers: { "content-disposition"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
+  "work.export-sheet-xlsx.get": {
+    params: { "documentId": string };
+    query: { "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-sheet-sha256"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.export.get": {

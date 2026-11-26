@@ -65,6 +65,8 @@ import {
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
   createQualitativeCodesRoutesFor,
+  createQualitativeMaterialsRoutesFor,
+  createQualitativeSegmentsRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
   createThesisCommitteeRoutesFor,
@@ -301,6 +303,20 @@ const SRV_V18_SIFRARNIK = [
   "student.qual-codes.post",
   "student.qual-code.patch",
   "student.qual-code.delete",
+];
+// SRV-V18-KODIRANJE-GRADIVO: the four routes of the material of qualitative coding.
+const SRV_V18_GRADIVO = [
+  "student.qual-materials.get",
+  "student.qual-materials.post",
+  "student.qual-material.get",
+  "student.qual-material.delete",
+];
+// SRV-V18-KODIRANJE-OZNAKE: the passages marked in a material and the export of the coding.
+const SRV_V18_OZNAKE = [
+  "student.qual-segments.get",
+  "student.qual-segments.post",
+  "student.qual-segment.delete",
+  "student.qual-export.get",
 ];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
@@ -687,6 +703,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createQualitativeCodesRoutesFor(databases.main)",
     ids: SRV_V18_SIFRARNIK,
     routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeMaterialsRoutesFor(databases.main)",
+    ids: SRV_V18_GRADIVO,
+    routes: () => createQualitativeMaterialsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createQualitativeSegmentsRoutesFor(databases.main)",
+    ids: SRV_V18_OZNAKE,
+    routes: () => createQualitativeSegmentsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createThesisRoutesFor(databases.main)",
@@ -1178,6 +1204,8 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V19_GRUPA,
       ...SRV_V19_RECENZIJA,
       ...SRV_V18_SIFRARNIK,
+      ...SRV_V18_GRADIVO,
+      ...SRV_V18_OZNAKE,
       ...SRV_MENTOR_2,
       ...SRV_V16_TEMA,
       ...SRV_V16_POVJERENSTVO,

@@ -56,7 +56,8 @@ export type SuccessSpec = {
   readonly contentType?:
     | "image/jpeg"
     | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    | "text/csv";
+    | "text/csv"
+    | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
 };
