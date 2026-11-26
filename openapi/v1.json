@@ -71828,6 +71828,9 @@
                                       "type": "string"
                                     }
                                   ]
+                                },
+                                "isPractice": {
+                                  "type": "boolean"
                                 }
                               }
                             }
