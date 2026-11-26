@@ -85,6 +85,7 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createAnalysisRoutesFor,
   createProblemReportInboxRoutesFor,
   createAdminActionLogRouteFor,
   createRetentionRouteFor,
@@ -512,6 +513,8 @@ async function main(): Promise<void> {
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
+      // SRV-V15-HTTP (val 15): the stateless statistical analysis, behind a switch that is off.
+      ...createAnalysisRoutesFor(databases.main),
       // SRV-ADMIN-1 (NF-7 OA-7, OA-3): problem reports routed by kind and their
       // state; the administrator's log of administrator and operator actions.
       ...createProblemReportInboxRoutesFor(databases.main),

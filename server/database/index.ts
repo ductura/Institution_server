@@ -949,3 +949,11 @@ export {
   type WorkAccessPage,
   type WorkAccessReader,
 } from "./access-log/index.ts";
+// SRV-V15-HTTP: the pure, stateless analysis of val 15, for the HTTP adapter (http may not import domain).
+export {
+  ANALYSIS_IDS as ANALYSIS_DOMAIN_IDS,
+  analysisSpecOf,
+  DATASET_LIMITS,
+  runAnalysis,
+  type AnalysisRunOutcome,
+} from "../domain/index.ts";
