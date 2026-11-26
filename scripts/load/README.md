@@ -11,7 +11,7 @@ Skripte za mjerenje kako se poslužitelj ponaša pod opterećenjem. Opterećenje
 ## Postupak
 
 1. Podigni zaseban stog s vlastitom bazom: `.local/database-url` pokazuje na prazni klaster, zatim `pnpm lokalno --izravno`.
-2. Pripremi studente (upis, obavijest, otvoren rad, unaprijed izračunat lanac spremanja). Priprema poštuje ograničenje prijava, pa traje oko 2 s po studentu:
+2. Pripremi studente (upis, obavijest, otvoren rad, unaprijed izračunat lanac spremanja). Priprema poštuje ograničenje prijava, pa traje oko 4 s po studentu (100 studenata oko 7 minuta):
 
    ```
    node scripts/load/priprema.ts --korisnika=100 --spremanja=6 --pokret=r1
