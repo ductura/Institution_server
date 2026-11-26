@@ -86,6 +86,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createAnalysisRoutesFor,
@@ -539,6 +540,7 @@ async function main(): Promise<void> {
       createTeacherDeclarationRouteFor(databases.main),
       // F4-NAS-R04-SRV: the conversations attached to the bound declaration.
       createTeacherDeclarationConversationRouteFor(databases.main),
+      createTeacherSubmissionNotesRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),

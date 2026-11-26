@@ -133,6 +133,7 @@ describe("fake server over HTTP", () => {
     // student.assistant-request.post (SRV-1204) five.
     // work.direct-edit.put (SRV-1702) five.
     // Declaration save and upload have five framing vectors each.
+    // F4-EDI-R20-SRV: work.comment-drafts-second.post five.
     // SRV-1703: work.comment-drafts.post, work.comment-draft.delete, work.comments.publish.post,
     // teacher.comment-bank.post, teacher.comment-bank.delete and work.review.post five each.
     // SRV-1407: the four mentorship request moves five each.
@@ -199,7 +200,7 @@ describe("fake server over HTTP", () => {
     // SRV-V18-KODIRANJE-SIFRARNIK: student.qual-codes.post, student.qual-code.patch and student.qual-code.delete five each.
     // SRV-V18-KODIRANJE-OZNAKE: student.qual-segments.post and student.qual-segment.delete five each.
     // SRV-ED42-PRIJEDLOZI: the four suggestion routes five each.
-    expect(VECTORS.length - overHttp.length).toBe(920);
+    expect(VECTORS.length - overHttp.length).toBe(925);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

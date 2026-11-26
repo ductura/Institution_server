@@ -84,14 +84,31 @@ async function login() {
   return callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), cookie);
 }
 
-async function expectRefused(response: Response, status = 400) {
-  expect(response.status).toBe(status);
+/**
+ * A failed login (STU-R01): 400 and 503 end as a 303 to the sign-in page with
+ * the contract's code (`login_failed`, `provider_unavailable`); 403 stays the
+ * neutral page. Either way no session and the attempt cookie cleared.
+ */
+const FAILURE_CODE = { 400: "login_failed", 503: "provider_unavailable" } as const;
+
+function expectFailureRedirect(response: Response, status: 400 | 503) {
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${FAILURE_CODE[status]}`);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+}
+
+async function expectRefused(response: Response, status: 400 | 403 | 503 = 400) {
   expect(deps.openSession).not.toHaveBeenCalled();
   const cookies = setCookies(response);
   expect(cookies.has(SESSION_COOKIE_NAME)).toBe(false);
   expect(cookies.get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.text()).toContain("Prijava nije dovršena");
+  if (status === 403) {
+    expect(response.status).toBe(403);
+    expect(await response.text()).toContain("Prijava nije dovršena");
+  } else {
+    expectFailureRedirect(response, status);
+  }
 }
 
 const without = (claims: Record<string, unknown>, key: string) =>
@@ -240,9 +257,8 @@ describe("login", () => {
   it("#11 shows the unavailable page when the provider is down or failing", async () => {
     idp.state.next = { down: true };
     const start = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
-    expect(start.status).toBe(503);
+    expectFailureRedirect(start, 503);
     expect(setCookies(start).has(LOGIN_COOKIE_NAME)).toBe(false);
-    expect(await start.text()).toContain("trenutačno ne odgovara");
 
     idp.state.next = {};
     const { authorize, cookie } = await begin();
@@ -394,8 +410,7 @@ describe("login", () => {
     deps.oidc = createOidcClient(wellKnown, idp.fetch);
 
     const start = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
-    expect(start.status).toBe(503);
-    expect(start.headers.get("location")).toBeNull();
+    expectFailureRedirect(start, 503);
     await expect(
       deps.oidc.verify(new URL(`${APP}/api/v1/auth/callback?code=x&state=y`), {
         state: "y",
@@ -641,7 +656,7 @@ describe("the first login after a sign-out", () => {
   it("keeps the mark when the callback has no attempt, so the next attempt asks again", async () => {
     const { authorize } = await begin();
     const failed = await callback(idp.approve(authorize, CALLBACK), MARK);
-    expect(failed.status).toBe(400);
+    expectFailureRedirect(failed, 400);
     expect(setCookies(failed).has(SIGNED_OUT_COOKIE_NAME)).toBe(false);
   });
 

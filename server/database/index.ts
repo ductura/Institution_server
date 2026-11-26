@@ -521,6 +521,11 @@ export {
   type StudentDataExportState,
   type StudentDataExportWorkerPort,
 } from "./student-data-export/index.ts";
+export {
+  createTeacherSubmissionNotesReader,
+  type TeacherSubmissionNote,
+  type TeacherSubmissionNotesReader,
+} from "./teacher-submission-notes/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
@@ -828,6 +833,7 @@ export async function closePools(): Promise<void> {
 export {
   createCommentDelay,
   type CommentDelay,
+  type CommentKind,
   type CommentDelayRefusal,
   type CommentDelayResult,
   type CommentDraft,

@@ -19,6 +19,7 @@ import {
   createReplaySource,
   createTeacherNotes,
   type CommentDelay,
+  type CommentKind,
   type CommentDelayRefusal,
   type TeacherNotes,
   type WithActor,
@@ -49,6 +50,7 @@ const find = (id: string) => {
 };
 const DRAFTS_GET = find("work.comment-drafts.get");
 const DRAFTS_POST = find("work.comment-drafts.post");
+const DRAFTS_SECOND_POST = find("work.comment-drafts-second.post");
 const DRAFT_DELETE = find("work.comment-draft.delete");
 const PUBLISH = find("work.comments.publish.post");
 const PUBLISH_SELECTED = find("work.comments.publish-selected.post");
@@ -206,6 +208,32 @@ export function createCommentDraftRoutes(delay: CommentDelay): Route[] {
           return refusalOf(response, answer.status);
         } catch (error) {
           return unavailable(response, DRAFTS_POST.id, error);
+        }
+      },
+    },
+    {
+      contract: DRAFTS_SECOND_POST,
+      async handle(request, response, params) {
+        const scope = sessionAndWork(request, response, params, true);
+        if (scope === null) return;
+        const body = await readBody<{
+          text: string;
+          anchor: Record<string, unknown> | null;
+          kind?: CommentKind | null;
+        }>(request, response, DRAFTS_SECOND_POST);
+        if (body === null) return;
+        try {
+          const answer = await delay.createDraftWithKind(
+            scope.token,
+            scope.documentId,
+            body.text,
+            body.anchor,
+            body.kind ?? null,
+          );
+          if (answer.status === "ok") return sendJson(response, 201, { threadId: answer.threadId });
+          return refusalOf(response, answer.status);
+        } catch (error) {
+          return unavailable(response, DRAFTS_SECOND_POST.id, error);
         }
       },
     },

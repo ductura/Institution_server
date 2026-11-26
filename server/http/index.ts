@@ -95,6 +95,7 @@ export {
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
 } from "./teacher-declaration/index.ts";
+export { createTeacherSubmissionNotesRouteFor } from "./teacher-submission-notes/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,

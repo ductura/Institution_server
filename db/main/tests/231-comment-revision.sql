@@ -46,7 +46,7 @@ SELECT is(pg_get_function_arguments('collaboration.create_revision_comment(text,
   'p_document_id text, p_body text, p_anchor jsonb, p_revision bigint',
   'the RPC takes no author, role or institution: they come from the session');
 SELECT is(pg_get_function_result('collaboration.list_comments(text)'::regprocedure),
-  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint)',
+  'TABLE(thread_id uuid, comment_id uuid, comment_position integer, author_role text, is_own boolean, body text, anchor jsonb, state text, created_window timestamp with time zone, deleted_window timestamp with time zone, revision bigint, kind text)',
   'list_comments gives the thread''s revision as its last column, no exact time and no id of a person');
 SELECT bag_eq(
   $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
