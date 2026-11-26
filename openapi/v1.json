@@ -17008,6 +17008,18 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "documentKind": {
+                    "anyOf": [
+                      {
+                        "const": "text",
+                        "type": "string"
+                      },
+                      {
+                        "const": "slides",
+                        "type": "string"
+                      }
+                    ]
                   }
                 }
               }
@@ -20357,6 +20369,18 @@
                   },
                   "aiSummaryOnly": {
                     "type": "boolean"
+                  },
+                  "documentKind": {
+                    "anyOf": [
+                      {
+                        "const": "text",
+                        "type": "string"
+                      },
+                      {
+                        "const": "slides",
+                        "type": "string"
+                      }
+                    ]
                   },
                   "isPractice": {
                     "default": false,

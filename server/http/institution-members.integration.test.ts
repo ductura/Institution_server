@@ -166,6 +166,7 @@ const OUTCOME: Record<Kind, Record<string, unknown>> = {
   },
   version: {
     published: { status: "published", versionNo: 2 },
+    "published-kind-text": { status: "published", versionNo: 2 },
     forbidden: { status: "forbidden" },
     "version-conflict": { status: "version_conflict" },
     unavailable: { status: "unavailable", reason: "database_error" },
