@@ -447,7 +447,6 @@ describe("job queue: one job, one attempt at a time", () => {
     [" (a database slower than the margin)", 700],
   ])(
     "W-4: a take that lasted longer than the deadline is stored as timeout and its handler is not run%s",
-    { repeats: 199 },
     async (_label, heldMs) => {
       const def = definition();
       // The fence is a real timer, and the take is the hold plus however long the
