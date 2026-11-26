@@ -1770,6 +1770,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // F4-NAS-R01-SRV: the same for the teacher's read.
+  "teacher.assignment-late-submission.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/late-submission`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-ASIST-PREKIDAC: a live session with no relation to such a course or assignment gets 404.
   "teacher.course-assistant.get": {
     method: "GET",

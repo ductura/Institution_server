@@ -1534,6 +1534,13 @@ export type Operations = {
     success: { status: 200; body: { "eligible": true }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "practice_assignment" | "unavailable";
   };
+  "teacher.assignment-late-submission.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "lateSubmissionAllowed": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "teacher.assignment-overview.get": {
     params: { "assignmentId": string };
     query: undefined;

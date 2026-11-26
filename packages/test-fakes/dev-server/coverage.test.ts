@@ -2886,6 +2886,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "GET",
     },
   },
+  "teacher.assignment-late-submission.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
   "teacher.declaration-question.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/declaration-question`,

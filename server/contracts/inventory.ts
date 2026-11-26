@@ -689,6 +689,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055",
   },
+  // F4-NAS-R01-SRV (Ductus#2055): the teacher of the assignment reads the value in force.
+  "app/api/teacher/assignments/[assignmentId]/late-submission/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2055",
+  },
   // SRV-IZJAVA-PITANJE (Ductus#2055 c.7114546002, owner decision of 23. 11. 2026): the
   // teacher's optional question with the declaration.
   "app/api/teacher/assignments/[assignmentId]/declaration-question/route.ts": {

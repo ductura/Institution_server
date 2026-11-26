@@ -177,6 +177,6 @@ REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
 -- back. A local database is made again with db:up instead.
 DO $$
 BEGIN
-  RAISE EXCEPTION 'SRV-F4-MEN-R10 (20261220310000) does not go down; recreate the local database';
+  RAISE EXCEPTION 'SRV-F4-MEN-R10 (20261220320000) does not go down; recreate the local database';
 END
 $$;
