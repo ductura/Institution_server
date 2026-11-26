@@ -442,23 +442,36 @@ describe("job queue: one job, one attempt at a time", () => {
     expect(waited[0]).toBeLessThan(900);
   });
 
-  it("W-4: a take that lasted longer than the deadline is stored as timeout and its handler is not run", async () => {
-    const def = definition();
-    const queue = await open(def, "workerA", { retryLimit: 0, expireSeconds: 1, deadlineMs: 300 });
-    await queue.enqueue(def.name, body(42));
-    let runs = 0;
-    const run = queue.runOnce(def.name, async () => {
-      runs += 1;
-      return { ok: true };
-    });
-    hold(350);
-    expect(await run).toEqual({ status: "failed", code: "timeout" });
-    expect(runs).toBe(0);
-    expect(await jobs(def.name)).toEqual([
-      { state: "failed", retry_count: 0, output: { code: "timeout" }, data: body(42) },
-    ]);
-    expect(fence).toEqual({ armed: [650], fired: [] });
-  });
+  it.each([
+    ["", 350],
+    [" (a database slower than the margin)", 700],
+  ])(
+    "W-4: a take that lasted longer than the deadline is stored as timeout and its handler is not run%s",
+    async (_label, heldMs) => {
+      const def = definition();
+      // The fence is a real timer, and the take is the hold plus however long the
+      // database takes to answer. A long expiry puts the fence (2650 ms) far past
+      // the hold, so a slow database cannot fire it.
+      const queue = await open(def, "workerA", {
+        retryLimit: 0,
+        expireSeconds: 5,
+        deadlineMs: 300,
+      });
+      await queue.enqueue(def.name, body(42));
+      let runs = 0;
+      const run = queue.runOnce(def.name, async () => {
+        runs += 1;
+        return { ok: true };
+      });
+      hold(heldMs);
+      expect(await run).toEqual({ status: "failed", code: "timeout" });
+      expect(runs).toBe(0);
+      expect(await jobs(def.name)).toEqual([
+        { state: "failed", retry_count: 0, output: { code: "timeout" }, data: body(42) },
+      ]);
+      expect(fence).toEqual({ armed: [2650], fired: [] });
+    },
+  );
 
   it("W-5: twenty enqueues of one subject from two workers leave one job", async () => {
     const def = definition();
