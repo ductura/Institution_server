@@ -6,6 +6,7 @@ Pozadinski proces Ducture (ARCHITECTURE §2: web i radnik dijele module, a svaki
 
 - `signing/`: radnik koji potpisuje potvrde u stanju `pending_signature` (protokol 2, odgovor `202 pending_signature`) i oporavlja one koje je ostavio radnik koji je pao usred potpisa. Prvi prolaz nakon pokretanja obuhvaća svaku takvu potvrdu, zatim prolaz svakih `intervalMs`. Svaki prolaz piše jedan strukturirani zapis s brojem potvrda koje još čekaju potpis.
 - Potpis iste potvrde uvijek su isti bajtovi (Ed25519 je deterministički, ulaz potpisa određuje spremljeni tekst), a spremište čuva prvi potpis (`already_signed` za svaki sljedeći), pa ponovljeni prolaz nakon pada nikad ne daje drugu potvrdu.
+- `submission-verdict/`: radnik koji nakon predaje (ruta predaje ostaje sinkrona i nepromijenjena) još jednom rekonstruira predanu reviziju istim provjerama kao ruta i traži od baze da zabilježi presudu (`verified` ili `mismatch`); presudu daje baza usporedbom hasheva, nikad radnik. Prolaz piše jedan zapis samo s brojevima; nedostupna pohrana ili ključevi ne bilježe presudu pa se predaja pokušava u sljedećem prolazu (F4-PM2-R01). Student presudu čita na `GET /api/v1/student/assignments/{assignmentId}/submission-reconstruction`.
 
 ## Tko ga zove
 

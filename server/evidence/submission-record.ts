@@ -71,7 +71,7 @@ const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-export type RecordRow = Record<
+type RecordRow = Record<
   | "outcome"
   | "institution_id"
   | "evidence_package_id"
@@ -106,7 +106,7 @@ function listedSegment(value: unknown): SubmissionRecord["segments"][number] | n
 }
 
 /** The `found` row as a record, or null when any field has another form. */
-export function recordFrom(row: RecordRow): SubmissionRecord | null {
+function recordFrom(row: RecordRow): SubmissionRecord | null {
   const revision = positive(row.revision);
   const segmentCount = positive(row.segment_count);
   const segments = Array.isArray(row.segments) ? row.segments.map(listedSegment) : null;

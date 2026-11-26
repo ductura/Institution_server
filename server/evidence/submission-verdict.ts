@@ -1,14 +1,12 @@
-import type { InstitutionEvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
-import { isEvidenceDomainId } from "../domain/index.ts";
-import type { EvidenceDomainKey } from "../domain/forensics/evidence-receipt-verifier.ts";
+import {
+  isEvidenceDomainId,
+  isReceiptPrincipalId,
+  type EvidenceDomainKey,
+} from "../domain/index.ts";
+import type { InstitutionEvidencePayloadReader } from "../external/storage/index.ts";
 
 import { decideSubmission } from "./submission-decision.ts";
-import {
-  reconstructRecordedSubmission,
-  recordFrom,
-  type RecordRow,
-  type SubmittedKind,
-} from "./submission-record.ts";
+import { reconstructRecordedSubmission, type SubmittedKind } from "./submission-record.ts";
 import type { SubmissionRecord } from "./submission-reconstruction.ts";
 
 /**
@@ -51,9 +49,11 @@ export type SubmissionVerdictPass = {
 };
 
 const LIST_SQL =
-  "SELECT submission_id FROM app.worker_submissions_to_reconstruct($1::uuid, $2::integer)";
-const RECORD_SQL = `SELECT outcome, institution_id, evidence_package_id, evidence_domain_id, document_id, principal_id,
-       revision, content_hash, head_segment_hash, segment_count, segments, document_kind
+  'SELECT submission_id AS "submissionId" FROM app.worker_submissions_to_reconstruct($1::uuid, $2::integer)';
+const RECORD_SQL = `SELECT outcome, institution_id AS "institutionId", evidence_package_id AS "evidencePackageId",
+       evidence_domain_id AS "evidenceDomainId", document_id AS "documentId", principal_id AS "principalId",
+       revision::text AS "revision", content_hash AS "contentHash", head_segment_hash AS "headSegmentHash",
+       segment_count AS "segmentCount", segments, document_kind AS "documentKind"
   FROM app.worker_submission_record($1::uuid, $2::uuid)`;
 const KEEP_SQL =
   "SELECT app.worker_record_submission_reconstruction($1::uuid, $2::uuid, $3) AS outcome";
@@ -62,6 +62,73 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 type ReadRecord =
   { status: "found"; record: SubmissionRecord; kind: SubmittedKind } | { status: "unavailable" };
 
+const PACKAGE_ID = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
+const SHA256_HEX = /^[0-9a-f]{64}$/u;
+const isSha256Hex = (value: unknown): value is string =>
+  typeof value === "string" && SHA256_HEX.test(value);
+const plain = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** A bigint as the driver gives it (text), or a number, from 1; null for anything else. */
+function positive(value: unknown): number | null {
+  const n = typeof value === "string" && /^[1-9][0-9]{0,15}$/u.test(value) ? Number(value) : value;
+  return typeof n === "number" && Number.isSafeInteger(n) && n >= 1 ? n : null;
+}
+
+/** One listed segment, exactly the three keys the RPC builds; null for any other form. */
+function listedSegment(value: unknown): SubmissionRecord["segments"][number] | null {
+  if (!plain(value) || Object.keys(value).sort().join() !== "receiptPayload,segmentHash,signature")
+    return null;
+  const { segmentHash, receiptPayload, signature } = value;
+  if (!isSha256Hex(segmentHash) || typeof receiptPayload !== "string") return null;
+  if (signature === null) return { segmentHash, receipt: null };
+  return plain(signature) ? { segmentHash, receipt: { receiptPayload, signature } } : null;
+}
+
+/** The `found` row as a record and the kind of its work, or null when any field has another form. */
+function recordFromRow(
+  row: Record<string, unknown>,
+): Omit<ReadRecord & { status: "found" }, "status"> | null {
+  const revision = positive(row.revision);
+  const segmentCount = positive(row.segmentCount);
+  const segments = Array.isArray(row.segments) ? row.segments.map(listedSegment) : null;
+  const kind = row.documentKind;
+  if (
+    typeof row.institutionId !== "string" ||
+    !UUID.test(row.institutionId) ||
+    typeof row.evidencePackageId !== "string" ||
+    !PACKAGE_ID.test(row.evidencePackageId) ||
+    !isEvidenceDomainId(row.evidenceDomainId) ||
+    typeof row.documentId !== "string" ||
+    row.documentId === "" ||
+    !isReceiptPrincipalId(row.principalId) ||
+    revision === null ||
+    !isSha256Hex(row.contentHash) ||
+    !isSha256Hex(row.headSegmentHash) ||
+    segmentCount === null ||
+    segments === null ||
+    segments.length !== segmentCount ||
+    !segments.every((segment) => segment !== null) ||
+    (kind !== "text" && kind !== "spreadsheet")
+  ) {
+    return null;
+  }
+  return {
+    kind,
+    record: {
+      institutionId: row.institutionId,
+      evidencePackageId: row.evidencePackageId,
+      evidenceDomainId: row.evidenceDomainId,
+      documentId: row.documentId,
+      principalId: row.principalId,
+      revision,
+      contentHash: row.contentHash,
+      head: { segmentHash: row.headSegmentHash, segmentCount },
+      segments: segments as SubmissionRecord["segments"],
+    },
+  };
+}
+
 async function readRecord(deps: SubmissionVerdictDeps, submissionId: string): Promise<ReadRecord> {
   let rows: readonly unknown[];
   try {
@@ -69,12 +136,10 @@ async function readRecord(deps: SubmissionVerdictDeps, submissionId: string): Pr
   } catch {
     return { status: "unavailable" };
   }
-  const row = rows.length === 1 ? (rows[0] as RecordRow & { document_kind?: unknown }) : undefined;
+  const row = rows.length === 1 && plain(rows[0]) ? rows[0] : undefined;
   if (row === undefined || row.outcome !== "found") return { status: "unavailable" };
-  const record = recordFrom(row);
-  if (record === null || (row.document_kind !== "text" && row.document_kind !== "spreadsheet"))
-    return { status: "unavailable" };
-  return { status: "found", record, kind: row.document_kind };
+  const read = recordFromRow(row);
+  return read === null ? { status: "unavailable" } : { status: "found", ...read };
 }
 
 /** One pass over the submissions without a verdict. Never throws: a fault is a count. */
@@ -94,7 +159,7 @@ export async function runSubmissionVerdictPass(
   try {
     const { rows } = await deps.query(LIST_SQL, [deps.evidenceDomainId, limit]);
     ids = rows
-      .map((row) => (row as { submission_id?: unknown }).submission_id)
+      .map((row) => (row as { submissionId?: unknown }).submissionId)
       .filter((id): id is string => typeof id === "string" && UUID.test(id));
     if (ids.length !== rows.length) return pass; // a row of another shape: nothing is trusted
   } catch {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "../../external/storage/in-memory-evidence-payload-store.ts";
+import { InMemoryEvidencePayloadStore } from "../../external/storage/index.ts";
 
 import {
   createSubmissionVerdictWorker,

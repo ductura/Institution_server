@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import { InMemoryEvidencePayloadStore } from "../external/storage/index.ts";
 
 // A test may replace the reconstruction once; by default the real one runs.
 const override = vi.hoisted(() => ({ next: null as null | (() => unknown) }));
@@ -27,17 +27,17 @@ const SUB1 = "00000000-0000-4000-8000-0000000000f1";
 const SUB2 = "00000000-0000-4000-8000-0000000000f2";
 const RECORD = {
   outcome: "found",
-  institution_id: "00000000-0000-4000-8000-0000000000a1",
-  evidence_package_id: "pkg-1",
-  evidence_domain_id: DOMAIN,
-  document_id: "doc-1",
-  principal_id: "00000000-0000-4000-8000-0000000000e1",
+  institutionId: "00000000-0000-4000-8000-0000000000a1",
+  evidencePackageId: "pkg-1",
+  evidenceDomainId: DOMAIN,
+  documentId: "doc-1",
+  principalId: "00000000-0000-4000-8000-0000000000e1",
   revision: "2",
-  content_hash: "d".repeat(64),
-  head_segment_hash: "c".repeat(64),
-  segment_count: 1,
+  contentHash: "d".repeat(64),
+  headSegmentHash: "c".repeat(64),
+  segmentCount: 1,
   segments: [{ segmentHash: "c".repeat(64), receiptPayload: "{}", signature: null }],
-  document_kind: "text",
+  documentKind: "text",
 };
 
 type Options = {
@@ -58,7 +58,7 @@ function setup(options: Options = {}) {
     if (options.failOn === kind) throw new Error("connection reset: secret detail");
     const rows =
       kind === "list"
-        ? (options.list ?? [{ submission_id: SUB1 }])
+        ? (options.list ?? [{ submissionId: SUB1 }])
         : kind === "record"
           ? (options.record ?? [RECORD])
           : (options.keep ?? [{ outcome: "mismatch" }]);
@@ -123,7 +123,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
 
   it("keys that are unavailable leave every submission for a later pass", async () => {
     const { run, calls, readKeys } = setup({
-      list: [{ submission_id: SUB1 }, { submission_id: SUB2 }],
+      list: [{ submissionId: SUB1 }, { submissionId: SUB2 }],
     });
     readKeys.mockResolvedValueOnce({ status: "unavailable", reason: "x" } as never);
     expect(await run()).toEqual({ listed: 2, verified: 0, mismatch: 0, unavailable: 2 });
@@ -134,7 +134,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
     ["no record row", { record: [] }],
     ["a record that is not found", { record: [{ ...RECORD, outcome: "unavailable" }] }],
     ["a record of another form", { record: [{ ...RECORD, revision: "0" }] }],
-    ["an unknown kind of work", { record: [{ ...RECORD, document_kind: "slides" }] }],
+    ["an unknown kind of work", { record: [{ ...RECORD, documentKind: "slides" }] }],
     ["a record that fails to read", { failOn: "record" }],
     ["a verdict the database refuses", { keep: [{ outcome: "not_found" }] }],
     ["a verdict write that fails", { failOn: "keep" }],
@@ -154,7 +154,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
       mismatch: 0,
       unavailable: 0,
     });
-    const odd = setup({ list: [{ submission_id: SUB1 }, { submission_id: "pkg-1" }] });
+    const odd = setup({ list: [{ submissionId: SUB1 }, { submissionId: "pkg-1" }] });
     expect(await odd.run()).toEqual({ listed: 0, verified: 0, mismatch: 0, unavailable: 0 });
     expect(odd.calls.map((c) => c.kind)).toEqual(["list"]);
   });
