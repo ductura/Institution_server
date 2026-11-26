@@ -831,7 +831,7 @@ describe("reconciler and worker sign the same receipt at once", () => {
     };
   }
 
-  function setup() {
+  function setup({ workerLate = false } = {}) {
     const worker = keySigner("worker-key");
     const reconcilerKey = keySigner("reconciler-key");
     const db = lockedStore([worker.key, reconcilerKey.key]);
@@ -840,7 +840,18 @@ describe("reconciler and worker sign the same receipt at once", () => {
       checkObject: async () => ({ status: "present" as const }),
       signTimeoutMs: 1000,
     };
-    const workerSign = createSignPendingReceipt({ ...common, signer: worker.provider });
+    // A worker that falls behind by one turn of the event loop, as hashing and
+    // verification on the thread pool can make it do under load.
+    const workerSign = createSignPendingReceipt({
+      ...common,
+      ...(workerLate && {
+        checkObject: async () => {
+          await new Promise((resolve) => setImmediate(resolve));
+          return { status: "present" as const };
+        },
+      }),
+      signer: worker.provider,
+    });
     const reconcilerSign = vi.fn(
       createSignPendingReceipt({ ...common, signer: reconcilerKey.provider }),
     );
@@ -858,42 +869,54 @@ describe("reconciler and worker sign the same receipt at once", () => {
     return { worker, reconcilerKey, db, workerSign, reconcilerSign, reconcile };
   }
 
-  it("stores exactly one signature, the worker's, while the reconciler waits on the row lock", async () => {
-    const { worker, reconcilerKey, db, workerSign, reconcilerSign, reconcile } = setup();
-    let releaseWorker!: () => void;
-    db.hold(
-      new Promise<void>((resolve) => {
-        releaseWorker = resolve;
-      }),
-    );
+  it.each([
+    ["on time", false],
+    ["late", true],
+  ])(
+    "stores exactly one signature, the worker's, while the reconciler waits on the row lock (worker %s)",
+    async (_, workerLate) => {
+      const { worker, reconcilerKey, db, workerSign, reconcilerSign, reconcile } = setup({
+        workerLate,
+      });
+      let releaseWorker!: () => void;
+      db.hold(
+        new Promise<void>((resolve) => {
+          releaseWorker = resolve;
+        }),
+      );
 
-    const workerDone = workerSign(ROW);
-    const reconcilerAtLock = db.entered(2);
-    const sweep = reconcile();
-    await reconcilerAtLock;
-    // Both signers have signed with their own key; only the worker holds the row.
-    expect(worker.provider.sign).toHaveBeenCalledTimes(1);
-    expect(reconcilerKey.provider.sign).toHaveBeenCalledTimes(1);
-    expect(db.writes).toHaveLength(0);
-    releaseWorker();
+      const workerAtLock = db.entered(1);
+      const workerDone = workerSign(ROW);
+      // The sweep starts once the worker holds the row, so the order does not
+      // depend on which signer finishes hashing and verifying first.
+      await workerAtLock;
+      const reconcilerAtLock = db.entered(2);
+      const sweep = reconcile();
+      await reconcilerAtLock;
+      // Both signers have signed with their own key; only the worker holds the row.
+      expect(worker.provider.sign).toHaveBeenCalledTimes(1);
+      expect(reconcilerKey.provider.sign).toHaveBeenCalledTimes(1);
+      expect(db.writes).toHaveLength(0);
+      releaseWorker();
 
-    const [workerOut, summary] = await Promise.all([workerDone, sweep]);
-    expect(workerOut.status).toBe("signed");
-    expect(db.writes).toHaveLength(1);
-    const kept = db.stored.get(RECEIPT) as SignatureEnvelope;
-    expect(kept.keyId).toBe("worker-key");
-    expect(summary.receipts).toMatchObject({ signed: 0, alreadySigned: 1, unavailable: 0 });
-    expect(db.store.attachSignature).toHaveBeenCalledTimes(2);
-    const reconcilerOut = await reconcilerSign.mock.results[0]!.value;
-    expect(reconcilerOut.status).toBe("already_signed");
-    expect(reconcilerOut.signedReceipt.signature).toEqual(kept);
-    const check = await verifySignedEvidenceReceiptV2(
-      reconcilerOut.signedReceipt,
-      { documentId: "doc-1", clientTransactionId: "tx-1", revision: 1, evidenceDomainId: DOMAIN },
-      [worker.key],
-    );
-    expect(check.ok).toBe(true);
-  });
+      const [workerOut, summary] = await Promise.all([workerDone, sweep]);
+      expect(workerOut.status).toBe("signed");
+      expect(db.writes).toHaveLength(1);
+      const kept = db.stored.get(RECEIPT) as SignatureEnvelope;
+      expect(kept.keyId).toBe("worker-key");
+      expect(summary.receipts).toMatchObject({ signed: 0, alreadySigned: 1, unavailable: 0 });
+      expect(db.store.attachSignature).toHaveBeenCalledTimes(2);
+      const reconcilerOut = await reconcilerSign.mock.results[0]!.value;
+      expect(reconcilerOut.status).toBe("already_signed");
+      expect(reconcilerOut.signedReceipt.signature).toEqual(kept);
+      const check = await verifySignedEvidenceReceiptV2(
+        reconcilerOut.signedReceipt,
+        { documentId: "doc-1", clientTransactionId: "tx-1", revision: 1, evidenceDomainId: DOMAIN },
+        [worker.key],
+      );
+      expect(check.ok).toBe(true);
+    },
+  );
 
   it("finds a receipt the worker signed after the list was read already signed and never attaches again", async () => {
     const { db, workerSign, reconcile } = setup();
