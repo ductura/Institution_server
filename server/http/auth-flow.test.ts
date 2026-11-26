@@ -93,7 +93,9 @@ const FAILURE_CODE = { 400: "login_failed", 503: "provider_unavailable" } as con
 
 function expectFailureRedirect(response: Response, status: 400 | 503) {
   expect(response.status).toBe(303);
-  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${FAILURE_CODE[status]}`);
+  expect(response.headers.get("location")).toBe(
+    `${APP}/aplikacija/prijava?greska=${FAILURE_CODE[status]}`,
+  );
   expect(response.headers.get("cache-control")).toBe("no-store");
 }
 
@@ -118,7 +120,7 @@ describe("login", () => {
   it("opens a session for the identity in the verified tokens", async () => {
     const response = await login();
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(`${APP}/`);
+    expect(response.headers.get("location")).toBe(`${APP}/aplikacija/`);
     expect(deps.openSession).toHaveBeenCalledTimes(1);
     const input = deps.openSession.mock.calls[0]![0];
     expect(input).toMatchObject({
@@ -316,11 +318,13 @@ describe("login", () => {
   });
 
   it("#17 returns to the path stored with the attempt, never one from the callback", async () => {
-    const { authorize, cookie } = await begin("/api/v1/auth/login?returnTo=%2Frad%3Fx%3D1");
+    const { authorize, cookie } = await begin(
+      "/api/v1/auth/login?returnTo=%2Faplikacija%2Frad%3Fx%3D1",
+    );
     const url = idp.approve(authorize, `${APP}/api/v1/auth/callback`);
     url.searchParams.set("returnTo", "https://zlo.test/");
     const response = await callback(url, cookie);
-    expect(response.headers.get("location")).toBe(`${APP}/rad?x=1`);
+    expect(response.headers.get("location")).toBe(`${APP}/aplikacija/rad?x=1`);
 
     for (const evil of [
       "https://zlo.test/",
@@ -334,17 +338,30 @@ describe("login", () => {
         idp.approve(attempt.authorize, `${APP}/api/v1/auth/callback`),
         attempt.cookie,
       );
-      expect(done.headers.get("location")).toBe(`${APP}/`);
+      expect(done.headers.get("location")).toBe(`${APP}/aplikacija/`);
     }
   });
 
   it("#17 keeps the percent-encoding of the stored path in Location", async () => {
-    const stored = "/rad/%C5%A1kola?q=a%20b%26c#x%20y";
+    const stored = "/aplikacija/rad/%C5%A1kola?q=a%20b%26c#x%20y";
     const { authorize, cookie } = await begin(
       `/api/v1/auth/login?returnTo=${encodeURIComponent(stored)}`,
     );
     const response = await callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), cookie);
     expect(response.headers.get("location")).toBe(`${APP}${stored}`);
+  });
+
+  it.each([
+    ["/app/web/rad/1?x=1", "/aplikacija/rad/1?x=1"],
+    ["/administracija/kolegiji", "/administracija/kolegiji"],
+    ["/rad", "/aplikacija/"],
+    ["//zlo.test/aplikacija/", "/aplikacija/"],
+  ])("D-318 returns %j to %j after login", async (asked, expected) => {
+    const { authorize, cookie } = await begin(
+      `/api/v1/auth/login?returnTo=${encodeURIComponent(asked)}`,
+    );
+    const response = await callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), cookie);
+    expect(response.headers.get("location")).toBe(`${APP}${expected}`);
   });
 
   it("uses the configured redirect URI, never the Host of the callback request", async () => {
@@ -354,7 +371,7 @@ describe("login", () => {
     const response = await callback(spoofed, cookie, { host: "zlo.test" });
     expect(response.status).toBe(303);
     expect(idp.tokenRequests.at(-1)?.get("redirect_uri")).toBe(`${APP}/api/v1/auth/callback`);
-    expect(response.headers.get("location")).toBe(`${APP}/`);
+    expect(response.headers.get("location")).toBe(`${APP}/aplikacija/`);
   });
 
   it("logs a stage and a code, never a value from the provider or the request", async () => {
