@@ -1,7 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+
+import { sheetRevisionZeroDocument } from "../domain/index.ts";
+
+// SRV-V14-SHEET-SUBMIT: a test may replace the sheet reconstruction once; by default the real one runs.
+const sheetOverride = vi.hoisted(() => ({ next: null as null | (() => unknown) }));
+vi.mock("./submission-reconstruction.ts", async (original) => {
+  const real = await original<typeof import("./submission-reconstruction.ts")>();
+  return {
+    ...real,
+    reconstructSheetSubmission: (...args: Parameters<typeof real.reconstructSheetSubmission>) => {
+      const fake = sheetOverride.next;
+      sheetOverride.next = null;
+      return fake ? fake() : real.reconstructSheetSubmission(...args);
+    },
+  };
+});
 
 import { reconstructSubmissionRecord } from "./submission-record.ts";
 
@@ -26,15 +42,27 @@ const ROW = {
   ],
 };
 
-function database(rows: unknown[], options: { fail?: boolean; keys?: unknown[] } = {}) {
+function database(
+  rows: unknown[],
+  options: { fail?: boolean; keys?: unknown[]; kind?: unknown[] } = {},
+) {
   const ran: string[] = [];
   const withActor: WithActor = async (_token, fn) => {
     const tx: ActorTransaction = {
       async query(text) {
-        ran.push(text.includes("read_submission_record") ? "record" : "keys");
+        const which = text.includes("read_submission_record")
+          ? "record"
+          : text.includes("document_kind")
+            ? "kind"
+            : "keys";
+        ran.push(which);
         if (options.fail) throw new Error("connection reset: secret detail");
         const result = (
-          text.includes("read_submission_record") ? rows : (options.keys ?? [])
+          which === "record"
+            ? rows
+            : which === "kind"
+              ? (options.kind ?? [{ document_kind: "text" }])
+              : (options.keys ?? [])
         ) as never[];
         return { rows: result, rowCount: result.length };
       },
@@ -46,7 +74,7 @@ function database(rows: unknown[], options: { fail?: boolean; keys?: unknown[] }
 
 const run = (
   rows: unknown[],
-  options?: { fail?: boolean; keys?: unknown[] },
+  options?: { fail?: boolean; keys?: unknown[]; kind?: unknown[] },
   request = REQUEST,
 ) => {
   const db = database(rows, options);
@@ -60,7 +88,7 @@ const run = (
 describe("submission record read (B-12 step 4b1)", () => {
   it("turns the found row into the record, with a pending acceptance as no receipt, and reads the keys in the same transaction", async () => {
     const { result, ran } = await run([ROW]);
-    expect(ran).toEqual(["record", "keys"]);
+    expect(ran).toEqual(["record", "keys", "kind"]);
     expect(result).toMatchObject({
       status: "reconstructed",
       record: {
@@ -122,6 +150,23 @@ describe("submission record read (B-12 step 4b1)", () => {
     expect(result).toEqual({ status: "unavailable", stage: "record", code });
   });
 
+  it("reads the kind of the work and reconstructs a spreadsheet with the sheet replay, which finds no stored bytes here", async () => {
+    const { result } = await run([ROW], { kind: [{ document_kind: "spreadsheet" }] });
+    expect(result).toMatchObject({
+      status: "reconstructed",
+      documentKind: "spreadsheet",
+      outcome: { status: "mismatch", reason: "missing_payload" },
+    });
+  });
+
+  it.each([[[]], [[{ document_kind: "text" }, { document_kind: "text" }]]])(
+    "answers a kind read that is not exactly one row as unavailable",
+    async (kind) => {
+      const { result } = await run([ROW], { kind });
+      expect(result).toEqual({ status: "unavailable", stage: "record", code: "record_malformed" });
+    },
+  );
+
   it("answers a key row of an unexpected form as unavailable", async () => {
     const { result } = await run([ROW], { keys: [{ key_id: "k" }] });
     expect(result).toEqual({
@@ -135,5 +180,47 @@ describe("submission record read (B-12 step 4b1)", () => {
     const { result } = await run([ROW], { fail: true });
     expect(result).toEqual({ status: "unavailable", stage: "record", code: "record_failed" });
     expect(JSON.stringify(result)).not.toContain("secret");
+  });
+
+  describe("a spreadsheet work after the reconstruction (SRV-V14-SHEET-SUBMIT)", () => {
+    const MATCH = {
+      status: "match",
+      head: { segmentHash: "c".repeat(64) },
+      documentSha256: "d".repeat(64),
+    };
+    const sheetRun = (log: (...codes: string[]) => void) => {
+      const db = database([ROW], { kind: [{ document_kind: "spreadsheet" }] });
+      return reconstructSubmissionRecord(
+        { withActor: db.withActor, payloads: new InMemoryEvidencePayloadStore(), log },
+        "t",
+        REQUEST,
+      );
+    };
+
+    it("keeps the match and logs only the mark, never a result", async () => {
+      sheetOverride.next = () => ({ outcome: MATCH, document: sheetRevisionZeroDocument() });
+      const log = vi.fn();
+      expect(await sheetRun(log)).toMatchObject({
+        documentKind: "spreadsheet",
+        outcome: { status: "match" },
+      });
+      expect(log).toHaveBeenCalledWith("submission", "calculation", "aligned");
+    });
+
+    it("blocks a match whose document is no valid spreadsheet document", async () => {
+      sheetOverride.next = () => ({ outcome: MATCH, document: { schemaVersion: 1, nodes: [] } });
+      const log = vi.fn();
+      expect(await sheetRun(log)).toMatchObject({
+        outcome: { status: "mismatch", reason: "target_mismatch" },
+      });
+      expect(log).not.toHaveBeenCalled();
+    });
+
+    it("does not check a record that did not match", async () => {
+      sheetOverride.next = () => ({ outcome: { status: "no_evidence" }, document: null });
+      const log = vi.fn();
+      expect(await sheetRun(log)).toMatchObject({ outcome: { status: "no_evidence" } });
+      expect(log).not.toHaveBeenCalled();
+    });
   });
 });

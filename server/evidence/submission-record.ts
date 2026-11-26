@@ -4,7 +4,13 @@ import {
   createEditStepsV3Replayer,
 } from "../external/storage/edit-steps-v2-replayer.ts";
 import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
-import { reconstructSubmission, type SubmissionRecord } from "./submission-reconstruction.ts";
+import {
+  reconstructSheetSubmission,
+  reconstructSubmission,
+  type SubmissionRecord,
+} from "./submission-reconstruction.ts";
+import type { Log } from "./ingest-http.ts";
+import { checkSheetSubmission } from "./sheet/index.ts";
 import { isEvidencePackageId, isSha256Hex } from "../application/ports/evidence-ingest.ts";
 import { isInstitutionId } from "../domain/evidence/object-key.ts";
 import {
@@ -30,12 +36,27 @@ export type SubmissionRecordFault =
   "record_failed" | "record_malformed" | "record_unavailable" | "domain_keys_unavailable";
 
 export type SubmissionReconstruction =
-  | { status: "reconstructed"; record: SubmissionRecord; outcome: EvidenceReconstructionOutcome }
+  | {
+      status: "reconstructed";
+      record: SubmissionRecord;
+      outcome: EvidenceReconstructionOutcome;
+      /** The kind of the work the record belongs to (SRV-V14-SHEET-SUBMIT). */
+      documentKind: SubmittedKind;
+    }
   | { status: "unauthenticated" | "not_found" }
   | { status: "unavailable"; stage: "record"; code: SubmissionRecordFault };
 
+/** Kinds whose submission this reader knows; every other kind keeps the text path. */
+export type SubmittedKind = "text" | "spreadsheet";
+
 export type SubmissionRecordDependencies = {
   withActor: WithActor;
+  /**
+   * Codes only. The route passes its own log through the same object it hands
+   * to the submission, so the mark "calculation aligned" of a spreadsheet work
+   * reaches the log without any new column or wire field.
+   */
+  log?: Log;
   /** The storage domains (`evidencePayloadReader()`); bound here to the record's institution. */
   payloads: InstitutionEvidencePayloadReader;
 };
@@ -43,6 +64,10 @@ export type SubmissionRecordDependencies = {
 const RECORD_SQL = `SELECT outcome, institution_id, evidence_package_id, evidence_domain_id, document_id, principal_id,
        revision, content_hash, head_segment_hash, segment_count, segments
   FROM app.read_submission_record($1::uuid)`;
+
+// Under RLS the session sees only its own institution's own documents; the
+// kind is written once, when the work starts, and never updated.
+const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -116,7 +141,12 @@ function recordFrom(row: RecordRow): SubmissionRecord | null {
 }
 
 type Read =
-  | { status: "found"; record: SubmissionRecord; keys: EvidenceDomainKey[] }
+  | {
+      status: "found";
+      record: SubmissionRecord;
+      keys: EvidenceDomainKey[];
+      documentKind: SubmittedKind;
+    }
   | Exclude<SubmissionReconstruction, { status: "reconstructed" }>;
 
 async function readRecord(
@@ -138,7 +168,15 @@ async function readRecord(
       const keys = await readEvidenceDomainKeys(tx, record.evidenceDomainId);
       if (keys.status !== "ok")
         return { status: "unavailable", stage: "record", code: "domain_keys_unavailable" };
-      return { status: "found", record, keys: keys.keys };
+      // Exactly one row for a document the record names; anything else is no record.
+      const kindRows = await tx.query<Record<"document_kind", unknown>>(KIND_SQL, [
+        record.documentId,
+      ]);
+      if (kindRows.rows.length !== 1)
+        return { status: "unavailable", stage: "record", code: "record_malformed" };
+      const documentKind: SubmittedKind =
+        kindRows.rows[0]?.document_kind === "spreadsheet" ? "spreadsheet" : "text";
+      return { status: "found", record, keys: keys.keys, documentKind };
     });
   } catch {
     return { status: "unavailable", stage: "record", code: "record_failed" };
@@ -158,9 +196,23 @@ export async function reconstructSubmissionRecord(
   if (!UUID.test(submissionRequestId)) return { status: "not_found" };
   const read = await readRecord(dependencies.withActor, token, submissionRequestId);
   if (read.status !== "found") return read;
+  const payloads = bindPayloadReader(dependencies.payloads, read.record.institutionId);
+  if (read.documentKind === "spreadsheet") {
+    const sheet = await reconstructSheetSubmission({ payloads, keys: read.keys }, read.record);
+    let outcome = sheet.outcome;
+    if (outcome.status === "match" || outcome.status === "match_across_gaps") {
+      const check = checkSheetSubmission(sheet.document);
+      // A document the validator refuses never lets a submission through.
+      if (check.status === "invalid")
+        outcome = { status: "mismatch", reason: "target_mismatch", index: null };
+      else if (outcome.status === "match")
+        dependencies.log?.("submission", "calculation", check.status);
+    }
+    return { status: "reconstructed", record: read.record, outcome, documentKind: "spreadsheet" };
+  }
   const outcome = await reconstructSubmission(
     {
-      payloads: bindPayloadReader(dependencies.payloads, read.record.institutionId),
+      payloads,
       replayers: {
         v1: createEditStepsV1Replayer(),
         v2: createEditStepsV2Replayer(),
@@ -173,5 +225,5 @@ export async function reconstructSubmissionRecord(
     // §7), every submitted document is v1.
     DOCUMENT_SCHEMA_VERSION,
   );
-  return { status: "reconstructed", record: read.record, outcome };
+  return { status: "reconstructed", record: read.record, outcome, documentKind: "text" };
 }
