@@ -5,7 +5,7 @@
 // module reads the list from the SQL text and checks each row against the
 // file it names. No database is needed.
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
 
 import type { Database } from "./databases.ts";
 import { testFiles } from "./pgtap.ts";
@@ -59,7 +59,10 @@ export function namesTable(sql: string, row: MatrixRow): boolean {
  * holds an access assertion.
  */
 export function matrixCoverageFaults(database: Database, root: string): string[] {
-  const files = new Set(testFiles(database.testsDir, root));
+  // testFiles joins with the platform separator; the list names files with "/".
+  const files = new Set(
+    testFiles(database.testsDir, root).map((file) => file.split(sep).join("/")),
+  );
   const path = `${database.testsDir}/${MATRIX_COVERAGE_FILE}`;
   if (!files.has(path)) return [`${path}: missing`];
   const read = (file: string) => readFileSync(resolve(root, file), "utf8");
