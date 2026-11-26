@@ -335,6 +335,12 @@ export const studentNoticeGet = defineRoute({
          * purposeCatalogVersion. Not a member of the notice fingerprint.
          */
         purposeCatalogVersion: Type.Optional(Type.Integer({ minimum: 1, maximum: 2_147_483_647 })),
+        /**
+         * SRV-EDI-R08: the assistant of this assignment only summarises
+         * (aiSummaryOnly of institution.assignment-versions.post). Not a member
+         * of the notice fingerprint; the server always sends it.
+         */
+        aiSummaryOnly: Type.Optional(Type.Boolean()),
       }),
     },
   ],
