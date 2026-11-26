@@ -252,6 +252,14 @@ export type Comment = {
   deletedAt: string | null;
 };
 
+/** SRV-ED43-DORADA-POSALJI: one sent round of a work, with the counters of the open requests it answered. */
+export type RevisionSend = {
+  readonly documentId: string;
+  readonly round: number;
+  readonly message: string | null;
+  readonly answered: Readonly<Record<string, number>>;
+};
+
 export type RevisionRequest = {
   readonly id: string;
   readonly documentId: string;
@@ -443,6 +451,7 @@ export type State = {
   /** Thread id -> its state. */
   threads: Map<string, "open" | "answered" | "resolved">;
   revisionRequests: RevisionRequest[];
+  revisionSends: RevisionSend[];
   /** The consultation records of the works (SRV-1105), additions in the order made. */
   consultations: Consultation[];
   /** The amendments and disputes of summary events of the works (SRV-1315). */
@@ -684,6 +693,7 @@ export function createState(
     comments: [],
     threads: new Map(),
     revisionRequests: [],
+    revisionSends: [],
     consultations: [],
     eventDisputes: [],
     milestoneProgress: new Map(),
