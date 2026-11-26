@@ -2024,6 +2024,13 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.qual-export.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['materialId'] !== undefined ? ((typeof value['materialId'] === 'string') && value['materialId'].length <= 64) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['materialId'].includes(key))
+    )
+  }),
   "student.qual-material.delete:params": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -2058,6 +2065,66 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       value['text'].length <= 200000 &&
       value['text'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
+  "student.qual-segment.delete:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.qual-segments.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['codeId'] === 'string') &&
+      local0.test(value['codeId']) &&
+      (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) &&
+      (typeof nestedAnchor['paragraph'] === 'number' && Number.isInteger(nestedAnchor['paragraph'])) &&
+      nestedAnchor['paragraph'] <= 100000 &&
+      nestedAnchor['paragraph'] >= 0 &&
+      (typeof nestedAnchor['start'] === 'number' && Number.isInteger(nestedAnchor['start'])) &&
+      nestedAnchor['start'] <= 100000 &&
+      nestedAnchor['start'] >= 0 &&
+      (typeof nestedAnchor['end'] === 'number' && Number.isInteger(nestedAnchor['end'])) &&
+      nestedAnchor['end'] <= 100000 &&
+      nestedAnchor['end'] >= 0 &&
+      (typeof nestedAnchor['quote'] === 'string') &&
+      nestedAnchor['quote'].length <= 1000 &&
+      nestedAnchor['quote'].length >= 1 &&
+      Object.getOwnPropertyNames(value['anchor']).length === 4 &&
+      (value['memo'] !== undefined ? ((typeof value['memo'] === 'string') && value['memo'].length <= 2000 && value['memo'].length >= 1) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['codeId', 'anchor', 'memo'].includes(key))
     )
   }
   })(),

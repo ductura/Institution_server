@@ -80,6 +80,7 @@ import {
   questionnaireResponsesRoutes,
   questionnaireExportRoutes,
   qualitativeMaterialsRoutes,
+  qualitativeSegmentsRoutes,
   originThresholdsRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
@@ -417,6 +418,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...questionnaireResponsesRoutes,
   ...questionnaireExportRoutes,
   ...qualitativeMaterialsRoutes,
+  ...qualitativeSegmentsRoutes,
 ];
 
 /**

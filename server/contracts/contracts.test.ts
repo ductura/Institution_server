@@ -418,6 +418,10 @@ describe("route inventory", () => {
       "student.qual-materials.post: app/api/student/qual/materials/route.ts is not in the inventory",
       "student.qual-material.get: app/api/student/qual/materials/[id]/route.ts is not in the inventory",
       "student.qual-material.delete: app/api/student/qual/materials/[id]/route.ts is not in the inventory",
+      "student.qual-segments.get: app/api/student/qual/materials/[id]/segments/route.ts is not in the inventory",
+      "student.qual-segments.post: app/api/student/qual/materials/[id]/segments/route.ts is not in the inventory",
+      "student.qual-segment.delete: app/api/student/qual/segments/[id]/route.ts is not in the inventory",
+      "student.qual-export.get: app/api/student/qual/export/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
