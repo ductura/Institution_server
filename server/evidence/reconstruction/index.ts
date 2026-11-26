@@ -28,3 +28,20 @@ export {
   type ReconstructionCheckpointStore,
   type WorkerReconstructionQuery,
 } from "./store.ts";
+export {
+  createWorkerEvidenceChainSource,
+  MAX_CHAIN_SEGMENTS,
+  MAX_DUE_PACKAGES_PER_READ,
+  type ChainSourceFault,
+  type DuePackage,
+  type DuePackagesResult,
+  type PackageChain,
+  type PackageChainResult,
+  type WorkerEvidenceChainSource,
+} from "./chain-source.ts";
+export {
+  createPackageCheckpointRecorder,
+  type PackageCheckpointRecorder,
+  type PackageCheckpointRecorderDeps,
+  type PackagePassOutcome,
+} from "./package-pass.ts";
