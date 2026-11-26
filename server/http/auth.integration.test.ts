@@ -211,7 +211,7 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     const { origin, opened, closed } = await stack("success");
     const { answer, jar } = await signIn(origin);
     expect(answer.status).toBe(303);
-    expect(answer.headers.get("location")).toBe(`${origin}/radovi`);
+    expect(answer.headers.get("location")).toBe(`${origin}/aplikacija/radovi`);
     expect(answer.headers.get("cache-control")).toBe("no-store");
     const cookies = answer.headers.getSetCookie();
     expect(cookies).toContain(
@@ -297,7 +297,7 @@ describe("the login routes over HTTP", () => {
       },
     });
     expect(answer.status).toBe(303);
-    expect(answer.headers.get("location")).toBe(`${origin}/radovi`);
+    expect(answer.headers.get("location")).toBe(`${origin}/aplikacija/radovi`);
     expect(opened).toHaveLength(1);
   });
 
