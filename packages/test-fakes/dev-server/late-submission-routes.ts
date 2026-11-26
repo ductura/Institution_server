@@ -1,6 +1,7 @@
 // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed, in
 // the dev fake server. Allowed by default; the teacher of the assignment sets
-// it, a student of its course reads it, anyone else reads 404.
+// it and reads it back, a student of its course reads it, anyone else reads
+// 404.
 import type { Handlers } from "./server.ts";
 import { type Account, teachesCourse, type State } from "./state.ts";
 import { studentAssignments } from "./student-routes.ts";
@@ -42,6 +43,16 @@ export const LATE_SUBMISSION_HANDLERS: Handlers = {
       (a) => a.id === params.assignmentId.toLowerCase(),
     );
     if (assignment === undefined) return { error: "not_found" };
+    return {
+      status: 200,
+      body: { lateSubmissionAllowed: !forbiddenOf(state).has(assignment.id) },
+    };
+  },
+  // F4-NAS-R01-SRV: the teacher of the assignment reads it back; anyone else 404.
+  "teacher.assignment-late-submission.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null) return { error: "not_found" };
     return {
       status: 200,
       body: { lateSubmissionAllowed: !forbiddenOf(state).has(assignment.id) },
