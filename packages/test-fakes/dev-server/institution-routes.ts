@@ -189,6 +189,7 @@ export const INSTITUTION_HANDLERS: Handlers = {
         readAt: assignment.read.get(`${account.id}:${assignment.version}`) ?? null,
         acknowledgedAt: acknowledged?.version === assignment.version ? acknowledged.at : null,
         purposeCatalogVersion: 1,
+        aiSummaryOnly: c.aiSummaryOnly === true,
       },
     };
   },

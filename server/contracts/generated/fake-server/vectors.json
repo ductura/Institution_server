@@ -54887,7 +54887,8 @@
         "wordMax": 3000,
         "readAt": null,
         "acknowledgedAt": null,
-        "purposeCatalogVersion": 1
+        "purposeCatalogVersion": 1,
+        "aiSummaryOnly": false
       }
     }
   },
@@ -54921,7 +54922,8 @@
         "wordMax": null,
         "readAt": "2026-11-03T09:14:00.000Z",
         "acknowledgedAt": "2026-11-03T09:20:00.000Z",
-        "purposeCatalogVersion": 1
+        "purposeCatalogVersion": 1,
+        "aiSummaryOnly": true
       }
     }
   },
