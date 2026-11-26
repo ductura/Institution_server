@@ -20,12 +20,12 @@ SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA app TO ductus_identity, ductus_evidence;
 
--- The documents of one institution as (assignment, student, document), read for
+-- The documents of the session's institution as (assignment, student, document), read for
 -- the overview only: owned by the evidence role, which alone reads
 -- evidence.project and evidence.document, and callable by the identity owner
 -- only (never by the web role or anyone else).
 SET LOCAL ROLE ductus_evidence;
-CREATE FUNCTION app.thesis_work_documents(p_institution_id uuid)
+CREATE FUNCTION app.thesis_work_documents()
 RETURNS TABLE (assignment_id uuid, student_id uuid, document_id text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
@@ -33,10 +33,10 @@ AS $$
     FROM evidence.project p
     JOIN evidence.document d ON d.project_id = p.id AND d.institution_id = p.institution_id
                             AND d.principal_id = p.principal_id
-   WHERE p.institution_id = p_institution_id
+   WHERE p.institution_id = (SELECT a.institution_id FROM app.current_actor() a)
 $$;
-REVOKE ALL ON FUNCTION app.thesis_work_documents(uuid) FROM PUBLIC, ductus_app;
-GRANT EXECUTE ON FUNCTION app.thesis_work_documents(uuid) TO ductus_identity;
+REVOKE ALL ON FUNCTION app.thesis_work_documents() FROM PUBLIC, ductus_app;
+GRANT EXECUTE ON FUNCTION app.thesis_work_documents() TO ductus_identity;
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_identity;
@@ -82,7 +82,7 @@ BEGIN
         LEFT JOIN LATERAL (
           SELECT d.document_id AS id
             FROM institution.assignment a
-            JOIN app.thesis_work_documents(v_institution) d
+            JOIN app.thesis_work_documents() d
               ON d.assignment_id = a.id AND d.student_id = m.student_id
            WHERE a.mentorship_id = m.id AND a.institution_id = m.institution_id
            ORDER BY d.document_id LIMIT 1) doc ON true
@@ -126,6 +126,6 @@ SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_identity;
 DROP FUNCTION app.read_thesis_overview(text, integer, boolean, timestamptz, uuid);
 SET LOCAL ROLE ductus_evidence;
-DROP FUNCTION app.thesis_work_documents(uuid);
+DROP FUNCTION app.thesis_work_documents();
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;

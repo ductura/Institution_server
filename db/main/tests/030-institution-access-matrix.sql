@@ -2354,7 +2354,7 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
            UNION ALL SELECT 'public' UNION ALL SELECT 'ductus_app') AS r
-     WHERE has_function_privilege(r.rolname, 'app.thesis_work_documents(uuid)', 'EXECUTE') $$,
+     WHERE has_function_privilege(r.rolname, 'app.thesis_work_documents()', 'EXECUTE') $$,
   'SRV-V16-POPIS-FAKULTET: only the identity owner and the evidence owner execute the document helper'
 );
 SELECT is_empty(
