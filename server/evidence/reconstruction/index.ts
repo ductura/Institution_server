@@ -41,6 +41,7 @@ export {
 } from "./chain-source.ts";
 export {
   createPackageCheckpointRecorder,
+  MAX_CHAIN_BYTES,
   type PackageCheckpointRecorder,
   type PackageCheckpointRecorderDeps,
   type PackagePassOutcome,

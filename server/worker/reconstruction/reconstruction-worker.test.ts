@@ -121,6 +121,26 @@ describe("the reconstruction worker's pass", () => {
     expect(await worker.runPass()).toMatchObject({ packages: 4, more: true, status: "completed" });
   });
 
+  it("continues after the cursor of a pass that hit its limit, then starts over", async () => {
+    const asked: string[] = [];
+    const worker = createReconstructionWorker({
+      source: listOf(["paket-a", "paket-b", "paket-c"]),
+      recorder: {
+        recordPackage: async ({ evidencePackageId }) => {
+          asked.push(evidencePackageId);
+          return { status: "skipped", reason: "gap" };
+        },
+      },
+      log: captureLog().log,
+      config: { pageSize: 2, maxPackages: 2 },
+    });
+    await worker.runPass();
+    await worker.runPass();
+    await worker.runPass();
+    // Packages that stay skipped never hold back the ones behind them.
+    expect(asked).toEqual(["paket-a", "paket-b", "paket-c", "paket-a", "paket-b"]);
+  });
+
   it("stops without a verdict when the list does not answer, and survives a recorder that throws", async () => {
     const { log, lines } = captureLog();
     const down = createReconstructionWorker({

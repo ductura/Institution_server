@@ -133,6 +133,7 @@ export function createReconstructionWorker(deps: ReconstructionWorkerDeps): Reco
   const config = checkedConfig(deps.config);
   const timers = deps.timers ?? DEFAULT_TIMERS;
 
+  let resumeAfter: string | null = null;
   let running: Promise<ReconstructionPassSummary | null> | null = null;
   let timer: unknown = null;
   let started = false;
@@ -149,11 +150,13 @@ export function createReconstructionWorker(deps: ReconstructionWorkerDeps): Reco
       skipped: 0,
       unavailable: 0,
     };
-    let after: string | null = null;
+    // Where the last pass stopped at its limit; the list restarts after its end.
+    let after: string | null = resumeAfter;
     while (!stopped) {
       const room = config.maxPackages - summary.packages;
       if (room <= 0) {
         summary.more = true;
+        resumeAfter = after;
         break;
       }
       const page: DuePackagesResult = await (async (): Promise<DuePackagesResult> =>
@@ -183,8 +186,11 @@ export function createReconstructionWorker(deps: ReconstructionWorkerDeps): Reco
         else if (outcome.status === "skipped") summary.skipped += 1;
         else summary.unavailable += 1;
       }
-      // A short page is the end of the due list.
-      if (page.packages.length < Math.min(config.pageSize, room)) break;
+      // A short page is the end of the due list: the next pass starts over.
+      if (page.packages.length < Math.min(config.pageSize, room)) {
+        resumeAfter = null;
+        break;
+      }
     }
     return summary;
   }

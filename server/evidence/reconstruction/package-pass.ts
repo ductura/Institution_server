@@ -58,6 +58,9 @@ export type PackageCheckpointRecorderDeps<TDocument> = {
   interval?: number;
 };
 
+/** The most segment bytes one package may hold in memory while it is verified. */
+export const MAX_CHAIN_BYTES = 64 * 1024 * 1024;
+
 function parseInitialDocument(
   text: string,
 ): { document: JcsJsonValue; schemaVersion: number | null } | null {
@@ -105,6 +108,7 @@ export function createPackageCheckpointRecorder<TDocument>(
         return { status: "skipped", reason: "unsupported_document" };
 
       const bytes: Uint8Array[] = [];
+      let held = 0;
       for (const segmentHash of chain.segmentHashes) {
         let object: Awaited<ReturnType<InstitutionEvidencePayloadReader["readImmutable"]>>;
         try {
@@ -115,6 +119,9 @@ export function createPackageCheckpointRecorder<TDocument>(
         if (object.status === "unavailable")
           return { status: "unavailable", reason: "storage_failed" };
         if (object.status === "not_found") return { status: "skipped", reason: "broken_chain" };
+        held += object.bytes.byteLength;
+        // A chain that does not fit in memory is left alone, not half read.
+        if (held > MAX_CHAIN_BYTES) return { status: "skipped", reason: "chain_too_long" };
         // Copy once so the bytes that are verified are the bytes that are replayed.
         bytes.push(new Uint8Array(object.bytes));
       }

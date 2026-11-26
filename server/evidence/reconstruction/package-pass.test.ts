@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalEvidenceSegmentV2, type EvidenceSegmentV2 } from "../../domain/index.ts";
 import type { ReconstructionCheckpoint } from "./checkpoint.ts";
 import type { PackageChain, PackageChainResult } from "./chain-source.ts";
-import { createPackageCheckpointRecorder } from "./package-pass.ts";
+import { createPackageCheckpointRecorder, MAX_CHAIN_BYTES } from "./package-pass.ts";
 import {
   buildRecord,
   canonical,
@@ -165,6 +165,14 @@ describe("createPackageCheckpointRecorder", () => {
       status: "skipped",
       reason: "no_chain",
     });
+  });
+
+  it("leaves a chain alone whose objects do not fit the memory bound", async () => {
+    const big = new Map(objects);
+    big.set(record.segments[0]!.segmentHash, new Uint8Array(MAX_CHAIN_BYTES + 1));
+    const { rows, recorder } = recorderOver({ objects: big });
+    expect(await ask(recorder)).toEqual({ status: "skipped", reason: "chain_too_long" });
+    expect(rows.size).toBe(0);
   });
 
   it("is unavailable, not skipped, when a read does not answer", async () => {
