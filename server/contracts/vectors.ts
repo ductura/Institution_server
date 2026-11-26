@@ -37,6 +37,8 @@ const VectorSchema = closed({
         Type.Literal("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
         Type.Literal("text/csv"),
         Type.Literal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        Type.Literal("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+        Type.Literal("application/pdf"),
       ]),
     ),
     headers: Type.Optional(
@@ -72,7 +74,9 @@ export type Vector = {
       | "image/jpeg"
       | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       | "text/csv"
-      | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      | "application/pdf";
     readonly headers?: Readonly<Record<string, string | readonly string[]>>;
     readonly body?: unknown;
   };
@@ -163,7 +167,13 @@ function checkVector(
     }
     const spec = route.responses.find((s) => s.status === response.status);
     if (!spec) return [...problems, `status ${response.status} is not a contract success`];
-    problems.push(...checkBody(spec.contentType ?? spec.body ?? "none", response, check));
+    // A success that may answer with several binary types is checked against the one it sent.
+    const binary = spec.contentType === undefined ? undefined : [spec.contentType].flat();
+    const expected =
+      binary === undefined
+        ? (spec.body ?? "none")
+        : (binary.find((type) => type === response.contentType) ?? binary[0]!);
+    problems.push(...checkBody(expected, response, check));
     for (const header of spec.headers ?? []) {
       if (!present(response.headers?.[header])) problems.push(`missing header ${header}`);
     }
@@ -182,6 +192,9 @@ const JPEG_BASE64 = /^\/9j\/[A-Za-z0-9+/]*={0,2}$/u;
 
 const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const PPTX_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+/** Base64 of bytes that start with "%PDF-" (JVBERi0). */
+const PDF_BASE64 = /^JVBERi0[A-Za-z0-9+/]*={0,2}$/u;
 /** Base64 of bytes that start with the ZIP marker "PK" 03 04 (a DOCX is a ZIP). */
 const ZIP_BASE64 = /^UEsDB[A-Za-z0-9+/]*={0,2}$/u;
 
@@ -190,7 +203,15 @@ const BOM_BASE64 = /^77u\/[A-Za-z0-9+/]*={0,2}$/u;
 
 function checkBody(
   expected:
-    TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE | "text/csv" | typeof XLSX_TYPE,
+    | TSchema
+    | "none"
+    | "html"
+    | "image/jpeg"
+    | typeof DOCX_TYPE
+    | "text/csv"
+    | typeof XLSX_TYPE
+    | typeof PPTX_TYPE
+    | "application/pdf",
   response: Vector["response"],
   check: SchemaCheck,
 ): string[] {
@@ -214,6 +235,20 @@ function checkBody(
       ZIP_BASE64.test(response.body)
       ? []
       : ["the contract answers with .xlsx bytes"];
+  }
+  if (expected === PPTX_TYPE) {
+    return response.contentType === PPTX_TYPE &&
+      typeof response.body === "string" &&
+      ZIP_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with .pptx bytes"];
+  }
+  if (expected === "application/pdf") {
+    return response.contentType === "application/pdf" &&
+      typeof response.body === "string" &&
+      PDF_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with PDF bytes"];
   }
   if (expected === "text/csv") {
     return response.contentType === "text/csv" &&

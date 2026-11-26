@@ -27,7 +27,16 @@ export {
   createSnapshotPdf,
   freezePdfSource,
   localPdfConverter,
+  localSlidesPdfConverter,
+  PPTX_TYPE,
+  renderSlidesExport,
+  slidesBodyKind,
   type ConvertDocx,
+  type ConvertPptx,
+  type SlidesBodyKind,
+  type SlidesExport,
+  type SlidesExportFormat,
+  type SlidesExportInput,
 } from "./export/pdf/index.ts";
 export {
   createMerlinRosterReader,

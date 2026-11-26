@@ -107,9 +107,11 @@ function openapi(routes: RouteContract[]): unknown {
         // A binary answer (SRV-1102, image/jpeg): its bytes, no JSON schema.
         ...(s.contentType
           ? {
-              content: {
-                [s.contentType]: { schema: { type: "string", contentMediaType: s.contentType } },
-              },
+              content: Object.fromEntries(
+                [s.contentType]
+                  .flat()
+                  .map((type) => [type, { schema: { type: "string", contentMediaType: type } }]),
+              ),
             }
           : {}),
       };

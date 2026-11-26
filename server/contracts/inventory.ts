@@ -834,6 +834,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7173654855",
   },
+  // SRV-V13-RUTA-IZVOZ (val 13, Ductus#2058 c.7183811220): the .pptx or the PDF of a saved version of a slides work; Ductus has no such route.
+  "app/api/works/[documentId]/export-slides/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7183811220",
+  },
   // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
   "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
     methods: ["GET"],

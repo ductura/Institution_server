@@ -2234,6 +2234,13 @@ export type Operations = {
     success: { status: 200; body: Blob; headers: { "x-export-sheet-sha256"?: string } };
     errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
+  "work.export-slides.get": {
+    params: { "documentId": string };
+    query: { "format": "pptx" | "pdf"; "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-snapshot-sha256"?: string; "content-disposition"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.export.get": {
     params: { "documentId": string };
     query: { "format": "docx" | "pdf"; "versionId"?: string };
