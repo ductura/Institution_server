@@ -622,7 +622,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   },
   {
     // SRV-1204: the AI assistant proxy; no provider in production (ai_disabled).
-    call: "...createAssistantRoutesFor(databases.main)",
+    call: "...createAssistantRoutesFor(databases.main, assistantProvider)",
     ids: ["student.assistant-request.post", "student.assistant-conversation.get"],
     routes: () => createAssistantRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
