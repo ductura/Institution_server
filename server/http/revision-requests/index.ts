@@ -27,6 +27,8 @@ import {
 
 import { ACTS, execute, type Action } from "./store.ts";
 
+export { createRevisionSendRouteFor } from "./send.ts";
+
 const CONTRACT = ROUTES.find((route) => route.id === "collaboration.revision-requests.post")!;
 const BODY = CONTRACT.request.body!;
 const SUCCESS = CONTRACT.responses.find((response) => response.status === 200)!.body!;
