@@ -89,6 +89,20 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "client.error.post:body": (() => {
+  const local0 = /^(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['appVersion'] === 'string') &&
+      local0.test(value['appVersion']) &&
+      (((value['errorClass'] === 'type_error')) || ((value['errorClass'] === 'range_error')) || ((value['errorClass'] === 'reference_error')) || ((value['errorClass'] === 'syntax_error')) || ((value['errorClass'] === 'other'))) &&
+      (((value['kind'] === 'error')) || ((value['kind'] === 'unhandledrejection')) || ((value['kind'] === 'render'))) &&
+      (((value['page'] === 'home')) || ((value['page'] === 'how_it_works')) || ((value['page'] === 'work')) || ((value['page'] === 'enroll')) || ((value['page'] === 'assignments')) || ((value['page'] === 'assignment_courses')) || ((value['page'] === 'assignment_works')) || ((value['page'] === 'teacher')) || ((value['page'] === 'teacher_fast_path')) || ((value['page'] === 'teacher_mentorships')) || ((value['page'] === 'institution')) || ((value['page'] === 'institution_courses')) || ((value['page'] === 'institution_users')) || ((value['page'] === 'institution_rules')) || ((value['page'] === 'other'))) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
   "collaboration.comments.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

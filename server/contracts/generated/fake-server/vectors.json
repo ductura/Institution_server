@@ -1804,6 +1804,333 @@
     }
   },
   {
+    "route": "client.error.post",
+    "name": "recorded",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "recorded-render-signed-in",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+      },
+      "body": {
+        "appVersion": "2.0.1",
+        "errorClass": "other",
+        "kind": "render",
+        "page": "other"
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0\",\"errorClass\":\"type_error\",\"kind\":\"error\",\"page\":\"assignments\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0\",\"errorClass\":\"type_error\",\"kind\":\"error\",\"page\":\"assignments\",\"x\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "84"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "199"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "84"
+      },
+      "rawBody": "{\"app"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{kind: error}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "eval_error",
+        "kind": "error",
+        "page": "assignments"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "errorClass": "type_error",
+        "kind": "error",
+        "page": "assignments",
+        "message": "Izmišljena poruka greške"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "client.error.post",
+    "name": "not-canonical",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"appVersion\": \"1.4.0\", \"errorClass\": \"type_error\", \"kind\": \"error\", \"page\": \"assignments\"}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
     "route": "collaboration.comments.post",
     "name": "created",
     "request": {
@@ -12433,7 +12760,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.23.0",
+        "apiVersion": "1.24.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -12449,7 +12776,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.23.0",
+        "apiVersion": "1.24.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

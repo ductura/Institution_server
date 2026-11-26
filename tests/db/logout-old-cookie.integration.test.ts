@@ -12,6 +12,7 @@ import {
   AREA_NAMES,
   createAuthRoutes,
   createClientContextRoute,
+  createClientErrorRoute,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -182,6 +183,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 const FACTORIES = [
   "createHealthRoute",
   "createClientContextRoute",
+  "createClientErrorRoute",
   "createEvidenceOpenRoute",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
@@ -200,6 +202,7 @@ const evidenceDeps = evidenceIngestDependencies(ENV, ROOT);
 const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
   createClientContextRoute(),
+  createClientErrorRoute(),
   createEvidenceOpenRoute(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),

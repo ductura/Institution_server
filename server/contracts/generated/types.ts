@@ -64,6 +64,13 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
+  "client.error.post": {
+    params: undefined;
+    query: undefined;
+    body: { "appVersion": string; "errorClass": "type_error" | "range_error" | "reference_error" | "syntax_error" | "other"; "kind": "error" | "unhandledrejection" | "render"; "page": "home" | "how_it_works" | "work" | "enroll" | "assignments" | "assignment_courses" | "assignment_works" | "teacher" | "teacher_fast_path" | "teacher_mentorships" | "institution" | "institution_courses" | "institution_users" | "institution_rules" | "other" };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "collaboration.comments.post": {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;
