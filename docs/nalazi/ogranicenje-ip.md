@@ -5,7 +5,7 @@ Samo analiza i prijedlog. Odluka Daniela 27. 11. 2026. („Da, smiješ”, „sv
 ## Sažetak
 
 - Fakultet iza NAT-a izgleda kao jedna adresa. Sva ograničenja po IP-u tada dijele svi studenti, a **zadana ograničenja nisu napravljena za to**.
-- Najtvrđe je ograničenje prijave: 30 u minuti po IP-u, a jedna prijava troši 2 mjesta. To je **15 prijava u minuti** po fakultetu, pa 300 studenata na početku nastave čeka oko 20 minuta, 1000 oko 67, 2000 oko 133.
+- Najtvrđe je ograničenje prijave: 30 u minuti po IP-u, a jedna prijava troši 2 mjesta. To je **15 prijava u minuti** po fakultetu, pa 300 studenata na početku nastave čeka oko 19 minuta, 1000 oko 66, 2000 oko 132.
 - Spremanje po IP-u (1200, 20/s) drži 300 studenata uz spremanje svakih 30 s, a uz 15 s tek na granici bez rezerve. Od 1000 studenata nadalje dio spremanja dobiva 429.
 - Ograničenje po korisniku već postoji (spremanje 120 u minuti, ostalo 300, upis 10) i ima rezervu od 30 puta za spremanje svakih 15 s. Zato IP ne treba biti primarna zaštita za prijavljene korisnike, nego samo široki zaštitni prag.
 - Prijedlog: faza 1 samo podizanjem vrijednosti kroz postojeće varijable okruženja (bez koda), faza 2 kodom: IP limit samo za promet bez potvrđene sesije i popis fakultetskih raspona iz konfiguracije.
@@ -82,7 +82,7 @@ Početni bucket daje 15 prijava odmah, zatim 0,25 prijava u sekundi (15 u minuti
 | --------: | ------------------------------------------------- |
 |       300 | oko 19 min                                        |
 |      1000 | oko 66 min                                        |
-|      2000 | oko 133 min                                       |
+|      2000 | oko 132 min                                       |
 
 Svaki neuspjeli pokušaj i ponovni klik troši dodatne žetone. U praksi to znači da se nastava ne može početi prijavom cijele predavaonice.
 
