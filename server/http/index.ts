@@ -444,6 +444,7 @@ export {
   createMentorshipFollowRoutes,
   createMentorshipFollowRoutesFor,
 } from "./mentorship-follow/index.ts";
+export { createWorkPlanRoutes, createWorkPlanRoutesFor } from "./work-plan/index.ts";
 export {
   createSelfNoteSealedRoutes,
   createSelfNoteSealedRoutesFor,

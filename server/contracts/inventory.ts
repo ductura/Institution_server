@@ -905,6 +905,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",
   },
+  // SRV-F4-PM2-R15 (Ductus#2059, F4-PM2-R15-SRV; plan M5.14b, D-234): the plan of a work behind the panel Struktura; Ductus has no such route.
+  "app/api/works/[documentId]/plan/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7199153557",
+  },
   "app/api/works/[documentId]/seen/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116185492",

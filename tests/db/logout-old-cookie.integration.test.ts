@@ -68,6 +68,7 @@ import {
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createMentorshipFollowRoutesFor,
+  createWorkPlanRoutesFor,
   createSelfNoteSealedRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
@@ -354,6 +355,23 @@ const SESSION_ROUTES = {
     method: "DELETE",
     path: `/api/v1/works/${randomUUID()}/self-note`,
     body: () => undefined,
+    live: 404,
+  },
+  // SRV-F4-PM2-R15: a work that is not the caller's is 404 for the plan.
+  "work.plan.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/plan`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.plan.put": {
+    method: "PUT",
+    path: `/api/v1/works/${randomUUID()}/plan`,
+    body: () => ({
+      question: null,
+      purposes: [],
+      terms: [{ term: "Pojam", definition: "Izmišljena definicija.", kind: "term" }],
+    }),
     live: 404,
   },
   // SRV-NF6-SIFRA: a work that is not the caller's is 404 for the sealed note; the caller's own key answers.
@@ -2762,6 +2780,7 @@ const FACTORIES = [
   "createRevisionSendRouteFor",
   "createWorkMessagesRoutesFor",
   "createMentorshipFollowRoutesFor",
+  "createWorkPlanRoutesFor",
   "createSelfNoteSealedRoutesFor",
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
@@ -2920,6 +2939,7 @@ const MOUNTED = [
   createRevisionSendRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
   ...createMentorshipFollowRoutesFor(databases.main),
+  ...createWorkPlanRoutesFor(databases.main),
   ...createSelfNoteSealedRoutesFor(databases.main),
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),

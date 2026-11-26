@@ -98,6 +98,7 @@ import {
   workVersionGet,
   workMessagesRoutes,
   mentorshipFollowRoutes,
+  workPlanRoutes,
   selfNoteSealedRoutes,
   notificationsRoutes,
   commentsRoutes,
@@ -130,6 +131,12 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export {
   mentorshipFollowRoutes,
+  workPlanRoutes,
+  workPlanGet,
+  workPlanPut,
+  WorkPlanInput,
+  WorkPlanState,
+  WORK_PLAN_MAX_ITEMS,
   ReadingPlaceInput,
   SeenInput,
   SEEN_MARKS_MAX,
@@ -397,6 +404,7 @@ export const ROUTES: readonly RouteContract[] = [
   workVersionGet,
   ...workMessagesRoutes,
   ...mentorshipFollowRoutes,
+  ...workPlanRoutes,
   ...selfNoteSealedRoutes,
   ...notificationsRoutes,
   ...commentsRoutes,

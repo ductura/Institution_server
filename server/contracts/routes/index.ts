@@ -38,6 +38,19 @@ export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {
+  WORK_PLAN_DEFINITION_MAX,
+  WORK_PLAN_MAX_ITEMS,
+  WORK_PLAN_PURPOSE_MAX,
+  WORK_PLAN_QUESTION_MAX,
+  WORK_PLAN_TERM_KINDS,
+  WORK_PLAN_TERM_MAX,
+  workPlanGet,
+  workPlanPut,
+  workPlanRoutes,
+  WorkPlanInput,
+  WorkPlanState,
+} from "./work-plan.ts";
+export {
   mentorshipFollowRoutes,
   ReadingPlaceInput,
   SeenInput,
