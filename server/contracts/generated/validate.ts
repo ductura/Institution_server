@@ -1007,6 +1007,19 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.thesis-overview.get:query": (() => {
+  const local0 = /^(?:[1-9]|[1-9]\d|1\d\d|200)$/;
+  const local1 = /^[A-Za-z0-9_-]{1,120}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['stage'] !== undefined ? ((((value['stage'] === 'none')) || ((value['stage'] === 'submitted_to_office')) || ((value['stage'] === 'defense_scheduled')) || ((value['stage'] === 'defended')))) : true) &&
+      (value['limit'] !== undefined ? ((typeof value['limit'] === 'string') && local0.test(value['limit'])) : true) &&
+      (value['after'] !== undefined ? ((typeof value['after'] === 'string') && local1.test(value['after'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['stage', 'limit', 'after'].includes(key))
+    )
+  }
+  })(),
   "institution.thesis-settings.put:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -4991,6 +5004,40 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['page'] !== undefined ? ((((typeof value['page'] === 'string') && local1.test(value['page'])) || ((value['page'] === null)))) : true) &&
       (value['note'] !== undefined ? ((((typeof value['note'] === 'string') && local2.test(value['note'])) || ((value['note'] === null)))) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['quote', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
+  "work.thesis-committee.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.thesis-committee.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.thesis-committee.put:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Array.isArray(value['members']) &&
+      value['members'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array as Record<string, unknown>[]) if(!(((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['userId'] === 'string') && local0.test(value['userId']) && (((value['role'] === 'chair')) || ((value['role'] === 'member'))) && Object.getOwnPropertyNames(value).length === 2))) { return false }; return true; })(value['members']) &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }
   })(),
