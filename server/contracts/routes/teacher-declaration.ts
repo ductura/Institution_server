@@ -59,3 +59,55 @@ export const teacherDeclarationGet = defineRoute({
     error(503, "unavailable"),
   ],
 });
+
+// F4-NAS-R04-SRV (D-41, declaration-v1 section 8): the conversations the
+// student attached to the bound declaration, read by the course teacher one at
+// a time, up to the throughSeq the student confirmed and no further. The ids
+// come from ai.attachments of teacher.declaration.get.
+const ConversationUuid = Type.String({
+  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+});
+const ConversationMessage = closed({
+  seq: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+  role: Type.Union([Type.Literal("student_paragraph"), Type.Literal("provider_response")]),
+  content: Type.String({ minLength: 1, maxLength: 40_000 }),
+  contentSha256: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+  createdAt: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" }),
+});
+
+export const teacherDeclarationConversationGet = defineRoute({
+  id: "teacher.declaration-conversation.get",
+  method: "GET",
+  path: "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration/conversations/{conversationId}",
+  inventory:
+    "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/conversations/[conversationId]/route.ts",
+  access: "course_teacher",
+  summary:
+    "One AI assistant conversation the student attached to the declaration bound to the live submission, for the course teacher: the messages by seq from 1 to the throughSeq the student confirmed, with the messagesSha256 the declaration carries. A conversation the bound declaration does not attach (unattached, another student's, another assignment's, unknown or malformed id), an assignment or student the teacher has no access to, and a work without a live submission return the same 404; a mentor is refused alike. Opening it is recorded in the access log. A stored conversation that no longer matches what the student confirmed is 503.",
+  request: {
+    params: closed({
+      assignmentId: Type.String({ minLength: 1 }),
+      studentId: Type.String({ minLength: 1 }),
+      conversationId: Type.String({ minLength: 1 }),
+    }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the attached messages, oldest first",
+      body: closed({
+        conversationId: ConversationUuid,
+        throughSeq: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+        messagesSha256: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+        messages: Type.Array(ConversationMessage, { minItems: 1 }),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(403, "forbidden"),
+    error(404, "not_found"),
+    error(503, "unavailable"),
+  ],
+});

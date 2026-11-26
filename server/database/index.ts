@@ -500,7 +500,10 @@ export {
   type TeacherSubmissionReader,
 } from "./teacher-submissions/index.ts";
 export {
+  createTeacherDeclarationConversationReader,
   createTeacherDeclarationReader,
+  type TeacherDeclarationConversation,
+  type TeacherDeclarationConversationReader,
   type TeacherDeclaration,
   type TeacherDeclarationReader,
 } from "./teacher-declaration/index.ts";
@@ -645,6 +648,7 @@ export {
   type WorkingCriterionId,
 } from "./teacher-working-criteria/index.ts";
 export type { CommentTemplate, TeacherNote, TeacherNotes, TemplateKind } from "./teacher-notes.ts";
+export { createWorkRevisionDue, type WorkRevisionDue } from "./work-revision-due/index.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
@@ -856,6 +860,16 @@ export {
   type SelfNoteState,
   type WorkPlace,
 } from "./mentorship-follow/index.ts";
+export {
+  createWorkPlanStore,
+  type PlanPurpose,
+  type PlanTerm,
+  type WorkPlan,
+  type WorkPlanAnswer,
+  type WorkPlanInput,
+  type WorkPlanRefusal,
+  type WorkPlanStore,
+} from "./work-plan/index.ts";
 export {
   createSelfNoteSealed,
   type SealedNote,
