@@ -3,7 +3,9 @@
 // (SRV-NF4-KASNA-POLJE; contracts institution.assignment-late-submission.put
 // and student.assignment-late-submission.get): the teacher of the assignment
 // sets whether a submission after the deadline is allowed, a student of its
-// course reads it. The session decides who asks, the database whether the
+// course reads it, and the teacher reads it back at
+// GET /api/v1/teacher/assignments/{assignmentId}/late-submission
+// (F4-NAS-R01-SRV, teacher.assignment-late-submission.get). The session decides who asks, the database whether the
 // relation holds; anyone else, an unknown and a malformed assignment read the
 // same 404 (C-23). Every answer is checked against its contract before it
 // leaves.
@@ -39,6 +41,7 @@ function contractOf(id: string) {
 }
 const SET = contractOf("institution.assignment-late-submission.put");
 const READ = contractOf("student.assignment-late-submission.get");
+const TEACHER_READ = contractOf("teacher.assignment-late-submission.get");
 
 const idOf = (segment: string | undefined) =>
   segment !== undefined && UUID.test(segment) ? segment.toLowerCase() : null;
@@ -128,10 +131,23 @@ export function createLateSubmissionRoutes(port: LateSubmissionPort): Route[] {
         );
       },
     },
+    {
+      contract: TEACHER_READ.contract,
+      async handle(request, response, params) {
+        if (!sameOrigin(request)) return sendProblem(response, 403, "forbidden");
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const assignmentId = idOf(params?.assignmentId);
+        if (assignmentId === null) return sendProblem(response, 404, "not_found");
+        await guarded(response, TEACHER_READ.contract.id, async () =>
+          send(response, TEACHER_READ, await port.readAsTeacher(token, assignmentId)),
+        );
+      },
+    },
   ];
 }
 
-/** The two routes over main's application withActor. */
+/** The three routes over main's application withActor. */
 export function createLateSubmissionRoutesFor(main: { withActor: WithActor }): Route[] {
   return createLateSubmissionRoutes(createLateSubmissionPort(main.withActor));
 }

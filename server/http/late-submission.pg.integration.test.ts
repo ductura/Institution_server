@@ -3,7 +3,8 @@
 // app.my_assignment_late_submission): the teacher of the assignment sets it
 // and a student of its course reads the change; another teacher, a teacher of
 // another faculty, a student and a student outside the course read 404 on
-// both routes and change nothing (C-23). Only the fixtures of db/main/tests
+// both routes and change nothing (C-23). The teacher of the assignment reads
+// the value back (F4-NAS-R01-SRV); anyone else reads 404 there too. Only the fixtures of db/main/tests
 // (invented people and assignments) are used.
 import { readFileSync } from "node:fs";
 
@@ -146,5 +147,43 @@ describe("late submission over the real database", () => {
     const unknown = "00000000-0000-4000-8000-0000000000ff";
     expect((await put("vesna", unknown, false)).status).toBe(404);
     expect((await get("ana", unknown)).status).toBe(404);
+    expect((await readBack("vesna", unknown)).status).toBe(404);
+  });
+});
+
+// F4-NAS-R01-SRV: the teacher's read (app.teacher_assignment_late_submission).
+async function readBack(person: string, assignment: string) {
+  const res = await fetch(`${base}/teacher/assignments/${assignment}/late-submission`, {
+    headers: { cookie: await cookieOf(person) },
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+describe("the teacher of the assignment reads it back over the real database", () => {
+  it("Vesna reads the default, then the value she set", async () => {
+    expect(await readBack("vesna", Z1)).toEqual({
+      status: 200,
+      body: { lateSubmissionAllowed: true },
+    });
+    await put("vesna", Z1, false);
+    expect(await readBack("vesna", Z1)).toEqual({
+      status: 200,
+      body: { lateSubmissionAllowed: false },
+    });
+  });
+
+  it.each([
+    ["marko", Z1],
+    ["petra", Z1],
+    ["nina", Z1],
+    ["iva", Z1],
+    ["ana", Z1],
+    ["vesna", Z3],
+  ])("%s does not read %s back: 404, the same as an unknown one", async (person, assignment) => {
+    await put("vesna", Z1, false);
+    const got = await readBack(person, assignment);
+    expect(got.status).toBe(404);
+    expect(got.body.code).toBe("not_found");
+    expect(got.body.lateSubmissionAllowed).toBeUndefined();
   });
 });

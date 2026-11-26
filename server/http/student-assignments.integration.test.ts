@@ -126,10 +126,26 @@ describe("GET /api/v1/student/assignments", () => {
       name: "Izmišljeni kolegij Č",
       academicYear: "2026/2027",
       assignments: [
-        expect.objectContaining({ noticeFirst: false, extendedDueAt: null, isPractice: false }),
-        expect.objectContaining({ noticeFirst: true, isPractice: true }),
+        expect.objectContaining({ noticeFirst: false, extendedDueAt: null }),
+        expect.objectContaining({ noticeFirst: true }),
       ],
     });
+  });
+
+  it("leaves isPractice out of the answer, the practice row included (VLAK-WEB934-ISPRACTICE)", async () => {
+    await start(async () => ({
+      status: "ok",
+      rows: [
+        row({}),
+        row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02", isPractice: true }),
+      ],
+    }));
+    const got = await get(HEADERS);
+    expect(got.status).toBe(200);
+    const courses = got.body.courses as { assignments: Record<string, unknown>[] }[];
+    const assignments = courses.flatMap((c) => c.assignments);
+    expect(assignments).toHaveLength(2);
+    for (const a of assignments) expect(a).not.toHaveProperty("isPractice");
   });
 
   it.each([

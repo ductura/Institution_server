@@ -1,5 +1,5 @@
 // F4-NAS-R16-SRV: the database port of the revision due date of a work
-// (app.read_work_revision_due, 20261220210000). One withActor transaction over one
+// (app.read_work_revision_due, 20261220340000). One withActor transaction over one
 // RPC; the RPC decides who may read (the student owner and a teacher of the
 // assignment). The answer is a closed status, never a database message: a row of an
 // unexpected shape is unavailable. Nothing is written.

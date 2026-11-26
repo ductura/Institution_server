@@ -492,6 +492,11 @@ const SESSION_ROUTES = {
     }),
     live: 404,
   },
+  "work.comment-drafts-second.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts/v2`,
+    body: () => ({ text: "Izmišljen opći komentar.", anchor: null, kind: "q" }),
+    live: 404,
+  },
   "work.comment-draft.delete": {
     method: "DELETE",
     path: `/api/v1/comment-drafts/${randomUUID()}`,
@@ -1757,6 +1762,13 @@ const SESSION_ROUTES = {
   "student.assignment-late-submission.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/late-submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // F4-NAS-R01-SRV: the same for the teacher's read.
+  "teacher.assignment-late-submission.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/late-submission`,
     body: () => undefined,
     live: 404,
   },

@@ -22,7 +22,6 @@ export type StudentAssignment = {
   noticeFirst: boolean;
   workType: string;
   extendedDueAt: string | null;
-  isPractice: boolean;
 };
 export type StudentCourse = {
   id: string;
@@ -53,7 +52,8 @@ export function studentCoursesOf(rows: readonly StudentAssignmentRow[]): Student
       noticeFirst: !row.acknowledged,
       workType: row.workType,
       extendedDueAt: row.extendedDueAt,
-      isPractice: row.isPractice,
+      // isPractice stays out of the answer (VLAK-WEB934-ISPRACTICE): clients
+      // on contracts 2.9.1 reject a body that carries it.
     });
   }
   return [...courses.values()];

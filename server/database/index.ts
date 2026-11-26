@@ -831,6 +831,7 @@ export async function closePools(): Promise<void> {
 export {
   createCommentDelay,
   type CommentDelay,
+  type CommentKind,
   type CommentDelayRefusal,
   type CommentDelayResult,
   type CommentDraft,

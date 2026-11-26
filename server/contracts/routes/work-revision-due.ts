@@ -7,7 +7,7 @@ import { END } from "./teacher.ts";
 // F4-NAS-R16-SRV (NAS-R16, NAS-46): the revision due date of a work, read back.
 // The teacher writes it in work.return-for-revision.post; this additive route reads
 // it for the student owner and for a teacher of the work. Database:
-// app.read_work_revision_due (20261220210000). Existing routes do not change.
+// app.read_work_revision_due (20261220340000). Existing routes do not change.
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 const DocumentId = Type.String({

@@ -1,5 +1,5 @@
 -- F4-NAS-R16-SRV (NAS-R16): the revision due date of a work is read back
--- (app.read_work_revision_due, 20261220210000). Only the student who owns the
+-- (app.read_work_revision_due, 20261220340000). Only the student who owns the
 -- work and a teacher of its assignment read it; a student of the course, a
 -- teacher of another course, another institution and an unknown work read
 -- not_found. The read writes nothing. Every person, document and date below is

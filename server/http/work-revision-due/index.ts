@@ -1,6 +1,6 @@
 // GET /api/v1/works/{documentId}/revision-due (work.revision-due.get), F4-NAS-R16-SRV:
 // the revision due date of the open return of a work. The HTTP edge only; the rules
-// are the database's (server/database/work-revision-due, migration 20261220210000).
+// are the database's (server/database/work-revision-due, migration 20261220340000).
 // A malformed id and anybody with no part in the work are the same 404 (C-23); an
 // answer outside the contract, or a throw, is 503.
 import { Value } from "@sinclair/typebox/value";

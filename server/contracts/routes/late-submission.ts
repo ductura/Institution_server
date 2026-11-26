@@ -75,7 +75,32 @@ export const studentAssignmentLateSubmissionGet = defineRoute({
   errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
 });
 
+// F4-NAS-R01-SRV (Ductus#2055): the teacher of the assignment reads the value
+// in force, so the form shows it instead of the default. A route of its own;
+// the two above stay as they are. Database:
+// app.teacher_assignment_late_submission (20261220220000).
+export const teacherAssignmentLateSubmissionGet = defineRoute({
+  id: "teacher.assignment-late-submission.get",
+  method: "GET",
+  path: "/api/v1/teacher/assignments/{assignmentId}/late-submission",
+  inventory: "app/api/teacher/assignments/[assignmentId]/late-submission/route.ts",
+  access: "course_teacher",
+  summary:
+    "Whether a submission after the deadline of the assignment is allowed, for the teacher of the assignment. A student, another teacher, an unknown or a malformed assignment id returns 404.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the value in force",
+      body: LateSubmission,
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(404, "not_found"), error(503, "unavailable")],
+});
+
 export const lateSubmissionRoutes = [
   institutionAssignmentLateSubmissionPut,
   studentAssignmentLateSubmissionGet,
+  teacherAssignmentLateSubmissionGet,
 ] as const;
