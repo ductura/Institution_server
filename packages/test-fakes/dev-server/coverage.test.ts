@@ -1127,6 +1127,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
   "institution.teaching-team-view.get": { request: { path: `${TEAM}/view`, as: "nastavnik" } },
+  "institution.teaching-team-candidates.get": {
+    request: { path: `${TEAM}/candidates`, as: "nastavnik" },
+  },
   "institution.teaching-team.post": { request: SET_TEAM },
   "institution.teaching-group-members.put": {
     before: [SET_TEAM],
