@@ -165,7 +165,7 @@
       },
       "status": "nepotvrdeno",
       "izvor": {
-        "datoteka": "data/profiles/fpzg-partial.json",
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/assets/fpzg-diplomski.json",
         "lokator": "struktura.prikazi"
       }
     },
@@ -179,7 +179,7 @@
       },
       "status": "nepotvrdeno",
       "izvor": {
-        "datoteka": "data/profiles/fpzg-partial.json",
+        "datoteka": ".claude/katedra-pkg/fpzg-diplomski/assets/fpzg-diplomski.json",
         "lokator": "struktura.prikazi"
       }
     },

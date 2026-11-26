@@ -57,6 +57,25 @@ describe("Lekta FPZG package v1", () => {
   });
 });
 
+describe("package isolation and sources", () => {
+  it("a caller changing a parsed value does not change the next parse", () => {
+    const raw = JSON.parse(
+      readFileSync(new URL("../../../server/domain/lekta/fpzg-v1.json", import.meta.url), "utf8"),
+    );
+    const first = parseLektaPackage(raw);
+    if (!first.ok) throw new Error("invalid");
+    (ruleById(first.value, "fpzg.tekst.font")?.vrijednost as string[]).push("Arial");
+    const second = parseLektaPackage(raw);
+    if (!second.ok) throw new Error("invalid");
+    expect(ruleById(second.value, "fpzg.tekst.font")?.vrijednost).toEqual(["Times New Roman"]);
+  });
+
+  it("display rules cite the overlay that holds their values", () => {
+    for (const id of ["fpzg.prikaz.natpis", "fpzg.prikaz.izvor"])
+      expect(ruleById(pkg, id)?.izvor.datoteka).toMatch(/fpzg-diplomski\.json$/);
+  });
+});
+
 describe("rejects an invalid package", () => {
   const cases: [string, (p: Rec) => void][] = [
     ["bad version", (p) => (p.packageVersion = "1.0")],

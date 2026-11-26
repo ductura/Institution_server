@@ -78,7 +78,7 @@ export function parseLektaPackage(raw: unknown): Result<LektaPackage> {
       id: item.id,
       podrucje: item.podrucje,
       opis: item.opis,
-      vrijednost: item.vrijednost,
+      vrijednost: structuredClone(item.vrijednost),
       status: item.status as LektaRule["status"],
       izvor: { datoteka: izvor.datoteka, lokator: izvor.lokator },
     });
