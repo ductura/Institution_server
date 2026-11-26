@@ -1933,6 +1933,13 @@ export type Operations = {
     success: { status: 200; body: { "events": ({ "kind": "submission"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "afterDeadline": boolean; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null } | { "kind": "withdrawal"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "receipt": { "payload": { "receiptSchema": "ductus-submission-withdrawal-receipt-v1"; "withdrawalId": string; "submissionId": string; "submissionReceiptSha256": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "withdrawnAt": string; "dueAt": string; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.submission-notes.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "text": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.submission-receipt.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;

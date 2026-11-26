@@ -479,6 +479,9 @@ export const studentSubmissionNotesPost = defineRoute({
   ],
 });
 
+// The note shape, shared with the teacher's read (SRV-F4-NAS-R11).
+export { SubmissionNote };
+
 export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
