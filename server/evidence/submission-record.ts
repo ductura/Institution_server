@@ -9,7 +9,7 @@ import {
   reconstructSubmission,
   type SubmissionRecord,
 } from "./submission-reconstruction.ts";
-import type { Log } from "./ingest-http.ts";
+import { consoleLog, type Log } from "./ingest-http.ts";
 import { checkSheetSubmission } from "./sheet/index.ts";
 import { isEvidencePackageId, isSha256Hex } from "../application/ports/evidence-ingest.ts";
 import { isInstitutionId } from "../domain/evidence/object-key.ts";
@@ -206,7 +206,7 @@ export async function reconstructSubmissionRecord(
       if (check.status === "invalid")
         outcome = { status: "mismatch", reason: "target_mismatch", index: null };
       else if (outcome.status === "match")
-        dependencies.log?.("submission", "calculation", check.status);
+        (dependencies.log ?? consoleLog)("submission", "calculation", check.status);
     }
     return { status: "reconstructed", record: read.record, outcome, documentKind: "spreadsheet" };
   }

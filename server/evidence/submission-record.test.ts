@@ -207,6 +207,23 @@ describe("submission record read (B-12 step 4b1)", () => {
       expect(log).toHaveBeenCalledWith("submission", "calculation", "aligned");
     });
 
+    it("logs the mark to the default log when the caller gives none (mounted routes pass none)", async () => {
+      sheetOverride.next = () => ({ outcome: MATCH, document: sheetRevisionZeroDocument() });
+      const spies = (["log", "error", "warn", "info"] as const).map((name) =>
+        vi.spyOn(console, name).mockImplementation(() => undefined),
+      );
+      const db = database([ROW], { kind: [{ document_kind: "spreadsheet" }] });
+      await reconstructSubmissionRecord(
+        { withActor: db.withActor, payloads: new InMemoryEvidencePayloadStore() },
+        "t",
+        REQUEST,
+      );
+      const logged = spies.flatMap((spy) => spy.mock.calls.flat()).join(" ");
+      for (const spy of spies) spy.mockRestore();
+      expect(logged).toContain("calculation");
+      expect(logged).toContain("aligned");
+    });
+
     it("blocks a match whose document is no valid spreadsheet document", async () => {
       sheetOverride.next = () => ({ outcome: MATCH, document: { schemaVersion: 1, nodes: [] } });
       const log = vi.fn();
