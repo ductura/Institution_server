@@ -12,8 +12,8 @@ Plan: ductura/.github#104 (`docs/plan/PRIJEDLOZI-2611.md`); odobrio Daniel 26. 1
 Jedan virtualni korisnik (VU) je jedan student; 150 VU-ova, svaki točno jedan prolaz. Prozor je 600 s.
 
 1. **Otvaranje** (0–60 s): `POST /api/v1/evidence/open` (`start: true`); počeci su raspoređeni jednoliko kroz prvu minutu da otvaranje nije jedan skok.
-2. **Spremanje i potpis**: `SAVES_PER_STUDENT` (zadano 6) puta `POST /api/v1/evidence/commit`, razmak oko `(prozor − 90 s) / n` s ±30 % nasumice. Svaki odgovor mora nositi potpisanu potvrdu (`receipt.status = "signed"`); revizija i `headSegmentHash` za sljedeći korak uzimaju se iz odgovora.
-3. **Predaja** (zadnjih ~20 s prozora): `POST /api/v1/submission/v2` s `documentId` i zadnjom revizijom.
+2. **Spremanje i potpis**: `SAVES_PER_STUDENT` (zadano 6) puta `POST /api/v1/evidence/commit`, svako u svom odsječku raspona 60 s do (prozor − 90 s), u apsolutno zadanim ciljnim vremenima (jitter se ne zbraja, kasni odgovor skraćuje sljedeće čekanje). Svaki odgovor mora nositi potpisanu potvrdu (`receipt.status = "signed"`); revizija i `headSegmentHash` za sljedeći korak uzimaju se iz odgovora.
+3. **Predaja** (između (prozor − 60 s) i (prozor − 10 s)): `POST /api/v1/submission/v2` s `documentId` i zadnjom revizijom.
 
 Zahtjevi nose zaglavlja kao vektori ugovora: `Origin` (= `APP_ORIGIN` servera), `Sec-Fetch-Site: same-origin`, `Ductus-Protocol: 1` i kolačić sesije.
 
@@ -55,6 +55,8 @@ Uz to izvještaj bilježi `ops_submitted` (očekivano = `STUDENTS`) i p95/p99 po
 
 ## Pretpostavke
 
+- Skripta podržava samo radove s dokumentom verzije 1 ili 2 (format koraka `ductus-edit-steps-v1`, `evidenceTransactionFormatOfWork`); rad verzije 3 ili 4 student se broji kao pao (`ops_student_failed`) uz poruku. Pripremljeni radovi moraju biti verzije 1 ili 2.
+- Dokument se kodira i dekodira kao UTF-8 (hrvatski znakovi i emoji u postojećem dokumentu ne kvare hasheve).
 - Plan imenuje p95 i greške, ne brojke: pragovi iznad su moji i vlasnik ih može promijeniti u `options.thresholds`.
 - Predaja ide kroz `submission/v2` (druga verzija operacije, SRV #646); `submission` (v1) ostaje izvan scenarija.
 - Svaki commit nosi jedan događaj (`segments` ugovor dopušta točno jedan odsječak) i dodaje ASCII tekst na kraj prvog odlomka.

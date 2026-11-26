@@ -11,7 +11,7 @@ import http from "k6/http";
 import { check, fail, sleep } from "k6";
 import { Counter, Rate, Trend } from "k6/metrics";
 
-import { buildCommit, decodeBase64, sampleText } from "./segment.ts";
+import { buildCommit, decodeBase64, sampleText, SUPPORTED_SCHEMA_VERSIONS } from "./segment.ts";
 
 const BASE_URL = __ENV.BASE_URL; // origin of the server under test, e.g. the staging origin
 const APP_ORIGIN = __ENV.APP_ORIGIN || BASE_URL; // value of the Origin header (APP_ORIGIN of the server)
@@ -104,20 +104,32 @@ export default function () {
     return;
   }
   const o = opened.json();
+  const document = JSON.parse(decodeBase64(o.document));
+  // The builder emits ductus-edit-steps-v1, which only works of document version 1 or 2 take.
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(document.schemaVersion)) {
+    console.error(
+      `student ${student}: document version ${document.schemaVersion} is not supported by this script`,
+    );
+    failed.add(1);
+    return;
+  }
   let state = {
     documentId: o.documentId,
     evidenceProfileId: o.evidenceProfileId,
     revision: o.currentRevision,
-    document: JSON.parse(decodeBase64(o.document)),
+    document,
     headSegmentHash: o.headSegmentHash,
     lastSequenceTo: o.lastSequenceTo,
     sessionId: `lt-${student}-${t0}`,
   };
 
-  // Saves paced across the window; the last one ends before the submit.
-  const gap = (WINDOW_SECONDS - 90) / SAVES_PER_STUDENT;
+  // Saves at absolute targets (seconds from this student's start), each inside its own
+  // slot of the span 60 s .. WINDOW-90 s, so jitter never accumulates; the submit
+  // lands in WINDOW-60 s .. WINDOW-10 s. Late responses shorten the next wait, not the plan.
+  const slot = (WINDOW_SECONDS - 150) / SAVES_PER_STUDENT;
+  const waitUntil = (target: number): void => sleep(Math.max(0, target - (Date.now() - t0) / 1000));
   for (let n = 1; n <= SAVES_PER_STUDENT; n += 1) {
-    sleep(gap * (0.7 + Math.random() * 0.6));
+    waitUntil(60 + (n - 1 + 0.05 + Math.random() * 0.9) * slot);
     const built = buildCommit(
       state,
       sampleText(student, n),
@@ -142,7 +154,7 @@ export default function () {
   }
 
   // Submit in the last part of the window.
-  sleep(Math.max(0, WINDOW_SECONDS - (Date.now() - t0) / 1000 - Math.random() * 20));
+  waitUntil(WINDOW_SECONDS - 60 + Math.random() * 50);
   const sent = post(
     "/api/v1/submission/v2",
     { documentId: state.documentId, revision: state.revision },

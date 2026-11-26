@@ -18,10 +18,7 @@ export function canon(value) {
 }
 
 export const b64 = (text) => {
-  // Text is built from ASCII only (see sampleText), so btoa-free encoding is safe.
-  const bytes = [];
-  for (let i = 0; i < text.length; i += 1) bytes.push(text.charCodeAt(i));
-  return encodeBase64(bytes);
+  return encodeBase64(utf8Bytes(text));
 };
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -49,7 +46,39 @@ export function decodeBase64(text) {
       bytes.push((acc >> bits) & 255);
     }
   }
-  return String.fromCharCode(...bytes);
+  return utf8Text(bytes);
+}
+
+/** UTF-8 bytes of a string (code points, so emoji and Croatian letters survive). */
+function utf8Bytes(text) {
+  const bytes = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80) bytes.push(cp);
+    else if (cp < 0x800) bytes.push(0xc0 | (cp >> 6), 0x80 | (cp & 63));
+    else if (cp < 0x10000) bytes.push(0xe0 | (cp >> 12), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+    else
+      bytes.push(
+        0xf0 | (cp >> 18),
+        0x80 | ((cp >> 12) & 63),
+        0x80 | ((cp >> 6) & 63),
+        0x80 | (cp & 63),
+      );
+  }
+  return bytes;
+}
+
+function utf8Text(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length;) {
+    const b = bytes[i];
+    const n = b < 0x80 ? 1 : b < 0xe0 ? 2 : b < 0xf0 ? 3 : 4;
+    let cp = n === 1 ? b : b & (0xff >> (n + 1));
+    for (let k = 1; k < n; k += 1) cp = (cp << 6) | (bytes[i + k] & 63);
+    out += String.fromCodePoint(cp);
+    i += n;
+  }
+  return out;
 }
 
 /** Invented ASCII text for a student's n-th save. */
@@ -68,6 +97,9 @@ function minute(ms) {
  * The text goes at the end of the first paragraph; positions follow the
  * ProseMirror model of the vector: position 1 is inside the first paragraph.
  */
+/** Document versions whose works take ductus-edit-steps-v1 (the format this builder emits). */
+export const SUPPORTED_SCHEMA_VERSIONS = [1, 2];
+
 export function buildCommit(state, text, nowMs, sha256Hex, tag) {
   const doc = state.document;
   const first = doc.nodes[0];
