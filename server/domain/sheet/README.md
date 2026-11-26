@@ -8,3 +8,7 @@ Tablični dokument vrste `spreadsheet` (val 14, SRV-V14-SHEET-MODEL). Samo čist
 - **Vektori** (`golden-vectors.json`): izvedeni izvan koda (Python), isti bajt-za-bajt kopira WEB-V14-SHEET-CORE. Test je `sheet.test.ts`.
 
 Nema rute, tablice ni ugovora. Ništa ovdje ne ocjenjuje, ne rangira i ne sankcionira.
+
+## Koraci (SRV-V14-SHEET-EVIDENCE)
+
+`edit-step.ts`: format `ductus-sheet-steps-v1`. Koraci: `cellSet` (tekst, broj ili formula), `cellClear`, `rowInsert`, `rowRemove`, `columnInsert`, `columnRemove`, `sheetRename`; ne pritisnute tipke. Zatvoren skup ključeva, nepoznat korak se odbija. Zamjena i uklanjanje nose SHA-256 onoga što zamjenjuju (`replacedSha256`, `removedSha256`). Rezultat svakog koraka provjerava `validateSheetDocument`. Umetanje i brisanje retka ili stupca pomiče samo ćelije; tekst formula se ne prepisuje (editor to zapisuje vlastitim `cellSet` korakom). Revizija 0: jedan prazan list „List1”, 100 redaka, 10 stupaca. Vektori: `edit-step-vectors.json` (izvedeni izvan koda). Grananje po vrsti pri commitu i replayu je u `server/evidence/sheet/`.
