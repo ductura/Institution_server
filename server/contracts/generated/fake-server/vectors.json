@@ -40946,7 +40946,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.159.0",
+        "apiVersion": "1.160.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40962,7 +40962,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.159.0",
+        "apiVersion": "1.160.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -67041,6 +67041,204 @@
         "messageKey": "errors.notFound",
         "status": 404,
         "requestId": "00000000-0000-4000-8000-000000007130"
+      }
+    }
+  },
+  {
+    "route": "student.working-criteria.get",
+    "name": "each-teacher-separately",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000002"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "teachers": [
+          {
+            "teacherId": "00000000-0000-4000-8000-0000000000a1",
+            "teacherName": {
+              "givenName": "Izmišljena",
+              "familyName": "Nastavnica"
+            },
+            "criteria": [
+              {
+                "id": "topic",
+                "label": "workingCriteria.topic",
+                "assessment": 2,
+                "note": "Jasno postavljeno pitanje."
+              },
+              {
+                "id": "structure",
+                "label": "workingCriteria.structure",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "sources",
+                "label": "workingCriteria.sources",
+                "assessment": 1,
+                "note": "Izmišljena napomena o izvorima."
+              },
+              {
+                "id": "method",
+                "label": "workingCriteria.method",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "language",
+                "label": "workingCriteria.language",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "formatting",
+                "label": "workingCriteria.formatting",
+                "assessment": null,
+                "note": null
+              }
+            ]
+          },
+          {
+            "teacherId": "00000000-0000-4000-8000-0000000000a2",
+            "teacherName": null,
+            "criteria": [
+              {
+                "id": "topic",
+                "label": "workingCriteria.topic",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "structure",
+                "label": "workingCriteria.structure",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "sources",
+                "label": "workingCriteria.sources",
+                "assessment": 2,
+                "note": null
+              },
+              {
+                "id": "method",
+                "label": "workingCriteria.method",
+                "assessment": null,
+                "note": null
+              },
+              {
+                "id": "language",
+                "label": "workingCriteria.language",
+                "assessment": 0,
+                "note": null
+              },
+              {
+                "id": "formatting",
+                "label": "workingCriteria.formatting",
+                "assessment": null,
+                "note": null
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.working-criteria.get",
+    "name": "none-yet",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0002"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000002"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "teachers": []
+      }
+    }
+  },
+  {
+    "route": "student.working-criteria.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-001740000001"
+      }
+    }
+  },
+  {
+    "route": "student.working-criteria.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nema"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000002"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-001740000002"
+      }
+    }
+  },
+  {
+    "route": "student.working-criteria.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000002"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-001740000003"
       }
     }
   },

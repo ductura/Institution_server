@@ -839,7 +839,7 @@ Repoi: **SRV** je Institution_server, **WEB** je Institution_front_web_chrome, *
 - ✓ B-1 i ✓ B-2: Daniel želi „Podrijetlo teksta” (ritam unosa, postotci, pragovi) i podudaranje s automatskim prilaganjem kao u prototipu. To traži izmjenu pravila: **korak P-1** ispod. Do tada se ti dijelovi ne grade.
 - ✓ B-3 „Kod potvrđuje da se predani tekst nije mijenjao od predaje.”, naziv bez „autorska”. ✓ B-4 gumb „Otisak u međuspremnik”; svi tekstovi kroz skener. ✓ B-5 „izvornost” samo kao doslovni navod službenog obrasca fakulteta (iznimka skenera ide u P-1).
 - ✓ B-6 svaka poruka uspjeha tek uz potpisanu potvrdu, do tada „Šalje se…”. ✓ B-7 oznaka lijepljenja ostaje, uz napomenu da je tekst kasnije mijenjan. ✓ B-8 „tekst navoda razlikuje se od priložene stranice”.
-- ✓ B-9 potvrđeno 19. 11. („Kritjerij je samo radna bilješka nastavnika”): 6 kriterija samo je nastavnikova radna bilješka; student ne vidi kriterije ni bodove, pa P-1 to ne treba.
+- ✓ B-9 potvrđeno 19. 11. („Kritjerij je samo radna bilješka nastavnika”): 6 kriterija samo je nastavnikova radna bilješka; student ne vidi kriterije ni bodove, pa P-1 to ne treba. **Zamijenjeno 26. 11. 2026.** (Daniel, Ductus#2058 c.7192734757): student vlasnik rada vidi kriterije svakog nastavnika zasebno (SRV-ED35, `student.working-criteria.get`); bodova i dalje nema.
 - ✓ C-1 shema po valovima. ✓ C-2 `locator` ostaje i prikazuje se kao stranica; `via` i `rq` postaju atributi navoda u shemi v3. ✓ C-3 Izjava (E-9) smije se izgraditi prije D-194, na lažnom serveru: ide u val 3.
 - ✓ C-5 napomene da. ✓ C-7 suradnik smije sve (komentar, dorada, izvoz, mentorstva, sve grupe). ✓ C-8 rok dorade u ugovoru. ✓ C-9 prijedlozi teksta jesu proizvod. ✓ C-10 nastavnik uspoređuje bilo koje dvije verzije.
 - ✓ C-12 stilovi i Lektini profili ulaze; Lektu daje Daniel, ne čeka se Q-11. ✓ C-13 pomoćnik zadnji, do tada kartica „uskoro”. ✓ C-14 diktiranje i čitanje naglas kroz Web Speech API, preuzimanja da.
@@ -1182,7 +1182,7 @@ Samo WEB i UI, paralelno s valom 5.
 - E§3.6 rich: pravopis;
 - E§3.4: proofs (blaži tekst ✓ B-8), tools.js, advice.js, wizard, plus.js, Pravila oblika (✓ C-19);
 - E§3.5 mentor2: Stanje rada, Etape, Poruke, Konzultacije, Obrasci (naziv ✓ B-5 nakon P-1), Suglasnost, Nakon predaje, Vremenska crta, Moji studenti;
-- E§3.5 mentor3: Kriteriji ocjene (✓ B-9, samo bilješka nastavnika), Uz tekst; Pragovi tek nakon P-1;
+- E§3.5 mentor3: Kriteriji ocjene (✓ B-9, bilješka nastavnika; od 26. 11. 2026. student vlasnik je vidi, SRV-ED35), Uz tekst; Pragovi tek nakon P-1;
 - N: N-12 konzultacije, N-18 izvoz za Merlin (✓ C-16), N-13 produljenje (✓ C-15), N-14 Priprema za razgovor i N-15 Etape (✓ C-15, nakon nacrta ekrana).
 
 **Server:**
