@@ -1016,6 +1016,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { documentId: IDS.document },
     },
   },
+  "collaboration.revision-send.post": {
+    before: [createRequest],
+    request: {
+      path: "/api/v1/revision-send",
+      as: "student",
+      body: { documentId: IDS.document, message: null },
+    },
+  },
   "downloads.manifest.get": { request: { path: "/api/v1/downloads/manifest" } },
   "evidence.commit.post": { request: commit("izmisljena-transakcija-1", 0) },
   "evidence.open.post": {
