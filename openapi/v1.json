@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.165.0",
+    "version": "1.166.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -156302,6 +156302,280 @@
       }
     },
     "/api/v1/works/{documentId}/imports": {
+      "get": {
+        "operationId": "work.imports.get",
+        "summary": "The imports prepared into a work, newest first, at most 200: for each the importId, importKind, fileFormat, rawByteLength, the normalised file name or null, baseRevision, preparedAt and its state (pending, confirmed or expired after 60 minutes); confirmedAt and the one eventId only for a confirmed import, else null. Never the content, the manifest or a hash of the file. The same answer for the student who owns the work and for a teacher of its assignment; another student, a teacher of another course, an unknown or a malformed work all read the same 404. The list is empty while nothing was imported. The read writes nothing in the access log.",
+        "x-access": "owner_or_course_teacher",
+        "x-inventory": "app/api/works/[documentId]/imports/route.ts",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the imports of the work, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "imports"
+                  ],
+                  "properties": {
+                    "imports": {
+                      "maxItems": 200,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "importId",
+                          "importKind",
+                          "fileFormat",
+                          "rawByteLength",
+                          "fileName",
+                          "baseRevision",
+                          "preparedAt",
+                          "state",
+                          "confirmedAt",
+                          "eventId"
+                        ],
+                        "properties": {
+                          "importId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "importKind": {
+                            "anyOf": [
+                              {
+                                "const": "file-upload",
+                                "type": "string"
+                              },
+                              {
+                                "const": "cloud-version",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "fileFormat": {
+                            "anyOf": [
+                              {
+                                "const": "docx",
+                                "type": "string"
+                              },
+                              {
+                                "const": "pdf",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "rawByteLength": {
+                            "minimum": 1,
+                            "maximum": 2097152,
+                            "type": "integer"
+                          },
+                          "fileName": {
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "maxLength": 400,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "baseRevision": {
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer"
+                          },
+                          "preparedAt": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                            "type": "string"
+                          },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "const": "pending",
+                                "type": "string"
+                              },
+                              {
+                                "const": "confirmed",
+                                "type": "string"
+                              },
+                              {
+                                "const": "expired",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "confirmedAt": {
+                            "anyOf": [
+                              {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "eventId": {
+                            "anyOf": [
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
       "post": {
         "operationId": "work.imports.post",
         "summary": "The student owner sends a DOCX or PDF as standard Base64, at most 2 MiB (2 097 152 bytes), with the file name or null, as application/json. The server reads the DOCX or the PDF text layer within the import limits. Active content is refused. 201 is a preview: importId, SHA-256 of the canonical manifest ductus-import-manifest-v1, source import, evidenceKind imported, fileFormat, content as document v2, DOCX traces (empty for PDF), rawByteLength, the normalised file name or null, baseRevision and expiresAt (60 minutes). Confirm it with work.imports.confirm.post. A file above the limit is 413 body_too_large, a PDF without text is 422 pdf_no_text_layer, other reader refusals are 422 invalid_document, and an assignment without import allowed or a submitted work is 403 import_not_allowed. A teacher, another's, an unknown or a malformed work is 404.",

@@ -149,3 +149,74 @@ describe("createImports.confirm", () => {
     });
   });
 });
+
+describe("createImports.list", () => {
+  const confirmed = {
+    importId: IMPORT_ID,
+    importKind: "file-upload",
+    fileFormat: "docx",
+    rawByteLength: 1024,
+    fileName: "izmisljeni-esej.docx",
+    baseRevision: "3",
+    preparedAt: AT,
+    state: "confirmed",
+    confirmedAt: new Date(AT.getTime() + 1000),
+    eventId: EVENT_ID,
+  };
+  const pending = { ...confirmed, state: "pending", confirmedAt: null, eventId: null };
+
+  it("asks the list RPC with the work only and maps the metadata", async () => {
+    const run = scripted([[confirmed, { ...pending, fileName: null }]]);
+    const answer = await run.port.list("t", "doc-a");
+    expect(run.calls).toHaveLength(1);
+    expect(run.calls[0]!.text).toContain("collaboration.list_imports($1)");
+    expect(run.calls[0]!.values).toEqual(["doc-a"]);
+    expect(answer).toEqual({
+      status: "listed",
+      imports: [
+        {
+          importId: IMPORT_ID,
+          importKind: "file-upload",
+          fileFormat: "docx",
+          rawByteLength: 1024,
+          fileName: "izmisljeni-esej.docx",
+          baseRevision: 3,
+          preparedAt: AT.toISOString(),
+          state: "confirmed",
+          confirmedAt: new Date(AT.getTime() + 1000).toISOString(),
+          eventId: EVENT_ID,
+        },
+        expect.objectContaining({
+          state: "pending",
+          fileName: null,
+          confirmedAt: null,
+          eventId: null,
+        }),
+      ],
+    });
+  });
+
+  it("lists nothing for a work without imports", async () => {
+    expect(await scripted([[]]).port.list("t", "d")).toEqual({ status: "listed", imports: [] });
+  });
+
+  it.each([
+    ["ZD401", "unauthenticated"],
+    ["ZD403", "not_found"],
+    ["57014", "unavailable"],
+  ])("maps %s to %s, never the message", async (code, status) => {
+    expect(await scripted([dbError(code)]).port.list("t", "d")).toEqual({ status });
+  });
+
+  it.each([
+    ["a confirmed import without an event", { ...confirmed, eventId: null }],
+    ["a pending import with an event", { ...pending, eventId: EVENT_ID }],
+    ["an unknown state", { ...pending, state: "cancelled" }],
+    ["an unknown format", { ...pending, fileFormat: "odt" }],
+    ["a bad import id", { ...pending, importId: "x" }],
+    ["a bad time", { ...pending, preparedAt: "2026-11-21" }],
+    ["a bad revision", { ...pending, baseRevision: "-1" }],
+  ])("is unavailable for %s", async (_name, row) => {
+    expect(await scripted([[row]]).port.list("t", "d")).toEqual({ status: "unavailable" });
+  });
+});

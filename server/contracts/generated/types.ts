@@ -2304,6 +2304,13 @@ export type Operations = {
     success: { status: 200; body: { "importId": string; "eventId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "import_not_found" | "import_manifest_mismatch" | "import_expired" | "import_not_allowed" | "import_revision_changed" | "unavailable";
   };
+  "work.imports.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "imports": ({ "importId": string; "importKind": "file-upload" | "cloud-version"; "fileFormat": "docx" | "pdf"; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "preparedAt": string; "state": "pending" | "confirmed" | "expired"; "confirmedAt": string | null; "eventId": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "work.imports.post": {
     params: { "documentId": string };
     query: undefined;

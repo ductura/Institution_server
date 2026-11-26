@@ -126,6 +126,7 @@ SELECT bag_eq(
             ('collaboration.list_working_criteria(text)'),
             ('collaboration.save_working_criterion(text,text,smallint,text)'),
             ('collaboration.student_working_criteria(text)'),
+            ('collaboration.list_imports(text)'),
             ('collaboration.list_work_rubric(text)'),
             ('collaboration.save_work_rubric_mark(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
