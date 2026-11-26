@@ -17,6 +17,17 @@ const ATTACKS = [
   "/\u0000",
   "/\ud800",
   "/api/auth/login",
+  // Outside /aplikacija and /administracija (D-318).
+  "/rad",
+  "/aplikacijax",
+  "/administracijax/x",
+  "/app/webx/x",
+  "/app/web/../rad",
+  "/aplikacija/../rad",
+  "/%61plikacija/x",
+  "/aplikacija/..//zlo.test",
+  "/app/web/\\zlo.test",
+  "/administracija\\zlo.test",
   // QA of #191: the bare prefix too.
   "/api",
   "/api?x=1",
@@ -45,6 +56,10 @@ const ATTACKS = [
 ];
 
 describe("safeReturnTo", () => {
+  it("defaults to the application root", () => {
+    expect(DEFAULT_RETURN_TO).toBe("/aplikacija/");
+  });
+
   it.each(ATTACKS)("sends %j to the default page", (value) => {
     expect(safeReturnTo(value)).toBe(DEFAULT_RETURN_TO);
   });
@@ -63,17 +78,24 @@ describe("safeReturnTo", () => {
   );
 
   it.each([
-    ["/rad?x=1", "/rad?x=1"],
-    ["/", "/"],
-    ["/kolegij/DEMO-101#upute", "/kolegij/DEMO-101#upute"],
-    ["/%2F%2Fzlo.test", "/%2F%2Fzlo.test"],
-    ["/a/../b", "/b"],
+    ["/aplikacija/rad?x=1", "/aplikacija/rad?x=1"],
+    ["/aplikacija", "/aplikacija"],
+    ["/aplikacija/", "/aplikacija/"],
+    ["/administracija/", "/administracija/"],
+    ["/aplikacija/kolegij/DEMO-101#upute", "/aplikacija/kolegij/DEMO-101#upute"],
+    ["/aplikacija/%2F%2Fzlo.test", "/aplikacija/%2F%2Fzlo.test"],
+    ["/aplikacija/a/../b", "/aplikacija/b"],
     // Only /api itself and what is below it is refused.
-    ["/apis", "/apis"],
-    ["/rad/api", "/rad/api"],
-    ["/%61pis", "/%61pis"],
+    ["/aplikacija/api", "/aplikacija/api"],
+    ["/aplikacija/%61pis", "/aplikacija/%61pis"],
     // Percent-encoding is kept as given (QA 7 of the first round on #191).
-    ["/rad/%C5%A1kola?q=a%20b#x%20y", "/rad/%C5%A1kola?q=a%20b#x%20y"],
+    ["/aplikacija/rad/%C5%A1kola?q=a%20b#x%20y", "/aplikacija/rad/%C5%A1kola?q=a%20b#x%20y"],
+    // The old web mount maps onto the new address (D-318).
+    ["/app/web", "/aplikacija"],
+    ["/app/web/", "/aplikacija/"],
+    // Still a path of this origin: the slashes come after the application root.
+    ["/app/web//zlo.test", "/aplikacija//zlo.test"],
+    ["/app/web/rad/1?x=1#y", "/aplikacija/rad/1?x=1#y"],
   ])("keeps the path %j of this application", (value, expected) => {
     expect(safeReturnTo(value)).toBe(expected);
   });
