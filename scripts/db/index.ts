@@ -43,6 +43,13 @@ export {
 } from "./migrate-locked.ts";
 export type { LockClient, LockedChild, RunLockedOptions } from "./migrate-locked.ts";
 export { DATABASES, databaseNamed } from "./databases.ts";
+export {
+  MATRIX_COVERAGE_FILE,
+  matrixCoverageFaults,
+  namesTable,
+  parseMatrixRows,
+} from "./matrix-coverage.ts";
+export type { MatrixRow } from "./matrix-coverage.ts";
 export { pgtapArgs, pgtapFailure, runPgtap, testFiles } from "./pgtap.ts";
 export type { PgtapRun } from "./pgtap.ts";
 export type { Database } from "./databases.ts";
