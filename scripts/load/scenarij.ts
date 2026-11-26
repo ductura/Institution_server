@@ -32,6 +32,22 @@ const students = new SharedArray<Student>("studenti", () => {
 });
 if (students.length === 0) throw new Error("no prepared students: nothing would be measured");
 
+// Seconds a student waits before the first save and between saves.
+const PACING: Record<string, { start: number; gap: readonly [number, number] }> = {
+  nastava: { start: 30, gap: [5, 15] },
+  rok: { start: 5, gap: [0.5, 1.5] },
+  sinkronizacija: { start: 0, gap: [0, 0] },
+};
+const pacing = PACING[scenario] ?? { start: 0, gap: [0, 0] };
+const REQUEST_TIMEOUT_S = 30;
+// The run may last as long as the slowest student could: the longest start,
+// every pause at its longest and every request (the saves plus the closing
+// submission or repeat) at its timeout, plus a minute.
+const longestChain = Math.max(...Array.from(students, (student) => student.commits.length));
+const maxDurationS = Math.ceil(
+  pacing.start + longestChain * pacing.gap[1] + (longestChain + 1) * REQUEST_TIMEOUT_S + 60,
+);
+
 // k6 metric name: any failed request fails the run.
 const FAILED = "http_req_failed";
 
@@ -41,7 +57,7 @@ export const options = {
       executor: "per-vu-iterations",
       vus: students.length,
       iterations: 1,
-      maxDuration: "30m",
+      maxDuration: `${maxDurationS}s`,
     },
   },
   thresholds: { [FAILED]: ["rate==0"], checks: ["rate==1"] },
@@ -60,7 +76,7 @@ function post(student: Student, path: string, body: unknown, name: string) {
       "ductus-protocol": "1",
     },
     tags: { name },
-    timeout: "30s",
+    timeout: `${REQUEST_TIMEOUT_S}s`,
   });
 }
 
@@ -78,12 +94,10 @@ function save(student: Student, commit: Commit, expected: "committed" | "duplica
 export default function (): void {
   const student = students[execution.vu.idInTest - 1];
   if (student === undefined) throw new Error("more VUs than prepared students");
-  if (scenario === "nastava") sleep(between(0, 30));
-  if (scenario === "rok") sleep(between(0, 5));
+  sleep(between(0, pacing.start));
   for (const commit of student.commits) {
     if (!save(student, commit, "committed")) return;
-    if (scenario === "nastava") sleep(between(5, 15));
-    if (scenario === "rok") sleep(between(0.5, 1.5));
+    sleep(between(pacing.gap[0], pacing.gap[1]));
   }
   const last = student.commits.at(-1);
   if (scenario === "sinkronizacija" && last !== undefined && !save(student, last, "duplicate"))

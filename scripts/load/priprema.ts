@@ -23,6 +23,11 @@ const ASSIGNMENT_TITLE = "Seminarski rad: kućno kompostiranje";
 // one sign-in spends two of them (auth/login and auth/callback) and every
 // prepared student signs in from 127.0.0.1, so sign-ins are paced.
 const LOGIN_GAP_MS = 4_100;
+// A session idle for two hours is refused (app.current_actor, migration
+// 20261101200000_session_idle). The first student signs in at the start of the
+// preparation and stays idle until the run, so preparation has to finish well
+// within that: 1000 sign-ins take about 68 minutes.
+const MAX_USERS = 1_000;
 const TEXT = "Kućno kompostiranje smanjuje količinu otpada u izmišljenoj četvrti.";
 
 export type PreparedStudent = {
@@ -40,8 +45,8 @@ export function parseLoadFlags(argv: readonly string[]): Flags {
   const users = Number(value("korisnika") ?? "10");
   const saves = Number(value("spremanja") ?? "5");
   const run = value("pokret") ?? "";
-  if (!Number.isSafeInteger(users) || users < 1 || users > 2_000)
-    throw new Error("--korisnika must be 1 to 2000");
+  if (!Number.isSafeInteger(users) || users < 1 || users > MAX_USERS)
+    throw new Error(`--korisnika must be 1 to ${MAX_USERS}`);
   if (!Number.isSafeInteger(saves) || saves < 1 || saves > 200)
     throw new Error("--spremanja must be 1 to 200");
   if (!/^[a-z0-9]{1,12}$/u.test(run)) throw new Error("--pokret must be 1 to 12 of a-z, 0-9");
