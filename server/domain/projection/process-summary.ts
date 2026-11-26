@@ -5,7 +5,11 @@ import {
   type EvidenceChainFailureV2,
   type EvidenceChainHeadV2,
 } from "../forensics/evidence-chain-v2.ts";
-import type { EvidenceSegment, EvidenceSourceV4 } from "../forensics/evidence-segment-v2.ts";
+import {
+  EVIDENCE_TRANSACTION_FORMATS,
+  type EvidenceSegment,
+  type EvidenceSourceV4,
+} from "../forensics/evidence-segment-v2.ts";
 
 /**
  * Process summary, core of B-13 (PRODUCT §7, rule 5 of §5, D-80 point 6).
@@ -36,6 +40,16 @@ export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
  * paste (#384, owner question 3 is open; changing this list is the only edit).
  */
 export const PASTE_SOURCES: readonly EvidenceSourceV4[] = ["paste"];
+
+/**
+ * Step formats whose steps this projection reads: the text formats of a
+ * ProseMirror document (SRV-V14-PROJEKCIJE-FORMAT). Counting characters reads
+ * `replace` slices only, so a segment of a spreadsheet or slides work would
+ * give a quiet zero instead of a count. Such a segment is refused with the
+ * existing `invalid_segment`, never summarised; a summary by format is a new
+ * contract, not an edit here.
+ */
+const TEXT_TRANSACTION_FORMATS: ReadonlySet<unknown> = new Set(EVIDENCE_TRANSACTION_FORMATS);
 
 /** Faculty thresholds (P-01, P-02); configuration, never literals (PRODUCT §5 rule 12). */
 export type ProcessSummaryThresholds = {
@@ -191,6 +205,15 @@ export async function projectProcessSummary(
     const verified = await verifyCanonicalEvidencePayloadV2(payload);
     if (!verified.ok) throw new Error("process-summary: verified payload no longer verifies");
     segments.push(verified.segment);
+  }
+  // Every segment, not only the first: one segment of another format makes
+  // the whole package unreadable here, never a partial summary.
+  if (
+    segments.some(
+      (segment) => !TEXT_TRANSACTION_FORMATS.has(segment.captureContext.transactionFormat),
+    )
+  ) {
+    return { ok: false, reason: "invalid_segment" };
   }
 
   const listed: ProcessSummaryV1["pastes"]["listed"] = [];
