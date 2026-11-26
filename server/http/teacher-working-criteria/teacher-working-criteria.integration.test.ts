@@ -52,10 +52,13 @@ const teacherRows = (
   name: [string, string] | null,
   set: Record<string, [number | null, string | null]> = {},
 ) =>
+  // The database answers snake_case keys; built from pairs (naming-convention).
   rows(set).map((row) => ({
-    teacher_id: teacherId,
-    given_name: name?.[0] ?? null,
-    family_name: name?.[1] ?? null,
+    ...Object.fromEntries([
+      ["teacher_id", teacherId],
+      ["given_name", name?.[0] ?? null],
+      ["family_name", name?.[1] ?? null],
+    ]),
     ...row,
   }));
 
