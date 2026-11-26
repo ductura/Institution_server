@@ -144,6 +144,8 @@ import {
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
@@ -1727,6 +1729,38 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE: a live session with no such questionnaire gets 404.
+  "student.questionnaires.get": {
+    method: "GET",
+    path: "/api/v1/student/questionnaires",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.questionnaire.get": {
+    method: "GET",
+    path: `/api/v1/student/questionnaires/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.questionnaire-responses.post": {
+    method: "POST",
+    path: `/api/v1/student/questionnaires/${randomUUID()}/responses`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  "teacher.questionnaire-manual-responses.post": {
+    method: "POST",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/responses/manual`,
+    body: () => ({ answers: [{ questionId: randomUUID(), value: "a" }] }),
+    live: 404,
+  },
+  // SRV-V18-UPITNIK-IZVOZ: a live session with no such questionnaire gets 404.
+  "teacher.questionnaire-export.get": {
+    method: "GET",
+    path: `/api/v1/teacher/questionnaires/${randomUUID()}/export`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-V18-KODIRANJE-GRADIVO: the student's own material; an id that is not theirs is 404.
   "student.qual-materials.get": {
     method: "GET",
@@ -2649,6 +2683,8 @@ const FACTORIES = [
   "createDeclarationQuestionRoutesFor",
   "createLateSubmissionRoutesFor",
   "createCourseAssistantRoutesFor",
+  "createQuestionnaireResponsesRoutesFor",
+  "createQuestionnaireExportRoutesFor",
   "createQualitativeMaterialsRoutesFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
@@ -2798,6 +2834,8 @@ const MOUNTED = [
   ...createDeclarationQuestionRoutesFor(databases.main),
   ...createLateSubmissionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
+  ...createQuestionnaireResponsesRoutesFor(databases.main),
+  ...createQuestionnaireExportRoutesFor(databases.main),
   ...createQualitativeMaterialsRoutesFor(databases.main),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),

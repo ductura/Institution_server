@@ -1894,6 +1894,41 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       headers: ORIGIN,
     },
   },
+  // SRV-V18-UPITNIK-ISPUNJAVANJE
+  "student.questionnaires.get": {
+    request: { path: "/api/v1/student/questionnaires", as: "student" },
+  },
+  "student.questionnaire.get": {
+    request: {
+      path: "/api/v1/student/questionnaires/b0000000-0000-4000-8000-000000000001",
+      as: "student",
+    },
+  },
+  "student.questionnaire-responses.post": {
+    request: {
+      path: "/api/v1/student/questionnaires/b0000000-0000-4000-8000-000000000001/responses",
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: { answers: [{ questionId: "b1000000-0000-4000-8000-000000000001", value: "da" }] },
+    },
+  },
+  "teacher.questionnaire-manual-responses.post": {
+    request: {
+      path: "/api/v1/teacher/questionnaires/b0000000-0000-4000-8000-000000000001/responses/manual",
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { answers: [{ questionId: "b1000000-0000-4000-8000-000000000002", value: 4 }] },
+    },
+  },
+  // SRV-V18-UPITNIK-IZVOZ
+  "teacher.questionnaire-export.get": {
+    request: {
+      path: "/api/v1/teacher/questionnaires/b0000000-0000-4000-8000-000000000001/export",
+      as: "nastavnik",
+    },
+  },
   "teacher.course-assistant.get": {
     request: { path: `/api/v1/teacher/courses/${IDS.course}/assistant`, as: "nastavnik" },
   },

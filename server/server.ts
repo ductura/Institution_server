@@ -147,6 +147,8 @@ import {
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
   createCourseAssistantRoutesFor,
+  createQuestionnaireResponsesRoutesFor,
+  createQuestionnaireExportRoutesFor,
   createQualitativeMaterialsRoutesFor,
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
@@ -462,6 +464,10 @@ async function main(): Promise<void> {
       ...createLateSubmissionRoutesFor(databases.main),
       // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
       ...createCourseAssistantRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.
+      ...createQuestionnaireResponsesRoutesFor(databases.main),
+      // SRV-V18-UPITNIK-IZVOZ: the author reads the answers as questionnaire-export-v1.
+      ...createQuestionnaireExportRoutesFor(databases.main),
       // SRV-V18-KODIRANJE-GRADIVO: the student's own material for qualitative coding.
       ...createQualitativeMaterialsRoutesFor(databases.main),
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
