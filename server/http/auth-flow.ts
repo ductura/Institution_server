@@ -23,6 +23,7 @@ import type { OpenSession } from "../database/index.ts";
 import {
   clearedSessionSetCookie,
   DEFAULT_RETURN_TO,
+  SIGNED_OUT_PATH,
   newSessionToken,
   previousSessionToken,
   safeReturnTo,
@@ -457,7 +458,7 @@ async function endSessions(
   // fails, the local sign-out stands and "/" follows. Either way the next
   // login asks the provider to sign in again (INT-20b), and a login attempt
   // started before the sign-out is dropped with its cookie (INT-20e).
-  let location = new URL(DEFAULT_RETURN_TO, deps.config.redirectUri.origin).href;
+  let location = new URL(SIGNED_OUT_PATH, deps.config.redirectUri.origin).href;
   try {
     const endSession = await deps.oidc.endSessionUrl();
     if (endSession) location = endSession.href;

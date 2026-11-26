@@ -65,6 +65,14 @@ const commit = (txid: string, baseRevision: number): Step => ({
 });
 const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
 const READING_PLACE = `/api/v1/works/${IDS.document}/reading-place`;
+const PLAN = `/api/v1/works/${IDS.document}/plan`;
+const PLAN_BODY = {
+  question: "Izmišljeno pitanje rada?",
+  purposes: [{ nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", purpose: "Izmišljena svrha." }],
+  terms: [
+    { term: "Izmišljeni pojam", definition: "Izmišljena definicija.", kind: "term" as const },
+  ],
+};
 const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 12 };
 const NOTE_BODY = { text: "Izmišljena bilješka za sebe.", place: PLACE };
 // SRV-NF6-SIFRA: invented bytes in base64url, of the lengths the contract fixes.
@@ -1911,6 +1919,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { comment: "Doradi uvod.", revisionDueAt: "2026-12-10T12:00:00Z" },
     },
   },
+  "work.revision-due.get": {
+    before: SUBMIT_STEPS,
+    request: { path: `/api/v1/works/${IDS.document}/revision-due`, as: "student" },
+  },
   "work.milestones.delete": {
     request: {
       method: "DELETE",
@@ -2319,6 +2331,11 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "student",
       headers: ORIGIN,
     },
+  },
+  // SRV-F4-PM2-R15: the plan of a work behind the panel Struktura.
+  "work.plan.get": { request: { path: PLAN, as: "student" } },
+  "work.plan.put": {
+    request: { method: "PUT", path: PLAN, as: "student", headers: ORIGIN, body: PLAN_BODY },
   },
   "work.reading-place.put": {
     request: {
@@ -2765,6 +2782,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration`,
       as: "nastavnik",
     },
+  },
+  // F4-NAS-R04-SRV: the fake stores no conversation, so nothing is attached.
+  "teacher.declaration-conversation.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration/conversations/00000000-0000-4000-8000-0000000000c1`,
+      as: "nastavnik",
+    },
+    refused: "not_found",
   },
   "teacher.submission-notes.get": {
     before: [NOTE],

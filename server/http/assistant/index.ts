@@ -90,6 +90,7 @@ import {
 
 import type { AssistantProviderConfig } from "./config.ts";
 
+export { openAiProviderFrom, type OpenAiEnv } from "./openai-provider.ts";
 export {
   CONFIG_VERSION_PATTERN,
   parseAssistantProviderConfig,
@@ -561,11 +562,14 @@ export const PRODUCTION_ASSISTANT_PROVIDER: AssistantProvider | null = null;
  * The production routes over main's withActor. Without a provider the request
  * route answers ai_disabled; the conversation route reads what the database holds.
  */
-export function createAssistantRoutesFor(main: { withActor: WithActor }): Route[] {
+export function createAssistantRoutesFor(
+  main: { withActor: WithActor },
+  provider: AssistantProvider | null = PRODUCTION_ASSISTANT_PROVIDER,
+): Route[] {
   return createAssistantRoutes({
     requests: createAssistantRequests(main.withActor),
     rules: assignmentRulesFrom(main.withActor),
-    provider: PRODUCTION_ASSISTANT_PROVIDER,
+    provider,
     availability: (token, assignmentId) =>
       createCourseAssistantPort(main.withActor).available(token, assignmentId),
     tools: assistantRouteToolsFor(

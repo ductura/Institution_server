@@ -1,0 +1,145 @@
+{
+  "route": "work.plan.get",
+  "vectors": [
+    {
+      "name": "nothing-kept",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nacrt-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "question": null,
+          "purposes": [],
+          "terms": [],
+          "updatedAt": null
+        }
+      }
+    },
+    {
+      "name": "plan-kept",
+      "kind": "success",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nacrt-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+          "purposes": [
+            {
+              "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+              "purpose": "Uvesti izmišljeno pitanje rada."
+            },
+            {
+              "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+              "purpose": "Opisati izmišljenu metodu."
+            }
+          ],
+          "terms": [
+            {
+              "term": "Izmišljeni pojam",
+              "definition": "Pojam izmišljen za primjer.",
+              "kind": "term"
+            },
+            {
+              "term": "IKP",
+              "definition": "Izmišljena kratica za primjer.",
+              "kind": "abbreviation"
+            }
+          ],
+          "updatedAt": "2026-11-26T09:05:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nacrt-0001"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-0000000000a0"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nacrt-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-nacrt-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-0000000000a2"
+        }
+      }
+    }
+  ]
+}

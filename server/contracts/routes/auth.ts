@@ -15,7 +15,7 @@ export type SignInFailureCode = "login_failed" | "provider_unavailable";
  * strictly here, so a third code or a stray key fails at load.
  */
 export const SIGN_IN_FAILURE: {
-  readonly page: "/prijava";
+  readonly page: "/aplikacija/prijava";
   readonly param: string;
   readonly codes: readonly { readonly code: SignInFailureCode; readonly messageKey: string }[];
 } = readSignInFailure(data);
@@ -30,7 +30,7 @@ export function readSignInFailure(raw: unknown): typeof SIGN_IN_FAILURE {
   const { format, page, param, codes } = raw as Record<string, unknown>;
   if (keys(raw) !== "codes,format,page,param") fail("keys");
   if (format !== "ductura-sign-in-failure-v1") fail("format");
-  if (page !== "/prijava") fail("page");
+  if (page !== "/aplikacija/prijava") fail("page");
   if (typeof param !== "string" || !/^[a-z]+$/u.test(param)) fail("param");
   const wanted: readonly SignInFailureCode[] = ["login_failed", "provider_unavailable"];
   if (!Array.isArray(codes) || codes.length !== wanted.length) return fail("codes");
@@ -41,7 +41,11 @@ export function readSignInFailure(raw: unknown): typeof SIGN_IN_FAILURE {
     if (code !== wanted[at] || typeof messageKey !== "string") return fail(`code ${at}`);
     return Object.freeze({ code: code as SignInFailureCode, messageKey });
   });
-  return Object.freeze({ page: "/prijava", param: param as string, codes: Object.freeze(read) });
+  return Object.freeze({
+    page: "/aplikacija/prijava",
+    param: param as string,
+    codes: Object.freeze(read),
+  });
 }
 
 // Login and logout are browser navigations: success is a 303, failure a page.

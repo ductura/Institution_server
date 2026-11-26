@@ -164,7 +164,7 @@ const next = (response: Response, base: string): string => {
 /** Login, the simulator's page and `form`, and back to the callback: its answer and the page. */
 async function signIn(origin: string, form: Record<string, string>) {
   const go = browser();
-  const start = await go(`${origin}/api/v1/auth/login?returnTo=/app/web/`);
+  const start = await go(`${origin}/api/v1/auth/login?returnTo=/aplikacija/`);
   expect(start.status).toBe(303);
   const authorize = next(start, origin);
   const interaction = next(await go(authorize), authorize);
@@ -179,7 +179,7 @@ async function signIn(origin: string, form: Record<string, string>) {
 
 function expectSession(answer: Response, origin: string): void {
   expect(answer.status).toBe(303);
-  expect(answer.headers.get("location")).toBe(`${origin}/app/web/`);
+  expect(answer.headers.get("location")).toBe(`${origin}/aplikacija/`);
   const session = answer.headers
     .getSetCookie()
     .find((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`));

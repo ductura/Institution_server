@@ -127,6 +127,24 @@ export const STATEMENT_HANDLERS: Handlers = {
       },
     };
   },
+  // F4-NAS-R04-SRV: the dev fake stores no assistant conversation (see
+  // assistant-routes.ts), so no conversation is ever attached to a declaration
+  // and every well-formed read is the not_found the production route gives for
+  // an unattached one. An unauthenticated caller is 401; one that is not the
+  // course teacher of the student's work is not_found.
+  "teacher.declaration-conversation.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId.toLowerCase());
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (
+      assignment === undefined ||
+      course === undefined ||
+      !teachesCourse(course, account) ||
+      !visibleStudents(course, account).includes(params.studentId.toLowerCase())
+    )
+      return { error: "not_found" };
+    return { error: "not_found" };
+  },
   "student.declaration.get": (ctx) => {
     const work = workOf(ctx);
     return work === undefined

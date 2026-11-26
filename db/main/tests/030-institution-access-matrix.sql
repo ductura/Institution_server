@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6270);
+SELECT plan(6271);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -2318,6 +2318,16 @@ SELECT is_empty(
        'app.set_assignment_template(uuid,boolean)', 'app.read_assignment_template(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-1103: only ductus_app and the owner execute the milestone RPCs'
+);
+
+-- F4-NAS-R16-SRV: actor-level cases are in 261-work-revision-due.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute app.read_work_revision_due(text)'
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     WHERE has_function_privilege(r.rolname, 'app.read_work_revision_due(text)', 'EXECUTE') $$,
+  'F4-NAS-R16-SRV: only ductus_app and the owner execute the revision due read'
 );
 -- SRV-MENTOR-2: actor-level cases are in 234-thesis-forms-consent.sql.
 SELECT is_empty(
