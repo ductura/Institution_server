@@ -17,7 +17,6 @@ import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
-import { CODE_POINT, END } from "../contracts/routes/teacher.ts";
 import { createQuestionnaireStore, type WithActor } from "../database/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
@@ -37,6 +36,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 // therefore checked here with a code-point bound (same error, 422), so a text of
 // 2000 code points with an emoji is not refused. The contract schema is not
 // changed (a changed schema would break clients).
+const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
+const END = "(?![\\s\\S])";
 const BODY = Type.Object(
   {
     answers: Type.Array(
