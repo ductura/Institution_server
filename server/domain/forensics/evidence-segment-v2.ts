@@ -1,4 +1,6 @@
 import { EDIT_STEP_FORMAT_V1, EDIT_STEP_FORMAT_V3, parseEditSteps } from "../document/index.ts";
+import { parseSheetSteps } from "../sheet/model/index.ts";
+import { parseSlideSteps } from "../slides/model/index.ts";
 import { sha256WebCrypto } from "./crypto.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "./jcs.ts";
 
@@ -104,6 +106,36 @@ export const EVIDENCE_TRANSACTION_FORMATS = [
 
 export type EvidenceTransactionFormat = (typeof EVIDENCE_TRANSACTION_FORMATS)[number];
 
+/**
+ * The step format of a spreadsheet work (SRV-V14-SHEET-COMMIT t. 1). Its steps
+ * are read by the spreadsheet's own `parseSheetSteps`, never by a second reader
+ * here. Written out, not imported: server/domain/sheet imports this folder, so
+ * a constant read from it while the modules load could still be unset. A test
+ * ties it to `SHEET_STEP_FORMAT_V1`.
+ */
+export const EVIDENCE_SHEET_TRANSACTION_FORMAT_V1 = "ductus-sheet-steps-v1" as const;
+
+/** The step format of a slides work, read by `parseSlideSteps`; as above, tied to `SLIDE_STEP_FORMAT_V1`. */
+export const EVIDENCE_SLIDE_TRANSACTION_FORMAT_V1 = "ductus-slide-steps-v1" as const;
+
+/**
+ * Every step format a segment may name: the text formats above and the
+ * spreadsheet and slides formats (SRV-V14-PARSERI-BEZ-NODE). One check for the
+ * client and the server: the readers carry no Node module, so the browser
+ * bundle holds them too (granica 8, #638). Which format a work takes is still
+ * the server's acceptance's to decide by the kind of the work
+ * (server/evidence/service.ts), never this check's: a text work takes only its
+ * own text format, a spreadsheet work only the spreadsheet one.
+ */
+export const EVIDENCE_SEGMENT_TRANSACTION_FORMATS = [
+  ...EVIDENCE_TRANSACTION_FORMATS,
+  EVIDENCE_SHEET_TRANSACTION_FORMAT_V1,
+  EVIDENCE_SLIDE_TRANSACTION_FORMAT_V1,
+] as const;
+
+export type EvidenceSegmentTransactionFormat =
+  (typeof EVIDENCE_SEGMENT_TRANSACTION_FORMATS)[number];
+
 /** The one step format a work of each document version takes (v4 §9 t. 9). */
 const FORMAT_OF_WORK: ReadonlyMap<unknown, EvidenceTransactionFormat> = new Map<
   unknown,
@@ -128,7 +160,7 @@ export function evidenceTransactionFormatOfWork(
 
 export type EvidenceCaptureContextV2 = {
   editorModel: (typeof EVIDENCE_EDITOR_MODELS_V2)[number];
-  transactionFormat: EvidenceTransactionFormat;
+  transactionFormat: EvidenceSegmentTransactionFormat;
 };
 
 export type EvidenceSegmentV2 = {
@@ -333,7 +365,7 @@ const EVENT_KEYS = new Set([
   "afterDocumentHash",
 ]);
 const CAPTURE_CONTEXT_KEYS = new Set(["editorModel", "transactionFormat"]);
-const TRANSACTION_FORMATS: ReadonlySet<unknown> = new Set(EVIDENCE_TRANSACTION_FORMATS);
+const TRANSACTION_FORMATS: ReadonlySet<unknown> = new Set(EVIDENCE_SEGMENT_TRANSACTION_FORMATS);
 /** v4 event keys allowed only with one source, and required with it. */
 const BINDING_KEYS_V4: ReadonlyMap<unknown, readonly string[]> = new Map([
   ["import", ["importId", "importManifestSha256"]],
@@ -387,10 +419,17 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * The steps of one event are read with the closed format, and the answer is
- * yes or no. The parser builds a clean copy; it is never used, since the hash
- * is over the bytes that were sent and a cleaned copy is not what was sent.
+ * yes or no: the text formats by the document's reader, the spreadsheet and
+ * slides formats by their own. The parser builds a clean copy; it is never
+ * used, since the hash is over the bytes that were sent and a cleaned copy is
+ * not what was sent.
  */
-function areSteps(value: unknown, format: EvidenceTransactionFormat): value is EvidenceStepV2[] {
+function areSteps(
+  value: unknown,
+  format: EvidenceSegmentTransactionFormat,
+): value is EvidenceStepV2[] {
+  if (format === EVIDENCE_SHEET_TRANSACTION_FORMAT_V1) return parseSheetSteps(value).ok;
+  if (format === EVIDENCE_SLIDE_TRANSACTION_FORMAT_V1) return parseSlideSteps(value).ok;
   return parseEditSteps(format, value).ok;
 }
 
@@ -448,7 +487,7 @@ function isEvent(
   value: unknown,
   expectedSequence: number,
   version: SegmentVersion,
-  format: EvidenceTransactionFormat,
+  format: EvidenceSegmentTransactionFormat,
 ): value is EvidenceEvent {
   if (!isPlainObject(value) || !hasEventKeys(value, version)) return false;
   if (
@@ -531,7 +570,7 @@ function isSegmentUnguarded(value: unknown, schemas: VersionsBySchema): boolean 
   ) {
     return false;
   }
-  const format = value.captureContext.transactionFormat as EvidenceTransactionFormat;
+  const format = value.captureContext.transactionFormat as EvidenceSegmentTransactionFormat;
 
   const sequenceFrom = Number(value.sequenceFrom);
   const sequenceTo = Number(value.sequenceTo);

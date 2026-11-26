@@ -1,4 +1,4 @@
-import { SLIDES_DOCUMENT_KIND, SLIDES_SCHEMA_VERSION, type SlidesDocument } from "./schema.ts";
+import { SLIDES_DOCUMENT_KIND, SLIDES_SCHEMA_VERSION, type SlidesDocument } from "./model/index.ts";
 
 /**
  * Revision 0 of every slides work (contract §7): one slide of the layout
