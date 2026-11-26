@@ -52,5 +52,16 @@ export {
   type SheetDocument,
 } from "./sheet/index.ts";
 // SRV-V14-SHEET-XLSX: what the .xlsx export reads beyond the CSV export: the column letter, the digest and the parser.
-export { columnLabel, sheetDigest } from "./sheet/index.ts";
+export { columnLabel } from "./sheet/index.ts";
 export { parseFormula, type FormulaNode } from "./sheet/formula/index.ts";
+// SRV-V14-SHEET-EVIDENCE: the steps of a spreadsheet work and its snapshot bytes, for the evidence branch.
+export {
+  MAX_SHEET_SNAPSHOT_BYTES,
+  SHEET_STEP_FORMAT_V1,
+  applySheetSteps,
+  parseSheetSteps,
+  sheetDigest,
+  sheetJcsBytes,
+  sheetRevisionZeroDocument,
+  type SheetStep,
+} from "./sheet/index.ts";
