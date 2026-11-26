@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6261);
+SELECT plan(6270);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -797,9 +797,10 @@ SELECT is_empty(
            UNION ALL SELECT 'public') AS r
      CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)',
                              'app.teacher_submission_state(uuid,uuid)',
-                             'app.my_assignment_late_submission(uuid)']) f
+                             'app.my_assignment_late_submission(uuid)',
+                             'app.teacher_assignment_late_submission(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
-  'SRV-20, SRV-NF4-KASNA-POLJE: only ductus_app and the owner execute the state RPCs'
+  'SRV-20, SRV-NF4-KASNA-POLJE, F4-NAS-R01: only ductus_app and the owner execute the state RPCs'
 );
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
@@ -2193,6 +2194,15 @@ SELECT is(
 FROM (VALUES
   ('ana', 'found'), ('dora', 'found'), ('vesna', 'not_found'), ('marko', 'not_found'), ('boris', 'not_found'),
   ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
+) AS c (actor, result);
+-- F4-NAS-R01: only the teacher of the assignment reads it back; another
+-- teacher, a student and anyone else read not_found (20261220220000).
+SELECT is(
+  split_part(pg_temp.ask(c.actor, 'SELECT outcome FROM app.teacher_assignment_late_submission({z1})'), ':', 1),
+  c.result, format('F4-NAS-R01: %s reads late submission of Z1 as teacher: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'found'), ('marko', 'not_found'), ('boris', 'not_found'), ('iva', 'not_found'), ('ana', 'not_found'),
+  ('dora', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401')
 ) AS c (actor, result);
 -- 1i2b. SRV-NF4-KASNA-PROVEDBA: request_submission reads the field through
 -- app.student_late_submission_allowed, as the evidence role, only for a
