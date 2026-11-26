@@ -1,5 +1,5 @@
 -- SRV-F4-EDI-R20 (F4, EDI-R20; Ductus#2058): the kind of a comment and a
--- general draft (20261220210000). A teacher drafts a thread with an optional
+-- general draft (20261220300000). A teacher drafts a thread with an optional
 -- kind (must, sugg, q, praise) and with no anchor at all (a general comment);
 -- the kind is the author's alone while a draft and the student's once it is
 -- published. Who may draft is as for create_comment_draft (the teacher of the
