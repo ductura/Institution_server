@@ -112,7 +112,9 @@ Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `
 | `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)                           | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
 | `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`)                    | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
-Pristup sadržaju proizlazi iz odnosa, ne iz uloge: svaka ruta ima test da tuđi sadržaj daje odbijanje, a pravila na razini baze provjerava pgTAP matrica (`db/main/tests`). Stari kostur `server/app.ts` još ima dimni test `server/app.integration.test.ts`.
+Pristup sadržaju proizlazi iz odnosa, ne iz uloge: svaka ruta ima test da tuđi sadržaj daje odbijanje, a pravila na razini baze provjerava pgTAP matrica (`db/main/tests`).
+
+Dimni test stvarnog poslužitelja: `server/server-smoke.integration.test.ts` gradi `dist/server.js` kao `pnpm build`, pokreće ga i provjerava granicu HTTP-a (zdravlje bez prijave, 401 bez sesije i za `Authorization: Bearer <id korisnika>`, 404 u formatu ugovora, 400 i 413 za neupotrebljivo tijelo, ništa od tijela u izlazu procesa). Naslijeđeni kostur (`server/app.ts`, `server/access.ts`, `server/store.ts`) uklonjen je u DAN-1537; isti test pada ako se vrati.
 
 Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
@@ -129,16 +131,16 @@ Akcije su prikvačene na puni SHA. Uz `ci.yml` postoje `engineering-gate.yml`, `
 
 ## Stanje servera
 
-- Prijava: studenti i nastavnici se prijavljuju isključivo preko AAI@EduHr (D-09); tok i sesije su u `server/http/auth.ts` i `auth-flow.ts`, a `server/server.ts` ih montira kroz `createAuthRoutes`. Sesija je kolačić, a pristup sadržaju određuje baza iz odnosa (student u kolegiju, nastavnik zadatka, mentor rada). Zaglavlje `Authorization: Bearer <korisnik>` iz starog kostura `server/app.ts` nije način prijave i ne koristi se u pravom serveru.
+- Prijava: studenti i nastavnici se prijavljuju isključivo preko AAI@EduHr (D-09); tok i sesije su u `server/http/auth.ts` i `auth-flow.ts`, a `server/server.ts` ih montira kroz `createAuthRoutes`. Sesija je kolačić, a pristup sadržaju određuje baza iz odnosa (student u kolegiju, nastavnik zadatka, mentor rada). Privremena testna zamjena prijave (`Authorization: Bearer <id korisnika>`) uklonjena je s kosturom (DAN-1537) i ne radi.
 - Lažni OIDC pružatelj (`packages/test-fakes/oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokreće ga `pnpm lokalno` (port 8090) ili ručno `pnpm exec tsx packages/test-fakes/oidc/server.ts`. `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
-- Baza: PostgreSQL 17, tri baze (`db/main`, `db/logs`, `db/legal`) s migracijama i RLS-om; web proces radi pod prijavom `ductus_app` kroz `withActor` (`server/database`). Memorijski `server/store.ts` ostao je samo za stari kostur.
+- Baza: PostgreSQL 17, tri baze (`db/main`, `db/logs`, `db/legal`) s migracijama i RLS-om; web proces radi pod prijavom `ductus_app` kroz `withActor` (`server/database`). Memorijska baza kostura uklonjena je (DAN-1537).
 - Pozadinski poslovi: prvi radnik (potpis potvrda na čekanju, `server/worker/signing`) postoji kao modul, a ulazna točka procesa radnika je još planirana ([server/worker/README.md](server/worker/README.md)).
 
 ## API
 
-Ulaz `server/server.ts` montira rute ugovora `/api/v1` (health, ready, prijava, student, nastavnik, ustanova, evidencija, predaje, zapisi i druge). Ugovor ima 351 operaciju (`openapi/v1.json`). Samo četiri su ugovorene, a nemontirane (`CONTRACT_ONLY` u `server/contracts/inventory.ts`): `institution.enrollments.post`, `institution.role-confirmation.post`, `institution.role-revocation.post` i `ops.events.get`; `tests/contracts/contract-only.test.ts` čuva da popis odgovara montiranim rutama. Popis ruta s pojedinostima je u ugovoru (`server/contracts/routes/`) i u [server/http/README.md](server/http/README.md), a ranija zbirka u [docs/vs1-rute.md](docs/vs1-rute.md).
+Ulaz `server/server.ts` montira rute ugovora `/api/v1` (health, ready, prijava, student, nastavnik, ustanova, evidencija, predaje, zapisi i druge). Ugovor ima 363 operacije (`openapi/v1.json`). Samo četiri su ugovorene, a nemontirane (`CONTRACT_ONLY` u `server/contracts/inventory.ts`): `institution.enrollments.post`, `institution.role-confirmation.post`, `institution.role-revocation.post` i `ops.events.get`; `tests/contracts/contract-only.test.ts` čuva da popis odgovara montiranim rutama. Popis ruta s pojedinostima je u ugovoru (`server/contracts/routes/`) i u [server/http/README.md](server/http/README.md), a ranija zbirka u [docs/vs1-rute.md](docs/vs1-rute.md).
 
-Stari kostur `server/app.ts` ima `GET /api/documents`, `GET` i `PUT /api/documents/:id`; ostaje samo kao dimni test i ne pokreće se kao server.
+Stare rute kostura `/api/documents` uklonjene su (DAN-1537) i odgovaraju 404.
 
 Unutarnje rute poslužitelj–poslužitelj (Aplication_server → Institution_server, ugovor Ductus#2028 c.6993786629 §2) montira `server/server.ts`: `POST /internal/v1/institutions` i `GET /internal/v1/institutions/{slug}` (`server/http/internal-institutions.ts`). Traže `Authorization: Bearer` jednak varijabli `DUCTURA_PROVISIONING_TOKEN` (najmanje 32 znaka, samo iz okoline); bez nje obje vraćaju 404. Nisu dio javnog ugovora `/api/v1`. Prijavljeni račun čita `GET /api/v1/me` (§3.3).
 
@@ -154,4 +156,4 @@ Ugovor je izvor koda (DAN-736, Ductura U4). Svaka ruta ima shemu u `server/contr
 
 Promjena koja lomi postojeće klijente nije dopuštena unutar iste glavne verzije. CI na svakom PR-u pokreće `pnpm contracts:breaking` prema ciljnoj grani. Zaštita je zatvorena prema zadanome (Ductus#87, c.6880838648): sheme se normaliziraju (sortirani ključevi, bez `description`, `example`, `examples` i `title`), a svaka preostala razlika postojeće rute, parametra, polja, statusa (i statusa greške), zaglavlja ili `x-*` ključa ruši CI, bez zaključivanja o tome sužava li ili proširuje (`anyOf`, `format`, ograničenja). Sigurne su samo: nova ruta ili metoda; novo neobavezno polje u odgovoru; novo neobavezno polje u zahtjevu kad je objekt i prije i poslije zatvoren (`additionalProperties: false`), jer ga nijedan stari zahtjev nije mogao poslati; promjena `description`, `example`, `examples` ili `title`. Nalaz je oblika `GET /api/v1/x <JSON pointer>: field removed`. Lomljiva promjena je nova glavna verzija, novi dokument i nova putanja.
 
-Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Svaka datoteka inventara ima shemu; popis `PENDING` je prazan i smije se samo smanjivati. Trenutačna verzija ugovora je 1.142.0 (`server/contracts/version.ts`).
+Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Svaka datoteka inventara ima shemu; popis `PENDING` je prazan i smije se samo smanjivati. Trenutačna verzija ugovora je 1.146.0 (`server/contracts/version.ts`).

@@ -20,7 +20,9 @@ export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
+export { createQualitativeCodesRoutesFor } from "./qualitative-codes.ts";
 export { createThesisRoutesFor } from "./thesis/index.ts";
+export { createThesisTopicRoutesFor } from "./thesis-topic/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -104,6 +106,8 @@ export {
 } from "./teacher-submissions-bulk/index.ts";
 export {
   createSubmissionPackageRoutes,
+  createSheetCsvRoute,
+  createSheetCsvRouteFor,
   createSubmissionPackageRoutesFor,
   createWorkPdfRouteFor,
   type SubmissionPackageRouteDeps,
@@ -208,6 +212,7 @@ export {
 } from "./declaration-required.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
+export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
 export {
   createDeclarationQuestionRoutes,
   createDeclarationQuestionRoutesFor,
@@ -295,6 +300,7 @@ export {
   createLayers,
   createPipeline,
   PIPELINE_STEPS,
+  trafficLogFor,
   type App,
   type Layer,
   type Layers,

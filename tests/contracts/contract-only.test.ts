@@ -64,7 +64,9 @@ import {
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
+  createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
+  createThesisTopicRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
@@ -290,6 +292,13 @@ const SRV_V19_RECENZIJA = [
   "student.peer-review.post",
   "student.peer-reviews-received.get",
 ];
+// SRV-V18-KODIRANJE-SIFRARNIK: the four routes of the codebook of qualitative coding.
+const SRV_V18_SIFRARNIK = [
+  "student.qual-codes.get",
+  "student.qual-codes.post",
+  "student.qual-code.patch",
+  "student.qual-code.delete",
+];
 const SRV_MENTOR_2 = [
   "institution.thesis-forms.get",
   "institution.thesis-forms.post",
@@ -301,6 +310,11 @@ const SRV_MENTOR_2 = [
   "work.mentor-consent.put",
   "work.thesis-stage.get",
   "work.thesis-stage.put",
+];
+const SRV_V16_TEMA = [
+  "work.thesis-topic.get",
+  "work.thesis-topic.put",
+  "work.thesis-topic-decision.post",
 ];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
@@ -665,9 +679,19 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createPeerReviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createQualitativeCodesRoutesFor(databases.main)",
+    ids: SRV_V18_SIFRARNIK,
+    routes: () => createQualitativeCodesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createThesisRoutesFor(databases.main)",
     ids: SRV_MENTOR_2,
     routes: () => createThesisRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisTopicRoutesFor(databases.main)",
+    ids: SRV_V16_TEMA,
+    routes: () => createThesisTopicRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -1138,7 +1162,9 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,
       ...SRV_V19_RECENZIJA,
+      ...SRV_V18_SIFRARNIK,
       ...SRV_MENTOR_2,
+      ...SRV_V16_TEMA,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
