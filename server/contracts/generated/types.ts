@@ -2584,6 +2584,13 @@ export type Operations = {
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
+  "work.revision-due.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "returned": { "round": number; "revisionDueAt": string | null; "returnedAt": string } | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "work.sealed-self-note.delete": {
     params: { "documentId": string };
     query: undefined;
