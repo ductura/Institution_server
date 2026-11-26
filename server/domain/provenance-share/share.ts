@@ -30,6 +30,14 @@ export type ShareInput = {
   readonly initialDocument: unknown;
   /** Every event from revision 0 to the submitted revision, in chain order. */
   readonly events: readonly ShareEvent[];
+  /**
+   * The `captureContext.transactionFormat` of every segment those events come
+   * from, as recorded (SRV-V14-PROJEKCIJE-FORMAT). Each must be the text
+   * format of the work's document version; any other (a spreadsheet or slides
+   * format) gives `unsupported_format`, never a share counted from steps this
+   * model does not read.
+   */
+  readonly transactionFormats: readonly unknown[];
   /** The canonical document of the submitted revision, from the reconstruction. */
   readonly submittedDocument: unknown;
 };
@@ -158,6 +166,20 @@ function applyStep(document: TokenDocument, step: EditStepV3, category: ShareCat
   }
 }
 
+/**
+ * Whether the segments were recorded in the one text format the work takes
+ * (`ductus-edit-steps-v1` for v1 and v2, `-v3` for v3). `applyStep` reads
+ * ProseMirror steps only, so a segment in another format is refused before any
+ * step is read, whatever its steps look like. Events with no recorded format
+ * at all are refused as well: they cannot be shown to be text.
+ */
+function recordedAsTextOf(version: unknown, formats: unknown, eventCount: number): boolean {
+  const expected = evidenceTransactionFormatOfWork(version);
+  if (expected === null || !Array.isArray(formats)) return false;
+  if (eventCount > 0 && formats.length === 0) return false;
+  return formats.every((format) => format === expected);
+}
+
 function codePointLength(text: string): number {
   let length = 0;
   for (let i = 0; i < text.length; i++) {
@@ -239,6 +261,9 @@ export function computeProvenanceShare(input: ShareInput): ShareResult {
   // Submission reconstruction uses the v2 replayer for v2 documents. Its
   // parser also reads the text-only steps supported by the v1 format.
   const format = version === 2 ? EDIT_STEP_FORMAT_V2 : evidenceTransactionFormatOfWork(version);
+  if (!recordedAsTextOf(version, input.transactionFormats, input.events.length)) {
+    return { ok: false, reason: "unsupported_format" };
+  }
 
   const document = new TokenDocument(runs);
   for (const event of input.events) {

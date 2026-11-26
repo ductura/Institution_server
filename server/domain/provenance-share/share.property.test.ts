@@ -7,7 +7,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { revisionZeroDocument } from "../document/index.ts";
+import { EDIT_STEP_FORMAT_V1, revisionZeroDocument } from "../document/index.ts";
 import { canonicalizeJcs } from "../forensics/index.ts";
 
 import { SHARE_CATEGORIES, type ShareCategory } from "./constants.ts";
@@ -171,6 +171,7 @@ describe("computeProvenanceShare over random chains", () => {
         const { events, blocks } = chain(ops);
         const input = {
           initialDocument: revisionZeroDocument(),
+          transactionFormats: [EDIT_STEP_FORMAT_V1],
           events,
           submittedDocument: documentOf(blocks),
         };
@@ -208,6 +209,7 @@ describe("computeProvenanceShare over random chains", () => {
         target.chars.push({ text: "x", category: "written" });
         const result = computeProvenanceShare({
           initialDocument: revisionZeroDocument(),
+          transactionFormats: [EDIT_STEP_FORMAT_V1],
           events,
           submittedDocument: documentOf(blocks),
         });
