@@ -162,6 +162,18 @@ export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
 export { questionnaireExportRoutes } from "./questionnaire-export.ts";
 export { qualitativeMaterialsRoutes } from "./qualitative-materials.ts";
+export {
+  QUAL_EXPORT_SEGMENTS_MAX,
+  QUAL_MEMO_MAX,
+  QUAL_QUOTE_MAX,
+  QUAL_SEGMENTS_MAX,
+  QUALITATIVE_EXPORT_SCHEMA,
+  qualitativeSegmentsRoutes,
+  studentQualExportGet,
+  studentQualSegmentDelete,
+  studentQualSegmentsGet,
+  studentQualSegmentsPost,
+} from "./qualitative-segments.ts";
 export { originThresholdsRoutes } from "./origin-thresholds.ts";
 export { facultyRulesRoutes } from "./faculty-rules.ts";
 export {
