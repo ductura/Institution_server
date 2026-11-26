@@ -180,15 +180,27 @@ export function createSuggestionRoutesFor(main: { withActor: WithActor }): Route
         return sendProblem(response, 422, "invalid_input");
       }
       const suggestionId = read.input.suggestionId as string;
-      const result = await store.accept(read.token, suggestionId, applySuggestionToLive);
-      if (result.status !== "ok") return answerRefusal(response, ACCEPT, result);
-      return answer(response, ACCEPT, {
-        suggestionId,
-        state: "accepted",
-        baseHash: result.baseHash,
-        text: result.applied.text,
-        change: result.applied.change,
+      const schema = successOf(ACCEPT);
+      // The answer is built and checked inside the transaction: one outside
+      // the contract throws, the decision rolls back (503) and the suggestion
+      // stays pending, so an accept is never kept without its text.
+      const result = await store.accept(read.token, suggestionId, (suggestion) => {
+        const applied = applySuggestionToLive(suggestion);
+        if (applied === undefined) return undefined;
+        const body = {
+          suggestionId,
+          state: "accepted",
+          baseHash: suggestion.baseHash,
+          text: applied.text,
+          change: applied.change,
+        };
+        if (schema === undefined || !Value.Check(schema, body)) {
+          throw new Error("suggestion answer outside the contract");
+        }
+        return body;
       });
+      if (result.status !== "ok") return answerRefusal(response, ACCEPT, result);
+      return answer(response, ACCEPT, result.applied);
     },
   };
 

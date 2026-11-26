@@ -119,13 +119,20 @@ export const suggestionsPost = defineRoute({
   errors: [...COMMON_ERRORS, error(403, "forbidden"), error(409, "conflict")],
 });
 
+/**
+ * An offset of the applied change. The quote may have moved past the bound of
+ * an input anchor since the suggestion was made, so it is bounded by the
+ * largest live state instead: a UTF-16 offset of a text in at most 2 MiB of
+ * UTF-8 (collaboration.live_state) is at most 2 MiB.
+ */
+const ChangeOffset = Type.Integer({ minimum: 0, maximum: 2 * 1024 * 1024 });
 /** The recorded change of an accepted suggestion (SuggestionChange): UTF-16 offsets in the node's text. */
 const SuggestionChange = closed({
   source: Type.Literal("teacher-suggestion"),
   suggestionId: SuggestionId,
   nodeId: NodeId,
-  start: Offset,
-  end: Offset,
+  start: ChangeOffset,
+  end: ChangeOffset,
   removed: Type.String(),
   inserted: Type.String(),
 });

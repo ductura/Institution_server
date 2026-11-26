@@ -141,6 +141,14 @@ INSERT INTO ref SELECT 's2', pg_temp.suggest('vesna', 'doc-a', '');
 INSERT INTO ref SELECT 's3', pg_temp.suggest('vesna', 'doc-a', 'treći odlomak');
 SELECT ok((SELECT val FROM ref WHERE name = 's1') ~ '^[0-9a-f-]{36}$', 'the teacher of the work suggests a text');
 SELECT ok((SELECT val FROM ref WHERE name = 's2') ~ '^[0-9a-f-]{36}$', 'an empty text (removing the quote) is a suggestion');
+-- The bound of 500 is counted under a transaction lock of the work, so two
+-- creates of the same work wait for each other and cannot both pass at 499.
+SELECT ok(EXISTS (
+    SELECT 1 FROM pg_locks l,
+      LATERAL (SELECT hashtextextended('collaboration.suggestion:' || pg_temp.id('fak_a') || ':doc-a', 0) AS k) h
+     WHERE l.locktype = 'advisory' AND l.pid = pg_backend_pid() AND l.granted AND l.objsubid = 1
+       AND l.classid::bigint = (h.k >> 32) & 4294967295 AND l.objid::bigint = h.k & 4294967295),
+  'a create holds the transaction lock of its work while it counts the bound');
 SELECT is(pg_temp.listed('vesna'),
   'drugi odlomak|pending|t|t|t|f;|pending|t|t|t|f;treći odlomak|pending|t|t|t|f',
   'the teacher reads her suggestions, oldest first, pending, bound to the state');
@@ -173,17 +181,19 @@ SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), a.actio
   FROM (VALUES ('withdraw', 'an unknown decision'), ('', 'an empty decision'), (NULL, 'no decision')) a(action, why);
 SELECT is(pg_temp.stored(), 'drugi odlomak|pending;|pending;treći odlomak|pending', 'no refused decision changed anything');
 
--- 7. One decision each: accept answers the live state, reject none; a second is refused.
+-- 7. One decision each: accept answers the live state, reject none; a second is
+-- refused. The first decision of the session that reaches its answer is a
+-- reject, so the answer of a reject cannot lean on an accept before it.
+SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'reject'), 'doc-a||f|f',
+  'the owner rejects; a rejection carries no state');
+SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'accept'), 'ZD409: not allowed',
+  'a rejected suggestion is not accepted afterwards');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'accept'), 'doc-a|drugi odlomak|t|t',
   'the owner accepts and receives the live state the suggestion applies to');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'accept'), 'ZD409: not allowed',
   'an accepted suggestion is not accepted twice');
 SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's1'), 'reject'), 'ZD409: not allowed',
   'an accepted suggestion is not rejected afterwards');
-SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'reject'), 'doc-a||f|f',
-  'the owner rejects; a rejection carries no state');
-SELECT is(pg_temp.decide('ana', (SELECT val FROM ref WHERE name = 's2'), 'accept'), 'ZD409: not allowed',
-  'a rejected suggestion is not accepted afterwards');
 SELECT is(pg_temp.listed('vesna'),
   'drugi odlomak|accepted|t|t|t|t;|rejected|t|t|t|t;treći odlomak|pending|t|t|t|f',
   'the teacher reads the decisions with their window');

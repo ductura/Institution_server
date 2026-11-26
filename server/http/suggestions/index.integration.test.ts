@@ -256,6 +256,26 @@ describe("collaboration.suggestion-accept.post", () => {
     expect(rolledBack).toHaveLength(1);
   });
 
+  it("applies a quote that moved past the bound of an input anchor", async () => {
+    // The student wrote over a million characters before the quote after the
+    // suggestion was made; the answer still fits the contract and is 200.
+    const moved = `${"a".repeat(1_000_010)} ima tri trga.`;
+    answers = {
+      decideSuggestion: [
+        {
+          ...decided[0],
+          liveBody: snapshot(moved),
+          liveHash: createHash("sha256").update(snapshot(moved)).digest("hex"),
+        },
+      ],
+    };
+    const response = await post("/accept", { suggestionId: ID });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { change: { start: number; end: number } };
+    expect(body.change).toMatchObject({ start: 1_000_015, end: 1_000_023 });
+    expect(rolledBack).toHaveLength(0);
+  });
+
   it("a live state that is not its hash's bytes is not applied", async () => {
     answers = { decideSuggestion: [{ ...decided[0], liveHash: "0".repeat(64) }] };
     expect(await codeOf(await post("/accept", { suggestionId: ID }))).toEqual([409, "conflict"]);
