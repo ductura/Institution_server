@@ -2,3 +2,4 @@
 // (ARCHITECTURE §2: web and worker share modules, each has its own
 // composition root). Other areas import only this file.
 export * from "./signing/index.ts";
+export * from "./submission-verdict/index.ts";
