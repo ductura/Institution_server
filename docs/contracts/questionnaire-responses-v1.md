@@ -1,6 +1,6 @@
 # Ispunjavanje upitnika v1
 
-Zadatak: SRV-V18-UPITNIK-ISPUNJAVANJE `srv-v18-upitnik-ispunjavanje` (Ductus#2058, nalog c.7173075839; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1 i V18-2, §5 zadatak 3). Status: **aditivno, unatrag kompatibilno** (API 1.147.0, četiri nove rute, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-BAZA i SRV-V18-UPITNIK-AUTOR (API 1.142.0) (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`). Upitnike izrađuje i objavljuje SRV-V18-UPITNIK-AUTOR; izvoz je SRV-V18-UPITNIK-IZVOZ.
+Zadatak: SRV-V18-UPITNIK-ISPUNJAVANJE `srv-v18-upitnik-ispunjavanje` (Ductus#2058, nalog c.7173075839; val 18, `docs/nalazi/val18-razlika.md` §3 V18-1 i V18-2, §5 zadatak 3). Status: **aditivno, unatrag kompatibilno** (API 1.150.0, četiri nove rute, bez novih kodova grešaka). Ovisi o SRV-V18-UPITNIK-BAZA i SRV-V18-UPITNIK-AUTOR (API 1.142.0) (migracija `20261219380000_questionnaire.sql`, adapter `createQuestionnaireStore`). Upitnike izrađuje i objavljuje SRV-V18-UPITNIK-AUTOR; izvoz je SRV-V18-UPITNIK-IZVOZ.
 
 ## Načela
 
