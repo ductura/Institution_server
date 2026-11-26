@@ -1,40 +1,46 @@
-# B0.2: mjerenje rekonstrukcije na poslužitelju
+// node spikes/b0.2-reconstruction/run.ts <machine-label> [--out results.json]
+// Prints one line per scenario and, with --out, writes the measurements.
+import { writeFileSync } from "node:fs";
+import os from "node:os";
 
-F4-PM2-R22, M3.4 (DAN-388). Mjeri rekonstrukciju rada od 15.000 riječi (pilot) i 80.000 riječi (doktorski, izvan pilota) kodom poslužitelja iz `server/evidence/reconstruction`: puni replay, izgradnju kontrolnih točaka i čitanje nastavljeno od zadnje točke. Zapis je izmišljen (jedan odlomak koji raste po 20 izmišljenih riječi po odsječku); nema baze, mreže ni pravih radova.
+import { DOCTORAL_WORDS, measure, PILOT_WORDS, type Scenario } from "./measure.ts";
 
-```sh
-node --test spikes/b0.2-reconstruction/measure.test.ts
-node spikes/b0.2-reconstruction/run.ts <oznaka-stroja> --out spikes/b0.2-reconstruction/results/<oznaka-stroja>.json
-```
+const label = process.argv[2];
+if (label === undefined || label.startsWith("--")) {
+  console.error("usage: node spikes/b0.2-reconstruction/run.ts <machine-label> [--out file]");
+  process.exit(2);
+}
+const outAt = process.argv.indexOf("--out");
+const out = outAt > 0 ? process.argv[outAt + 1] : undefined;
 
-## Što ovo NIJE
-
-**Ovo nije mjerenje na stroju koji se kupuje.** M3.4 ovisi o B0.1 (D-08, računi dobavljača; radnja vlasnika) i stvarnom stroju. Brojke ispod su sa strojem iz oblaka (4 vCPU, 16 GB, Node v24) i samo su osnovica. Kad B0.1 dovrši stroj, isti se alat ponovno pokreće na njemu (`<oznaka-stroja>` = naziv tipa VM-a) i M3.4 se tek tada zatvara.
-
-Dodatna ograničenja:
-
-- Replayer iz `record.fixture.ts` samo dodaje tekst u jedan odlomak. Stvarni ProseMirror/Tiptap replay s više čvorova i oznaka izmjeren je u Ductusu (`spikes/b0.2-reconstruction`, `docs/spikes/B0.2.md`) i skuplji je po koraku; ovdje se mjeri tek trošak lanca, hashiranja i kanonskog oblika na poslužitelju.
-- Vršak heapa uključuje sam izgrađeni zapis i smeće koje GC nije pokupio, pa je gornja procjena, ne trajna potrošnja.
-- Jedan prolaz po scenariju, bez zagrijavanja; vrijeme je orijentacijsko.
-
-## Rezultati osnovice (oblak, 4 vCPU)
-
-`results/oblak-sesija-bez-stroja.json`.
-
-| Riječi | Odsječaka | Točka svakih | Puni replay | Čitanje od zadnje točke | Točaka / volumen | Vršak heapa |
-| -----: | --------: | -----------: | ----------: | ----------------------: | ---------------: | ----------: |
-| 15.000 |       750 |           50 |      356 ms |        53 ms (50 odsj.) |     15 / 1,1 MiB |     233 MiB |
-| 15.000 |       750 |          200 |      312 ms |      115 ms (150 odsj.) |      3 / 0,2 MiB |     272 MiB |
-| 80.000 |     4.000 |           50 |   10.111 ms |       259 ms (50 odsj.) |    80 / 33,2 MiB |   3.367 MiB |
-| 80.000 |     4.000 |          200 |   12.411 ms |    1.032 ms (200 odsj.) |     20 / 8,6 MiB |   4.628 MiB |
-
-## Zaključci (za provjeru na pravom stroju)
-
-- 15.000 riječi: puni replay oko 0,3 s, daleko ispod 2 s granice Edge Functions iz `docs/backend/pregled.md`; argument CPU-a protiv takvih dobavljača za pilot ne stoji.
-- 80.000 riječi: puni replay raste kvadratno (svaki odsječak nosi cijeli dokument), oko 10 do 12 s i nekoliko GiB heapa. Za doktorske radove kontrolne točke nisu optimizacija, nego uvjet: čitanje od točke svakih 50 odsječaka je oko 0,26 s.
-- Cijena točaka je volumen (33 MiB uz 80.000 riječi i razmak 50, 8,6 MiB uz 200). Razmak se bira uz B0.3; ovdje se ne odlučuje.
-
-## Otvoreno
-
-- Ponavljanje na stroju iz B0.1 (radnja vlasnika; zatvara M3.4).
-- Mjerenje s pravim editor replayerom na SRV-u, ako ga zadatak kasnije traži.
+const scenarios: Scenario[] = [PILOT_WORDS, DOCTORAL_WORDS].flatMap((words) =>
+  [50, 200].map((checkpointEvery) => ({ words, wordsPerSegment: 20, checkpointEvery })),
+);
+const results = [];
+for (const scenario of scenarios) {
+  const result = await measure(scenario);
+  results.push(result);
+  console.log(
+    `${scenario.words} words, ${result.segments} segments, checkpoint every ${scenario.checkpointEvery}: ` +
+      `full ${result.fullReplayMs} ms, resumed ${result.resumedReplayMs} ms (${result.resumedSegments} segments), ` +
+      `checkpoints ${result.checkpointCount} / ${(result.checkpointVolumeBytes / 1024 / 1024).toFixed(1)} MiB, ` +
+      `heap stage max ${(result.heapStageMaxBytes / 1024 / 1024).toFixed(0)} MiB`,
+  );
+}
+if (out !== undefined) {
+  writeFileSync(
+    out,
+    JSON.stringify(
+      {
+        label,
+        node: process.version,
+        cpu: os.cpus()[0]?.model ?? "unknown",
+        cpus: os.cpus().length,
+        memoryBytes: os.totalmem(),
+        results,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+}

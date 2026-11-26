@@ -39,7 +39,8 @@ export type Measurement = {
   /** Replay from the last checkpoint before the end of the record. */
   resumedReplayMs: number;
   resumedSegments: number;
-  heapPeakBytes: number;
+  /** Largest heap size seen at the boundaries between stages; not a true peak. */
+  heapStageMaxBytes: number;
 };
 
 /** `Izmisljena rijec n ` repeated: invented words only. */
@@ -107,6 +108,9 @@ export async function measure(scenario: Scenario, record?: InventedRecord): Prom
   if (!resumed.ok || resumed.documentSha256 !== full.documentSha256) {
     throw new Error("resumed replay does not give the full replay's document");
   }
+  if (before !== null && (resumed.source !== "checkpoint" || resumed.fallback !== null)) {
+    throw new Error(`checkpoint was not used (fallback: ${resumed.fallback ?? "none"})`);
+  }
 
   return {
     scenario,
@@ -117,7 +121,7 @@ export async function measure(scenario: Scenario, record?: InventedRecord): Prom
     checkpointCount: checkpoints.length,
     checkpointVolumeBytes: volume,
     resumedReplayMs,
-    resumedSegments: last - (before?.revision ?? 0),
-    heapPeakBytes: heapPeak,
+    resumedSegments: last - resumed.startRevision,
+    heapStageMaxBytes: heapPeak,
   };
 }

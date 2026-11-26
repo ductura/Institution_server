@@ -19,7 +19,7 @@
       "checkpointVolumeBytes": 1199166,
       "resumedReplayMs": 53.29,
       "resumedSegments": 50,
-      "heapPeakBytes": 244725672
+      "heapStageMaxBytes": 244725672
     },
     {
       "scenario": {
@@ -35,7 +35,7 @@
       "checkpointVolumeBytes": 238833,
       "resumedReplayMs": 115.3,
       "resumedSegments": 150,
-      "heapPeakBytes": 284690616
+      "heapStageMaxBytes": 284690616
     },
     {
       "scenario": {
@@ -51,7 +51,7 @@
       "checkpointVolumeBytes": 34800591,
       "resumedReplayMs": 258.81,
       "resumedSegments": 50,
-      "heapPeakBytes": 3530064624
+      "heapStageMaxBytes": 3530064624
     },
     {
       "scenario": {
@@ -67,7 +67,7 @@
       "checkpointVolumeBytes": 9026898,
       "resumedReplayMs": 1031.64,
       "resumedSegments": 200,
-      "heapPeakBytes": 4852795632
+      "heapStageMaxBytes": 4852795632
     }
   ]
 }

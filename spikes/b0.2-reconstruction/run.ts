@@ -24,7 +24,7 @@ for (const scenario of scenarios) {
     `${scenario.words} words, ${result.segments} segments, checkpoint every ${scenario.checkpointEvery}: ` +
       `full ${result.fullReplayMs} ms, resumed ${result.resumedReplayMs} ms (${result.resumedSegments} segments), ` +
       `checkpoints ${result.checkpointCount} / ${(result.checkpointVolumeBytes / 1024 / 1024).toFixed(1)} MiB, ` +
-      `heap peak ${(result.heapPeakBytes / 1024 / 1024).toFixed(0)} MiB`,
+      `heap stage max ${(result.heapStageMaxBytes / 1024 / 1024).toFixed(0)} MiB`,
   );
 }
 if (out !== undefined) {
