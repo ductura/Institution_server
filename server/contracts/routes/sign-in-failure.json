@@ -1,6 +1,6 @@
 {
   "format": "ductura-sign-in-failure-v1",
-  "page": "/prijava",
+  "page": "/aplikacija/prijava",
   "param": "greska",
   "codes": [
     { "code": "login_failed", "messageKey": "auth.failedBody" },

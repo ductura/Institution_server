@@ -170,7 +170,7 @@ function location(response: Response, base: string): string {
 /** Login on the server, the account form on the provider, and back: the callback answer. */
 async function signIn(origin: string, account = "demo-student") {
   const b = browser();
-  const start = await b.get(`${origin}/api/v1/auth/login?returnTo=/radovi`);
+  const start = await b.get(`${origin}/api/v1/auth/login?returnTo=/aplikacija/radovi`);
   expect(start.status).toBe(303);
   expect(b.jar.has(LOGIN_COOKIE_NAME)).toBe(true);
   const authorize = location(start, origin);
@@ -196,7 +196,7 @@ async function expectFailureRedirect(
   logged: string[],
 ) {
   expect(answer.status).toBe(303);
-  expect(answer.headers.get("location")).toBe(`${origin}/prijava?greska=${code}`);
+  expect(answer.headers.get("location")).toBe(`${origin}/aplikacija/prijava?greska=${code}`);
   expect(answer.headers.get("cache-control")).toBe("no-store");
   const cookies = answer.headers.getSetCookie();
   expect(cookies.some((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`))).toBe(false);
@@ -278,7 +278,7 @@ describe("the login routes over HTTP", () => {
   it("build the callback URL from the configuration, never from Host", async () => {
     const { origin, opened } = await stack("success");
     const b = browser();
-    const start = await b.get(`${origin}/api/v1/auth/login?returnTo=/radovi`);
+    const start = await b.get(`${origin}/api/v1/auth/login?returnTo=/aplikacija/radovi`);
     const authorize = location(start, origin);
     const interaction = location(await b.get(authorize), authorize);
     const resume = location(
@@ -315,7 +315,7 @@ describe("the login routes over HTTP", () => {
     expect((await b.get(back)).status).toBe(303);
     const replay = await b.get(back);
     expect(replay.status).toBe(303);
-    expect(replay.headers.get("location")).toBe(`${origin}/prijava?greska=login_failed`);
+    expect(replay.headers.get("location")).toBe(`${origin}/aplikacija/prijava?greska=login_failed`);
     expect(opened).toHaveLength(1);
   });
 

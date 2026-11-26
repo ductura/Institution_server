@@ -28,7 +28,7 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
 
 ## Neuspjela prijava (DAN-1081)
 
-`routes/sign-in-failure.json` kaže kamo vodi neuspjela prijava. Odredište je 303 na `page` (`/prijava`) s parametrom `param` (`greska`) i jednom oznakom iz `codes`; oznake su točno dvije i svaka ima ključ teksta u `locales/`:
+`routes/sign-in-failure.json` kaže kamo vodi neuspjela prijava. Odredište je 303 na `page` (`/aplikacija/prijava`) s parametrom `param` (`greska`) i jednom oznakom iz `codes`; oznake su točno dvije i svaka ima ključ teksta u `locales/`:
 
 - `login_failed` → `auth.failedBody`;
 - `provider_unavailable` → `auth.unavailableBody`.
