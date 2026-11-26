@@ -1,6 +1,6 @@
 // SRV-ED43-DORADA-POSALJI: the HTTP edge of POST /api/v1/revision-send. The
 // database is a stand-in here; who may send, which round and the repeated send
-// are proven against PostgreSQL in db/main/tests/258-collaboration-revision-send.sql.
+// are proven against PostgreSQL in db/main/tests/259-collaboration-revision-send.sql.
 // Every id and text is invented.
 import { readFileSync } from "node:fs";
 

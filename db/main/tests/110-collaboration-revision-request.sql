@@ -58,7 +58,7 @@ SELECT bag_eq(
   $$ SELECT relname::text FROM pg_class WHERE relnamespace = 'collaboration'::regnamespace AND relkind = 'r'
       AND relname::text LIKE 'revision%' AND relowner = 'ductus_identity'::regrole AND relrowsecurity AND relforcerowsecurity $$,
   $$ VALUES ('revision_request'), ('revision_request_version'), ('revision_response'), ('revision_send') $$,
-  'the identity role owns the three request tables and the rounds of 258, and RLS is forced on each');
+  'the identity role owns the three request tables and the rounds of 259, and RLS is forced on each');
 SELECT bag_eq(
   $$ SELECT tablename::text, policyname::text, roles::text, cmd FROM pg_policies
       WHERE schemaname = 'collaboration' AND tablename::text LIKE 'revision%' $$,

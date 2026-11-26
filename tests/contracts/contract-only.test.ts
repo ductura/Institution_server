@@ -67,6 +67,8 @@ import {
   createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createRevisionRequestsRouteFor,
@@ -255,6 +257,7 @@ const SRV_1407 = [
 const SRV_1408 = [
   "institution.teaching-team.get",
   "institution.teaching-team-view.get",
+  "institution.teaching-team-candidates.get",
   "institution.teaching-team.post",
   "institution.teaching-group-members.put",
 ];
@@ -316,6 +319,8 @@ const SRV_V16_TEMA = [
   "work.thesis-topic.put",
   "work.thesis-topic-decision.post",
 ];
+const SRV_V16_POVJERENSTVO = ["work.thesis-committee.get", "work.thesis-committee.put"];
+const SRV_V16_POPIS = ["institution.thesis-overview.get"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -692,6 +697,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createThesisTopicRoutesFor(databases.main)",
     ids: SRV_V16_TEMA,
     routes: () => createThesisTopicRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisCommitteeRoutesFor(databases.main)",
+    ids: SRV_V16_POVJERENSTVO,
+    routes: () => createThesisCommitteeRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createThesisOverviewRoutesFor(databases.main)",
+    ids: SRV_V16_POPIS,
+    routes: () => createThesisOverviewRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -1165,6 +1180,8 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_V18_SIFRARNIK,
       ...SRV_MENTOR_2,
       ...SRV_V16_TEMA,
+      ...SRV_V16_POVJERENSTVO,
+      ...SRV_V16_POPIS,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",

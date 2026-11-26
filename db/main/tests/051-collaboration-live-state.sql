@@ -157,7 +157,7 @@ SELECT bag_eq(
             ('collaboration.delete_self_note_key()'),
             ('collaboration.delete_self_note_key_checked(uuid,integer)'),
             ('collaboration.send_revision(text,text)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 258');
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks) and the three import RPCs of 202 and the comment on a revision of 231 and the three consultation task RPCs of 232 and the seven note-to-self, seen and overview RPCs of 237 (the note sealed by 242) and the three note-key RPCs of 242 and the checked key delete of 243 and the revision send of 259');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,

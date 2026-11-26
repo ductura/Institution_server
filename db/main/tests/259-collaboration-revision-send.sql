@@ -1,5 +1,5 @@
 -- SRV-ED43-DORADA-POSALJI (Ductus#2058, BLOK ED-43): the student owner sends
--- the revision for review (collaboration.send_revision, 20261220160000). The
+-- the revision for review (collaboration.send_revision, 20261220180000). The
 -- table and its grants, who may send, the round, the repeated send that never
 -- skips a round, the message rule, the submitted work and the retention
 -- delete. Personas of institution.inc and evidence-acceptance.inc, all
@@ -56,6 +56,17 @@ SELECT ok(p.prosecdef AND p.proowner = 'ductus_identity'::regrole AND 'search_pa
     AND NOT has_function_privilege('ductus_retention', p.oid, 'EXECUTE'),
   'send_revision is a definer RPC with an empty path, only for the application')
   FROM pg_proc p WHERE p.oid = to_regprocedure('collaboration.send_revision(text,text)');
+-- The send lock (QA on #796): the evidence role owns it, only the identity role runs it.
+SELECT ok(p.prosecdef AND p.proowner = 'ductus_evidence'::regrole AND 'search_path=""' = ANY(p.proconfig)
+    AND has_function_privilege('ductus_identity', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_retention', p.oid, 'EXECUTE'),
+  'lock_document_for_send is a definer function of the evidence role, executable only by the identity role')
+  FROM pg_proc p WHERE p.oid = to_regprocedure('collaboration.lock_document_for_send(text)');
+SELECT ok(NOT has_schema_privilege('ductus_evidence', 'collaboration', 'CREATE'),
+  'after the migration the evidence role keeps no CREATE on the schema');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'collaboration', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT throws_ok($$ SET LOCAL ROLE ductus_app; INSERT INTO collaboration.revision_send

@@ -10,9 +10,18 @@
 -- When (the only reading of "an open revision request exists" that cannot
 -- skip a round): a send needs a revision request of the work in state open or
 -- reopened whose counter (row_seq, one global sequence) is above the counter
--- the previous send answered. A request created or reopened after the last
--- send has a higher counter, so it starts the next round; sending again with
--- nothing new open is not allowed (ZD409), never a second round.
+-- the previous send answered. Sending again with nothing new open is not
+-- allowed (ZD409), never a second round.
+--
+-- Why the counter is safe (QA on #796): every writer of a request takes
+-- lock_document_for_write (FOR SHARE on the document row) before it draws its
+-- row_seq, and keeps it to its commit. A send takes the document row FOR NO
+-- KEY UPDATE (lock_document_for_send), which waits for every such writer still
+-- open and makes every later one wait for the send. So when the send reads the
+-- requests, each row_seq of the work drawn before it is committed and visible,
+-- and each one drawn after it is higher than any it saw: a request created or
+-- reopened after a round always starts the next round, whatever order two
+-- teachers commit in. The same lock serializes two sends of the same work.
 --
 -- Who (C-23, from the relation, never from the role alone): only the student
 -- owner of the work (collaboration.actor_role = 'student'). A teacher of the
@@ -26,6 +35,33 @@
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA collaboration TO ductus_identity;
+GRANT USAGE, CREATE ON SCHEMA collaboration TO ductus_evidence;
+
+-- The lock of a send, as lock_document_for_write (20261106160000) but FOR NO
+-- KEY UPDATE: it conflicts with the FOR SHARE every request writer holds, and
+-- not with the FOR KEY SHARE of a foreign key check. Owned by the evidence
+-- role and executable only by the identity role. A document outside the
+-- caller's institution is ZD403 (send_revision has answered ZD404 before).
+SET LOCAL ROLE ductus_evidence;
+CREATE FUNCTION collaboration.lock_document_for_send(p_document_id text) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM 1
+    FROM evidence.document d
+    JOIN app.current_actor() a ON a.institution_id = d.institution_id
+   WHERE d.id = p_document_id
+     FOR NO KEY UPDATE OF d;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+END
+$$;
+REVOKE ALL ON FUNCTION collaboration.lock_document_for_send(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION collaboration.lock_document_for_send(text) TO ductus_identity;
+
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_identity;
 
 -- No foreign key to evidence.document, as revision_request: scope, assignment
@@ -53,8 +89,9 @@ CREATE POLICY revision_send_owner ON collaboration.revision_send
   TO ductus_identity USING (true) WITH CHECK (true);
 
 -- The student owner sends the revision for review. Order: session, scope and
--- relation, input, document lock, submitted, the requests (locked, so two
--- sends of the same work wait for each other), the previous round, write.
+-- relation, input, the send lock on the document (waits for every request
+-- writer and every other send of the work still open), submitted, the
+-- previous round, the open requests, write.
 CREATE FUNCTION collaboration.send_revision(p_document_id text, p_message text)
 RETURNS TABLE (round integer)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
@@ -81,13 +118,10 @@ BEGIN
   IF p_message IS NOT NULL AND NOT coalesce(collaboration.is_revision_text(p_message), false) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
-  PERFORM collaboration.lock_document_for_write(p_document_id);
+  PERFORM collaboration.lock_document_for_send(p_document_id);
   IF app.document_submitted(p_document_id) THEN
     RAISE EXCEPTION 'not allowed' USING ERRCODE = 'ZD409';
   END IF;
-  PERFORM 1 FROM collaboration.revision_request q
-   WHERE q.document_id = p_document_id AND q.institution_id = scope.institution_id
-   ORDER BY q.id FOR UPDATE;
   SELECT s.round, s.answered_seq INTO v_last
     FROM collaboration.revision_send s
    WHERE s.document_id = p_document_id AND s.institution_id = scope.institution_id
@@ -135,6 +169,7 @@ $$;
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA collaboration FROM ductus_identity;
+REVOKE USAGE, CREATE ON SCHEMA collaboration FROM ductus_evidence;
 
 -- migrate:down
 -- Local only; staging and production only go forward (docs/BACKEND.md §6).
@@ -160,4 +195,7 @@ DROP FUNCTION collaboration.send_revision(text, text);
 DROP TABLE collaboration.revision_send;
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
+-- The evidence role has no usage on the schema any more; the migrator,
+-- a member of the owner role, drops its function.
+DROP FUNCTION collaboration.lock_document_for_send(text);
 REVOKE CREATE ON SCHEMA collaboration FROM ductus_identity;

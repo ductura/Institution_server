@@ -4,7 +4,7 @@ Prilagodnik između HTTP ruta nastavnog tima i [sloja baze](../../../docs/server
 
 ## Što radi
 
-Poziva tri RPC-a unutar transakcije otvorene iz sesije.
+Poziva RPC-e nastavnog tima (čitanje tima, prikaza i kandidata za asistente te dvije zamjene članstva) unutar transakcije otvorene iz sesije.
 
 ## Tko ga zove
 
@@ -12,7 +12,7 @@ HTTP rute nastavnog tima.
 
 ## Koje podatke dira
 
-Nositelja, popis asistenata i članstvo u seminarskoj grupi.
+Nositelja, popis asistenata, kandidate za asistente (samo ID i ime) i članstvo u seminarskoj grupi.
 
 ## Što izvozi
 
