@@ -13,6 +13,7 @@ export * from "./integrity.ts";
 export * from "./jcs.ts";
 export * from "./ledger.ts";
 export * from "./replay.ts";
+export * from "./review-signals.ts";
 export * from "./signature.ts";
 export * from "./submission-receipt-v2.ts";
 export * from "./submission-receipt-verifier-v2.ts";
