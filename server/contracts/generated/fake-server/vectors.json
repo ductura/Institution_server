@@ -6277,7 +6277,8 @@
             "revokedAt": null
           }
         ],
-        "submitted": false
+        "submitted": false,
+        "lastSignedAt": null
       }
     }
   },
@@ -6326,7 +6327,8 @@
             "revokedAt": null
           }
         ],
-        "submitted": false
+        "submitted": false,
+        "lastSignedAt": null
       }
     }
   },
@@ -6376,7 +6378,8 @@
             "revokedAt": null
           }
         ],
-        "submitted": false
+        "submitted": false,
+        "lastSignedAt": "2026-11-20T09:41:00.000Z"
       }
     }
   },
@@ -6424,7 +6427,8 @@
             "revokedAt": null
           }
         ],
-        "submitted": false
+        "submitted": false,
+        "lastSignedAt": "2026-11-20T09:52:00.000Z"
       }
     }
   },
@@ -37551,7 +37555,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.153.0",
+        "apiVersion": "1.154.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -37567,7 +37571,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.153.0",
+        "apiVersion": "1.154.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
