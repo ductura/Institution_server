@@ -119487,6 +119487,891 @@
     }
   },
   {
+    "route": "work.plan.get",
+    "name": "nothing-kept",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": null,
+        "purposes": [],
+        "terms": [],
+        "updatedAt": null
+      }
+    }
+  },
+  {
+    "route": "work.plan.get",
+    "name": "plan-kept",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ],
+        "updatedAt": "2026-11-26T09:05:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.plan.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000a0"
+      }
+    }
+  },
+  {
+    "route": "work.plan.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    }
+  },
+  {
+    "route": "work.plan.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000a2"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "written",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ],
+        "updatedAt": "2026-11-26T09:05:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "cleared",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": null,
+        "purposes": [],
+        "terms": []
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "question": null,
+        "purposes": [],
+        "terms": [],
+        "updatedAt": null
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b0"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b1"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b2"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1048577"
+      },
+      "rawBody": "{\"threadId\":\"6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000000b3"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "51"
+      },
+      "rawBody": "{\"threadId\":\"6a5b4c3d-2e1"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000000b4"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b5"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "7"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b6"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "51"
+      },
+      "rawBody": "{\"thr"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b7"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"threadId\":\"6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b8"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"threadId\":\"6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000000b9"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000ba"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "invalid-input-empty-purpose",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": ""
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000bb"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "invalid-input-same-block-twice",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000bb"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000bc"
+      }
+    }
+  },
+  {
+    "route": "work.plan.put",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-nacrt-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "question": "Kako se izmišljeni primjer mijenja kroz godine?",
+        "purposes": [
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322110",
+            "purpose": "Uvesti izmišljeno pitanje rada."
+          },
+          {
+            "nodeId": "1f0e2d3c-4b5a-4968-8776-655443322111",
+            "purpose": "Opisati izmišljenu metodu."
+          }
+        ],
+        "terms": [
+          {
+            "term": "Izmišljeni pojam",
+            "definition": "Pojam izmišljen za primjer.",
+            "kind": "term"
+          },
+          {
+            "term": "IKP",
+            "definition": "Izmišljena kratica za primjer.",
+            "kind": "abbreviation"
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
     "route": "work.reading-place.delete",
     "name": "deleted",
     "request": {

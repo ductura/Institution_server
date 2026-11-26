@@ -320,6 +320,8 @@ describe("route inventory", () => {
       "work.seen.post: app/api/works/[documentId]/seen/route.ts is not in the inventory",
       "work.seen-by-student.get: app/api/works/[documentId]/seen-by-student/route.ts is not in the inventory",
       "mentorship.overview.get: app/api/teacher/mentorship-overview/route.ts is not in the inventory",
+      "work.plan.get: app/api/works/[documentId]/plan/route.ts is not in the inventory",
+      "work.plan.put: app/api/works/[documentId]/plan/route.ts is not in the inventory",
       "work.sealed-self-note.get: app/api/works/[documentId]/sealed-self-note/route.ts is not in the inventory",
       "work.sealed-self-note.put: app/api/works/[documentId]/sealed-self-note/route.ts is not in the inventory",
       "work.sealed-self-note.delete: app/api/works/[documentId]/sealed-self-note/route.ts is not in the inventory",

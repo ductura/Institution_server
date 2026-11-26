@@ -65,6 +65,14 @@ const commit = (txid: string, baseRevision: number): Step => ({
 });
 const SELF_NOTE = `/api/v1/works/${IDS.document}/self-note`;
 const READING_PLACE = `/api/v1/works/${IDS.document}/reading-place`;
+const PLAN = `/api/v1/works/${IDS.document}/plan`;
+const PLAN_BODY = {
+  question: "Izmišljeno pitanje rada?",
+  purposes: [{ nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", purpose: "Izmišljena svrha." }],
+  terms: [
+    { term: "Izmišljeni pojam", definition: "Izmišljena definicija.", kind: "term" as const },
+  ],
+};
 const PLACE = { nodeId: "1f0e2d3c-4b5a-4968-8776-655443322110", offset: 12 };
 const NOTE_BODY = { text: "Izmišljena bilješka za sebe.", place: PLACE };
 // SRV-NF6-SIFRA: invented bytes in base64url, of the lengths the contract fixes.
@@ -2329,6 +2337,11 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "student",
       headers: ORIGIN,
     },
+  },
+  // SRV-F4-PM2-R15: the plan of a work behind the panel Struktura.
+  "work.plan.get": { request: { path: PLAN, as: "student" } },
+  "work.plan.put": {
+    request: { method: "PUT", path: PLAN, as: "student", headers: ORIGIN, body: PLAN_BODY },
   },
   "work.reading-place.put": {
     request: {
