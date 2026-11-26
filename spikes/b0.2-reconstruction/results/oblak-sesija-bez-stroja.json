@@ -1,0 +1,73 @@
+{
+  "label": "oblak-sesija-bez-stroja",
+  "node": "v24.22.3",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+  "cpus": 4,
+  "memoryBytes": 16868675584,
+  "results": [
+    {
+      "scenario": {
+        "words": 15000,
+        "wordsPerSegment": 20,
+        "checkpointEvery": 50
+      },
+      "segments": 750,
+      "documentBytes": 153945,
+      "fullReplayMs": 356.2,
+      "checkpointBuildMs": 698.84,
+      "checkpointCount": 15,
+      "checkpointVolumeBytes": 1199166,
+      "resumedReplayMs": 53.29,
+      "resumedSegments": 50,
+      "heapStageMaxBytes": 244725672
+    },
+    {
+      "scenario": {
+        "words": 15000,
+        "wordsPerSegment": 20,
+        "checkpointEvery": 200
+      },
+      "segments": 750,
+      "documentBytes": 153945,
+      "fullReplayMs": 311.67,
+      "checkpointBuildMs": 367.9,
+      "checkpointCount": 3,
+      "checkpointVolumeBytes": 238833,
+      "resumedReplayMs": 115.3,
+      "resumedSegments": 150,
+      "heapStageMaxBytes": 284690616
+    },
+    {
+      "scenario": {
+        "words": 80000,
+        "wordsPerSegment": 20,
+        "checkpointEvery": 50
+      },
+      "segments": 4000,
+      "documentBytes": 868945,
+      "fullReplayMs": 10110.75,
+      "checkpointBuildMs": 23076.68,
+      "checkpointCount": 80,
+      "checkpointVolumeBytes": 34800591,
+      "resumedReplayMs": 258.81,
+      "resumedSegments": 50,
+      "heapStageMaxBytes": 3530064624
+    },
+    {
+      "scenario": {
+        "words": 80000,
+        "wordsPerSegment": 20,
+        "checkpointEvery": 200
+      },
+      "segments": 4000,
+      "documentBytes": 868945,
+      "fullReplayMs": 12411.28,
+      "checkpointBuildMs": 22189.75,
+      "checkpointCount": 20,
+      "checkpointVolumeBytes": 9026898,
+      "resumedReplayMs": 1031.64,
+      "resumedSegments": 200,
+      "heapStageMaxBytes": 4852795632
+    }
+  ]
+}

@@ -95,6 +95,13 @@ const commentView = (standing: boolean) =>
     state: literals(["open", "answered", "resolved"]),
     createdWindow: Window,
     deletedWindow: standing ? Type.Null() : Window,
+    /** Optional in the schema only so older clients stay valid; the server always sends it (null = no kind). */
+    kind: Type.Optional(
+      Type.Union([literals(["must", "sugg", "q", "praise"]), Type.Null()], {
+        description:
+          "The kind a teacher gave the comment when writing it (must, sugg, q, praise; EDI-R20); null for a comment without one and for every student's.",
+      }),
+    ),
     /** Optional in the schema only so older clients stay valid; the server always sends it. */
     revision: Type.Optional(
       Type.Union([Revision, Type.Null()], {

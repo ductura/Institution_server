@@ -115,6 +115,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createAnalysisRoutesFor,
@@ -494,6 +495,11 @@ const SESSION_ROUTES = {
         endHint: 7,
       },
     }),
+    live: 404,
+  },
+  "work.comment-drafts-second.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts/v2`,
+    body: () => ({ text: "Izmišljen opći komentar.", anchor: null, kind: "q" }),
     live: 404,
   },
   "work.comment-draft.delete": {
@@ -2010,6 +2016,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-F4-NAS-R11: a live session that may not read that student's notes gets 404 (ZD403).
+  "teacher.submission-notes.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission-notes`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-ASIST-CITANJE: a live session naming an assignment it is no student of gets 404.
   "student.assistant-conversations.get": {
     method: "GET",
@@ -2844,6 +2857,7 @@ const FACTORIES = [
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createTeacherDeclarationRouteFor",
+  "createTeacherSubmissionNotesRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
   "createAnalysisRoutesFor",
@@ -3003,6 +3017,7 @@ const MOUNTED = [
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createTeacherDeclarationRouteFor(databases.main),
+  createTeacherSubmissionNotesRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
   ...createAnalysisRoutesFor(databases.main, { enabled: true }),

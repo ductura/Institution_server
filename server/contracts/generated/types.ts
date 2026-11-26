@@ -89,7 +89,7 @@ export type Operations = {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;
     body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "body": string; "documentId": string; "revision"?: number } | { "body": string; "threadId": string } | { "threadId": string } | { "commentId": string } | { "documentId": string } | { "anchor": null; "body": string; "documentId": string; "revision"?: number };
-    success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null; "revision"?: number | null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string; "revision"?: number | null })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
+    success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null; "kind"?: "must" | "sugg" | "q" | "praise" | null; "revision"?: number | null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string; "kind"?: "must" | "sugg" | "q" | "praise" | null; "revision"?: number | null })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "not_found" | "unavailable";
   };
   "collaboration.revision-requests.post": {
@@ -1062,7 +1062,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear"?: string; "groups"?: ({ "id": string; "name": string })[]; "teachers"?: ({ "id": string; "givenName": string; "familyName": string; "role": "holder" | "collaborator" })[]; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor"?: { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt"?: string | null; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" })[] })[] }; headers: {  } };
+    success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear"?: string; "groups"?: ({ "id": string; "name": string })[]; "teachers"?: ({ "id": string; "givenName": string; "familyName": string; "role": "holder" | "collaborator" })[]; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "mentor"?: { "id": string; "givenName": string; "familyName": string } | null; "extendedDueAt"?: string | null; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet"; "isPractice"?: boolean })[] })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
   "student.assistant-conversation.get": {
@@ -1160,7 +1160,7 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null; "purposeCatalogVersion"?: number }; headers: {  } };
+    success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null; "purposeCatalogVersion"?: number; "aiSummaryOnly"?: boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "student.peer-review-tasks.get": {
@@ -1940,6 +1940,13 @@ export type Operations = {
     success: { status: 200; body: { "events": ({ "kind": "submission"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "afterDeadline": boolean; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null } | { "kind": "withdrawal"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "receipt": { "payload": { "receiptSchema": "ductus-submission-withdrawal-receipt-v1"; "withdrawalId": string; "submissionId": string; "submissionReceiptSha256": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "withdrawnAt": string; "dueAt": string; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.submission-notes.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "text": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.submission-receipt.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
@@ -2101,11 +2108,18 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
   };
+  "work.comment-drafts-second.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "text": string; "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number } | null; "kind"?: "must" | "sugg" | "q" | "praise" | null };
+    success: { status: 201; body: { "threadId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.comment-drafts.get": {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
+    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "kind"?: "must" | "sugg" | "q" | "praise" | null })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.comment-drafts.post": {

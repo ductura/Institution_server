@@ -3503,6 +3503,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "teacher.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['studentId'] === 'string') &&
+      value['studentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "teacher.submission-receipt.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -3854,6 +3864,35 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['commentId'] === 'string') &&
       local0.test(value['commentId']) &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.comment-drafts-second.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.comment-drafts-second.post:body": (() => {
+  const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+  const local2 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,500}(?![\s\S])/;
+  const local3 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  const local4 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      (((typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) && (typeof nestedAnchor['nodeId'] === 'string') && local1.test(nestedAnchor['nodeId']) && (typeof nestedAnchor['quote'] === 'string') && local2.test(nestedAnchor['quote']) && (typeof nestedAnchor['prefix'] === 'string') && local3.test(nestedAnchor['prefix']) && (typeof nestedAnchor['suffix'] === 'string') && local4.test(nestedAnchor['suffix']) && (typeof nestedAnchor['startHint'] === 'number' && Number.isInteger(nestedAnchor['startHint'])) && nestedAnchor['startHint'] <= 1000000 && nestedAnchor['startHint'] >= 0 && (typeof nestedAnchor['endHint'] === 'number' && Number.isInteger(nestedAnchor['endHint'])) && nestedAnchor['endHint'] <= 1000000 && nestedAnchor['endHint'] >= 0 && Object.getOwnPropertyNames(value['anchor']).length === 6) || ((value['anchor'] === null))) &&
+      (value['kind'] !== undefined ? ((((((value['kind'] === 'must')) || ((value['kind'] === 'sugg')) || ((value['kind'] === 'q')) || ((value['kind'] === 'praise')))) || ((value['kind'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['text', 'anchor', 'kind'].includes(key))
     )
   }
   })(),

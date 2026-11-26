@@ -926,6 +926,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
+  "app/api/works/[documentId]/comment-drafts/v2/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2058 (F4-EDI-R20-SRV, EDI-R20, Q-6)",
+  },
   "app/api/comment-drafts/[commentId]/route.ts": {
     methods: ["DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
@@ -1158,6 +1162,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051",
+  },
+  // SRV-F4-NAS-R11 (Ductus#2058, NAS-51, C-4): the notes a student kept beside a submission, read by its teacher; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-notes/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058",
   },
   "app/api/teacher/mentorship-requests/route.ts": {
     methods: ["GET"],
