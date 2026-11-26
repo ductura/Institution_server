@@ -47,6 +47,7 @@ function send(
           body: Buffer.concat(chunks).toString(
             res.headers["content-type"] === "image/jpeg" ||
               res.headers["content-type"] === "text/csv" ||
+              res.headers["content-type"] === "application/pdf" ||
               String(res.headers["content-type"]).startsWith(
                 "application/vnd.openxmlformats-officedocument.",
               )

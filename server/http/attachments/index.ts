@@ -113,3 +113,20 @@ export function createAttachmentRoutesFor(
     main.actorReader,
   );
 }
+
+/**
+ * The bytes of one stored image the caller may read (the slides export, SRV-V13-RUTA-IZVOZ):
+ * the same relation check and the same byte and hash check as GET of one attachment.
+ * A refusal, a missing or an unreadable record is null; a store that fails throws.
+ */
+export function createAttachmentBytesReaderFor(
+  main: Pick<Databases["main"], "withActor">,
+  env: NodeJS.ProcessEnv,
+  root: string,
+): (token: string, attachmentId: string) => Promise<Uint8Array | null> {
+  const attachments = createAttachments(main.withActor, attachmentStorage(env, root));
+  return async (token, attachmentId) => {
+    const result = await attachments.read(token, attachmentId);
+    return result.status === "ok" ? Buffer.from(result.body.imageBase64, "base64") : null;
+  };
+}

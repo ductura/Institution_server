@@ -409,6 +409,11 @@ export {
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
 export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
 export {
+  createWorkExportSlidesRoute,
+  createWorkExportSlidesRouteFor,
+  type SlideImageReader,
+} from "./work-export-slides/index.ts";
+export {
   createPortableRecordRoute,
   createPortableRecordRouteFor,
 } from "./portable-record/index.ts";
