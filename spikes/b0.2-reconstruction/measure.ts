@@ -9,13 +9,7 @@ import {
   buildReconstructionCheckpoints,
   readDocumentAtRevision,
 } from "../../server/evidence/reconstruction/index.ts";
-import {
-  buildRecord,
-  canonical,
-  EMPTY,
-  replayer,
-  type InventedRecord,
-} from "./record.ts";
+import { buildRecord, canonical, EMPTY, replayer, type InventedRecord } from "./record.ts";
 
 export const PILOT_WORDS = 15_000;
 export const DOCTORAL_WORDS = 80_000;

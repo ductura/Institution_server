@@ -28,7 +28,6 @@ test("a work shorter than the checkpoint distance has no checkpoint and replays 
 });
 
 test("a checkpoint over the size limit is reported as not used, not as a faster read", async () => {
-  
   const big = "x".repeat(1_100_000);
   const record = await buildRecord([big, big, "kraj "]);
   await assert.rejects(
