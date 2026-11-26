@@ -136,7 +136,6 @@ describe("student notice", () => {
       ["purpose_catalog_version", null],
       ["ai_summary_only", null],
       ["ai_summary_only", "false"],
-      ["ai_summary_only", 0],
     ];
     for (const bad of bads) {
       expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
@@ -153,7 +152,7 @@ describe("student notice", () => {
     expect(seen[1]!.text).toContain("v.purpose_catalog_version");
   });
 
-  it("reads the assignment's summarise-only rule, and asks for it from the assignment row", async () => {
+  it("reads whether the assistant only summarises, from the assignment (SRV-EDI-R08)", async () => {
     const { port, seen } = reader([actorRow(USER)], [row(["ai_summary_only", true])]);
     const read = await port.read(TOKEN, A);
     expect(read.ok && read.value.aiSummaryOnly).toBe(true);

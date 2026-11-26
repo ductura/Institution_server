@@ -55,7 +55,7 @@ export type StoredNotice = {
   acknowledgedAt: string | null;
   /** The purpose catalog of the version (SRV-ASIST-CITANJE); not in the fingerprint. */
   purposeCatalogVersion: number;
-  /** The assignment's "summarise only" rule for the assistant (SRV-F4-STU-R09). */
+  /** The assistant only summarises (SRV-EDI-R08); not in the fingerprint. */
   aiSummaryOnly: boolean;
 };
 
