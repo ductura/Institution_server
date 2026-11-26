@@ -9,7 +9,8 @@ export type SignInFailureCode = "login_failed" | "provider_unavailable";
 /**
  * Where a failed login ends (DAN-1081, Ductus#2031 V1 to V5): a 303 to `page`
  * of the configured origin whose query `param` is one of `codes`, nothing else.
- * The login flow sends it from DAN-1081-Sb; this part declares it only.
+ * The login flow (`server/http/auth-flow.ts`) sends it for 400 and 503; a 403
+ * refusal stays the neutral page, as `login_refused` is not one of the codes.
  * The data @ductura/contracts publishes as auth/sign-in-failure.json; read
  * strictly here, so a third code or a stray key fails at load.
  */

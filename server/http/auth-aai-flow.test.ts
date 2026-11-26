@@ -93,8 +93,15 @@ async function complete(attempt: Awaited<ReturnType<typeof begin>>) {
   );
 }
 
-async function expectRefused(response: Response, status = 403) {
-  expect(response.status).toBe(status);
+async function expectRefused(response: Response, status: 400 | 403 | 503 = 403) {
+  if (status === 403) expect(response.status).toBe(403);
+  else {
+    // STU-R01: 400 and 503 end as a 303 to the sign-in page with the contract's code.
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain(
+      `/prijava?greska=${status === 400 ? "login_failed" : "provider_unavailable"}`,
+    );
+  }
   expect(deps.openSession).not.toHaveBeenCalled();
   expect(cookieOf(response, SESSION_COOKIE_NAME)).toBeUndefined();
   expect(cookieOf(response, LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
