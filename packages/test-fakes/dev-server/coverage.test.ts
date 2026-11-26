@@ -580,6 +580,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { body: "Izmisljena privatna biljeska." },
     },
   },
+  // F4-MEN-R09-SRV: the mentor writes the own text, the student of the mentor reads it.
+  "mentorship.working-style.put": {
+    request: {
+      path: "/api/v1/teacher/mentor-working-style",
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmisljeni nacin rada: tjedni sastanak." },
+    },
+  },
+  "mentorship.working-style.get": {
+    request: { path: `/api/v1/student/mentors/${IDS.teacher}/working-style`, as: "student" },
+  },
   // SRV-V19-DNEVNIK-UGOVOR: the practice journal; the invented placement exists from the start.
   "practice.placements.post": {
     request: {

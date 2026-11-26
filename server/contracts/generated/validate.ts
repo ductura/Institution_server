@@ -1393,6 +1393,28 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "mentorship.working-style.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['teacherId'] === 'string') &&
+      local0.test(value['teacherId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "mentorship.working-style.put:body": (() => {
+  const local0 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,1000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "notifications.list.get:query": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
