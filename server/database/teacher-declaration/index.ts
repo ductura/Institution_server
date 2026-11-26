@@ -5,6 +5,12 @@
 // (ZD403) is the same 404 as an unknown id.
 import type { WithActor } from "../index.ts";
 
+export {
+  createTeacherDeclarationConversationReader,
+  type TeacherDeclarationConversation,
+  type TeacherDeclarationConversationReader,
+} from "./conversation.ts";
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const SQL = `SELECT state, payload_jcs, declaration_sha256

@@ -54,7 +54,7 @@ export {
   SESSION_STATES,
   type SessionState,
 } from "./state.ts";
-export { DEFAULT_RETURN_TO, safeReturnTo } from "./return-to.ts";
+export { DEFAULT_RETURN_TO, SIGNED_OUT_PATH, safeReturnTo } from "./return-to.ts";
 export {
   CHALLENGE_CAPACITY,
   type ChallengePurpose,

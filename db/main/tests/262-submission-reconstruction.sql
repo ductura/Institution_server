@@ -1,5 +1,5 @@
 -- F4-PM2-R01 (Ductus#2059): the worker's verdict of a recorded submission
--- (20261220320000). The worker of the domain lists the submissions without a
+-- (20261220400000). The worker of the domain lists the submissions without a
 -- verdict, reads the record of one and keeps a verdict the database decides
 -- by comparing hashes; the student reads only the own state. Synthetic rows only.
 BEGIN;

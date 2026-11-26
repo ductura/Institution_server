@@ -130,6 +130,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('collaboration', 'work_item_seen', '237-mentorship-self-note-overview.sql'),
     ('collaboration', 'work_message', '164-work-message-access.sql'),
     ('collaboration', 'work_review', '201-comment-delay-bank.sql'),
+    ('collaboration', 'work_plan', '261-work-plan.sql'),
     ('collaboration', 'work_rubric_level', '251-work-rubric-level.sql'),
     ('collaboration', 'work_self_note', '237-mentorship-self-note-overview.sql'),
     ('declaration', 'conversation_attachment', '030-institution-access-matrix.sql'),

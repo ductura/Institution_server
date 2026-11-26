@@ -276,9 +276,12 @@ export function createCourseAssistantRoutes({
  * production request route has (PRODUCTION_ASSISTANT_PROVIDER), so the two
  * never disagree.
  */
-export function createCourseAssistantRoutesFor(main: { withActor: WithActor }): Route[] {
+export function createCourseAssistantRoutesFor(
+  main: { withActor: WithActor },
+  provider: unknown = PRODUCTION_ASSISTANT_PROVIDER,
+): Route[] {
   return createCourseAssistantRoutes({
     port: createCourseAssistantPort(main.withActor),
-    providerPresent: PRODUCTION_ASSISTANT_PROVIDER !== null,
+    providerPresent: provider !== null,
   });
 }

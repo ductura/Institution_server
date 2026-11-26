@@ -48,6 +48,7 @@ import {
   createFacultyThresholdRoutesFor,
   createTeacherSourceRoutesFor,
   createTeacherWorkingCriteriaRoutesFor,
+  createWorkRevisionDueRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
   createSourceNotebookRoutesFor,
@@ -84,6 +85,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
+  createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
@@ -107,6 +109,7 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  openAiProviderFrom,
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
@@ -129,6 +132,7 @@ import {
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createMentorshipFollowRoutesFor,
+  createWorkPlanRoutesFor,
   createSelfNoteSealedRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
@@ -304,6 +308,19 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  // F4-PM2-R11 (D-316): OpenAI behind the assistant port; null without a key and
+  // prices, so ai_disabled. Only metadata is logged, never text, key or identity.
+  const assistantProvider = openAiProviderFrom(process.env, {
+    transport: (request) =>
+      fetch(request.url, {
+        method: "POST",
+        headers: { ...request.headers },
+        body: request.body,
+        signal: request.signal,
+      }),
+    record: (metadata) =>
+      console.info(JSON.stringify({ event: "assistant.provider_call", ...metadata })),
+  });
   const reminderCooldown = process.env.DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS;
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
@@ -353,6 +370,8 @@ async function main(): Promise<void> {
       ...createTeacherSourceRoutesFor(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
+      // The revision due date of a returned work (F4-NAS-R16-SRV, NAS-R16).
+      ...createWorkRevisionDueRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
       // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
       createPublicVerificationRouteFor(databases.main),
@@ -395,6 +414,8 @@ async function main(): Promise<void> {
       ...createWorkMessagesRoutesFor(databases.main),
       // SRV-MENTOR-3: note to self and reading place (MK-9), seen marks (MK-11), the mentor's overview (MK-8).
       ...createMentorshipFollowRoutesFor(databases.main),
+      // SRV-F4-PM2-R15: the plan of a work behind the panel Struktura (D-234).
+      ...createWorkPlanRoutesFor(databases.main),
       // SRV-NF6-SIFRA: the note to self sealed on the device and the wrapped note key (B2).
       ...createSelfNoteSealedRoutesFor(databases.main),
       ...createNotificationsRoutesFor(databases.main, reminderCooldown),
@@ -500,7 +521,7 @@ async function main(): Promise<void> {
       ...createLateSubmissionRoutesFor(databases.main),
       ...createSubmissionReconstructionRoutesFor(databases.main),
       // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
-      ...createCourseAssistantRoutesFor(databases.main),
+      ...createCourseAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.
       ...createQuestionnaireResponsesRoutesFor(databases.main),
       // SRV-V18-UPITNIK-IZVOZ: the author reads the answers as questionnaire-export-v1.
@@ -539,6 +560,8 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
       createTeacherDeclarationRouteFor(databases.main),
+      // F4-NAS-R04-SRV: the conversations attached to the bound declaration.
+      createTeacherDeclarationConversationRouteFor(databases.main),
       createTeacherSubmissionNotesRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
@@ -583,7 +606,7 @@ async function main(): Promise<void> {
         excludePracticeAssignment(route, databases.main),
       ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
-      ...createAssistantRoutesFor(databases.main),
+      ...createAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-ASIST-CITANJE: the student's own assistant conversations of an assignment.
       createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),

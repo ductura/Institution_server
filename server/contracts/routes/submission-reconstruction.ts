@@ -9,7 +9,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // worker has kept one, `verified` when the reconstruction gave the recorded
 // hash, `mismatch` when it did not. Only the student who submitted reads it;
 // anyone else, an unknown assignment and one without a submission read 404.
-// Database: app.my_submission_reconstruction (20261220320000).
+// Database: app.my_submission_reconstruction (20261220400000).
 export const studentAssignmentSubmissionReconstructionGet = defineRoute({
   id: "student.assignment-submission-reconstruction.get",
   method: "GET",
