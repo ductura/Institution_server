@@ -39,6 +39,8 @@ import {
   createQualitativeCodesRoutesFor,
   createThesisRoutesFor,
   createThesisTopicRoutesFor,
+  createThesisCommitteeRoutesFor,
+  createThesisOverviewRoutesFor,
   createWorkMilestonesRoutesFor,
   createMilestoneTemplateRoutesFor,
   createAssignmentRubricRoutesFor,
@@ -1101,6 +1103,26 @@ const SESSION_ROUTES = {
     path: "/api/v1/works/izmisljeni-rad-0001/thesis-topic/decision",
     body: () => ({ version: 1, decision: "approved" }),
     live: 404,
+  },
+  // SRV-V16-POVJERENSTVO-ZAPIS: a live session with no part in any thesis reads 404 on both.
+  "work.thesis-committee.get": {
+    method: "GET",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-committee",
+    body: () => undefined,
+    live: 404,
+  },
+  "work.thesis-committee.put": {
+    method: "PUT",
+    path: "/api/v1/works/izmisljeni-rad-0001/thesis-committee",
+    body: () => ({ members: [] }),
+    live: 404,
+  },
+  // SRV-V16-POPIS-FAKULTET: a live session of an account that is no administrator reads 403.
+  "institution.thesis-overview.get": {
+    method: "GET",
+    path: "/api/v1/institution/thesis-overview",
+    body: () => undefined,
+    live: 403,
   },
   "student.assignment-work.get": {
     method: "GET",
@@ -2610,6 +2632,8 @@ const FACTORIES = [
   "createQualitativeCodesRoutesFor",
   "createThesisRoutesFor",
   "createThesisTopicRoutesFor",
+  "createThesisCommitteeRoutesFor",
+  "createThesisOverviewRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createSubmissionRouteFor",
@@ -2756,6 +2780,8 @@ const MOUNTED = [
   ...createQualitativeCodesRoutesFor(databases.main),
   ...createThesisRoutesFor(databases.main),
   ...createThesisTopicRoutesFor(databases.main),
+  ...createThesisCommitteeRoutesFor(databases.main),
+  ...createThesisOverviewRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps, 2),
