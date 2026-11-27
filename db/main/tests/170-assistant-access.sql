@@ -227,7 +227,9 @@ SELECT bag_eq(
             ('refuse_ai_transfer_rewrite ductus_identity false search_path=""'),
             ('ai_transfer_phase ductus_identity false search_path=""'),
             ('ai_transfer_max ductus_identity false search_path=""'),
-            ('create_ai_transfer ductus_identity true search_path=""') $$,
+            ('create_ai_transfer ductus_identity true search_path=""'),
+            -- SRV-1809: the hash of a record for the v4 segment's link; 275 tests it.
+            ('ai_transfer_link_sha256 ductus_identity true search_path=""') $$,
   'the schema has four trigger functions and, since SRV-1203, SRV-1205, SRV-1207, SRV-ASIST-BROJAC, SRV-ASIST-LIMIT-ADMIN and SRV-1809, the RPCs and their helpers');
 SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
@@ -248,8 +250,10 @@ SELECT bag_eq(
             ('ductus_app assistant.read_request_limit()'), ('ductus_app assistant.set_request_limit(integer,integer)'),
             -- SRV-1809: the student owner records a transfer.
             ('ductus_app assistant.create_ai_transfer(text,uuid,text)'),
-            ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)') $$,
-  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, since SRV-ASIST-LIMIT-ADMIN, two more and, since SRV-1809, one more, the worker the sweep and its listing (SRV-1205)');
+            ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)'),
+            -- SRV-1809: the evidence owner checks a v4 segment's link against the record (275).
+            ('ductus_evidence assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)') $$,
+  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, since SRV-ASIST-LIMIT-ADMIN, two more and, since SRV-1809, one more, the worker the sweep and its listing (SRV-1205), the evidence owner the link hash (SRV-1809)');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT bag_eq(
@@ -257,8 +261,8 @@ SELECT bag_eq(
       FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
                         'ductus_test_stranger']) AS r $$,
   $$ VALUES ('ductus_app true'), ('ductus_worker true'), ('ductus_retention false'), ('ductus_auth false'),
-            ('ductus_evidence false'), ('ductus_test_stranger false') $$,
-  'only the web role and, for its RPC (SRV-1203), the worker use the schema');
+            ('ductus_evidence true'), ('ductus_test_stranger false') $$,
+  'only the web role, for its RPC (SRV-1203) the worker and, for the link hash (SRV-1809), the evidence owner use the schema');
 SELECT bag_eq(
   $$ SELECT c.relname || '.' || a.attname || ' ' || format_type(a.atttypid, a.atttypmod) || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END
       FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
