@@ -934,6 +934,7 @@ export {
   isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
+  parseDeclarationMismatchExplanation,
   parseDeclarationPutBody,
   parseDeclarationQuestionAnswer,
   type FormReader,

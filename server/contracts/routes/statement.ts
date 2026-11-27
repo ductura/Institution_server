@@ -80,6 +80,9 @@ const QuestionAnswer = Type.Union([
   Type.Null(),
 ]);
 const PutAnswer = Type.Union([closed({ questionId: QuestionId, text: AnswerText }), Type.Null()]);
+// F4-PRE-R02-SRV2 (R-35): why the chosen pattern of use differs from the
+// record of transfers. Not part of the hashed payload (declaration-v1 6.9).
+const MismatchExplanation = Type.Union([AnswerText, Type.Null()]);
 const Put = closed({
   baseVersion: DraftVersion,
   revision: Version,
@@ -176,6 +179,9 @@ const Statement = closed({
   // older clients keep validating.
   teacherQuestion: Type.Optional(TeacherQuestion),
   questionAnswer: Type.Optional(QuestionAnswer),
+  // F4-PRE-R02-SRV2 (R-35): the student's explanation of the row the state is
+  // about (null: none). Always sent; optional only so older clients keep validating.
+  mismatchExplanation: Type.Optional(MismatchExplanation),
 });
 // F4-PRE-R02-SRV, F4-PRE-R06-SRV: declaration-v2 bodies. The v1 routes keep
 // their empty attachments and recorded lists; the v2 routes carry the
@@ -207,6 +213,9 @@ const PutRequestV2 = closed({
         "Closed declaration-v1 object with use, declaredTools, attachments [{conversationId,throughSeq,messagesSha256}] (up to 500) and externalAttachmentIds.",
     },
   ),
+  // F4-PRE-R02-SRV2 (R-35): the student's explanation of a pattern of use the
+  // record of transfers contradicts. Omitted or null: none.
+  mismatchExplanation: Type.Optional(MismatchExplanation),
 });
 const PayloadV2 = closed({
   ...Payload.properties,
