@@ -278,4 +278,8 @@ export const STATEMENT_HANDLERS: Handlers = {
   "teacher.declaration-second.get": (ctx) => DECLARATION_V1["teacher.declaration.get"]({ ...ctx }),
   "student.declaration-second.get": (ctx) => DECLARATION_V1["student.declaration.get"]({ ...ctx }),
   "student.declaration-second.put": (ctx) => DECLARATION_V1["student.declaration.put"]({ ...ctx }),
+  // AI-RECORDED-5000: the declaration-v3 routes, alike.
+  "teacher.declaration-third.get": (ctx) => DECLARATION_V1["teacher.declaration.get"]({ ...ctx }),
+  "student.declaration-third.get": (ctx) => DECLARATION_V1["student.declaration.get"]({ ...ctx }),
+  "student.declaration-third.put": (ctx) => DECLARATION_V1["student.declaration.put"]({ ...ctx }),
 };

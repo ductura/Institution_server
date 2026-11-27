@@ -5,6 +5,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import {
   DeclarationPayload,
   DeclarationPayloadV2,
+  DeclarationPayloadV3,
   DeclarationQuestionAnswer,
   DeclarationSha256,
   DeclarationTeacherQuestion,
@@ -102,6 +103,37 @@ export const teacherDeclarationV2Get = defineRoute({
     error(403, "forbidden"),
     error(404, "not_found"),
     error(503, "unavailable"),
+  ],
+});
+// AI-RECORDED-5000: the same read with up to 5000 recorded transfers.
+export const teacherDeclarationV3Get = defineRoute({
+  ...teacherDeclarationV2Get,
+  id: "teacher.declaration-third.get",
+  path: "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration-v3",
+  inventory:
+    "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts",
+  summary:
+    "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. Opening a bound declaration is recorded in the access log.",
+  responses: [
+    {
+      status: 200,
+      description: "the bound declaration with its hash, or none",
+      body: Type.Union([
+        closed({
+          state: Type.Literal("none"),
+          payload: Type.Null(),
+          declarationSha256: Type.Null(),
+          ...Question,
+        }),
+        closed({
+          state: Type.Literal("bound"),
+          payload: DeclarationPayloadV3,
+          declarationSha256: DeclarationSha256,
+          ...Question,
+        }),
+      ]),
+      headers: ["cache-control"],
+    },
   ],
 });
 
