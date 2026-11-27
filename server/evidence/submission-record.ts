@@ -6,6 +6,7 @@ import {
 import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
 import {
   reconstructSheetSubmission,
+  reconstructSlidesSubmission,
   reconstructSubmission,
   type SubmissionRecord,
 } from "./submission-reconstruction.ts";
@@ -47,7 +48,7 @@ export type SubmissionReconstruction =
   | { status: "unavailable"; stage: "record"; code: SubmissionRecordFault };
 
 /** Kinds whose submission this reader knows; every other kind keeps the text path. */
-export type SubmittedKind = "text" | "spreadsheet";
+export type SubmittedKind = "text" | "slides" | "spreadsheet";
 
 export type SubmissionRecordDependencies = {
   withActor: WithActor;
@@ -174,8 +175,9 @@ async function readRecord(
       ]);
       if (kindRows.rows.length !== 1)
         return { status: "unavailable", stage: "record", code: "record_malformed" };
+      const stored = kindRows.rows[0]?.document_kind;
       const documentKind: SubmittedKind =
-        kindRows.rows[0]?.document_kind === "spreadsheet" ? "spreadsheet" : "text";
+        stored === "spreadsheet" || stored === "slides" ? stored : "text";
       return { status: "found", record, keys: keys.keys, documentKind };
     });
   } catch {
@@ -235,6 +237,9 @@ export async function reconstructRecordedSubmission(
         (dependencies.log ?? consoleLog)("submission", "calculation", check.status);
     }
     return outcome;
+  }
+  if (documentKind === "slides") {
+    return reconstructSlidesSubmission({ payloads, keys: dependencies.keys }, record);
   }
   return reconstructSubmission(
     {
