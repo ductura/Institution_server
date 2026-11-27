@@ -22,6 +22,7 @@ export { createStudentWorkRoutesFor } from "./student-work/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
+export { createMentorWorkingStyleRoutesFor } from "./mentor-working-style/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createPeerReviewRoutesFor } from "./peer-review/index.ts";

@@ -214,6 +214,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('institution', 'institution_settings', '030-institution-access-matrix.sql'),
     ('institution', 'late_submission_exception', '030-institution-access-matrix.sql'),
     ('institution', 'mentor_note', '030-institution-access-matrix.sql'),
+    ('institution', 'mentor_working_style', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship_opening', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship_request', '030-institution-access-matrix.sql'),
@@ -310,7 +311,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 214, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 215, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');
