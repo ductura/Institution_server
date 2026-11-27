@@ -14,6 +14,7 @@ import {
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import { sendJson, sendProblem, type Route } from "../index.ts";
+import { withoutRecorded } from "../statement/index.ts";
 
 export { createTeacherDeclarationConversationRouteFor } from "./conversation.ts";
 
@@ -41,9 +42,12 @@ export function createTeacherDeclarationRoute(
       const studentId = workIdFromPath(params?.studentId ?? "") ?? "";
       const result = await read(token, assignmentId, studentId);
       switch (result.status) {
-        case "ok":
-          if (Value.Check(body, result.body)) return sendJson(response, 200, result.body);
+        case "ok": {
+          // SRV-1809: v1 shows ai.recorded empty; v2 shows the list.
+          const answer = id === ID ? withoutRecorded(result.body) : result.body;
+          if (Value.Check(body, answer)) return sendJson(response, 200, answer);
           return sendProblem(response, 503, "unavailable");
+        }
         case "unauthenticated":
           return sendProblem(response, 401, "unauthorized");
         case "not_found":
