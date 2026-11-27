@@ -22,9 +22,14 @@ import {
 } from "../domain/forensics/evidence-receipt-verifier.ts";
 import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
-import { sheetRevisionZeroDocument, type SheetDocument } from "../domain/index.ts";
+import {
+  sheetRevisionZeroDocument,
+  slidesRevisionZeroDocument,
+  type SheetDocument,
+} from "../domain/index.ts";
 
 import { capturingSheetReplayer } from "./sheet/index.ts";
+import { slidesStepReplayer } from "./slides/index.ts";
 import {
   reconstructAndCompareEvidence,
   type EvidenceReceiptCheck,
@@ -226,4 +231,22 @@ export async function reconstructSheetSubmission(
     record,
   );
   return { outcome, document: captured.last() };
+}
+
+/**
+ * SRV-F4-V13-R02: the same reconstruction for a work of kind `slides`:
+ * revision 0 is the deck's, the steps are replayed with the slide step format
+ * (a step of another format is a mismatch). As for text, nothing but the
+ * outcome is returned: the replay itself checks each event's hash.
+ */
+export function reconstructSlidesSubmission(
+  dependencies: { payloads: EvidencePayloadReader; keys: readonly EvidenceDomainKey[] },
+  record: SubmissionRecord,
+): Promise<EvidenceReconstructionOutcome> {
+  return reconstructWith(
+    slidesStepReplayer,
+    canonicalizeJcs(slidesRevisionZeroDocument() as unknown as JcsJsonValue),
+    dependencies,
+    record,
+  );
 }

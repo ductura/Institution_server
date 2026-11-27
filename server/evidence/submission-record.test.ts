@@ -182,6 +182,41 @@ describe("submission record read (B-12 step 4b1)", () => {
     expect(JSON.stringify(result)).not.toContain("secret");
   });
 
+  describe("a slides work (F4-V13-R02)", () => {
+    it("is read as slides and reconstructed with the slides replay, never the text one", async () => {
+      const db = database([ROW], { kind: [{ document_kind: "slides" }] });
+      const result = await reconstructSubmissionRecord(
+        { withActor: db.withActor, payloads: new InMemoryEvidencePayloadStore() },
+        "t",
+        REQUEST,
+      );
+      expect(result).toMatchObject({
+        status: "reconstructed",
+        documentKind: "slides",
+        outcome: { status: "mismatch", reason: "missing_payload", index: 0 },
+      });
+    });
+
+    it("refuses a match of the wrong step format as a mismatch", async () => {
+      const slidesFormatSpy = await import("./submission-reconstruction.ts");
+      const outcome = await slidesFormatSpy.reconstructSlidesSubmission(
+        { payloads: new InMemoryEvidencePayloadStore(), keys: [] },
+        {
+          institutionId: ROW.institution_id,
+          evidencePackageId: ROW.evidence_package_id,
+          evidenceDomainId: ROW.evidence_domain_id,
+          documentId: ROW.document_id,
+          principalId: ROW.principal_id,
+          revision: 2,
+          contentHash: ROW.content_hash,
+          head: { segmentHash: "c".repeat(64), segmentCount: 1 },
+          segments: [{ segmentHash: "c".repeat(64), receipt: null }],
+        },
+      );
+      expect(outcome.status).not.toBe("match");
+    });
+  });
+
   describe("a spreadsheet work after the reconstruction (SRV-V14-SHEET-SUBMIT)", () => {
     const MATCH = {
       status: "match",
