@@ -1,8 +1,10 @@
 # The web process of the server (DAN-893): `docker build -f infra/web/Dockerfile .`
 # from the repository root. Three stages: `build` installs every dependency and
-# bundles the server and its PDF worker (scripts/build); `test-server`
+# bundles the server, its PDF worker and the worker process (scripts/build); `test-server`
 # (S-1H.7, DAN-938-2; `--target test-server`) and the final stage get those
-# two files and nothing of node_modules. The final stage stays last, so it is
+# three files and nothing of node_modules (dist/worker.js is the entry of the
+# worker process, F4-PM2-R01B; no instruction of this file starts it, so the
+# web process and its CMD are unchanged). The final stage stays last, so it is
 # the default target. Configuration comes only from
 # the environment at `docker run` (APP_DATABASE_URL and the rest, see
 # server/config); the image holds no value of it and no secret, and the final
@@ -28,6 +30,7 @@ FROM mirror.gcr.io/library/node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45
 WORKDIR /app
 COPY --from=build /src/dist/server.js dist/server.js
 COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js
+COPY --from=build /src/dist/worker.js dist/worker.js
 ENV HOST=0.0.0.0 PORT=4000 NODE_ENV=test DUCTURA_MODE=test
 EXPOSE 4000
 USER node
@@ -40,6 +43,7 @@ FROM mirror.gcr.io/library/node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45
 WORKDIR /app
 COPY --from=build /src/dist/server.js dist/server.js
 COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js
+COPY --from=build /src/dist/worker.js dist/worker.js
 # Listen on every interface: the default HOST is the loopback
 # (server/config/environment.ts), unreachable from outside a container.
 ENV HOST=0.0.0.0 PORT=4000

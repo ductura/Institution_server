@@ -332,6 +332,13 @@ export {
   type ReadinessDependencies,
 } from "./ready-capabilities.ts";
 export { logStartupFailed, logStartupRefused } from "./startup-log.ts";
+// The worker process's composition (F4-PM2-R01B); only server/worker-main.ts uses it.
+export {
+  createWorkerProcess,
+  WORKER_EVIDENCE_DOMAIN_VARIABLE,
+  workerEnvironmentProblems,
+  type WorkerProcess,
+} from "./worker-composition.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";

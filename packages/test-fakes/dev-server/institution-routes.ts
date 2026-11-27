@@ -190,6 +190,9 @@ export const INSTITUTION_HANDLERS: Handlers = {
         acknowledgedAt: acknowledged?.version === assignment.version ? acknowledged.at : null,
         purposeCatalogVersion: 1,
         aiSummaryOnly: c.aiSummaryOnly === true,
+        // F4-STU-R08-SRV: the fake records no person names, so no mentor is named.
+        courseName: course.name,
+        mentorName: null,
       },
     };
   },

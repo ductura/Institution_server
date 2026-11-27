@@ -111,6 +111,8 @@ const ENV_NAMES = [
   // The login of the web process and the startup check (S-0.17,
   // server/config, server/database), and a variable that check must not ask for.
   "APP_DATABASE_URL",
+  // The login of the worker process (F4-PM2-R01B, server/http/worker-composition.ts) and its tests.
+  "WORKER_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
   // The engine of the test databases, set per vitest project (S-1F-e, test-support/database).
   "DUCTURA_TEST_DATABASE",

@@ -128,7 +128,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 - `database` („PostgreSQL i pgTAP”) ima tri grane (`shard: [1, 2, 3]`). Podiže PostgreSQL 17 nativno iz PGDG repoa, bez Dockera, primjenjuje migracije kroz `scripts/db/migrate-locked.ts` i dijeli po datotekama projekte `database` i `integration-pg` te pgTAP matricu (`pnpm test:db:native`).
 - `ci-ok` je jedini zbirni status. PR prema `main` ili `migracija/kopija-ductus-backend` (`DOCS_BASES` u `scripts/ci/scope.ts`) u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Svaki push i PR prema drugoj grani uvijek rade puni profil.
 
-Akcije su prikvačene na puni SHA. Uz `ci.yml` postoje `engineering-gate.yml`, `release.yml`, `publish.yml`, `sbom.yml`, `verapdf.yml` i `docx-provenance-spike.yml`.
+Akcije su prikvačene na puni SHA. Uz `ci.yml` postoje `engineering-gate.yml`, `release.yml`, `publish.yml`, `verapdf.yml` i `docx-provenance-spike.yml`. SBOM (CycloneDX) i provjera da produkcijski build odbija source mape rade u nozi „provjere” posla `checks` u `ci.yml`.
 
 ## Stanje servera
 

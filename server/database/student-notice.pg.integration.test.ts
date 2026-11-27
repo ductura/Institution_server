@@ -31,7 +31,17 @@ const Z1 = "00000000-0000-4000-8000-0000000000a1";
 const ZM1 = "00000000-0000-4000-8000-0000000000b1";
 const ZM2 = "00000000-0000-4000-8000-0000000000b2";
 const ZM3 = "00000000-0000-4000-8000-0000000000b3";
+const GROUP = "00000000-0000-4000-8000-0000000000e1";
 const notFound = { ok: false, error: STUDENT_NOTICE_NOT_FOUND };
+
+// A recorded name of a fixture person, written as the owner would.
+async function nameOf(db: TestDatabase, who: string, given: string, family: string) {
+  await db.query(
+    `INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+     SELECT p.id, p.institution_id, $2::text, $3::text FROM person p WHERE p.name = $1`,
+    [who, given, family],
+  );
+}
 
 // Fixture writes and reads share the rollback-only test transaction.
 function actorOver(db: TestDatabase): WithActor {
@@ -112,6 +122,78 @@ describe("student.notice.get over PostgreSQL", () => {
       expect(await reader.read(TOKEN.vesna, Z1)).toEqual(notFound);
       // Another faculty.
       expect(await reader.read(TOKEN.tomo, ZM1)).toEqual(notFound);
+    }));
+
+  it("names the course and the mentor, null where there is none (F4-STU-R08-SRV)", () =>
+    withFixtures(async (db) => {
+      const reader = createStudentNoticeReader(actorOver(db));
+      // Ana in K1 has no seminar group, so no mentor of the course.
+      expect(await reader.read(TOKEN.ana, Z1)).toMatchObject({
+        ok: true,
+        value: { courseName: "K1", mentorName: null },
+      });
+      // A mentored work has no course; Marko has no recorded name yet.
+      expect(await reader.read(TOKEN.ana, ZM1)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: null },
+      });
+      // Written as the owner would; the names are invented.
+      await nameOf(db, "marko", "Izmišljeni", "Mentor");
+      await nameOf(db, "nina", "Izmišljena", "Nepotvrđena");
+      expect(await reader.read(TOKEN.ana, ZM1)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: "Izmišljeni Mentor" },
+      });
+      // Nina has a recorded name, but her teacher role is not confirmed: the
+      // name comes only through the student's own readers, so Boris reads zm3
+      // without a mentor.
+      expect(await reader.read(TOKEN.boris, ZM3)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: null },
+      });
+      // A student of neither keeps the same 404, names or not (C-23).
+      expect(await reader.read(TOKEN.dora, ZM1)).toEqual(notFound);
+      expect(await reader.read(TOKEN.tomo, Z1)).toEqual(notFound);
+    }));
+
+  it("joins the teachers of the student's group sorted by name, confirmed ones only (F4-STU-R08-SRV)", () =>
+    withFixtures(async (db) => {
+      const reader = createStudentNoticeReader(actorOver(db));
+      // Ana's group in K1 has Vesna, Marko and Nina as teachers. By id Vesna
+      // comes first; by name she comes last. Nina's role is not confirmed.
+      await nameOf(db, "vesna", "Zrinka", "Izmišljena");
+      await nameOf(db, "marko", "Bruno", "Izmišljeni");
+      await nameOf(db, "nina", "Ema", "Izmišljena");
+      await db.query(
+        `INSERT INTO institution.course_member (course_id, institution_id, user_id, role)
+         SELECT pg_temp.id('k1'), pg_temp.id('fak_a'), pg_temp.id(n), 'teacher'
+           FROM unnest(ARRAY['marko', 'nina']) AS n`,
+      );
+      await db.query(
+        `INSERT INTO institution.seminar_group (id, course_id, institution_id, name, created_by)
+         VALUES ($1, pg_temp.id('k1'), pg_temp.id('fak_a'), 'Grupa A', pg_temp.id('vesna'))`,
+        [GROUP],
+      );
+      await db.query(
+        `INSERT INTO institution.seminar_group_member (group_id, course_id, institution_id, user_id, assigned_by)
+         VALUES ($1, pg_temp.id('k1'), pg_temp.id('fak_a'), pg_temp.id('ana'), pg_temp.id('vesna'))`,
+        [GROUP],
+      );
+      await db.query(
+        `INSERT INTO institution.seminar_group_teacher (group_id, course_id, institution_id, user_id, assigned_by)
+         SELECT $1, pg_temp.id('k1'), pg_temp.id('fak_a'), pg_temp.id(n), pg_temp.id('vesna')
+           FROM unnest(ARRAY['vesna', 'marko', 'nina']) AS n`,
+        [GROUP],
+      );
+      expect(await reader.read(TOKEN.ana, Z1)).toMatchObject({
+        ok: true,
+        value: { courseName: "K1", mentorName: "Bruno Izmišljeni, Zrinka Izmišljena" },
+      });
+      // Dora is in K1 but not in the group: no mentor for her.
+      expect(await reader.read(TOKEN.dora, Z1)).toMatchObject({
+        ok: true,
+        value: { courseName: "K1", mentorName: null },
+      });
     }));
 
   it("readAt of a mentorship's notice is the caller's own", () =>

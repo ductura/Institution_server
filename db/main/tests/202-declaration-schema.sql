@@ -99,7 +99,7 @@ SELECT is(pg_temp.read('ana', pg_temp.id('z1'))::jsonb #>> '{statement,state}', 
 SELECT is(pg_temp.read('dora', pg_temp.id('z1'))::jsonb -> 'statement',
   '{"state":"none","submitted":false,"currentRevision":null,"version":0,"formText":null,"draft":null,
     "payload":null,"declarationSha256":null,"uploads":[],"declarationRequired":false,
-    "teacherQuestion":null,"questionAnswer":null}'::jsonb,
+    "teacherQuestion":null,"questionAnswer":null,"mismatchExplanation":null}'::jsonb,
   'a classmate reads only her own empty declaration, nothing of Ana''s');
 SELECT is(pg_temp.read(a.actor, pg_temp.id('z1')), pg_temp.read('ana', gen_random_uuid()),
   a.actor || ' gets the same answer as for an unknown assignment')

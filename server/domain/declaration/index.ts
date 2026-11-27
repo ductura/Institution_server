@@ -46,6 +46,7 @@ export {
   MAX_DECLARATION_ANSWER_CODE_POINTS,
   MAX_DECLARATION_QUESTION_CODE_POINTS,
   isDeclarationQuestion,
+  parseDeclarationMismatchExplanation,
   parseDeclarationQuestionAnswer,
   type DeclarationQuestionAnswer,
 } from "./question.ts";

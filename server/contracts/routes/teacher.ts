@@ -57,13 +57,16 @@ const literals = <T extends string>(values: readonly T[]) =>
 
 const READ_ERRORS = [error(401, "unauthorized"), error(403, "forbidden")] as const;
 
+const AssignmentTitle = Type.String({ minLength: 1 });
+const WorkType = literals([
+  ...["short_paper", "essay", "seminar_paper", "bachelor_thesis", "master_thesis"],
+  ...["specialist_thesis", "doctoral_thesis"],
+]);
+
 const TeacherAssignment = closed({
   id: Uuid,
-  title: Type.String({ minLength: 1 }),
-  workType: literals([
-    ...["short_paper", "essay", "seminar_paper", "bachelor_thesis", "master_thesis"],
-    ...["specialist_thesis", "doctoral_thesis"],
-  ]),
+  title: AssignmentTitle,
+  workType: WorkType,
   opensAt: Instant,
   dueAt: Instant,
   currentVersion: Count(1),
@@ -357,6 +360,13 @@ const ListedAssignmentWork = closed({
   assignmentId: Uuid,
   documentId: Type.Union([WorkId, Type.Null()]),
   workState: literals(["not_started", "in_progress", "submitted"]),
+  /**
+   * DIZAJN-27-11 1.5: the current version's title and work type, as in
+   * teacher.courses.get. Both or neither: absent when the caller may not read
+   * the assignment row itself (a seminar group teacher, C-23).
+   */
+  title: Type.Optional(AssignmentTitle),
+  workType: Type.Optional(WorkType),
 });
 const CourseStudent = Type.Union(
   STUDENT_NAME_FIELDS.map((names) =>
@@ -464,6 +474,40 @@ export const teacherSubmissionReceiptGet = defineRoute({
   errors: [...LIST_ERRORS, error(404, "not_found")],
 });
 
+// Dizajn 27. 11., 1.1 i 1.11 (Ductus#2059): the "Kod potvrde" of a student's submission for
+// a reader of that student's work, beside teacher.submission-receipt.get. A route of its own:
+// a new member of the closed StudentSubmissionState would be a major release.
+export const teacherSubmissionConfirmationCodeGet = defineRoute({
+  id: "teacher.submission-confirmation-code.get",
+  method: "GET",
+  path: "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/submission/confirmation-code",
+  inventory:
+    "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/confirmation-code/route.ts",
+  access: "course_teacher",
+  summary:
+    "The same confirmation code as student.submission-confirmation-code.get, for a student the caller may read (the access of teacher.submission-receipt.get). code is null when there is no submission, it was withdrawn or it still waits for its receipt (ceka). The read has no work content and writes nothing to the access log. Inaccessible, unknown and malformed ids return the same 404.",
+  request: {
+    params: closed({
+      assignmentId: Type.String({ minLength: 1 }),
+      studentId: Type.String({ minLength: 1 }),
+    }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the code, or null before the receipt is bound",
+      body: closed({
+        code: Type.Union([
+          Type.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$" }),
+          Type.Null(),
+        ]),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [...LIST_ERRORS, error(404, "not_found")],
+});
+
 export const teacherMentorshipRequestsGet = defineRoute({
   id: "teacher.mentorship-requests.get",
   method: "GET",
@@ -556,6 +600,7 @@ export const teacherRoutes = [
   teacherAssignmentOverviewGet,
   teacherAssignmentFollowUpGet,
   teacherSubmissionReceiptGet,
+  teacherSubmissionConfirmationCodeGet,
   teacherMentorshipRequestsGet,
   teacherMentorshipRequestDecisionPost,
 ] as const;

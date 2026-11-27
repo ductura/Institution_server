@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { PDF_WORKER_OUTFILE } from "./server.ts";
+import { PDF_WORKER_OUTFILE, WORKER_OUTFILE } from "./server.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), "ductura-build-"));
@@ -34,13 +34,14 @@ describe("node scripts/build/server.ts", () => {
       },
     ],
   ])(
-    "builds the server and PDF worker when started through %s",
+    "builds the server, PDF worker and worker process when started through %s",
     (_name, script) => {
       const output = mkdtempSync(join(dir, "output-"));
       const outfile = join(output, "server.js");
       expect(buildThrough(script(), outfile)).toBe(0);
       expect(existsSync(outfile)).toBe(true);
       expect(existsSync(join(output, PDF_WORKER_OUTFILE))).toBe(true);
+      expect(existsSync(join(output, WORKER_OUTFILE))).toBe(true);
     },
     300_000,
   );

@@ -95,6 +95,8 @@ it("returns a closed roster with work states and refuses duplicate assignment ro
     assignmentId: ID,
     documentId: "izmisljeni-rad",
     evidenceRecord: "continuous",
+    title: null,
+    workType: null,
   };
   query.mockResolvedValue({ rows: [signed] });
   const answer = await get(ROSTER);
@@ -114,6 +116,86 @@ it("returns a closed roster with work states and refuses duplicate assignment ro
   expect(Value.Check(routes[0]!.contract.responses[0]!.body!, body)).toBe(true);
   query.mockResolvedValue({ rows: [signed, signed] });
   expect((await get(ROSTER)).status).toBe(503);
+});
+
+describe("assignment title and work type (DIZAJN-27-11 1.5)", () => {
+  const STUDENT_2 = "00000000-0000-4000-8000-0000000000b2";
+  const work = { assignmentId: ID, documentId: null, evidenceRecord: null };
+
+  it.each([
+    "short_paper",
+    "essay",
+    "seminar_paper",
+    "bachelor_thesis",
+    "master_thesis",
+    "specialist_thesis",
+    "doctoral_thesis",
+  ])("returns the title and work type %s beside the work state", async (workType) => {
+    query.mockResolvedValue({
+      rows: [{ ...student, ...work, title: "Izmišljeni zadatak", workType }],
+    });
+    const answer = await get(ROSTER);
+    const body: unknown = await answer.json();
+    expect(answer.status).toBe(200);
+    expect(body).toEqual({
+      students: [
+        {
+          studentId: STUDENT,
+          givenName: null,
+          familyName: null,
+          groupName: "Grupa B",
+          assignments: [
+            {
+              assignmentId: ID,
+              documentId: null,
+              workState: "not_started",
+              title: "Izmišljeni zadatak",
+              workType,
+            },
+          ],
+        },
+      ],
+    });
+    expect(Value.Check(routes[0]!.contract.responses[0]!.body!, body)).toBe(true);
+  });
+
+  it("leaves both fields out when the assignment row is not readable", async () => {
+    query.mockResolvedValue({ rows: [{ ...student, ...work, title: null, workType: null }] });
+    const body = (await (await get(ROSTER)).json()) as {
+      students: { assignments: Record<string, unknown>[] }[];
+    };
+    expect(Object.keys(body.students[0]!.assignments[0]!).sort()).toEqual([
+      "assignmentId",
+      "documentId",
+      "workState",
+    ]);
+    expect(Value.Check(routes[0]!.contract.responses[0]!.body!, body)).toBe(true);
+  });
+
+  it.each([
+    ["a title without a work type", { title: "Izmišljeni zadatak", workType: null }],
+    ["a work type without a title", { title: null, workType: "essay" }],
+    ["an empty title", { title: "", workType: "essay" }],
+    ["an unknown work type", { title: "Izmišljeni zadatak", workType: "novel" }],
+    ["a title that is not text", { title: 3, workType: "essay" }],
+    ["missing columns", {}],
+  ])("fails the entire roster for %s after a valid student", async (_, change) => {
+    const valid = { ...student, ...work, title: "Izmišljeni zadatak", workType: "essay" };
+    const other = { ...student, ...work, student_id: STUDENT_2, ...change };
+    query.mockResolvedValue({ rows: [valid, other] });
+    const answer = await get(ROSTER);
+    expect(answer.status).toBe(503);
+    expect(await answer.text()).not.toContain("Izmišljeni zadatak");
+  });
+
+  it("refuses a title on a student without any assignment", async () => {
+    query.mockResolvedValue({
+      rows: [
+        { ...student, assignmentId: null, documentId: null, evidenceRecord: null, title: "Z" },
+      ],
+    });
+    expect((await get(ROSTER)).status).toBe(503);
+  });
 });
 
 it.each(["continuous", "with_gaps", null])(
