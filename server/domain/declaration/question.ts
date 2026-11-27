@@ -34,3 +34,16 @@ export function parseDeclarationQuestionAnswer(
   if (!isDeclaredText(value.text)) return { ok: false };
   return { ok: true, answer: { questionId: value.questionId, text: value.text } };
 }
+
+/**
+ * F4-PRE-R02-SRV2 (R-35, declaration-v1 section 6.9): the optional
+ * `mismatchExplanation` of the v2 and v3 declaration PUT. Absent or null is
+ * no explanation, otherwise a text as the answer (2000 code points,
+ * multiline). Whether the choice and the record disagree is the client's call.
+ */
+export function parseDeclarationMismatchExplanation(
+  value: unknown,
+): { ok: true; explanation: string | null } | { ok: false } {
+  if (value === undefined || value === null) return { ok: true, explanation: null };
+  return isDeclaredText(value) ? { ok: true, explanation: value } : { ok: false };
+}

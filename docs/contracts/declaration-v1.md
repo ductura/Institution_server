@@ -337,6 +337,17 @@ Odluka vlasnika 23. 11. 2026. (NF-5, pitanje 3: „Da”; NF-3 PR-20, NF-4 NZ-15
 - **Pristup (RLS).** `declaration.question_answer` ima prisilni RLS i samo vlasnika `ductus_evidence`; aplikacija nema izravan pristup tablici. Odgovor piše samo student vlasnik kroz vlastitu sesiju (`save_statement_answer`), a čitaju ga samo student vlasnik (`read_statement`), nastavnik zadatka i mentor (`app.teacher_declaration_answer`). Retci u `db/main/tests/030-institution-access-matrix.sql` i `232-declaration-question.sql`.
 - **Bez učinka na predaju i ocjenu.** Odgovor nije obavezan, ne blokira predaju (ni dok je `declarationRequired` uključen, 6.7) i ne ulazi u ocjenu.
 
+### 6.9 Objašnjenje nesuglasja sa zapisom (F4-PRE-R02-SRV2, R-35)
+
+Kad student izabere obrazac bez korištenja, a zapis bilježi prijenos iz Asistenta, sučelje mu pokazuje nesuglasje i nudi kratko objašnjenje. Migracija `20261220570000_declaration_mismatch_explanation.sql`, samo expand; payload `ductura-declaration-v1`, njegov hash i `submission-receipt-v2` ostaju bajt-jednaki (zatvoren skup ključeva iz 1.1 se ne mijenja).
+
+- **Polje.** `student.declaration-second.put` i `student.declaration-third.put` primaju neobavezno polje `mismatchExplanation`: tekst od 1 do 2000 znakova (ista pravila teksta kao odgovor iz 6.8) ili `null`/izostavljeno (bez objašnjenja). Ruta v1 `student.declaration.put` ga ne prima (nepoznat ključ, 422). Web proces poziva `declaration.save_statement_explained(zadatak, tijelo, obrazac, odgovor, objašnjenje)`, koji u jednoj transakciji poziva `save_statement_answer` i zapisuje objašnjenje; svako odbijanje vraća se nepromijenjeno, a uz neispravno objašnjenje ne ostaje ništa od spremanja (422 `invalid_input`).
+- **Veza s verzijom.** Kao odgovor iz 6.8: redak `declaration.mismatch_explanation` vezan je uz točno jedan redak `declaration.statement`, nije dio hashiranog payloada i nestaje s nacrtom koji `save_statement` zamijeni (okidač `statement_draft_explanation`); objašnjenje potvrđene verzije nikad se ne mijenja ni briše. Baza ne provjerava postoji li nesuglasje; to procjenjuje sučelje.
+- **Student čita.** Odgovori studentskih ruta izjave nose `mismatchExplanation` retka o kojem je stanje, ili `null`.
+- **Pristup (RLS).** Prisilni RLS i samo vlasnik `ductus_evidence`; piše i čita samo student vlasnik kroz vlastitu sesiju. Retci u `db/main/tests/030-institution-access-matrix.sql` i `278-declaration-mismatch-explanation.sql`.
+- **Poznata granica.** Nastavnik objašnjenje zasad ne čita; to je zaseban korak.
+- **Bez učinka na predaju i ocjenu.** Objašnjenje nije obavezno i ne blokira predaju.
+
 ## 7. Rute
 
 Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `{status: <kod>}`, `MUTATION_GUARD`, isti 404 za tuđe, nepoznato i neispravno). Rute su prijedlog; dodaju se tek nakon odobrenja.
