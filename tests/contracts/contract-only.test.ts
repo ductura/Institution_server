@@ -211,6 +211,8 @@ export const DAN_931: readonly string[] = ["downloads.manifest.get"];
 // The operations of SRV-02 (the student's contracts of wave 2, Ductus#2028
 // c.7008147932: contract now, handlers in SRV-10), frozen the same way.
 export const SRV_02: readonly string[] = ["student.enrollments.post", "student.notice-read.post"];
+/** F4-OPE-R03-SRV: the v1 enrolment of DAN-803 joins them, in the order of their factory. */
+const STUDENT_WRITE_ROUTES = [...SRV_02, "institution.enrollments.post"];
 
 // The operations of SRV-03 (the administrator's course and the groups of wave
 // 4, Ductus#2028 c.7008147932: contract now, handlers in SRV-12 and SRV-15).
@@ -1019,9 +1021,9 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createStudentAccessLogRouteFor(NO_ACTOR).contract.id],
   },
   {
-    // Faza 3 readiness: enrolment by code and the notice read (SRV-02).
+    // Faza 3 readiness: enrolment by code and the notice read (SRV-02), and the v1 enrolment.
     call: "...createStudentWriteRoutesFor(databases.main)",
-    ids: [...SRV_02],
+    ids: [...STUDENT_WRITE_ROUTES],
     routes: () => createStudentWriteRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
 ];
@@ -1138,7 +1140,7 @@ describe("CONTRACT_ONLY", () => {
         "public.verification.post",
         ...SRV_9C,
         ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
-        ...SRV_02,
+        ...STUDENT_WRITE_ROUTES,
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -1340,7 +1342,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.fast-path.post",
       "student.assignments.get",
       "student.access-log.get",
-      ...SRV_02,
+      ...STUDENT_WRITE_ROUTES,
     ]);
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");

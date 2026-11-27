@@ -10,6 +10,7 @@ import { Step } from "@tiptap/pm/transform";
 
 import { validateVersionedDocument } from "../../domain/document/index.ts";
 import {
+  EDIT_STEP_FORMAT_V1,
   EDIT_STEP_FORMAT_V2,
   EDIT_STEP_FORMAT_V3,
   parseEditSteps,
@@ -438,13 +439,30 @@ function namesUnknownType(version: EditStepsVersion, steps: unknown): boolean {
   return false;
 }
 
-/** The steps of `event` applied to `state` in order, one claim per removed range or record. */
+/**
+ * The step formats a replay on the schema of `version` reads: its own, and on
+ * v2 also `ductus-edit-steps-v1` (SRV-33C; v4 §9 t. 9: a work of document v2
+ * records its steps in v1). A v1 step is a v2 step without a citation or a
+ * source step (`parseEditSteps`), so the v2 rules apply it unchanged.
+ */
+export type EditStepsReadFormat<V extends EditStepsVersion = EditStepsVersion> =
+  (typeof FORMAT)[V] | (V extends 2 ? typeof EDIT_STEP_FORMAT_V1 : never);
+
+/**
+ * The steps of `event` applied to `state` in order, one claim per removed
+ * range or record. The steps are read in `format`, the version's own unless
+ * named (`EditStepsReadFormat`).
+ */
 export function* runEditSteps(
   version: EditStepsVersion,
   state: EditStepsV2Document,
   event: EvidenceEventV3,
+  format: EditStepsReadFormat = FORMAT[version],
 ): EditStepsV2Run {
-  const parsed = parseEditSteps(FORMAT[version], event.steps);
+  if (format !== FORMAT[version] && !(version === 2 && format === EDIT_STEP_FORMAT_V1)) {
+    refuse("unsupported_format");
+  }
+  const parsed = parseEditSteps(format, event.steps);
   if (!parsed.ok) {
     if (namesUnknownType(version, event.steps)) {
       throw new EvidenceContentNotSupportedV2(parsed.code);

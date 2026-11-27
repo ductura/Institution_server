@@ -17,6 +17,10 @@ import {
   canonicalizeJcs,
   REVISION_ZERO_JCS,
   REVISION_ZERO_SHA256,
+  REVISION_ZERO_V2_JCS,
+  REVISION_ZERO_V2_SHA256,
+  REVISION_ZERO_V3_JCS,
+  REVISION_ZERO_V3_SHA256,
   sha256WebCrypto,
   verifyCanonicalEvidencePayloadV2,
   type VerifiedEvidencePayloadV2,
@@ -37,6 +41,18 @@ export const MAX_REPLAY_PAGE_SEGMENTS = 256;
 const DOCUMENT_ID_MAX = 256;
 // C0, DEL and C1 (Ductus src/domain/collaboration isDocumentId).
 const CONTROL = /\p{Cc}/u;
+
+/**
+ * Revision 0 of each document version, by its hash (SRV-33C): fixed bytes the
+ * database writes from a fixed function, the same for every work of that
+ * version, so a work of document v2 or v3 replays from its own revision 0
+ * exactly as a v1 work does, and no checkpoint is read for it.
+ */
+const REVISION_ZEROS: ReadonlyMap<string, string> = new Map([
+  [REVISION_ZERO_SHA256, REVISION_ZERO_JCS],
+  [REVISION_ZERO_V2_SHA256, REVISION_ZERO_V2_JCS],
+  [REVISION_ZERO_V3_SHA256, REVISION_ZERO_V3_JCS],
+]);
 
 export type ReplayReaderDeps = {
   /** Already bound to the requesting session; decides access and lists the record. */
@@ -209,7 +225,7 @@ export async function readReplayPage(
     const resumes = previous !== null && initial !== previous.segment.finalDocumentHash;
     // A checkpoint text this segment adds to the page; revision 0 is a fixed short text.
     const asks =
-      initial !== REVISION_ZERO_SHA256 && (index === 0 || (resumes && !resumeHashes.has(initial)));
+      !REVISION_ZEROS.has(initial) && (index === 0 || (resumes && !resumeHashes.has(initial)));
     const cost = verified.byteLength + (asks ? MAX_REPLAY_CHECKPOINT_BYTES : 0);
     if (page.segments.length > 0 && pageBytes + cost > MAX_REPLAY_PAGE_BYTES) break;
     // Verified canonical, so the bytes are valid UTF-8 and this text encodes back to them.
@@ -222,10 +238,10 @@ export async function readReplayPage(
   }
   page.next = index < hashes.length ? index : null;
 
-  // Revision 0 is the same bytes for every work; no checkpoint is read for it.
-  if (start === REVISION_ZERO_SHA256) page.startDocument = REVISION_ZERO_JCS;
-  if (resumeHashes.delete(REVISION_ZERO_SHA256)) {
-    page.resumeDocuments[REVISION_ZERO_SHA256] = REVISION_ZERO_JCS;
+  // Revision 0 is the same bytes for every work of its version; no checkpoint is read for it.
+  if (start !== null) page.startDocument = REVISION_ZEROS.get(start) ?? null;
+  for (const [hash, text] of REVISION_ZEROS) {
+    if (resumeHashes.delete(hash)) page.resumeDocuments[hash] = text;
   }
   const wanted = new Set(resumeHashes);
   if (start !== null && page.startDocument === null) wanted.add(start);

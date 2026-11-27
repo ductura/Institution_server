@@ -1311,6 +1311,12 @@ const SESSION_ROUTES = {
     body: () => ({ code: "IZMISLJENI-KOD-1" }),
     live: 503,
   },
+  // F4-OPE-R03-SRV: the v1 enrolment over the same RPC answers the same.
+  "institution.enrollments.post": {
+    path: "/api/v1/institution/enrollments",
+    body: () => ({ code: "IZMISLJENI-KOD-1" }),
+    live: 503,
+  },
   "student.notice-read.post": {
     path: `/api/v1/student/assignments/${ASSIGNMENT}/notice-read`,
     body: () => ({ versionNo: 1 }),

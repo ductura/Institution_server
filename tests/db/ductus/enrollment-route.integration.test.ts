@@ -30,6 +30,9 @@ const people = {
   guesser: { id: randomUUID(), institution, token: token() },
   removed: { id: randomUUID(), institution, token: token() },
   outsider: { id: randomUUID(), institution: otherInstitution, token: token() },
+  // F4-OPE-R03-SRV: the v1 route's own two, so the tests above stay as they were.
+  newcomer: { id: randomUUID(), institution, token: token() },
+  stranger: { id: randomUUID(), institution: otherInstitution, token: token() },
 };
 const peopleIds = Object.values(people).map((person) => person.id);
 const origin = "http://localhost:3000";
@@ -76,6 +79,24 @@ async function reply(
   const response = await post(server.port, body, session, headers);
   expect(response.headers.get("cache-control")).toBe("no-store");
   return response;
+}
+
+/** POST /api/v1/institution/enrollments as `session`; the answer without its request id. */
+async function enrolV1(body: string, session: string) {
+  const response = await fetch(`http://127.0.0.1:${server.port}/api/v1/institution/enrollments`, {
+    method: "POST",
+    headers: {
+      origin,
+      "sec-fetch-site": "same-origin",
+      "content-type": "application/json",
+      cookie: `${SESSION_COOKIE_NAME}=${session}`,
+    },
+    body,
+  });
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const json = (await response.json()) as Record<string, unknown>;
+  delete json.requestId;
+  return { status: response.status, json };
 }
 
 async function count(table: "course_member" | "enrollment_attempt", personId: string) {
@@ -303,5 +324,41 @@ describe("POST /api/v1/student/enrollments over real withActor and database", ()
     await expectHttpProblem(await reply(undefined, newSession), 429, "too_many_attempts");
     expect(await count("enrollment_attempt", people.guesser.id)).toBe(5);
     expect(await count("course_member", people.guesser.id)).toBe(0);
+  });
+});
+
+// F4-OPE-R03-SRV: the v1 route over the same RPC. Who may enrol is the RPC's
+// decision from the session alone; the route tells no refusal apart, so a
+// real code of another institution reads exactly as one no course has.
+describe("POST /api/v1/institution/enrollments over real withActor and database", () => {
+  it("refuses a stranger's real code as a code no course has, and enrols no one", async () => {
+    const refused = { status: 422, json: expect.objectContaining({ code: "refused" }) };
+    const foreign = await enrolV1(JSON.stringify({ code }), people.stranger.token);
+    const missing = await enrolV1(
+      JSON.stringify({ code: "NEPOSTOJECI-KOD-0001" }),
+      people.stranger.token,
+    );
+    const expired = await enrolV1(JSON.stringify({ code: expiredCode }), people.newcomer.token);
+    expect(foreign).toEqual(refused);
+    expect(missing).toEqual(foreign);
+    expect(expired).toEqual(foreign);
+    expect(await count("course_member", people.stranger.id)).toBe(0);
+    expect(await count("course_member", people.newcomer.id)).toBe(0);
+    expect(await count("enrollment_attempt", people.stranger.id)).toBe(2);
+  });
+
+  it("enrols the caller of the code's institution, answering only the course", async () => {
+    const enrolled = await enrolV1(JSON.stringify({ code }), people.newcomer.token);
+    expect(enrolled).toEqual({ status: 200, json: { courseId: course } });
+    expect(await enrolV1(JSON.stringify({ code }), people.newcomer.token)).toEqual(enrolled);
+    expect(await count("course_member", people.newcomer.id)).toBe(1);
+  });
+
+  it("rejects no session and a malformed body before the RPC", async () => {
+    expect((await enrolV1(JSON.stringify({ code }), token())).status).toBe(401);
+    expect(
+      await enrolV1(JSON.stringify({ code, userId: people.newcomer.id }), people.stranger.token),
+    ).toMatchObject({ status: 422, json: { code: "invalid_input" } });
+    expect(await count("enrollment_attempt", people.stranger.id)).toBe(2);
   });
 });
