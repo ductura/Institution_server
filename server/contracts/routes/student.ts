@@ -3,7 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { SignedSubmissionReceipt } from "./evidence.ts";
-import { DocumentKind, WorkKind, MUTATION_GUARD } from "./shared.ts";
+import { ConfirmationCode, DocumentKind, WorkKind, MUTATION_GUARD } from "./shared.ts";
 import { CODE_POINT, END, Name, StudentSubmissionState } from "./teacher.ts";
 
 export { StudentSubmissionState };
@@ -435,10 +435,7 @@ export const studentSubmissionConfirmationCodeGet = defineRoute({
       status: 200,
       description: "the code, or null before the receipt is bound",
       body: closed({
-        code: Type.Union([
-          Type.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$" }),
-          Type.Null(),
-        ]),
+        code: Type.Union([ConfirmationCode, Type.Null()]),
       }),
     },
   ],

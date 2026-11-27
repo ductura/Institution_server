@@ -175,6 +175,10 @@ const SNAPSHOT_INPUT: ExportSnapshotInput = {
 /** Export words; in production they come from the message catalogue (locales/merlin.ts). */
 const LABELS: ExportLabels = {
   listing: "Ispis",
+  table: "Tablica",
+  image: "Slika",
+  source: "Izvor:",
+  imageUnavailable: "Slika nije dostupna.",
   boxes: {
     definition: "Definicija",
     theorem: "Teorem",
@@ -293,8 +297,12 @@ function docxParagraphs(docx: Uint8Array): DocxParagraph[] {
   const part = readStoredZip(docx).get(DOCUMENT_PART);
   if (part === undefined) throw new Error(`docx: no ${DOCUMENT_PART}`);
   const xml = new TextDecoder("utf-8", { fatal: true }).decode(part);
-  const body = /<w:body>(.*)<w:sectPr>/s.exec(xml)?.[1];
-  if (body === undefined) throw new Error("docx: no body");
+  const wrapped = /<w:body>(.*)<w:sectPr>/s.exec(xml)?.[1];
+  if (wrapped === undefined) throw new Error("docx: no body");
+  // A table is read as its cell paragraphs in row order (SRV-10D); its own markup is not text.
+  const body = wrapped
+    .replace(/<w:(tblPr|tblGrid|trPr|tcPr)>.*?<\/w:\1>/gs, "")
+    .replace(/<\/?w:(tbl|tr|tc)>/g, "");
   const paragraphs: DocxParagraph[] = [];
   const paragraph = /<w:p>(.*?)<\/w:p>/gsy;
   let match: RegExpExecArray | null;
@@ -351,7 +359,11 @@ type Expected =
   /** A code caption: a derived "<label> <n>." and then the author's caption text. */
   | { readonly at: string; readonly caption: string }
   | { readonly at: string; readonly pageBreak: true }
-  | { readonly at: string; readonly formula: string };
+  | { readonly at: string; readonly formula: string }
+  /** A table cell: the cell text alone in its paragraph. */
+  | { readonly at: string; readonly cell: string }
+  /** After a table: the source line, or an empty paragraph that keeps two tables apart. */
+  | { readonly at: string; readonly source: string };
 
 type Reading = { expected: Expected[]; omittedTexts: string[]; problems: string[] };
 
@@ -475,6 +487,25 @@ function readBlock(node: DocumentNodeV4, at: string, snapshot: ExportSnapshot, r
     case "formula":
       push({ at, formula: node.tex });
       return;
+    case "table":
+      push({ at: `${at} caption`, caption: node.title ?? "" });
+      // As written: the left cell of a merged area stands once, wide; the rows it spans
+      // continue it with an empty cell; the cells it covers to the right are not written.
+      node.rows.forEach((row, r) =>
+        row.forEach((cell, c) => {
+          const area = (node.merges ?? []).find(
+            (m) =>
+              r >= m.row && r < m.row + m.rowSpan && c >= m.column && c < m.column + m.columnSpan,
+          );
+          if (area !== undefined && c !== area.column) return;
+          push({
+            at: `${at} cell ${r},${c}`,
+            cell: area !== undefined && r !== area.row ? "" : cell,
+          });
+        }),
+      );
+      push({ at: `${at} source`, source: node.source ? `${LABELS.source} ${node.source}` : "" });
+      return;
     case "pageBreak":
       push({ at, pageBreak: true });
       return;
@@ -546,6 +577,18 @@ function matchParagraph(expected: Expected, actual: DocxParagraph): string | und
       captionLine(expected.caption, actual.runs[0]!.text)
       ? undefined
       : `${expected.at}: expected caption ${JSON.stringify(expected.caption)}, DOCX has ${show(actual.runs)}`;
+  if ("cell" in expected)
+    return actual.runs.length === 1 && actual.runs[0]!.text === expected.cell
+      ? undefined
+      : `${expected.at}: expected cell ${JSON.stringify(expected.cell)}, DOCX has ${show(actual.runs)}`;
+  if ("source" in expected)
+    return (
+      expected.source === ""
+        ? actual.runs.length === 0
+        : actual.runs.length === 1 && actual.runs[0]!.text === expected.source
+    )
+      ? undefined
+      : `${expected.at}: expected ${JSON.stringify(expected.source)}, DOCX has ${show(actual.runs)}`;
   if ("formula" in expected)
     return actual.runs.length === 1 && formulaLine(expected.formula, actual.runs[0]!.text)
       ? undefined
@@ -721,12 +764,21 @@ describe("display equality of API, export snapshot and DOCX (R-07)", () => {
     expect(runs).toContainEqual({ text: FOREIGN.de, lang: "de" });
   });
 
-  it("keeps footnotes and the table out of every channel, as the snapshot declares", async () => {
+  it("keeps footnotes out of every channel, as the snapshot declares", async () => {
     const { api, snapshot, docx } = await channels();
     expect(snapshot.capabilityMap.footnote).toBe("omitted");
-    expect(snapshot.capabilityMap.table).toBe("omitted");
     const printed = JSON.stringify([api, docxParagraphs(docx)]);
-    for (const text of [...FOOTNOTE_TEXTS, TABLE_CELL]) expect(printed).not.toContain(text);
+    for (const text of FOOTNOTE_TEXTS) expect(printed).not.toContain(text);
+  });
+
+  // SRV-10D: the snapshot declares the table exported and the DOCX prints it; the API
+  // sends text blocks only, so the table is in the DOCX alone.
+  it("prints the table in the DOCX only, as the snapshot declares", async () => {
+    const { api, snapshot, docx } = await channels();
+    expect(snapshot.capabilityMap.table).toBe("exported");
+    expect(JSON.stringify(api)).not.toContain(TABLE_CELL);
+    const cells = docxParagraphs(docx).flatMap((p) => p.runs.map((run) => run.text));
+    expect(cells).toContain(TABLE_CELL);
   });
 });
 
@@ -823,11 +875,11 @@ describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () =
 
   it("in the snapshot: fields or hash that do not match its canonical JSON", async () => {
     const good = await channels();
-    const capabilityMap = { ...good.snapshot.capabilityMap, table: "exported" as const };
+    const capabilityMap = { ...good.snapshot.capabilityMap, crossReference: "exported" as const };
     const claimed = { ...good.snapshot, capabilityMap } as ExportSnapshot;
     expect(await compareDisplayChannels({ ...good, snapshot: claimed })).toEqual([
       "snapshot: fields differ from its canonicalJson",
-      "docx node 4 (table): marked exported, but no DOCX form is written down",
+      "docx node 1 (paragraph) inline 3 (crossReference): marked exported, but no DOCX form is written down",
     ]);
     const hashed = { ...good.snapshot, sha256: "0".repeat(64) } as ExportSnapshot;
     expect(await compareDisplayChannels({ ...good, snapshot: hashed })).toEqual([
@@ -872,11 +924,46 @@ describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () =
           },
         ],
       }));
-    for (const text of [FOOTNOTE_TEXTS[0], TABLE_CELL]) {
+    for (const text of [FOOTNOTE_TEXTS[0]]) {
       expect(await compareDisplayChannels({ ...good, docx: extra(text) })).toContain(
         `docx: prints ${JSON.stringify(text)}, which the snapshot marks omitted`,
       );
     }
+  });
+
+  it("reads a table with merged cells: the same text in all channels", async () => {
+    const merged = {
+      ...INVENTED_WORK,
+      nodes: INVENTED_WORK.nodes.map((node) =>
+        node.type === "table"
+          ? {
+              ...node,
+              rows: [node.rows[0]!, node.rows[1]!, ["", "Kompostera"]],
+              merges: [{ row: 1, column: 0, rowSpan: 2, columnSpan: 1 }],
+            }
+          : node,
+      ),
+    } as CanonicalDocumentV4;
+    const snapshot = freezeExportSnapshot({ ...SNAPSHOT_INPUT, document: merged });
+    const stored = new TextEncoder().encode(canonicalizeJcs(merged));
+    const input = await channels({ stored, snapshot, docx: docxOf(snapshot) });
+    expect(await compareDisplayChannels(input)).toEqual([]);
+  });
+
+  it("in the DOCX: a table cell changed or lost", async () => {
+    const good = await channels();
+    const edited = (change: (row: readonly string[]) => readonly string[]) =>
+      docxOf(good.snapshot, (m) => ({
+        ...m,
+        blocks: m.blocks.map((b) => (b.kind === "table" ? { ...b, rows: b.rows.map(change) } : b)),
+      }));
+    const problems = await compareDisplayChannels({
+      ...good,
+      docx: edited((row) => row.map((cell) => (cell === TABLE_CELL ? `${cell}!` : cell))),
+    });
+    expect(problems).toContainEqual(expect.stringMatching(/^docx node 4 \(table\) cell 1,0: /u));
+    const lost = await compareDisplayChannels({ ...good, docx: edited((row) => row.slice(1)) });
+    expect(lost).toContainEqual(expect.stringMatching(/^docx: \d+ paragraphs, expected \d+$/u));
   });
 
   it("in the DOCX: the author's code caption lost or changed", async () => {

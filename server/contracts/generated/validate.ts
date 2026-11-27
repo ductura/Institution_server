@@ -1743,6 +1743,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "public.verification-code.post:body": (() => {
+  const local0 = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['code'] === 'string') &&
+      local0.test(value['code']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "public.verification.post:body": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
   const local1 = /^[0-9a-f]{64}(?![\s\S])/;

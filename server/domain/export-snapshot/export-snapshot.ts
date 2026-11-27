@@ -70,6 +70,8 @@ const { orderedItem: ORDERED_ITEM_CAPABILITY, ...BASE_CAPABILITIES } = DOCX_CAPA
 function capabilityMapFor(nodes: readonly DocumentNodeV4[]): CapabilityMap {
   const unknownTypes = new Set<string>();
   let hasOrderedItem = false;
+  let hasTable = false;
+  let hasImage = false;
   const pending: unknown[] = [...nodes];
   const visited = new WeakSet<object>();
   while (pending.length > 0) {
@@ -77,6 +79,8 @@ function capabilityMapFor(nodes: readonly DocumentNodeV4[]): CapabilityMap {
     if (node === null || typeof node !== "object" || visited.has(node)) continue;
     visited.add(node);
     if ("type" in node && node.type === "orderedItem") hasOrderedItem = true;
+    if ("type" in node && node.type === "table") hasTable = true;
+    if ("type" in node && node.type === "image") hasImage = true;
     if (
       "type" in node &&
       typeof node.type === "string" &&
@@ -91,6 +95,11 @@ function capabilityMapFor(nodes: readonly DocumentNodeV4[]): CapabilityMap {
   return {
     ...BASE_CAPABILITIES,
     ...(hasOrderedItem ? { orderedItem: ORDERED_ITEM_CAPABILITY } : {}),
+    // The writer prints tables and images (SRV-10D). Like the numbered list, the new value
+    // applies only to a work that has the node, so the fingerprint of every other export is
+    // what it was. An image without usable bytes is printed as unavailable, hence degraded.
+    ...(hasTable ? { table: "exported" as const } : {}),
+    ...(hasImage ? { image: "degraded" as const } : {}),
     ...Object.fromEntries([...unknownTypes].map((type) => [type, "omitted"] as const)),
   };
 }

@@ -125,6 +125,8 @@ SELECT bag_eq(
             ('app.student_mentored_workspace()'),
             -- SRV-9B (✓ C-6): the public check of a receipt, with or without a session.
             ('app.public_receipt_verification(uuid,text)'),
+            -- DIZAJN-27-11 1.1 (3): the same public check by the receipt's confirmation code.
+            ('app.public_receipt_verification_by_code(text)'),
             ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
             ('declaration.upload_attachment(uuid,text,bytea)'),
             -- PIL-K-IZJAVA-SRV: the declaration a submission requires, read before the request.
@@ -243,6 +245,30 @@ SELECT is(pg_temp.open('dora', pg_temp.id('z1'), false), 'not_started|||||||',
   'F4-V13-R01: without a request to start, a slides assignment starts nothing');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
   'SRV-V13-MIG-VRSTA: a work that exists opens as before, whatever the assignment says now');
+-- F4-V14-R01: a spreadsheet assignment starts a work with the spreadsheet
+-- revision 0 (the bytes and hash of server/domain/sheet, fixed in
+-- tests/unit/open-work-spreadsheet-migration.test.ts). Done in a savepoint, so
+-- Dora's work below still starts as a slides work.
+SAVEPOINT spreadsheet_start;
+UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = pg_temp.id('z1');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
+  'F4-V14-R01: a spreadsheet assignment starts the work');
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'spreadsheet',
+  'F4-V14-R01: and writes kind spreadsheet into the work');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 5),
+  '70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4',
+  'F4-V14-R01: the work opens with the hash of the spreadsheet revision 0');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 8),
+  '{"kind":"spreadsheet","schemaVersion":1,"sheets":[{"cells":{},"columns":10,"id":"00000000-0000-4000-8000-000000000000","name":"List1","rows":100}]}',
+  'F4-V14-R01: and with the spreadsheet revision 0 as its snapshot');
+SELECT is((SELECT c.body FROM evidence.document_checkpoint c WHERE c.document_id = pg_temp.doc('dora', 'z1') AND c.revision = 0),
+  split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 8),
+  'F4-V14-R01: the checkpoint of revision 0 holds the same bytes');
+SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
+  'F4-V14-R01: the text work of another student opens as before');
+SELECT is(pg_temp.open('lea', pg_temp.id('z1')), 'not_found|||||||',
+  'F4-V14-R01: another institution reads no spreadsheet work of this one');
+ROLLBACK TO SAVEPOINT spreadsheet_start;
 SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
   'F4-V13-R01: a slides assignment starts the work');
 SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'slides',
