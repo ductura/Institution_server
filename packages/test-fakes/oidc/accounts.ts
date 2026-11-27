@@ -67,6 +67,17 @@ export const ACCOUNTS: Readonly<Record<string, DemoAccount>> = Object.freeze({
     affiliation: STAFF,
     homeOrg: DEMO_HOME_ORG,
   }),
+  // SEED-OIDC-OPERATER: the invented local operator. Only a staff member here;
+  // db/main/local/seed.sql signs this subject in and appoints it a second
+  // administrator of demo-fakultet, the stand-in for the operator (the model
+  // has no operator role of its own). The affiliation grants nothing.
+  "demo-operater": Object.freeze({
+    name: "Demo operater",
+    givenName: "Oto",
+    familyName: "Operić",
+    affiliation: STAFF,
+    homeOrg: DEMO_HOME_ORG,
+  }),
   // DAN-483: the accounts of the second institution. Their names contain no
   // other account's name, so a button found by name is always one button.
   "demo-b-teacher": Object.freeze({

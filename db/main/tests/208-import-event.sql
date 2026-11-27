@@ -35,6 +35,11 @@ LANGUAGE sql IMMUTABLE AS $$
       || '"manifestSchema":"ductus-import-manifest-v1","rawByteLength":48213,"rawSha256":"'
       || repeat('1', 64) || '","traces":[]' || p_extra || '}'
 $$;
+-- The same manifest in another file format.
+CREATE FUNCTION pg_temp.manifest_as(p_import text, p_format text) RETURNS text
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT replace(pg_temp.manifest(p_import), '"fileFormat":"docx"', '"fileFormat":"' || p_format || '"')
+$$;
 CREATE TEMP TABLE imp (name text PRIMARY KEY, id text NOT NULL);
 INSERT INTO imp VALUES
   ('i1', '0b5c2a7e-3f1d-4c8e-9a6b-000000000001'), ('i2', '0b5c2a7e-3f1d-4c8e-9a6b-000000000002'),
@@ -151,6 +156,8 @@ SELECT is(pg_temp.prepare('ana', 'i2', p_file_name => E'Rad‮gnp.docx'), 'ZD422
 SELECT is(pg_temp.prepare('ana', 'i2', p_file_name => '..'), 'ZD422: invalid input', 'the file name .. is refused');
 SELECT is(pg_temp.prepare('ana', 'i1'), 'ZD422: invalid input', 'the same import id twice is refused');
 SELECT is(pg_temp.prepare('ana', 'i2', p_file_name => NULL), 'prepared 0', 'an import without a file name is prepared');
+SELECT is(pg_temp.prepare('ana', 'i5', p_manifest => pg_temp.manifest_as(pg_temp.i('i5'), 'odt')), 'ZD422: invalid input',
+  'preparing an odt import is still refused: the v1 manifest and the RPC take docx and pdf alone until the ODT reader (20261220610000)');
 SELECT bag_eq(
   $$ SELECT import_id::text, owner_id, base_revision, raw_byte_length, file_name FROM collaboration.import_event $$,
   $$ VALUES (pg_temp.i('i1'), pg_temp.id('ana'), 0::bigint, 48213, 'Seminar.docx'),
@@ -208,6 +215,32 @@ SELECT is(pg_temp.prepare('ana', 'i5'), 'not_allowed', 'nothing is prepared whil
 SELECT is(pg_temp.confirm('ana', 'i1'), 'already-confirmed', 'a confirmed import stays confirmed after import is turned off (P8)');
 SELECT is((SELECT count(*)::integer FROM collaboration.import_event WHERE import_id = pg_temp.i('i5')::uuid), 0,
   'a refused preparation writes nothing');
+
+-- The file format of a row (20261220610000, ADR import-manifest-v2 §4 item 2):
+-- docx, pdf and odt are held, any other format is refused by the column check
+-- of the same name as before. Written by the owner role's session, as above.
+CREATE FUNCTION pg_temp.insert_format(p_import text, p_format text) RETURNS text
+LANGUAGE sql AS $$
+  SELECT format(
+    'INSERT INTO collaboration.import_event (import_id, institution_id, document_id, assignment_id, owner_id,'
+    || ' base_revision, manifest, manifest_sha256, import_kind, file_format, raw_byte_length)'
+    || ' VALUES (%L, %L, ''doc-a'', %L, %L, 0, %L, %L, ''file-upload'', %L, 48213)',
+    p_import, pg_temp.id('fak_a'), pg_temp.id('z1'), pg_temp.id('ana'),
+    pg_temp.manifest_as(p_import, p_format), pg_temp.sha(pg_temp.manifest_as(p_import, p_format)), p_format)
+$$;
+SELECT is(
+  (SELECT convalidated FROM pg_constraint
+    WHERE conrelid = 'collaboration.import_event'::regclass AND conname = 'import_event_file_format_check' AND contype = 'c'),
+  true, 'the file format check keeps its name and holds for every existing row');
+SELECT lives_ok(pg_temp.insert_format('0b5c2a7e-3f1d-4c8e-9a6b-0000000000f1', 'odt'), 'a row of an odt import is held');
+SELECT lives_ok(pg_temp.insert_format('0b5c2a7e-3f1d-4c8e-9a6b-0000000000f2', 'docx'), 'a row of a docx import is still held');
+SELECT lives_ok(pg_temp.insert_format('0b5c2a7e-3f1d-4c8e-9a6b-0000000000f3', 'pdf'), 'a row of a pdf import is still held');
+SELECT throws_ok(pg_temp.insert_format('0b5c2a7e-3f1d-4c8e-9a6b-0000000000f4', 'rtf'), '23514',
+  'new row for relation "import_event" violates check constraint "import_event_file_format_check"',
+  'a row of an unknown format (rtf) is refused by the file format check');
+SELECT throws_ok(pg_temp.insert_format('0b5c2a7e-3f1d-4c8e-9a6b-0000000000f5', 'ODT'), '23514',
+  'new row for relation "import_event" violates check constraint "import_event_file_format_check"',
+  'the format is matched exactly: ODT in capitals is refused');
 
 -- 5. Append only (acceptance 1), for the owner role as well.
 SELECT is(pg_temp.ask_as('ductus_identity', 'ana', $$ UPDATE collaboration.import_event SET file_name = 'Drugo.docx' $$), 'ZD409: append only',
