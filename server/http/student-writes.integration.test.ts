@@ -1,6 +1,7 @@
 // SRV-10: POST /api/v1/student/enrollments and POST
-// /api/v1/student/assignments/{assignmentId}/notice-read on a real server with
-// the real pipeline, over fake ports: every vector of both contracts a socket
+// /api/v1/student/assignments/{assignmentId}/notice-read, and (F4-OPE-R03-SRV)
+// POST /api/v1/institution/enrollments, on a real server with the real
+// pipeline, over fake ports: every vector of the three contracts a socket
 // can reach, the order of the checks and the bodies' own rules. All values are
 // invented.
 import { readFileSync } from "node:fs";
@@ -33,6 +34,7 @@ const vectorsOf = (id: string) =>
   ).vectors;
 const ORIGIN = "https://ductura.example.invalid";
 const ENROLL = "/api/v1/student/enrollments";
+const V1_ENROLL = "/api/v1/institution/enrollments";
 const NOTICE = (id: string) => `/api/v1/student/assignments/${id}/notice-read`;
 const ASSIGNMENT = "4b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d01";
 
@@ -119,6 +121,7 @@ const post = (path: string, body: string, headers: Record<string, string>) =>
 // real socket; the reader's own 400 is mutation-request.test.ts.
 const UNREACHABLE = new Set(["content-length-mismatch", "body-stream-error"]);
 const fail = (code: string): EnrollResult => ({ ok: false, error: { code, messageKey: "x" } });
+const V1_COURSE = "2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e01";
 const ENROLLED = (v: Vector): EnrollResult => ({ ok: true, value: v.response.body as Enrollment });
 const ARRANGE: Record<string, (v: Vector) => void> = {
   "enrollments:enrolled": (v) => (enrolled = ENROLLED(v)),
@@ -130,6 +133,13 @@ const ARRANGE: Record<string, (v: Vector) => void> = {
   "enrollments:forbidden": () => (enrolled = fail("ENROLLMENT_FORBIDDEN")),
   "enrollments:unavailable": () => (enrolled = fail("ENROLLMENT_DATABASE_ERROR")),
   "enrollments:unauthorized": () => (enrolled = fail("ENROLLMENT_UNAUTHENTICATED")),
+  "v1:enrolled": () =>
+    (enrolled = { ok: true, value: { courseId: V1_COURSE, outcome: "already_enrolled" } }),
+  "v1:refused": () => (enrolled = fail("ENROLLMENT_REFUSED")),
+  "v1:too-many-attempts": () => (enrolled = fail("ENROLLMENT_TOO_MANY_ATTEMPTS")),
+  "v1:forbidden": () => (enrolled = fail("ENROLLMENT_FORBIDDEN")),
+  "v1:unavailable": () => (enrolled = fail("ENROLLMENT_DATABASE_ERROR")),
+  "v1:unauthorized": () => (enrolled = fail("ENROLLMENT_UNAUTHENTICATED")),
   "notice-read:unauthorized": () => (read = { status: "unauthenticated" }),
   "notice-read:read": (v) => (read = { status: "read", readAt: v.response.body.readAt as string }),
   "notice-read:not-found": () => (read = { status: "not_found" }),
@@ -137,12 +147,23 @@ const ARRANGE: Record<string, (v: Vector) => void> = {
   "notice-read:unavailable": () => (read = { status: "unavailable" }),
 };
 
-describe.each(["enrollments", "notice-read"])("student.%s.post: every reachable vector", (id) => {
-  const vectors = vectorsOf(`student.${id}.post`).filter((v) => !UNREACHABLE.has(v.name));
+const CONTRACTS = [
+  ["enrollments", "student.enrollments.post"],
+  ["notice-read", "student.notice-read.post"],
+  ["v1", "institution.enrollments.post"],
+] as const;
+
+describe.each(CONTRACTS)("%s (%s): every reachable vector", (id, contract) => {
+  const vectors = vectorsOf(contract).filter((v) => !UNREACHABLE.has(v.name));
   it.each(vectors.map((v) => [v.name, v] as const))("%s", async (_name, v) => {
     ARRANGE[`${id}:${v.name}`]?.(v);
     await start();
-    const path = id === "enrollments" ? ENROLL : NOTICE(v.request.params!.assignmentId!);
+    const path =
+      id === "notice-read"
+        ? NOTICE(v.request.params!.assignmentId!)
+        : id === "v1"
+          ? V1_ENROLL
+          : ENROLL;
     const got = await post(
       path,
       v.request.rawBody ?? JSON.stringify(v.request.body),
@@ -173,6 +194,45 @@ describe("the bodies and the order of the checks", () => {
     );
     expect(calls).toHaveLength(1);
   });
+
+  // F4-OPE-R03-SRV: the v1 route tells no refusal apart and answers only the course.
+  it.each([
+    ["ENROLLMENT_REFUSED", 422, "refused"],
+    ["ENROLLMENT_EXPIRED_CODE", 422, "refused"],
+    ["ENROLLMENT_TOO_MANY_ATTEMPTS", 429, "too_many_attempts"],
+    ["ENROLLMENT_FORBIDDEN", 403, "forbidden"],
+    ["ENROLLMENT_UNAUTHENTICATED", 401, "unauthorized"],
+    ["ENROLLMENT_ROW_MALFORMED", 503, "unavailable"],
+    ["ENROLLMENT_DATABASE_ERROR", 503, "unavailable"],
+  ] as const)("the v1 route answers the port's %s as %i %s", async (refusal, status, problem) => {
+    enrolled = fail(refusal);
+    await start();
+    const got = await post(V1_ENROLL, '{"code":" ab-12 cd "}', headers);
+    expect([got.status, JSON.parse(got.body).code]).toEqual([status, problem]);
+    expect(calls).toEqual([["enroll", token, " ab-12 cd "]]);
+    expect(activity).toEqual([]);
+  });
+
+  it.each(["enrolled", "already_enrolled", "enrolled_no_assignment"] as const)(
+    "the v1 route answers %s as exactly {courseId}",
+    async (outcome) => {
+      enrolled = { ok: true, value: { courseId: V1_COURSE, outcome } };
+      await start();
+      const got = await post(V1_ENROLL, '{"code":"IZMISLJENIKOD"}', headers);
+      expect([got.status, JSON.parse(got.body)]).toEqual([200, { courseId: V1_COURSE }]);
+      expect(activity).toEqual([token]);
+    },
+  );
+
+  it.each(['{"code":"A","code":"B"}', '{"code":"IZMISLJENIKOD","x":1}', '{"code":12345678}'])(
+    "refuses the v1 body %s with 422 invalid_input and no call",
+    async (body) => {
+      await start();
+      const got = await post(V1_ENROLL, body, headers);
+      expect([got.status, JSON.parse(got.body).code]).toEqual([422, "invalid_input"]);
+      expect(calls).toEqual([]);
+    },
+  );
 
   it.each([
     '{"code":"A","code":"B"}',
