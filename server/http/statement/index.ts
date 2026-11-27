@@ -9,6 +9,7 @@ import {
   createStatementPort,
   incompleteFields,
   isExternalFormat,
+  parseDeclarationMismatchExplanation,
   parseDeclarationPutBody,
   parseDeclarationQuestionAnswer,
   type StatementOperation,
@@ -153,14 +154,22 @@ export function createStatementRoutes(port: StatementPort): Route[] {
               // declaration-v1 body, which stays closed and is saved as before.
               let declaration: unknown = json.value;
               let questionAnswer: unknown;
-              if (isRecord(json.value)) ({ questionAnswer, ...declaration } = json.value);
+              let mismatchExplanation: unknown;
+              if (isRecord(json.value)) {
+                // F4-PRE-R02-SRV2: the explanation exists on v2 and v3 only; on
+                // v1 it stays in the closed body, an unknown key (422).
+                if (id === SAVE) ({ questionAnswer, ...declaration } = json.value);
+                else ({ questionAnswer, mismatchExplanation, ...declaration } = json.value);
+              }
               const parsed = parseDeclarationPutBody(declaration);
               const answer = parseDeclarationQuestionAnswer(questionAnswer);
+              const explanation = parseDeclarationMismatchExplanation(mismatchExplanation);
               // A v1 body attaches no conversation; a v2 one sends them to the
               // save RPC, which checks each against the student's own.
               if (
                 !parsed.ok ||
                 !answer.ok ||
+                !explanation.ok ||
                 (id === SAVE && parsed.body.ai.attachments.length !== 0)
               ) {
                 return sendProblem(response, 422, "invalid_input");
@@ -168,7 +177,12 @@ export function createStatementRoutes(port: StatementPort): Route[] {
               if (parsed.body.confirm && incompleteFields(parsed.body).length > 0) {
                 return sendProblem(response, 409, "incomplete");
               }
-              op = { type: "save", body: parsed.body, answer: answer.answer };
+              op = {
+                type: "save",
+                body: parsed.body,
+                answer: answer.answer,
+                explanation: explanation.explanation,
+              };
             } else {
               const checked = checkExternalAttachmentBytes(format ?? "", raw.bytes);
               if (!checked.ok) return sendProblem(response, 422, "invalid_input");

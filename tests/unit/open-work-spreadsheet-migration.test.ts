@@ -12,7 +12,7 @@ import {
 // literal. This keeps the migration and the sheet domain from drifting apart
 // (pgTAP checks the stored bytes and hash against the same literals, db/main/
 // tests/046-evidence-open-work.sql). Every value is invented.
-const MIGRATION = "20261220560000_open_work_spreadsheet.sql";
+const MIGRATION = "20261220580000_open_work_spreadsheet.sql";
 const TEXT = readFileSync(
   new URL(`../../db/main/migrations/${MIGRATION}`, import.meta.url),
   "utf8",

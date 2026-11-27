@@ -354,6 +354,7 @@ ALTER TABLE audit.declaration_required_event DISABLE TRIGGER declaration_require
 -- The trail of the teacher's declaration question (SRV-IZJAVA-PITANJE) references the assignment; it is append only.
 ALTER TABLE audit.declaration_question_event DISABLE TRIGGER declaration_question_event_no_truncate;
 ALTER TABLE declaration.question_answer DISABLE TRIGGER question_answer_no_truncate;
+ALTER TABLE declaration.mismatch_explanation DISABLE TRIGGER mismatch_explanation_no_truncate;
 -- The record of a restore (INT-21) references the revisions of a work; it is append only.
 ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
 -- The ranges of origin of a revision (SRV-KARTA-RASPON) reference the revisions of a work; append only.
@@ -409,6 +410,7 @@ ALTER TABLE audit.input_rhythm_switch_event ENABLE TRIGGER input_rhythm_switch_e
 ALTER TABLE audit.declaration_required_event ENABLE TRIGGER declaration_required_event_no_truncate;
 ALTER TABLE audit.declaration_question_event ENABLE TRIGGER declaration_question_event_no_truncate;
 ALTER TABLE declaration.question_answer ENABLE TRIGGER question_answer_no_truncate;
+ALTER TABLE declaration.mismatch_explanation ENABLE TRIGGER mismatch_explanation_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;

@@ -10,6 +10,7 @@ export {
   isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
+  parseDeclarationMismatchExplanation,
   parseDeclarationPutBody,
   parseDeclarationQuestionAnswer,
 } from "../../domain/index.ts";
@@ -43,7 +44,12 @@ function refusalOf(status: StatementRefusal["status"], data: Record<string, unkn
 export type StatementOperation =
   | { type: "read" }
   | { type: "conversations" }
-  | { type: "save"; body: DeclarationPutBody; answer: DeclarationQuestionAnswer | null }
+  | {
+      type: "save";
+      body: DeclarationPutBody;
+      answer: DeclarationQuestionAnswer | null;
+      explanation: string | null;
+    }
   | { type: "upload"; format: string; bytes: Uint8Array };
 
 export type StatementPort = {
@@ -55,8 +61,9 @@ const SQL = {
   read: "SELECT declaration.read_statement($1) AS result",
   // SRV-F4-EDI-R07: the student's own assistant conversations a declaration can attach.
   conversations: "SELECT declaration.list_conversations($1) AS result",
-  // SRV-IZJAVA-PITANJE: save_statement and the optional answer in one call.
-  save: "SELECT declaration.save_statement_answer($1, $2, $3, $4) AS result",
+  // SRV-IZJAVA-PITANJE, F4-PRE-R02-SRV2: save_statement, the optional answer
+  // and the optional mismatch explanation in one call.
+  save: "SELECT declaration.save_statement_explained($1, $2, $3, $4, $5) AS result",
   upload: "SELECT declaration.upload_attachment($1, $2, $3) AS result",
 } as const;
 
@@ -71,7 +78,7 @@ export function createStatementPort(withActor: WithActor, readForm: FormReader):
         op.type === "upload" || op.type === "conversations" ? null : await readForm(slug);
       const args =
         op.type === "save"
-          ? [assignmentId, op.body, form?.file ?? null, op.answer]
+          ? [assignmentId, op.body, form?.file ?? null, op.answer, op.explanation]
           : op.type === "upload"
             ? [assignmentId, op.format, Buffer.from(op.bytes)]
             : [assignmentId];

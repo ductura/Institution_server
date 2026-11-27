@@ -211,7 +211,13 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
   {
     fn: "declaration.save_statement_answer",
     why: "write",
-    note: "the student saves their own declaration and their own answer to the teacher's question",
+    note: "the student saves their own declaration and their own answer to the teacher's question; since F4-PRE-R02-SRV2 only through save_statement_explained",
+    callers: [],
+  },
+  {
+    fn: "declaration.save_statement_explained",
+    why: "write",
+    note: "the student saves their own declaration, answer and explanation of a mismatch with the record",
     callers: ["server/database/statement/index.ts"],
   },
   {

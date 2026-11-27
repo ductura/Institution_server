@@ -131,6 +131,8 @@ SELECT bag_eq(
             ('declaration.submission_gate(text,bigint)'),
             -- SRV-IZJAVA-PITANJE: the declaration save with the answer to the teacher's question.
             ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
+            -- F4-PRE-R02-SRV2: the declaration save with the explanation of a mismatch.
+            ('declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)'),
             -- SRV-F4-EDI-R07: the student's own conversations a declaration can attach.
             ('declaration.list_conversations(uuid)'),
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
