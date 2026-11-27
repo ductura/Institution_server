@@ -9,10 +9,11 @@ import {
 } from "../../server/domain/index.ts";
 
 // F4-V14-R01: app.open_student_work writes the spreadsheet revision 0 as a SQL
-// literal. This keeps the migration and the sheet domain from drifting apart
+// literal (in the slides migration, which opens all three kinds). This keeps
+// the migration and the sheet domain from drifting apart
 // (pgTAP checks the stored bytes and hash against the same literals, db/main/
 // tests/046-evidence-open-work.sql). Every value is invented.
-const MIGRATION = "20261220580000_open_work_spreadsheet.sql";
+const MIGRATION = "20261220590000_open_work_slides.sql";
 const TEXT = readFileSync(
   new URL(`../../db/main/migrations/${MIGRATION}`, import.meta.url),
   "utf8",
@@ -32,7 +33,7 @@ describe("open_student_work spreadsheet migration", () => {
     );
   });
 
-  it("opens spreadsheet and text only; slides stay not configured", () => {
-    expect(UP).toContain("v_kind NOT IN ('text', 'spreadsheet')");
+  it("opens text, slides and spreadsheet", () => {
+    expect(UP).toContain("v_kind NOT IN ('text', 'slides', 'spreadsheet')");
   });
 });
