@@ -14,10 +14,13 @@
     "./hostile-inputs": "./hostile-inputs/index.ts",
     "./invented-works": "./invented-works/index.ts",
     "./pglite": "./pglite/index.ts",
-    "./dev-server": "./dev-server/index.ts"
+    "./dev-server": "./dev-server/index.ts",
+    "./tsa": "./tsa/index.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.3.14",
-    "oidc-provider": "9.12.2"
+    "asn1js": "4.0.0",
+    "oidc-provider": "9.12.2",
+    "pkijs": "4.0.1"
   }
 }

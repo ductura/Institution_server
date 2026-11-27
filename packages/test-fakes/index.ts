@@ -11,3 +11,4 @@ export * from "./invented-works/index.ts";
 export * from "./oidc/index.ts";
 export * from "./pglite/index.ts";
 export * from "./services/index.ts";
+export * from "./tsa/index.ts";

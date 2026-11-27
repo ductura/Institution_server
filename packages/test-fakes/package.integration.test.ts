@@ -20,6 +20,7 @@ const ENTRIES = [
   "/invented-works",
   "/pglite",
   "/dev-server",
+  "/tsa",
 ];
 
 function load(specifier: string, nodeEnv: string | undefined) {
@@ -31,7 +32,7 @@ function load(specifier: string, nodeEnv: string | undefined) {
 }
 
 describe("@ductura/test-fakes as a package", () => {
-  it("exports exactly the root and the nine modules", () => {
+  it("exports exactly the root and the ten modules", () => {
     const own = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
       exports: Record<string, string>;
     };

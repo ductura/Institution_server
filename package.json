@@ -100,10 +100,12 @@
     "@tiptap/extension-placeholder": "3.33.0",
     "@tiptap/extension-text": "3.33.0",
     "@tiptap/pm": "3.33.0",
+    "asn1js": "4.0.0",
     "fflate": "0.8.3",
     "openid-client": "6.8.8",
     "pg": "8.23.1",
     "pg-boss": "12.38.0",
+    "pkijs": "4.0.1",
     "unpdf": "2.2.1",
     "uqr": "0.1.2",
     "zod": "4.6.7"
