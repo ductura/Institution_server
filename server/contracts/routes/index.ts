@@ -178,6 +178,7 @@ export { assistantMatchRoutes } from "./assistant-match.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
+export { workAccommodationRoutes } from "./work-accommodation.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";

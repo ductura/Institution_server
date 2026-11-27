@@ -18,11 +18,16 @@ import { sendJson, sendProblem, type Route } from "../index.ts";
 export { createTeacherDeclarationConversationRouteFor } from "./conversation.ts";
 
 const ID = "teacher.declaration.get";
+// F4-PRE-R06-SRV: the same read checked against the declaration-v2 body.
+const ID_V2 = "teacher.declaration-second.get";
 
-export function createTeacherDeclarationRoute(read: TeacherDeclarationReader): Route {
-  const contract = ROUTES.find((entry) => entry.id === ID);
+export function createTeacherDeclarationRoute(
+  read: TeacherDeclarationReader,
+  id: typeof ID | typeof ID_V2 = ID,
+): Route {
+  const contract = ROUTES.find((entry) => entry.id === id);
   const body = contract?.responses.find((response) => response.status === 200)?.body;
-  if (contract === undefined || body === undefined) throw new Error(`no contract ${ID}`);
+  if (contract === undefined || body === undefined) throw new Error(`no contract ${id}`);
   return {
     contract,
     async handle(request, response, params) {
@@ -52,4 +57,8 @@ export function createTeacherDeclarationRoute(read: TeacherDeclarationReader): R
 
 export function createTeacherDeclarationRouteFor(main: { withActor: WithActor }): Route {
   return createTeacherDeclarationRoute(createTeacherDeclarationReader(main.withActor));
+}
+
+export function createTeacherDeclarationV2RouteFor(main: { withActor: WithActor }): Route {
+  return createTeacherDeclarationRoute(createTeacherDeclarationReader(main.withActor), ID_V2);
 }

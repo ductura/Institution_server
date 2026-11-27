@@ -857,6 +857,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  // F4-PRE-R02-SRV: the declaration-v2 routes over the same store.
+  "student.declaration-second.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v2`,
+      as: "student",
+    },
+  },
+  "student.declaration-second.put": {
+    before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v2`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
   "student.declaration-attachments.post": {
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/declaration-attachments`,
@@ -2407,6 +2432,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "work.imports.post": { request: POST_IMPORT },
+  "work.imports.get": {
+    before: [POST_IMPORT],
+    request: { path: IMPORTS, as: "student" },
+  },
   "work.imports.confirm.post": {
     before: [POST_IMPORT],
     request: {
@@ -2783,6 +2812,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  // F4-PRE-R06-SRV: the same read checked against the declaration-v2 body.
+  "teacher.declaration-second.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v2`,
+      as: "nastavnik",
+    },
+  },
   // F4-NAS-R04-SRV: the fake stores no conversation, so nothing is attached.
   "teacher.declaration-conversation.get": {
     before: SUBMIT_STEPS,
@@ -2895,6 +2932,28 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       method: "PUT",
       body: { required: true },
+    },
+  },
+  "student.accommodation.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/accommodation`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "student.accommodation.put": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/accommodation`,
+      as: "student",
+      method: "PUT",
+      body: { marked: true },
+    },
+  },
+  "teacher.student-accommodation.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/accommodation`,
+      as: "nastavnik",
+      method: "GET",
     },
   },
   "institution.assignment-late-submission.put": {
