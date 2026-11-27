@@ -54,6 +54,8 @@ describe("server/institution public interface", () => {
       "readEnrollmentCodeState",
       "readFacultyRules",
       "readInstitutionCourses",
+      // F4-PM2-R08-SRV: the accommodation mark of a work over HTTP (work-accommodation.ts).
+      "readOwnWorkAccommodation",
       "readStudentAccessLog",
       // SRV-NF1-PREDANO: when each own submission was confirmed.
       "readStudentAssignmentSubmissions",
@@ -62,7 +64,9 @@ describe("server/institution public interface", () => {
       "readTeacherRoles",
       "readTeacherRoster",
       "readTeacherSubmission",
+      "readWorkAccommodation",
       "registerPurgeOrphanWorkData",
+      "setWorkAccommodation",
       "studentCoursesOf",
     ]);
   });

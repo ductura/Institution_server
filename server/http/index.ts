@@ -237,6 +237,11 @@ export {
   createDeclarationRequiredRoutes,
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
+export {
+  createWorkAccommodationRoutes,
+  createWorkAccommodationRoutesFor,
+  type WorkAccommodationPort,
+} from "./work-accommodation.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
