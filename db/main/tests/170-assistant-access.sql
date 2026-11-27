@@ -561,8 +561,9 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT count(*)::text FROM assistant.message m
 -- The worker ("stanje i ID-ovi", "svodi kroz RPC"), the operator and every
 -- other runtime role: not even the schema. The worker reads the state and ids
 -- of a request only through sweep_and_settle (SRV-1203), so it uses the
--- schema but reads no table.
-SELECT is(pg_temp.reads(r, 'anon', t), CASE r WHEN 'ductus_worker' THEN 'no privilege' ELSE 'no schema privilege' END,
+-- schema but reads no table. The evidence owner uses the schema only for
+-- ai_transfer_link_sha256 (SRV-1809) and likewise reads no table.
+SELECT is(pg_temp.reads(r, 'anon', t), CASE WHEN r IN ('ductus_worker', 'ductus_evidence') THEN 'no privilege' ELSE 'no schema privilege' END,
   format('%s reads nothing of %s', r, t))
 FROM unnest(ARRAY['ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'ductus_test_stranger']) AS r
 CROSS JOIN unnest(ARRAY['conversation', 'message', 'request', 'cost_ledger', 'budget_counter', 'cost_config_version']) AS t;
