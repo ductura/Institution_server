@@ -4,7 +4,7 @@ Uvoz datoteka u rad prema [Karti servera](../../docs/server-map.md).
 
 ## Što radi
 
-Čita primljenu datoteku i od nje gradi pregled uvoza: dokument Ducture (shema v2), tragove i manifest `ductus-import-manifest-v1` s tri hasha (SRV-1803, plan M8.2; ugovor [import-contract](../../docs/adr/import-contract.md)). Danas samo DOCX (`docx/`). Ništa iz datoteke se ne pokreće, ne otvara ni ne dohvaća.
+Čita primljenu datoteku i od nje gradi pregled uvoza: dokument Ducture (shema v2), tragove i manifest `ductus-import-manifest-v1` s tri hasha (SRV-1803, plan M8.2; ugovor [import-contract](../../docs/adr/import-contract.md)). Čitači: DOCX (`docx/`), PDF (`pdf/`) i ODT (`odt/`, ADR [manifest uvoza v2](../../docs/adr/import-manifest-v2.md); manifest v2 i ruta za ODT čekaju korak 1 ADR-a). Čitač se bira po sadržaju (`importFormatOf`), nikad po nazivu. Ništa iz datoteke se ne pokreće, ne otvara ni ne dohvaća.
 
 ## Tko ga zove
 
@@ -16,7 +16,7 @@ Samo bajtove koje je ruta primila, u memoriji. Ne piše bazu ni pohranu; zapis u
 
 ## Što izvozi
 
-`readDocx` (čitanje DOCX-a u dokument v2 i tragove ili kod odbijanja iz ugovora) i `prepareDocxImport` (pregled s manifestom, hashovima i normaliziranim nazivom datoteke).
+`readOdt` (čitanje ODT-a u dokument v2 i tragove), `importFormatOf` (izbor čitača po sadržaju), `readDocx` (čitanje DOCX-a u dokument v2 i tragove ili kod odbijanja iz ugovora) i `prepareDocxImport` (pregled s manifestom, hashovima i normaliziranim nazivom datoteke).
 
 ## Što ne smije uvoziti
 
