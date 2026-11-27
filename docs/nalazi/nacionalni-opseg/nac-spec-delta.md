@@ -27,10 +27,10 @@ Promet zato raste s veličinom dokumenta, a ne s brojem utipkanih znakova. Segme
 
 `evidence.commit.post` ostaje na istom putu; tijelo postaje unija dvaju oblika po zatvorenom polju `kind`:
 
-| `kind`       | Polja uz `documentId`, `clientTransactionId`, `baseRevision`, `segments` | Kada                                            |
-| ------------ | ------------------------------------------------------------------------ | ----------------------------------------------- |
-| `full`       | `document` (kao danas)                                                   | kontrolna točka; uvijek dopuštena               |
-| `delta`      | `baseDocumentHash` (SHA-256 snimke revizije `baseRevision`)              | zadano; bez `document`                          |
+| `kind`  | Polja uz `documentId`, `clientTransactionId`, `baseRevision`, `segments` | Kada                              |
+| ------- | ------------------------------------------------------------------------ | --------------------------------- |
+| `full`  | `document` (kao danas)                                                   | kontrolna točka; uvijek dopuštena |
+| `delta` | `baseDocumentHash` (SHA-256 snimke revizije `baseRevision`)              | zadano; bez `document`            |
 
 - Oblik bez `kind` ostaje valjan i znači `full` (stari klijenti rade; aditivna promjena, ne major). Time se `contracts:breaking` ne okida, uz uvjet da se `document` u shemi pretvori iz obaveznog u jedan od dva oblika bez promjene postojećeg oblika; to treba potvrditi provjerom prije izgradnje.
 - `baseDocumentHash` je isti broj kao `segment.initialDocumentHash`; dupliciranje je namjerno: server odbija zahtjev ako se ne poklapaju, pa greška klijenta nikad ne postane tiha razlika.
