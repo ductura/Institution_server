@@ -87,6 +87,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
@@ -559,6 +560,7 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
       createTeacherDeclarationRouteFor(databases.main),
+      createTeacherDeclarationV2RouteFor(databases.main),
       // F4-NAS-R04-SRV: the conversations attached to the bound declaration.
       createTeacherDeclarationConversationRouteFor(databases.main),
       createTeacherSubmissionNotesRouteFor(databases.main),
