@@ -14,8 +14,11 @@ import pg from "pg";
 
 /** The databases whose state the registry reports. */
 export type DatabaseName = "main" | "logs" | "legal";
-/** A pool: one per database, and `auth`, the second login to the main database. */
-export type PoolName = DatabaseName | "auth";
+/**
+ * A pool: one per database, `auth`, the second login to the main database,
+ * and `worker`, the third (ductus_worker, only the worker process opens it).
+ */
+export type PoolName = DatabaseName | "auth" | "worker";
 
 /**
  * State of one database, in the words of CapabilityStatus in the API contract
@@ -42,6 +45,8 @@ type PoolSpec = {
 export const POOLS: Readonly<Record<PoolName, PoolSpec>> = Object.freeze({
   main: { variable: "APP_DATABASE_URL", max: 10 },
   auth: { variable: "AUTH_DATABASE_URL", max: 2 },
+  // The worker process (F4-PM2-R01B, D-71, D-102): three workers, one pass each at a time.
+  worker: { variable: "WORKER_DATABASE_URL", max: 4 },
   logs: { variable: "LOGS_DATABASE_URL", max: 4 },
   legal: { variable: "LEGAL_DATABASE_URL", max: 2 },
 });

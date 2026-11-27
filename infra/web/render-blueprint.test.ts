@@ -32,7 +32,13 @@ const keys = service.envVars.map((v) => v.key);
 
 /** Every name in `pattern`'s first group, in the order found. */
 const namesIn = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]!);
-const POOL_VARIABLES = namesIn(read("server/database/registry.ts"), /variable: "([A-Z_]+)"/gu);
+// The worker process has its own login (F4-PM2-R01B, D-71, D-102): the web service of this
+// Blueprint never gets it, and the test below holds that.
+const WORKER_VARIABLE = "WORKER_DATABASE_URL";
+const POOL_VARIABLES = namesIn(
+  read("server/database/registry.ts"),
+  /variable: "([A-Z_]+)"/gu,
+).filter((name) => name !== WORKER_VARIABLE);
 // The login's variables that loadAuthConfig requires (required() and url()).
 const LOGIN_REQUIRED = [
   ...new Set(
@@ -75,6 +81,12 @@ describe("render.yaml", () => {
     for (const name of [...POOL_VARIABLES, ...LOGIN_REQUIRED, "APP_ORIGIN"]) {
       expect(keys).toContain(name);
     }
+  });
+
+  it("gives the web service no login of the worker process", () => {
+    expect(read("server/database/registry.ts")).toContain(`variable: "${WORKER_VARIABLE}"`);
+    expect(keys).not.toContain(WORKER_VARIABLE);
+    expect(keys).not.toContain("WORKER_EVIDENCE_DOMAIN_ID");
   });
 
   it("never sets a switch of local work, tests or the fake provider", () => {

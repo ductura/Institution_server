@@ -17,7 +17,7 @@ import {
   type Mentorship,
   type State,
 } from "./state.ts";
-import { processSummary, textBlocks } from "./work.ts";
+import { fakeConfirmationCode, processSummary, textBlocks } from "./work.ts";
 
 type FastPathStudent = Operations["teacher.fast-path.post"]["success"]["body"]["students"][number];
 
@@ -564,6 +564,18 @@ export const TEACHER_HANDLERS: Handlers = {
         },
       };
     return { status: 200, body: { state: "potvrdeno", receipt: work.submissionReceipt } };
+  },
+  // Dizajn 27. 11., 1.1: the same code the student reads, for the same readers as the receipt.
+  "teacher.submission-confirmation-code.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    const studentId = params.studentId.toLowerCase();
+    if (assignment === null || !studentsOf(state, account, assignment).includes(studentId))
+      return { error: "not_found" };
+    const receipt = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    )?.submissionReceipt;
+    return { status: 200, body: { code: receipt == null ? null : fakeConfirmationCode(receipt) } };
   },
   "teacher.mentorship-requests.get": ({ account }) => {
     if (account === null || !account.roles.includes("teacher")) return { error: "forbidden" };

@@ -747,3 +747,54 @@ describe("InstitutionRoutedPayloadStore.readImmutable (B2)", () => {
     expect(outcome).toEqual({ status: "found", bytes: BYTES });
   });
 });
+
+describe("InstitutionRoutedPayloadStore.headImmutable (F4-PM2-R01B)", () => {
+  const head = (institutionId: string) => ({
+    institutionId,
+    evidencePackageId: PACKAGE,
+    segmentHash: HASH,
+    payloadBytes: PAYLOAD.length,
+  });
+  const withHead = (answer: unknown) => {
+    const store = fakeDomain(verified);
+    const headImmutable = vi.fn(async () => answer);
+    return Object.assign(store, { headImmutable: headImmutable as never });
+  };
+
+  it("asks only the domain of the institution and passes its answer", async () => {
+    const a = withHead({ status: "present" });
+    const b = withHead({ status: "absent" });
+    const { router } = routerWith({ [FAK_A]: a, [FAK_B]: b });
+    await expect(router.headImmutable(head(FAK_A))).resolves.toEqual({ status: "present" });
+    await expect(router.headImmutable(head(FAK_B))).resolves.toEqual({ status: "absent" });
+    expect(a.headImmutable).toHaveBeenCalledOnce();
+    expect(b.headImmutable).toHaveBeenCalledOnce();
+  });
+
+  it("an institution with no domain, a bad id and a store without a head are unavailable", async () => {
+    const { router } = routerWith({ [FAK_A]: fakeDomain(verified) });
+    await expect(router.headImmutable(head(FAK_C))).resolves.toEqual(UNAVAILABLE);
+    await expect(router.headImmutable(head("nije-ustanova"))).resolves.toEqual(UNAVAILABLE);
+    await expect(router.headImmutable(head(FAK_A))).resolves.toEqual(UNAVAILABLE);
+  });
+
+  it("a store that throws or answers a strange status is unavailable, never present", async () => {
+    const strange = withHead({ status: "ok-ish" });
+    const throwing = Object.assign(fakeDomain(verified), {
+      headImmutable: vi.fn(async () => {
+        throw new Error("secret detail");
+      }) as never,
+    });
+    const { router } = routerWith({ [FAK_A]: strange, [FAK_B]: throwing });
+    await expect(router.headImmutable(head(FAK_A))).resolves.toEqual(UNAVAILABLE);
+    await expect(router.headImmutable(head(FAK_B))).resolves.toEqual(UNAVAILABLE);
+  });
+
+  it("a domain whose identity label is not verified answers nothing", async () => {
+    const store = withHead({ status: "present" });
+    store.verifyIdentity.mockResolvedValue({ status: "mismatch" } as never);
+    const { router } = routerWith({ [FAK_A]: store });
+    await expect(router.headImmutable(head(FAK_A))).resolves.toEqual(UNAVAILABLE);
+    expect(store.headImmutable).not.toHaveBeenCalled();
+  });
+});

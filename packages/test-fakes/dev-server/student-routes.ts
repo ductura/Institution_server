@@ -1,7 +1,7 @@
 // Student routes of the dev fake server: own courses and assignments, the
 // state of own works and who opened them (PRODUCT §5 rule 17). Only the
 // caller's own memberships and works are ever read.
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { Value } from "@sinclair/typebox/value";
 
@@ -20,6 +20,7 @@ import {
   type State,
   type WorkSource,
 } from "./state.ts";
+import { fakeConfirmationCode } from "./work.ts";
 
 /** Assignments of the courses the account is a student in. */
 export function studentAssignments(state: State, account: Account): Assignment[] {
@@ -216,15 +217,7 @@ export const STUDENT_HANDLERS: Handlers = {
     const receipt = state.works.find(
       (item) => item.assignmentId === assignment.id && item.studentId === account.id,
     )?.submissionReceipt;
-    if (receipt == null) return { status: 200, body: { code: null } };
-    const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-    const digest = createHash("sha256").update(JSON.stringify(receipt.payload)).digest();
-    let code = "";
-    for (let index = 0; index < 16; index += 1) {
-      if (index > 0 && index % 4 === 0) code += "-";
-      code += alphabet[digest[index]! & 31];
-    }
-    return { status: 200, body: { code } };
+    return { status: 200, body: { code: receipt == null ? null : fakeConfirmationCode(receipt) } };
   },
   "student.receipt-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };

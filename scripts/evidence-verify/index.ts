@@ -29,6 +29,15 @@ export {
   runPortableRecordVerify,
   type RecordOutcome,
 } from "./portable-record.ts";
+// DAN-1563 (main #789): one evidence package against a trust file; CLI in cli.ts.
+export { EVIDENCE_VERIFY_PACKAGE_SCHEMA, verifyEvidencePackage } from "./package.ts";
+export type {
+  EvidenceCheck,
+  EvidenceCheckName,
+  EvidenceVerifyPackage,
+  EvidenceVerifyReport,
+  EvidenceVerifyTrust,
+} from "./package.ts";
 
 /** Reads at most `maxBytes`; a longer file is "too_large", a missing one null. */
 export const readLocalFile: ReadFile = async (path, maxBytes) => {

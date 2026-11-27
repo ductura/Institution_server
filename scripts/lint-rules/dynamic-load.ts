@@ -85,6 +85,8 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   // The working directory is the repository root the development signer's seed
   // must stay out of, as in Ductus ingest-deps.ts (DAN-815 c).
   "server/server.ts": { process: ["env", "exitCode", "exit", "on", "off", "cwd"] },
+  // The worker process's entry point: the same, for its own start and SIGTERM (F4-PM2-R01B).
+  "server/worker-main.ts": { process: ["env", "exitCode", "exit", "on", "cwd"] },
   // The logs hook waits for stdout and stderr to drain (S-1B-c, DAN-778).
   "server/http/shutdown.ts": { process: ["stdout", "stderr"] },
   "server/config/environment.ts": { process: ["env"] },
