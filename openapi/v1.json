@@ -70815,6 +70815,12 @@
                                 "type": "string"
                               }
                             ]
+                          },
+                          "noticeChangedSinceSeen": {
+                            "type": "boolean"
+                          },
+                          "afterDeadline": {
+                            "type": "boolean"
                           }
                         }
                       }

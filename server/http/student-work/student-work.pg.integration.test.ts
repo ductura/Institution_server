@@ -124,8 +124,25 @@ it("starts a work once and lists only the student's own works", async () => {
             revision: 0,
             submittedAt: null,
             language: "hr",
+            // She confirmed the current (second) notice of Z1.
+            noticeChangedSinceSeen: false,
           },
         ],
+      });
+      // F4 1.6: Vesna's third version of Z1 is newer than the newest Ana confirmed.
+      await db.exec(`INSERT INTO institution.assignment_version (
+          assignment_id, version_no, title, instructions, work_type, opens_at, due_at, ai_policy,
+          ai_purposes, evidence_profile, import_allowed, created_by)
+        SELECT assignment_id, 3, title, instructions, work_type, opens_at, due_at, ai_policy,
+               ai_purposes, evidence_profile, import_allowed, created_by
+          FROM institution.assignment_version
+         WHERE assignment_id = pg_temp.id('z1') AND version_no = 2;
+        UPDATE institution.assignment SET current_version = 3 WHERE id = pg_temp.id('z1')`);
+      const changed = await works("D");
+      expect(changed.status).toBe(200);
+      expect((changed.body.works as Record<string, unknown>[])[0]).toMatchObject({
+        assignmentId: ids.z1,
+        noticeChangedSinceSeen: true,
       });
       // Dora and Tomo see none of it.
       expect(await works("E")).toEqual({ status: 200, body: { works: [] } });

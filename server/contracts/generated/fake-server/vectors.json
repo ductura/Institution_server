@@ -49546,7 +49546,8 @@
             "state": "in_progress",
             "revision": 3,
             "submittedAt": null,
-            "language": "hr"
+            "language": "hr",
+            "noticeChangedSinceSeen": true
           },
           {
             "workId": "00000000-0000-4000-8000-0000000014c2",
@@ -49559,7 +49560,9 @@
             "state": "submitted",
             "revision": 12,
             "submittedAt": "2027-01-19T10:15:00.000Z",
-            "language": "en"
+            "language": "en",
+            "noticeChangedSinceSeen": false,
+            "afterDeadline": false
           }
         ]
       }
