@@ -225,6 +225,27 @@ describe("student.submission-package-link.post and student.submission-package.ge
     ).toBe(false);
   });
 
+  it("keeps the confirmation without a code for a submission that is not the live one", async () => {
+    // Withdrawn: another submission of the assignment is live.
+    const host = await start({ code: await fakeCode("00000000-0000-4000-8000-000000000009") });
+    const link = (await (
+      await post(host, SUBMISSION_ID, TOKEN_A, { kind: "referada" })
+    ).json()) as Link;
+    const response = await get(host, link.downloadPath, TOKEN_A);
+    expect(response.status).toBe(200);
+    const source = await sourceOf();
+    const receipt = {
+      payload: JSON.parse(source.receiptPayload),
+      payloadDigestSha256: source.payloadDigestSha256,
+      signature: source.signature,
+    } as Parameters<typeof renderReceiptPdf>[0];
+    expect(
+      Buffer.from(await response.arrayBuffer()).equals(
+        Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr)),
+      ),
+    ).toBe(true);
+  });
+
   it("answers the other student, an unknown and a malformed id with the same 404", async () => {
     const host = await start();
     const answers = await Promise.all([
@@ -322,8 +343,18 @@ describe("student.submission-package-link.post and student.submission-package.ge
         { read: async () => ({ status: "unavailable", reason: "key_malformed" }) },
         { read: async () => Promise.reject(new Error("database down")) },
         { dailyRoot: async () => ({ status: "unavailable" }) },
-        // The live submission of the assignment is another one: no PDF without its code.
-        { code: await fakeCode("00000000-0000-4000-8000-000000000009") },
+        // The code read fails: never a PDF without its code.
+        {
+          code: createSubmissionConfirmationCode(
+            {
+              read: async () =>
+                ({ ok: false, error: { code: "MY_SUBMISSION_STATE_DATABASE_ERROR" } }) as never,
+            },
+            {
+              state: async () => Promise.reject(new Error("not read")),
+            } as unknown as MySubmissionStateReader,
+          ),
+        },
       ];
       for (const over of cases) {
         const host = await start({ read: createPortableRecordReader(await fakeDatabase()) });

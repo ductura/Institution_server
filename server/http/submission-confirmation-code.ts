@@ -6,9 +6,12 @@
 // app.my_submission_state. The code is of the live submission of the
 // assignment; it is this submission's only when the state, read after it,
 // still shows this submission's bound receipt (withdrawal is final and a
-// receipt exists before its code is read). Anything else is a closed refusal,
-// never a PDF quietly without the code: a withdrawn submission, or a student
-// no longer in the course, has no reader of its code under the session.
+// receipt exists before its code is read). A submission that is not the live
+// one under the session (withdrawn, or its student no longer in the course,
+// where both reads answer not_found) has no code to carry: its PDF is the one
+// without a code, as before Dizajn 1.1, so the record is not lost. A read
+// that fails, or a live bound receipt without its code, is a closed refusal,
+// never a PDF quietly without the code.
 import type { ServerResponse } from "node:http";
 
 import {
@@ -24,15 +27,19 @@ import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 
-export type SubmissionConfirmationCodeRefusal =
-  "code_unreadable" | "state_unreadable" | "not_live_submission" | "code_missing";
+/** The code of the reader that answers not_found for anyone not in the course (C-23). */
+const NOT_FOUND = "MY_SUBMISSION_STATE_NOT_FOUND";
 
+export type SubmissionConfirmationCodeRefusal =
+  "code_unreadable" | "state_unreadable" | "code_missing";
+
+/** ok with null: this submission is not the live one under the session, so no code. */
 export type SubmissionConfirmationCode = (
   token: string,
   assignmentId: string,
   submissionId: string,
 ) => Promise<
-  | { readonly ok: true; readonly code: string }
+  | { readonly ok: true; readonly code: string | null }
   | { readonly ok: false; readonly reason: SubmissionConfirmationCodeRefusal }
 >;
 
@@ -42,14 +49,19 @@ export function createSubmissionConfirmationCode(
 ): SubmissionConfirmationCode {
   return async (token, assignmentId, submissionId) => {
     const code = await codes.read(token, assignmentId);
-    if (!code.ok) return { ok: false, reason: "code_unreadable" };
+    if (!code.ok) {
+      return code.error.code === NOT_FOUND
+        ? { ok: true, code: null }
+        : { ok: false, reason: "code_unreadable" };
+    }
     const state = await readStudentSubmission(states, token, assignmentId);
+    if (state.status === 404) return { ok: true, code: null };
     if (state.status !== 200) return { ok: false, reason: "state_unreadable" };
     if (
       state.body.state !== "potvrdeno" ||
       state.body.receipt.payload.submissionId !== submissionId
     ) {
-      return { ok: false, reason: "not_live_submission" };
+      return { ok: true, code: null };
     }
     // A bound receipt has its code from the same insert; null here is not that.
     if (code.value === null) return { ok: false, reason: "code_missing" };
@@ -58,8 +70,9 @@ export function createSubmissionConfirmationCode(
 }
 
 /**
- * The code for the PDF of a record the portable-record reader found, or null
- * after the 503 is sent: a failed read is reported, as in receipt-pdf.ts.
+ * The code (or null, no code) for the PDF of a record the portable-record
+ * reader found, or null after the 503 is sent: a failed read is reported, as
+ * in receipt-pdf.ts.
  */
 export async function codeForRecord(
   code: SubmissionConfirmationCode,
@@ -68,14 +81,14 @@ export async function codeForRecord(
   receiptPayload: string,
   response: ServerResponse,
   routeId: string,
-): Promise<string | null> {
+): Promise<{ readonly code: string | null } | null> {
   // The reader checked the payload as a v2 receipt of this very submission.
   const { assignmentId } = JSON.parse(receiptPayload) as { assignmentId: unknown };
   const read =
     typeof assignmentId === "string"
       ? await code(token, assignmentId, submissionId)
       : ({ ok: false, reason: "code_unreadable" } as const);
-  if (read.ok) return read.code;
+  if (read.ok) return { code: read.code };
   reportServerError("route", new Error(read.reason), requestIdOf(response), routeId);
   sendProblem(response, 503, "unavailable");
   return null;

@@ -1,7 +1,8 @@
 // Dizajn 1.1: the bound confirmation code of one submission, read under the
 // caller's session as student.receipt-pdf.get reads it, and only while that
-// submission is the live one of its assignment; anything else refuses with a
-// closed reason, never a code of another submission. Every value is invented
+// submission is the live one of its assignment. A submission that is not the
+// live one gets no code (its PDF as before), never a code of another
+// submission; a failed read refuses with a closed reason. Every value is invented
 // (test-support/portable-record).
 import { describe, expect, it } from "vitest";
 
@@ -56,11 +57,22 @@ describe("createSubmissionConfirmationCode", () => {
   });
 
   it("refuses when the code cannot be read, before reading the state", async () => {
-    const { read, calls } = codeOf(failed("MY_SUBMISSION_STATE_DATABASE_ERROR"), await bound());
-    expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({
-      ok: false,
-      reason: "code_unreadable",
-    });
+    for (const code of [
+      "MY_SUBMISSION_STATE_DATABASE_ERROR",
+      "MY_SUBMISSION_STATE_UNAUTHENTICATED",
+    ]) {
+      const { read, calls } = codeOf(failed(code), await bound());
+      expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({
+        ok: false,
+        reason: "code_unreadable",
+      });
+      expect(calls).toHaveLength(1);
+    }
+  });
+
+  it("gives no code to a student no longer in the course: the code read is not_found", async () => {
+    const { read, calls } = codeOf(failed("MY_SUBMISSION_STATE_NOT_FOUND"), await bound());
+    expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({ ok: true, code: null });
     expect(calls).toHaveLength(1);
   });
 
@@ -68,7 +80,7 @@ describe("createSubmissionConfirmationCode", () => {
     const broken = await bound();
     if (!broken.ok || broken.value.state !== "potvrdeno") throw new Error("unexpected");
     for (const state of [
-      failed("MY_SUBMISSION_STATE_NOT_FOUND"),
+      failed("MY_SUBMISSION_STATE_DATABASE_ERROR"),
       { ...broken, value: { ...broken.value, payloadDigestSha256: "0".repeat(64) } },
     ]) {
       const { read } = codeOf({ ok: true, value: CODE }, state);
@@ -79,7 +91,7 @@ describe("createSubmissionConfirmationCode", () => {
     }
   });
 
-  it("never gives the code of another submission: another live one, waiting or none", async () => {
+  it("gives no code, never another submission's, when this one is not live", async () => {
     const states: State[] = [
       await bound(OTHER),
       {
@@ -87,13 +99,11 @@ describe("createSubmissionConfirmationCode", () => {
         value: { state: "ceka", revision: 1, requestedAt: "2026-11-21T10:00:00.000000Z" },
       } as State,
       { ok: true, value: { state: "none" } } as State,
+      failed("MY_SUBMISSION_STATE_NOT_FOUND"),
     ];
     for (const state of states) {
       const { read } = codeOf({ ok: true, value: CODE }, state);
-      expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({
-        ok: false,
-        reason: "not_live_submission",
-      });
+      expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({ ok: true, code: null });
     }
   });
 

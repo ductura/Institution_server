@@ -182,7 +182,37 @@ describe("student.portable-record.get", () => {
     );
   });
 
-  it("is 503, never a PDF without its code, when the code cannot be vouched for", async () => {
+  it("keeps the PDF without a code for a submission that is not the live one", async () => {
+    const removed = createSubmissionConfirmationCode(
+      {
+        read: async () =>
+          ({ ok: false, error: { code: "MY_SUBMISSION_STATE_NOT_FOUND" } }) as never,
+      },
+      {
+        state: async () => Promise.reject(new Error("not read")),
+      } as unknown as MySubmissionStateReader,
+    );
+    // Withdrawn (another submission is live) and a student no longer in the course.
+    for (const code of [await fakeCode("00000000-0000-4000-8000-000000000009"), removed]) {
+      const answer = await fetch((await start({ code })) + PATH(SUBMISSION_ID), {
+        headers: cookie(TOKEN_A),
+      });
+      expect(answer.status).toBe(200);
+      const files = unzipStored(new Uint8Array(await answer.arrayBuffer()));
+      const receipt = JSON.parse(
+        new TextDecoder().decode(files.get(PORTABLE_RECORD_FILES.receipt)),
+      );
+      expect(
+        Buffer.from(files.get(PORTABLE_RECORD_FILES.pdf)!).equals(
+          Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr)),
+        ),
+      ).toBe(true);
+      await running?.close();
+      running = undefined;
+    }
+  });
+
+  it("is 503, never a PDF without its code, when the code read fails", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     try {
       const unreadable = createSubmissionConfirmationCode(
@@ -194,11 +224,7 @@ describe("student.portable-record.get", () => {
           state: async () => Promise.reject(new Error("not read")),
         } as unknown as MySubmissionStateReader,
       );
-      const cases: Partial<PortableRecordRouteDeps>[] = [
-        // The live submission of the assignment is another one (this one withdrawn).
-        { code: await fakeCode("00000000-0000-4000-8000-000000000009") },
-        { code: unreadable },
-      ];
+      const cases: Partial<PortableRecordRouteDeps>[] = [{ code: unreadable }];
       for (const over of cases) {
         const response = await fetch((await start(over)) + PATH(SUBMISSION_ID), {
           headers: cookie(TOKEN_A),

@@ -61,7 +61,7 @@ export type PortableRecordRouteDeps = {
   readonly dailyRoot: PortableDailyRootSource;
   /** APP_ORIGIN, for the QR of the receipt PDF; null answers 503. */
   readonly origin: string | null;
-  /** The bound confirmation code of the submission, under the same session (Dizajn 1.1). */
+  /** The bound confirmation code of the submission, under the same session; none if not live (Dizajn 1.1). */
   readonly code: SubmissionConfirmationCode;
 };
 
@@ -89,7 +89,7 @@ export function createPortableRecordRoute(deps: PortableRecordRouteDeps): Route 
           unavailable(response, read.reason);
           return sendProblem(response, 503, "unavailable");
         }
-        const confirmationCode = await codeForRecord(
+        const confirmation = await codeForRecord(
           deps.code,
           token,
           submissionId,
@@ -97,14 +97,14 @@ export function createPortableRecordRoute(deps: PortableRecordRouteDeps): Route 
           response,
           CONTRACT.id,
         );
-        if (confirmationCode === null) return;
+        if (confirmation === null) return;
         const built = await buildPortableRecord({
           submissionId,
           source: read.rows,
           dailyRoot: deps.dailyRoot,
           origin: deps.origin,
           labels: receiptPdfHr,
-          confirmationCode,
+          confirmationCode: confirmation.code,
         });
         if (built.status === "refused") {
           unavailable(response, built.reason);
