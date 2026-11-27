@@ -53,7 +53,11 @@ describe("work accommodation RPC calls", () => {
         STUDENT,
       ),
     ).toEqual({ kind: "unauthorized" });
-    for (const result of [rows({ live: true, marked: null }), fails("ZD401"), fails("ZD403")]) {
+    // The database refuses an ended session with ZD401 before it answers a row.
+    expect(
+      await readWorkAccommodation(TOKEN, port(fails("ZD401")).withActor, ASSIGNMENT, STUDENT),
+    ).toEqual({ kind: "unauthorized" });
+    for (const result of [rows({ live: true, marked: null }), fails("ZD403")]) {
       expect(
         await readWorkAccommodation(TOKEN, port(result).withActor, ASSIGNMENT, STUDENT),
       ).toEqual({ kind: "notFound" });
@@ -103,7 +107,10 @@ describe("work accommodation RPC calls", () => {
         ASSIGNMENT,
       ),
     ).toEqual({ kind: "unauthorized" });
-    for (const result of [rows({ live: true, marked: null }), fails("ZD401"), fails("ZD403")]) {
+    expect(
+      await readOwnWorkAccommodation(TOKEN, port(fails("ZD401")).withActor, ASSIGNMENT),
+    ).toEqual({ kind: "unauthorized" });
+    for (const result of [rows({ live: true, marked: null }), fails("ZD403")]) {
       expect(await readOwnWorkAccommodation(TOKEN, port(result).withActor, ASSIGNMENT)).toEqual({
         kind: "notFound",
       });

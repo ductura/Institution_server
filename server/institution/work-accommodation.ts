@@ -36,6 +36,16 @@ function refusalOf(error: unknown, what: string): { kind: WorkAccommodationRefus
  * The row of a read: no live session is unauthorized (the client signs in
  * again), a work the caller may not see is notFound, a broken answer throws.
  */
+/**
+ * A refused read: an ended session (ZD401, raised before any row) is
+ * unauthorized, a broken answer unavailable, and every other refusal notFound,
+ * so a read never tells a work it may not see from one that does not exist.
+ */
+function readRefusalOf(error: unknown): WorkAccommodationRead {
+  const { kind } = refusalOf(error, "read");
+  return kind === "unauthorized" || kind === "unavailable" ? { kind } : { kind: "notFound" };
+}
+
 function outcomeOf(row: { live: unknown; marked: unknown } | undefined): WorkAccommodationRead {
   if (row?.live === false) return { kind: "unauthorized" };
   if (row?.live !== true) throw new Error("invalid work accommodation");
@@ -66,9 +76,7 @@ export async function readWorkAccommodation(
     return outcomeOf(value);
   } catch (error) {
     // A refused read looks like a missing work: nothing tells the caller which.
-    return refusalOf(error, "read").kind === "unavailable"
-      ? { kind: "unavailable" }
-      : { kind: "notFound" };
+    return readRefusalOf(error);
   }
 }
 
@@ -96,9 +104,7 @@ export async function readOwnWorkAccommodation(
     );
     return outcomeOf(value);
   } catch (error) {
-    return refusalOf(error, "read").kind === "unavailable"
-      ? { kind: "unavailable" }
-      : { kind: "notFound" };
+    return readRefusalOf(error);
   }
 }
 
