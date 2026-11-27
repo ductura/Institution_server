@@ -67,7 +67,12 @@ export { createWorkRevisionDueRoutesFor } from "./work-revision-due/index.ts";
 export { createTeacherRoleRoutes, createTeacherRoleRoutesFor } from "./teacher-roles/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
-export { ANALYSIS_ENABLED, createAnalysisRoutesFor } from "./analysis/index.ts";
+export {
+  ANALYSIS_ENABLED,
+  ANALYSIS_LOCAL_VARIABLE,
+  analysisEnabledFor,
+  createAnalysisRoutesFor,
+} from "./analysis/index.ts";
 export {
   createProblemReportInboxRoutes,
   createProblemReportInboxRoutesFor,

@@ -2,6 +2,7 @@
 // with DUCTURA_DEPLOYMENT=staging, and never weakens the local mode (F-019).
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+import { SIGNED_OUT_PATH } from "../../../server/session/index.ts";
 import { createFakeOidc, fakeOidcConfigFromEnv, type FakeOidcOptions } from "./server.ts";
 import { isProductionHost, isStagingMode, STAGING_CLIENT_ID } from "./staging.ts";
 
@@ -201,7 +202,7 @@ describe("staging accepts", () => {
     expect(options).toMatchObject({
       issuer: ISSUER,
       redirectUris: [`${APP}/api/v1/auth/callback`],
-      postLogoutRedirectUris: [`${APP}/app/web/`],
+      postLogoutRedirectUris: [`${APP}${SIGNED_OUT_PATH}`],
       backchannelLogoutUri: `${APP}/api/v1/auth/backchannel-logout`,
       mode: "success",
       accounts: [],
@@ -212,6 +213,13 @@ describe("staging accepts", () => {
         cookieKey: COOKIE,
       },
     });
+  });
+
+  test("the post-logout address is the path the server signs out to (SIGNED_OUT_PATH)", () => {
+    expect(SIGNED_OUT_PATH).toBe("/");
+    const { options } = config({});
+    expect(options.postLogoutRedirectUris).toEqual([new URL(SIGNED_OUT_PATH, APP).href]);
+    expect(options.postLogoutRedirectUris.join()).not.toContain("/app/web");
   });
 
   test("addresses named on APP_ORIGIN", () => {
