@@ -746,6 +746,17 @@ export const SERVER_SOURCES: Readonly<
   },
   // SRV-ED35-KRITERIJI-STUDENT (Daniel 26. 11. 2026, replacing B-9): the owner
   // student reads each teacher's working criteria; no Ductus route.
+  // F4-MEN-R09-SRV (orchestrator decision of 26. 11. 2026): the mentor's own
+  // "Kako mentor radi" text and the read of it by the mentor's student; no
+  // Ductus route.
+  "app/api/teacher/mentor-working-style/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196658858",
+  },
+  "app/api/student/mentors/[teacherId]/working-style/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196658858",
+  },
   "app/api/student/works/[documentId]/working-criteria/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",

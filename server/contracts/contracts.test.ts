@@ -235,6 +235,8 @@ describe("route inventory", () => {
       "mentorship.request-withdraw.post: app/api/mentorship-requests/[requestId]/withdraw/route.ts is not in the inventory",
       "mentorship.student-requests.get: app/api/student/mentorship-requests/route.ts is not in the inventory",
       "mentorship.student-mentor-candidates.get: app/api/student/mentor-candidates/route.ts is not in the inventory",
+      "mentorship.working-style.get: app/api/student/mentors/[teacherId]/working-style/route.ts is not in the inventory",
+      "mentorship.working-style.put: app/api/teacher/mentor-working-style/route.ts is not in the inventory",
       "mentorship.open.post: app/api/mentorships/route.ts is not in the inventory",
       "mentorship.student-mentorships.get: app/api/student/mentorships/route.ts is not in the inventory",
       "notifications.mentorship-opened.list.get: app/api/notifications/mentorship-opened/route.ts is not in the inventory",

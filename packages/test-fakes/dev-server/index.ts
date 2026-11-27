@@ -76,6 +76,7 @@ import { ASSISTANT_SETTING_HANDLERS } from "./assistant-setting-routes.ts";
 import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
+import { MENTOR_WORKING_STYLE_HANDLERS } from "./mentor-working-style.ts";
 import { THESIS_HANDLERS } from "./thesis-routes.ts";
 import { THESIS_TOPIC_HANDLERS } from "./thesis-topic-routes.ts";
 import { THESIS_COMMITTEE_HANDLERS } from "./thesis-committee-routes.ts";
@@ -145,6 +146,7 @@ export const DEV_HANDLERS: Handlers = {
   ...TEACHING_TEAM_HANDLERS,
   ...WORK_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
+  ...MENTOR_WORKING_STYLE_HANDLERS,
   ...PRACTICE_HANDLERS,
   ...PEER_REVIEW_HANDLERS,
   ...QUALITATIVE_CODES_HANDLERS,
