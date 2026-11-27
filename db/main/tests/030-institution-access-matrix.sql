@@ -238,7 +238,9 @@ SELECT bag_eq(
         -- SRV-ASIST-PREKIDAC: the assistant switch per course; cells in 255-assistant-course-switch.sql.
         'course_assistant_setting',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
-        'roster_import', 'roster_import_entry'],
+        'roster_import', 'roster_import_entry',
+        -- F4 val 2 #5 (1.8): the groups of an assignment; cells per actor in 279-assignment-group.sql.
+        'assignment_group'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -406,7 +408,8 @@ SELECT bag_eq(
     'assignment_code_tests: assignment_code_tests_owner ALL to ductus_identity',
     'course_assistant_setting: course_assistant_setting_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
-    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
+    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity',
+    'assignment_group: assignment_group_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -484,7 +487,8 @@ SELECT bag_eq(
         'qual_segment: qual_segment_fixed 19 O', 'qual_segment: qual_segment_no_truncate 34 O',
         'assignment_code_tests: assignment_code_tests_immutable 27 O', 'assignment_code_tests: assignment_code_tests_no_truncate 34 O',
         'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
-        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
+        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O',
+        'assignment_group: assignment_group_same_course 23 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -779,7 +783,10 @@ SELECT bag_eq(
     'roster_import_admin(OUT user_id uuid, OUT institution_id uuid)',
     'roster_import_ineligible(p_user uuid, p_actor uuid)',
     'preview_roster_import(p_course_id uuid, p_source text, p_rows jsonb) definer app',
-    'confirm_roster_import(p_import_id uuid) definer app'
+    'confirm_roster_import(p_import_id uuid) definer app',
+    'check_assignment_group_course()',
+    'add_assignment_groups(p_assignment_id uuid, p_group_ids uuid[]) definer app',
+    'assignment_groups(p_assignment_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

@@ -194,6 +194,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('identity', 'user_preference', '128-interface-locale.sql'),
     ('identity', 'webauthn_credential', '136-webauthn-credential.sql'),
     ('institution', 'assignment', '030-institution-access-matrix.sql'),
+    ('institution', 'assignment_group', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_code_tests', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_rubric_version', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_team_setting', '030-institution-access-matrix.sql'),
