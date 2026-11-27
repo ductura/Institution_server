@@ -165,6 +165,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('evidence', 'segment_ai_transfer', '275-evidence-segment-v4-ingest.sql'),
     ('evidence', 'signing_key', '047-evidence-acceptance-signature.sql'),
     ('evidence', 'submission', '061-submission.sql'),
+    ('evidence', 'submission_confirmation_code', '067-submission-receipt.sql'),
     ('evidence', 'submission_note', '147-submission-note.sql'),
     ('evidence', 'submission_receipt', '067-submission-receipt.sql'),
     ('evidence', 'submission_receipt_issuance', '063-submission-receipt-issuance.sql'),
@@ -311,7 +312,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 215, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 216, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');
