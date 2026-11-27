@@ -69,6 +69,21 @@ test("the second synthetic teacher is another staff member of the same home orga
     expect(names.filter((other) => other.includes(name)).length, name).toBe(1);
 });
 
+// SEED-OIDC-OPERATER: the operator of db/main/local/seed.sql signs in with the
+// same subject and names the seed stores (scripts/lokalno/config.test.ts reads
+// the seed); the claims carry only the staff affiliation, never a role.
+test("the invented local operator is a staff member of the first institution", () => {
+  expect(demoAccountClaims("demo-operater")).toStrictEqual({
+    sub: "demo-operater",
+    name: "Demo operater",
+    given_name: "Oto",
+    family_name: "Operić",
+    hrEduPersonUniqueID: [`demo-operater@${DEMO_HOME_ORG}`],
+    hrEduPersonHomeOrg: [DEMO_HOME_ORG],
+    hrEduPersonAffiliation: ["djelatnik"],
+  });
+});
+
 // DAN-483: the AAI@EduHr shape, one institution per account, and a second
 // invented institution with its own staff member and student.
 test("every demo account belongs to exactly one of the two invented institutions", () => {

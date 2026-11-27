@@ -70,7 +70,7 @@ SELECT i.id, 'local' FROM identity.institution i
 --   demo-teacher-2  confirmed teacher, teaches group B (course team, collaborator)
 --   demo-student    enrolled in the seminar, group A, notice confirmed, work open
 --   demo-student-2  not enrolled (empty "Moji zadaci")
---   demo-operater   file account (djelatnik), second administrator: the local operator
+--   demo-operater   second administrator (djelatnik): the local operator
 --   demo-bez-uloge  file account (djelatnik) with no confirmed role; not made here
 -- Codes: UPIS2026DEMO (seminar, valid), STARI2025KOD (seminar, expired and
 -- replaced), PRAZNI2026DEMO (the course without an assignment, valid).
@@ -82,12 +82,12 @@ DO $demo$
 DECLARE
   c_issuer constant text := 'http://localhost:8090';
   c_home_org constant text := 'demo.ductus.test';
-  -- Order: admin, teacher, teacher 2, student, student 2, operator. The admin and
-  -- the operator are file accounts of the simulator, so their subject is the
-  -- simulator's account id.
+  -- Order: admin, teacher, teacher 2, student, student 2, operator. The admin is
+  -- a file account of the simulator, so its subject is the simulator's account
+  -- id; the others are accounts of accounts.ts, whose subject is the account id.
   c_subjects constant text[] := ARRAY['sim:nastavnik:demo-admin@demo.ductus.test', 'demo-teacher',
                                       'demo-teacher-2', 'demo-student', 'demo-student-2',
-                                      'sim:nastavnik:demo-operater@demo.ductus.test'];
+                                      'demo-operater'];
   c_users constant text[] := ARRAY['demo-admin', 'demo-teacher', 'demo-teacher-2', 'demo-student',
                                    'demo-student-2', 'demo-operater'];
   c_given constant text[] := ARRAY['Vesna', 'Petar', 'Maja', 'Lucija', 'Marko', 'Oto'];

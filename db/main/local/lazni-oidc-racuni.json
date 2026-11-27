@@ -8,13 +8,6 @@
       "prezime": "Upravić"
     },
     {
-      "korisnik": "demo-operater",
-      "domena": "demo.ductus.test",
-      "uloga": "nastavnik",
-      "ime": "Oto",
-      "prezime": "Operić"
-    },
-    {
       "korisnik": "demo-bez-uloge",
       "domena": "demo.ductus.test",
       "uloga": "nastavnik",

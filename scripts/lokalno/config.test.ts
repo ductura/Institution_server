@@ -8,7 +8,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { loadAuthConfig } from "../../server/external/srce-auth/index.ts";
-import { parseSimulatedAccountsFile } from "../../packages/test-fakes/oidc/index.ts";
+import {
+  demoAccountClaims,
+  parseSimulatedAccountsFile,
+} from "../../packages/test-fakes/oidc/index.ts";
 import {
   accountsFileFor,
   adminTarget,
@@ -158,7 +161,6 @@ describe("the simulator's accounts file (SRV-01)", () => {
     const accounts = parseSimulatedAccountsFile(JSON.parse(text));
     expect(accounts.map((a) => [a.user, a.domain, a.role])).toEqual([
       ["demo-admin", "demo.ductus.test", "nastavnik"],
-      ["demo-operater", "demo.ductus.test", "nastavnik"],
       ["demo-bez-uloge", "demo.ductus.test", "nastavnik"],
       ["demo-student-3", "demo.ductus.test", "student"],
       ["demo-student-4", "demo.ductus.test", "student"],
@@ -167,8 +169,35 @@ describe("the simulator's accounts file (SRV-01)", () => {
     // The administrator's subject is the simulator's account id; the account
     // without a role is never made by the seed.
     expect(seed).toContain("'sim:nastavnik:demo-admin@demo.ductus.test'");
-    expect(seed).toContain("'sim:nastavnik:demo-operater@demo.ductus.test'");
     expect(seed).not.toContain("'sim:nastavnik:demo-bez-uloge@demo.ductus.test'");
+  });
+
+  // SEED-OIDC-OPERATER: the operator is an account of the fake OIDC provider
+  // itself (accounts.ts), not of the accounts file, so it signs in whatever
+  // file is passed. The seed stores the provider's subject and names, and
+  // appoints exactly that subject an administrator.
+  it("the seed's operator is the fake OIDC account demo-operater, same subject and names", () => {
+    const claims = demoAccountClaims("demo-operater");
+    expect(claims).toBeDefined();
+    const seed = readFileSync(join(ROOT, "db/main/local/seed.sql"), "utf8");
+    const array = (name: string): string[] => {
+      const pattern = new RegExp(`${name} constant \\w+\\[\\] := ARRAY\\[([^\\]]*)\\]`, "u");
+      const found = pattern.exec(seed);
+      if (found?.[1] === undefined) throw new Error(`seed.sql: ${name} not found`);
+      return found[1].split(",").map((item) => item.trim().replace(/^'(.*)'$/su, "$1"));
+    };
+    const at = array("c_subjects").indexOf(claims?.sub ?? "");
+    expect(at).toBeGreaterThan(-1);
+    expect(array("c_users")[at]).toBe("demo-operater");
+    expect(array("c_given")[at]).toBe(claims?.given_name);
+    expect(array("c_family")[at]).toBe(claims?.family_name);
+    expect(array("c_eligible")[at]).toBe("true");
+    expect(seed).toContain(`appoint_institution_admin(v_ids[${at + 1}], 'lokalni-seed')`);
+    expect(seed).not.toContain("sim:nastavnik:demo-operater@");
+    const file = parseSimulatedAccountsFile(
+      JSON.parse(readFileSync(join(ROOT, SEED_ACCOUNTS_FILE), "utf8")),
+    );
+    expect(file.map((account) => account.user)).not.toContain("demo-operater");
   });
 });
 
