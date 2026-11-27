@@ -25,14 +25,14 @@ Promet zato raste s veličinom dokumenta, a ne s brojem utipkanih znakova. Segme
 
 ### 3.1 Oblik zahtjeva
 
-`evidence.commit.post` ostaje na istom putu; tijelo postaje unija dvaju oblika po zatvorenom polju `kind`:
+Postojeći `evidence.commit.post` **ostaje nepromijenjen** i služi kao potpuna kontrolna točka (`document` obavezan, kao danas). Razlika ide novom rutom `evidence.commit-delta.post` (radni naziv), po uzoru na `submission.submit-second.post`: nova ruta pod vlastitim putem, bez izmjene postojeće. Razlog: `contracts:breaking` (`server/contracts/breaking.ts`) dopušta nova opcionalna polja zatvorenog zahtjeva, ali ne pretvaranje postojeće sheme u uniju ni promjenu obaveznosti `document`, pa bi izmjena postojeće rute bila major (nalaz automatskog pregleda PR-a #906, provjereno čitanjem pravila).
 
-| `kind`  | Polja uz `documentId`, `clientTransactionId`, `baseRevision`, `segments` | Kada                              |
-| ------- | ------------------------------------------------------------------------ | --------------------------------- |
-| `full`  | `document` (kao danas)                                                   | kontrolna točka; uvijek dopuštena |
-| `delta` | `baseDocumentHash` (SHA-256 snimke revizije `baseRevision`)              | zadano; bez `document`            |
+| Ruta                           | Polja uz `documentId`, `clientTransactionId`, `baseRevision`, `segments` | Kada                              |
+| ------------------------------ | ------------------------------------------------------------------------ | --------------------------------- |
+| `evidence.commit.post` (stara) | `document` (kao danas)                                                   | kontrolna točka; uvijek dopuštena |
+| `evidence.commit-delta.post`   | `baseDocumentHash` (SHA-256 snimke revizije `baseRevision`)              | zadano; bez `document`            |
 
-- Oblik bez `kind` ostaje valjan i znači `full` (stari klijenti rade; aditivna promjena, ne major). Time se `contracts:breaking` ne okida, uz uvjet da se `document` u shemi pretvori iz obaveznog u jedan od dva oblika bez promjene postojećeg oblika; to treba potvrditi provjerom prije izgradnje.
+- Stari klijenti i stara ruta rade bez ikakve promjene (vektori ugovora ostaju zeleni). Nova ruta je aditivna: novi `operationId`, isti oblik pristupa (`student_owner`), iste zaštite i greške, uz jedan novi kod (3.4).
 - `baseDocumentHash` je isti broj kao `segment.initialDocumentHash`; dupliciranje je namjerno: server odbija zahtjev ako se ne poklapaju, pa greška klijenta nikad ne postane tiha razlika.
 - Granica tijela `MAX_COMMIT_BODY_BYTES` ostaje; delta je u praksi malena (jedan segment).
 
@@ -48,7 +48,7 @@ Redoslijed provjera `stale_base` → `chain_conflict` → `invalid` → `not_con
 
 ### 3.3 Povremena potpuna kontrolna točka
 
-Klijent šalje `full` kad god vrijedi jedno od:
+Klijent šalje cijeli dokument starom rutom (`full`) kad god vrijedi jedno od:
 
 - svaka `N`-ta revizija (prijedlog `N = 50`, usklađeno s `RECONSTRUCTION_CHECKPOINT_INTERVAL` radnika, da se kontrolna točka klijenta i radnika poklapaju);
 - prvo spremanje nakon otvaranja rada (`evidence.open` ionako vraća cijelu snimku);
@@ -59,7 +59,7 @@ Kontrolna točka je jedini put kojim se klijentova i serverova snimka ponovno ve
 
 ### 3.4 Greške
 
-Postojeći kodovi ostaju. Dodaje se jedan zatvoreni odgovor 409 `delta_base_mismatch` s postojećim `WorkState`: snimka revizije koju server drži nema hash `baseDocumentHash`. Klijent tada šalje isto spremanje kao `full`; potvrda i lanac se ne mijenjaju. Novi kod greške na postojećoj ruti je promjena ugovora (vidi „Odluke”), a bez njega se isti slučaj može izraziti postojećim `document_mismatch`; razlika je u tome što klijent tada ne može razlikovati „kriva razlika” od „kriva baza”.
+Postojeći kodovi ostaju. Dodaje se jedan zatvoreni odgovor 409 `delta_base_mismatch` s postojećim `WorkState`: snimka revizije koju server drži nema hash `baseDocumentHash`. Klijent tada šalje isto spremanje kao `full`; potvrda i lanac se ne mijenjaju. Kod je na novoj ruti, pa ne lomi staru (vidi „Odluke”), a bez njega se isti slučaj može izraziti postojećim `document_mismatch`; razlika je u tome što klijent tada ne može razlikovati „kriva razlika” od „kriva baza”.
 
 ### 3.5 Ponavljanje, dvostruki zahtjevi i prekid veze
 
@@ -94,7 +94,7 @@ Uživo je predmemorija zadnjeg stanja, ne dokaz, pa je tu sloboda veća, ali ist
 2. **Test koji bi pao bez izmjene:** zahtjev `delta` bez `baseDocumentHash`, s krivim hashom, s `baseDocumentHash` različitim od `initialDocumentHash`, s korakom koji daje drugi `finalDocumentHash` i s većim `sequenceFrom` od očekivanog mora biti odbijen, a nijedan red ne smije nastati.
 3. **Tuđe je nepostojeće:** `delta` za rad drugog studenta i za rad druge ustanove daje 404 kao danas, bez razlike u odgovoru i vremenu prema nepostojećem radu.
 4. **Prekid veze:** niz spremanja složenih u red i poslanih po povratku, uz izgubljen odgovor usred niza, završava istom revizijom i istim lancem kao bez prekida.
-5. **Stari klijent:** zahtjev bez `kind` radi kao danas (vektori ugovora ostaju zeleni).
+5. **Stari klijent:** `evidence.commit.post` radi kao danas (vektori ugovora ostaju zeleni).
 6. **Rekonstrukcija i predaja** nad radom sastavljenim samo od `delta` spremanja (uz kontrolnu točku svakih `N`) daju isti rezultat kao nad radom od `full` spremanja.
 7. **Mjerenje:** isti scenarij sat-pisanja prije i poslije, isti stroj; bez obećanog postotka. Očekivanje iz modela je da promet po spremanju prestane ovisiti o veličini dokumenta, osim kod kontrolnih točaka.
 
@@ -107,8 +107,8 @@ Uživo je predmemorija zadnjeg stanja, ne dokaz, pa je tu sloboda veća, ali ist
 
 ## 8. Odluke koje treba Daniel
 
-1. **Smije li se otvoriti izgradnja** (spremanje s razlikom i kontrolnom točkom, 3.1 do 3.5)? Pretpostavka ovog dokumenta: da, kao aditivna promjena bez majora.
-2. **Novi kod 409 `delta_base_mismatch`** na postojećoj ruti ili ponovno korištenje `document_mismatch`? Novi kod je promjena ugovora; preporuka: dopustiti ga, jer klijent bez njega ne zna kako se oporaviti.
+1. **Smije li se otvoriti izgradnja** (spremanje s razlikom i kontrolnom točkom, 3.1 do 3.5)? Pretpostavka ovog dokumenta: da, kao nova aditivna ruta uz nepromijenjenu staru (major se ne traži).
+2. **Kod 409 `delta_base_mismatch`** na novoj ruti (nema utjecaja na staru) ili ponovno korištenje `document_mismatch`? Kod je dio nove rute; preporuka: dopustiti ga, jer klijent bez njega ne zna kako se oporaviti.
 3. **Prikaz uživo s razlikom (odjeljak 4)** u istom koraku ili zasebno? Preporuka: zasebno, nakon spremanja (manji rizik, dokaz se ne dira).
 4. **Interval kontrolne točke `N`:** 50 (kao radnik) ili izmjeriti pa odlučiti. Preporuka: 50, ponovno razmotriti nakon mjerenja CPU-a.
 5. **Ponavljanje unutar transakcije** ili odgođeno (7). Preporuka: unutar transakcije, uz mjerenje.
