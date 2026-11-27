@@ -24,7 +24,8 @@ RETURNS text LANGUAGE sql AS $$
   SELECT pg_temp.ask(p_actor, format('SELECT transfer_id::text FROM assistant.create_ai_transfer(%L, %L, %L)',
     p_document, pg_temp.u(p_response), p_text))
 $$;
-CREATE FUNCTION pg_temp.phase_of(p_id text) RETURNS text LANGUAGE sql STABLE AS $$
+-- VOLATILE, so it sees the row the transfer in its argument wrote.
+CREATE FUNCTION pg_temp.phase_of(p_id text) RETURNS text LANGUAGE sql VOLATILE AS $$
   SELECT phase_id FROM assistant.ai_transfer WHERE transfer_id::text = p_id
 $$;
 
@@ -53,6 +54,30 @@ INSERT INTO assistant.message (id, conversation_id, institution_id, seq, request
   (pg_temp.u('m4'), pg_temp.u('conv_d'), pg_temp.id('fak_a'), 2, pg_temp.u('r2'), 'provider_response',
    'Dorin izmišljeni odgovor.', pg_temp.sha('Dorin izmišljeni odgovor.'));
 RESET ROLE;
+
+-- 0. Catalogue: the owner, forced RLS, one policy, and no direct privilege.
+SELECT is((SELECT concat_ws(' ', pg_get_userbyid(c.relowner), c.relrowsecurity::text, c.relforcerowsecurity::text)
+             FROM pg_class c WHERE c.oid = 'assistant.ai_transfer'::regclass),
+  'ductus_identity true true', 'the record: owner and forced RLS');
+SELECT bag_eq(
+  $$ SELECT polname || ' ' || polcmd::text || ' ' || polroles::regrole[]::text
+       FROM pg_policy WHERE polrelid = 'assistant.ai_transfer'::regclass $$,
+  ARRAY['ai_transfer_owner * {ductus_identity}'], 'only the owner''s policy');
+SELECT is_empty(
+  $$ SELECT r || ' ' || p
+       FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence',
+                         'ductus_auth', 'ductus_test_stranger', 'public']) r
+      CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p
+      WHERE has_table_privilege(r, 'assistant.ai_transfer', p) $$,
+  'besides the owner nobody reads or writes the table directly');
+SELECT bag_eq(
+  $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence',
+                                'ductus_auth', 'ductus_test_stranger', 'public']) r
+      WHERE has_function_privilege(r, 'assistant.create_ai_transfer(text,uuid,text)', 'EXECUTE') $$,
+  ARRAY['ductus_app'], 'only the web role calls the RPC');
+SELECT is(pg_get_function_arguments('assistant.create_ai_transfer(text,uuid,text)'::regprocedure),
+  'p_document_id text, p_response_id uuid, p_text text',
+  'a transfer names no person, institution, phase, provider or time');
 
 -- 1. The canonical text equals the contract's golden vectors
 -- (server/contracts/evidence-transfer/golden-vectors/ai-transfer-v1.json).
@@ -112,7 +137,7 @@ SELECT is((SELECT concat_ws(' ', t.institution_id = pg_temp.id('fak_a'), t.stude
                             t.conversation_id = pg_temp.u('conv_a'), t.response_id = pg_temp.u('m2'),
                             t.provider_id, t.model_id, t.purpose_catalog_version, t.purpose_id, t.phase_id)
              FROM assistant.ai_transfer t WHERE t.transfer_id::text = (SELECT val FROM ref WHERE name = 't1')),
-  'true true doc-a true true provider-test-a model-test-1 1 proofreading drafting',
+  't t doc-a t t provider-test-a model-test-1 1 proofreading drafting',
   'the work, conversation and response are hers; provider, model and purpose are those of the request; the phase is drafting');
 SELECT is((SELECT text_sha256 FROM assistant.ai_transfer WHERE transfer_id::text = (SELECT val FROM ref WHERE name = 't1')),
   'e9ee3032c2882b8f53689f270ec63bdec47f9eba37099ca96e72378838031999',
@@ -128,7 +153,7 @@ SELECT is((SELECT count(*)::int FROM assistant.ai_transfer
 SELECT is((SELECT concat_ws(' ', extract(second FROM transferred_at)::int,
                             transferred_at <= statement_timestamp(), transferred_at > statement_timestamp() - interval '2 minutes')
              FROM assistant.ai_transfer WHERE transfer_id::text = (SELECT val FROM ref WHERE name = 't1')),
-  '0 true true', 'the time is the database''s, to the whole minute');
+  '0 t t', 'the time is the database''s, to the whole minute');
 SELECT is((SELECT (record_text::jsonb ->> 'transferId') || ' ' || (record_text::jsonb ->> 'transferSchema') || ' '
                   || (record_sha256 = pg_temp.sha(record_text))::text
              FROM assistant.ai_transfer WHERE transfer_id::text = (SELECT val FROM ref WHERE name = 't1')),

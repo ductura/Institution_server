@@ -107,8 +107,10 @@ CREATE TABLE assistant.ai_transfer (
     provider_id, model_id, purpose_catalog_version, purpose_id, phase_id, text_sha256, transferred_at)),
   CHECK (record_sha256 = encode(sha256(convert_to(record_text, 'UTF8')), 'hex')),
   FOREIGN KEY (conversation_id, institution_id) REFERENCES assistant.conversation (id, institution_id),
-  FOREIGN KEY (student_id, institution_id) REFERENCES identity.user_account (id, institution_id),
-  FOREIGN KEY (response_id) REFERENCES assistant.message (id)
+  -- No FK to the response: a reference would stop the guarded TRUNCATE of the
+  -- messages before their own trigger. The RPC checks the response, and a
+  -- message is never deleted.
+  FOREIGN KEY (student_id, institution_id) REFERENCES identity.user_account (id, institution_id)
 );
 CREATE INDEX ai_transfer_document_idx ON assistant.ai_transfer (document_id, institution_id);
 
