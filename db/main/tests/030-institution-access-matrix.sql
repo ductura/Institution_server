@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6357);
+SELECT plan(6374);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -45,7 +45,9 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_ev
                ('declaration.external_attachment', 'attachment_owner'),
                ('declaration.conversation_attachment', 'conversation_attachment_owner'),
                -- SRV-IZJAVA-PITANJE: the student's answer to the teacher's question.
-               ('declaration.question_answer', 'question_answer_owner')) t(relation, policy)
+               ('declaration.question_answer', 'question_answer_owner'),
+               -- F4-PRE-R02-SRV2: the student's explanation of a mismatch with the record.
+               ('declaration.mismatch_explanation', 'mismatch_explanation_owner')) t(relation, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.relation);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -55,7 +57,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)'),
                ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
-               ('declaration.list_conversations(uuid)')) f(signature)
+               ('declaration.list_conversations(uuid)'),
+               ('declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -119,7 +122,8 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
 SELECT bag_eq(
   $$ SELECT c.relname::text FROM pg_class c
      WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
-  ARRAY['statement', 'external_attachment', 'conversation_attachment', 'question_answer'],
+  ARRAY['statement', 'external_attachment', 'conversation_attachment', 'question_answer',
+        'mismatch_explanation'],
   'the declaration schema holds exactly its three tables'
 );
 SELECT bag_eq(
@@ -141,7 +145,9 @@ SELECT bag_eq(
         'declaration.answer_ref(declaration.question_answer)', 'declaration.bound_answer_of(uuid,uuid,uuid)',
         'declaration.reject_answer_change()', 'declaration.delete_draft_answer()',
         'declaration.list_conversations(uuid)',
-        'declaration.recorded_transfers(uuid,uuid,text,bigint)'],
+        'declaration.recorded_transfers(uuid,uuid,text,bigint)',
+        'declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)',
+        'declaration.delete_draft_explanation()'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -156,6 +162,7 @@ SELECT bag_eq(
         'ductus_app declaration.submission_gate(text,bigint)',
         'ductus_app declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
         'ductus_app declaration.list_conversations(uuid)',
+        'ductus_app declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)',
         'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)'],
   'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration and bound-answer helpers'
@@ -184,7 +191,10 @@ SELECT bag_eq(
         'declaration.conversation_attachment conversation_attachment_in_payload',
         'declaration.statement statement_draft_answer',
         'declaration.question_answer question_answer_immutable',
-        'declaration.question_answer question_answer_no_truncate'],
+        'declaration.question_answer question_answer_no_truncate',
+        'declaration.statement statement_draft_explanation',
+        'declaration.mismatch_explanation mismatch_explanation_immutable',
+        'declaration.mismatch_explanation mismatch_explanation_no_truncate'],
   'the declaration tables carry exactly their immutability and payload triggers'
 );
 SELECT ok(NOT has_schema_privilege('ductus_worker', 'declaration', 'USAGE')
@@ -871,6 +881,27 @@ SELECT is(
   coalesce(substr(pg_temp.ask(c.actor, format('SELECT state FROM app.teacher_submission_state(%s, %s)', c.assignment, c.student)),
                   1, 5), 'NULL'), c.state,
   format('SRV-20: %s reads the state of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),
+  ('ana', '{z1}', '{ana}', 'ZD403'), ('dora', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('iva', '{z1}', '{ana}', 'ZD403'), ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'),
+  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403'),
+  ('vesna', '{z1}', '{boris}', 'ZD403'), ('vesna', '{z1}', '{tomo}', 'ZD403')
+) AS c (actor, assignment, student, state);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.teacher_submission_confirmation_code(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'teacher code: only ductus_app and the owner execute app.teacher_submission_confirmation_code'
+);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT coalesce(app.teacher_submission_confirmation_code(%s, %s), ''none'')',
+                                              c.assignment, c.student)), 1, 5), 'NULL'), c.state,
+  format('teacher code: %s reads the code of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
 )
 FROM (VALUES
   ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),

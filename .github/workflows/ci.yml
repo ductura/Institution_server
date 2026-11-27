@@ -154,7 +154,7 @@ jobs:
         if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile -t ductura-web:ci .
-          [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js /app/dist/worker.js " ]
           [ "$(docker run --rm --entrypoint id ductura-web:ci -u)" != 0 ]
           docker image inspect ductura-web:ci \
             | jq -e '[.[0].Config.Env[] | split("=")[0]] - ["PATH", "NODE_VERSION", "YARN_VERSION", "HOST", "PORT"] == []'
@@ -175,7 +175,7 @@ jobs:
         if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile --target test-server -t ductura-test-server:ci .
-          [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js /app/dist/worker.js " ]
           [ "$(docker run --rm --entrypoint id ductura-test-server:ci -u)" != 0 ]
           docker image inspect ductura-test-server:ci \
             | jq -e '[.[0].Config.Env[] | select(test("^(PATH|NODE_VERSION|YARN_VERSION)=") | not)] | sort
@@ -192,6 +192,40 @@ jobs:
           curl -fsS "http://127.0.0.1:4001/api/v1/health"
           docker stop ductura-test-server
           [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-test-server)" = 0 ]
+      # CI-RED-SBOM (Daniel 27. 11. 2026: CI waits for runners, not for work):
+      # the SBOM and the build without source maps, before a workflow of their
+      # own (sbom.yml, one more runner on every pull request push). The leg
+      # already has the install, so this adds only the SBOM and two builds.
+      # pnpm 11 provides the SBOM command; installs and builds still use the
+      # repo's pnpm pin. In the workspace, not the runner's temp directory: no
+      # runner context in expressions.
+      - name: SBOM iz zaključanih produkcijskih ovisnosti
+        if: matrix.leg == 'provjere'
+        run: |
+          mkdir -p sbom-out
+          npm exec --yes --package=pnpm@11.28.13 -- pnpm --pm-on-fail=ignore sbom \
+            --filter @ductura/institution-server --sbom-format cyclonedx --sbom-type application \
+            --prod --lockfile-only --out sbom-out/sbom.cdx.json
+      - if: matrix.leg == 'provjere'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: institution-server-sbom
+          path: sbom-out/sbom.cdx.json
+          if-no-files-found: error
+      - name: Produkcijski build bez source mapa
+        if: matrix.leg == 'provjere'
+        run: |
+          pnpm build
+          mkdir -p dist/source-map-check
+          probe=dist/source-map-check/probe.js.map
+          trap 'rm -f -- "$probe"' EXIT
+          touch "$probe"
+          if pnpm build > "$RUNNER_TEMP/build-with-map.log" 2>&1; then
+            echo 'Build je prihvatio .map datoteku.' >&2
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/build-with-map.log"
+          grep -F 'Production build contains source maps: source-map-check/probe.js.map' "$RUNNER_TEMP/build-with-map.log"
 
   database:
     name: PostgreSQL i pgTAP (${{ matrix.shard }}/${{ strategy.job-total }})

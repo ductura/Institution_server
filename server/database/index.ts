@@ -823,6 +823,17 @@ export const institutionProvisioning: InstitutionProvisioning = {
 };
 
 /**
+ * The pool of the worker process (WORKER_DATABASE_URL, a login of ductus_worker
+ * and nothing else; F4-PM2-R01B, D-71, D-102): only server/worker-main.ts
+ * reaches it, through the worker composition. The web process never calls it,
+ * so it never opens this pool. Asked on every call, so that after closePools
+ * nothing reaches the pool.
+ */
+export function workerDatabase(): Pick<pg.Pool, "query"> {
+  return registry.pool("worker");
+}
+
+/**
  * The metric_sample port of the metrics collector over the logs database
  * (LOGS_DATABASE_URL, a login of ductus_logs_writer; DAN-834-5a). The pool
  * opens on the first write; without the variable, or after closePools, the
@@ -923,6 +934,7 @@ export {
   isDeclarationQuestion,
   isExternalFormat,
   parseDeclarationFormFile,
+  parseDeclarationMismatchExplanation,
   parseDeclarationPutBody,
   parseDeclarationQuestionAnswer,
   type FormReader,

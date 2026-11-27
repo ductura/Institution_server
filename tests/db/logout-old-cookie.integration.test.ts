@@ -2181,6 +2181,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // Dizajn 27. 11., 1.1: the code of a student the account may not read is 404.
+  "teacher.submission-confirmation-code.get": {
+    method: "GET",
+    path: "/api/v1/teacher/assignments/00000000-0000-4000-8000-0000000000a1/students/00000000-0000-4000-8000-0000000000b1/submission/confirmation-code",
+    body: () => undefined,
+    live: 404,
+  },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
   "settings.values.put": {
