@@ -36,6 +36,8 @@ const BASE: readonly (readonly [string, unknown])[] = [
   ["ai_summary_only", false],
   ["course_name", "Izmišljeni kolegij"],
   ["mentor_name", null],
+  // F4-STU-R08-SRV: bound to no faculty rule version.
+  ["differs_from_faculty_rules", null],
   // A first version: no previous one, every prev_* column null.
   ...[
     "version_no",
@@ -174,6 +176,9 @@ describe("student notice", () => {
       ["course_name", undefined],
       ["mentor_name", ""],
       ["mentor_name", ["Izmišljena Mentorica"]],
+      ["differs_from_faculty_rules", "true"],
+      ["differs_from_faculty_rules", 1],
+      ["differs_from_faculty_rules", undefined],
     ];
     for (const bad of bads) {
       expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
@@ -210,6 +215,32 @@ describe("student notice", () => {
       null,
       "Izmišljena Mentorica, Izmišljeni Mentor",
     ]);
+  });
+
+  // Which fields count and which rule version is compared is a behaviour of
+  // the definer, tested in db/main/tests/283 and over PostgreSQL.
+  it("maps differsFromFacultyRules, absent without a binding and for basic (F4-STU-R08-SRV)", async () => {
+    const differs = async (value: unknown, profile = "extended") => {
+      const read = await reader(
+        [actorRow(USER)],
+        [row(["differs_from_faculty_rules", value], ["evidence_profile", profile])],
+      ).port.read(TOKEN, A);
+      if (!read.ok) throw new Error("no notice");
+      return Object.hasOwn(read.value, "differsFromFacultyRules")
+        ? read.value.differsFromFacultyRules
+        : "absent";
+    };
+    expect(await differs(true)).toBe(true);
+    expect(await differs(false)).toBe(false);
+    expect(await differs(null)).toBe("absent");
+    // No comparison for the basic profile (decision of 27 Nov 2026).
+    expect(await differs(true, "basic")).toBe("absent");
+    expect(await differs(false, "basic")).toBe("absent");
+    const { port, seen } = reader([actorRow(USER)], [row()]);
+    await port.read(TOKEN, A);
+    expect(seen[1]!.text).toContain(
+      "institution.student_assignment_differs_from_faculty_rule(a.id) AS differs_from_faculty_rules",
+    );
   });
 
   it("reads the version below the current one as previousVersion (F4-STU-R11-SRV)", async () => {
