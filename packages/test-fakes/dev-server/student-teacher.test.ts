@@ -253,7 +253,7 @@ describe("dev fake server: review findings on #363", () => {
     const state = createState();
     const course = state.courses.find((c) => c.id === IDS.course)!;
     course.groups.find((g) => g.id === IDS.groupB)!.studentIds.push(IDS.student);
-    const roster = async (who: string) => {
+    const roster = async (who: "nastavnik" | "nastavnik-2") => {
       const answer = await send(state, `/api/v1/teacher/courses/${IDS.course}/students`, {
         headers: await signIn(state, who),
       });
