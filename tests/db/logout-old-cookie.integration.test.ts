@@ -249,12 +249,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
-  // F4-PM2-R08-SRV: a live session that is no student or holder of the work gets 404.
+  // F4-PM2-R08-SRV: a live session marking a work that is not its own gets 403.
   "student.accommodation.put": {
     method: "PUT",
     path: `/api/v1/student/assignments/${randomUUID()}/accommodation`,
-    body: () => ({}),
-    live: 404,
+    body: () => ({ marked: true }),
+    live: 403,
   },
   // F4-PM2-R08-SRV: a live session that is no student or holder of the work gets 404.
   "student.accommodation.get": {
@@ -2946,9 +2946,9 @@ const FACTORIES = [
   "createTeacherSubmissionsBulkRoutesFor",
   "createAssistantRoutesFor",
   "createStudentConversationsRouteFor",
-  "createWorkAccommodationRoutesFor",
   "createStatementRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
+  "createWorkAccommodationRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -3110,9 +3110,9 @@ const MOUNTED = [
   ...createTeacherSubmissionsBulkRoutesFor(databases.main, ORIGIN),
   ...createAssistantRoutesFor(databases.main),
   createStudentConversationsRouteFor(databases.main),
-  ...createWorkAccommodationRoutesFor(databases.main),
   ...createStatementRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
+  ...createWorkAccommodationRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),
