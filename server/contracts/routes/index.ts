@@ -160,7 +160,11 @@ export {
   adminActionsGet,
 } from "./admin-action-log.ts";
 export { sourceLookupPost } from "./source-lookup.ts";
-export { publicVerificationPost, publicVerificationRoutes } from "./public-verification.ts";
+export {
+  publicVerificationCodePost,
+  publicVerificationPost,
+  publicVerificationRoutes,
+} from "./public-verification.ts";
 export { collaborationRoutes } from "./collaboration.ts";
 export { projectionRoutes } from "./projection.ts";
 export { liveRoutes } from "./live.ts";

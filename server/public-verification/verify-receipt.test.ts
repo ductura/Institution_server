@@ -10,7 +10,7 @@ import {
   type SubmissionReceiptPayloadV2,
 } from "../domain/index.ts";
 
-import { createPublicVerification } from "./index.ts";
+import { createPublicVerification, createPublicVerificationByCode } from "./index.ts";
 
 const payload: SubmissionReceiptPayloadV2 = {
   receiptSchema: "ductus-submission-receipt-v2",
@@ -200,5 +200,72 @@ describe("public receipt verification", () => {
     expect(await verify(payload.submissionId, payload.artifactSha256)).toEqual({
       status: "unavailable",
     });
+  });
+});
+
+// DIZAJN-27-11 1.1 (3): the same check by the confirmation code alone. The
+// code is invented; the match row also names the submission and its hash.
+describe("public receipt verification by code", () => {
+  const CODE = "DK7M-4Q9P-X2HT-R8VN";
+  const byCode = (rows: unknown[] | Error) => {
+    const db = fakeDb(rows);
+    return { verify: createPublicVerificationByCode(db.withActor), calls: db.calls };
+  };
+  const codeRow = async (change: Record<string, unknown> = {}) => ({
+    ...(await matchRow()),
+    submissionId: payload.submissionId,
+    artifactSha256: payload.artifactSha256,
+    ...change,
+  });
+  const NONE = { status: "ok", answer: { match: false } };
+
+  it("answers match with only the two instants and the key id, read without a token", async () => {
+    const { verify, calls } = byCode([await codeRow()]);
+    expect(await verify(CODE)).toEqual({
+      status: "ok",
+      answer: {
+        match: true,
+        submittedAt: payload.requestedAt,
+        signedAt: payload.signedAt,
+        keyId: "izmisljeni-kljuc",
+      },
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.token).toBeNull();
+    expect(calls[0]?.values).toEqual([CODE]);
+    expect(calls[0]?.text).toContain("app.public_receipt_verification_by_code($1)");
+  });
+
+  it("answers the same match false for an unknown code and an unbound receipt", async () => {
+    const { verify } = byCode([NO_MATCH_ROW]);
+    expect(await verify(CODE)).toEqual(NONE);
+  });
+
+  it.each(["dk7m-4q9p-x2ht-r8vn", "DK7M-4Q9P-X2HT-R8V", "DK7M-4Q9P-X2HT-R8VU", "DK7M4Q9PX2HTR8VN"])(
+    "answers match false for %j without asking the database",
+    async (code) => {
+      const { verify, calls } = byCode([await codeRow()]);
+      expect(await verify(code)).toEqual(NONE);
+      expect(calls).toHaveLength(0);
+    },
+  );
+
+  it.each([
+    ["names another text than the signed one", { artifactSha256: "c".repeat(64) }],
+    ["names another submission", { submissionId: "d4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69" }],
+    ["names no submission", { submissionId: null }],
+    ["is signed with a revoked key", { revokedAt: "2026-11-20T11:30:00.000Z" }],
+  ])("answers match false when the row %s", async (_name, change) => {
+    const { verify } = byCode([await codeRow(change)]);
+    expect(await verify(CODE)).toEqual(NONE);
+  });
+
+  it.each([
+    ["a database error", new Error("connection refused")],
+    ["no row", []],
+    ["an unknown outcome", [{ ...NO_MATCH_ROW, outcome: "maybe" }]],
+  ])("is unavailable for %s", async (_name, rows) => {
+    const { verify } = byCode(rows);
+    expect(await verify(CODE)).toEqual({ status: "unavailable" });
   });
 });
