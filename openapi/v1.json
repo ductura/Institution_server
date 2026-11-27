@@ -78217,6 +78217,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -78534,6 +78547,19 @@
                             "type": "string"
                           }
                         }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mismatchExplanation": {
+                    "anyOf": [
+                      {
+                        "minLength": 1,
+                        "maxLength": 4000,
+                        "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -79351,6 +79377,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -81094,6 +81133,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -81411,6 +81463,19 @@
                             "type": "string"
                           }
                         }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mismatchExplanation": {
+                    "anyOf": [
+                      {
+                        "minLength": 1,
+                        "maxLength": 4000,
+                        "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -82228,6 +82293,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -83922,6 +84000,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -85007,6 +85098,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
