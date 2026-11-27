@@ -9,6 +9,8 @@
 3. U kodu lokalnog stoga: `const port = fakeAiFromEnv(process.env)`; `null` znači asistent ostaje `ai_disabled`. Ako `DUCTURA_FAKE_AI_LOCAL=1` stigne uz `NODE_ENV=production`, poziv baca grešku.
 4. Za pružatelja u konfiguraciji ustanove upiši `FAKE_AI_PROVIDER_ENTRY`; zahtjev s drugim `modelId` fake odbija kao `provider_error`.
 
+Spojeno u lokalni stog: ruta `student.assistant-request.post` u `packages/test-fakes/dev-server` odgovara `completed` kad je postavljen `DUCTURA_FAKE_AI_LOCAL=1` (inače `ai_disabled`); ništa se ne sprema. Fake nikad ne vraća odgovor veći od `maxResponseBytes` iz ulaza (tad `provider_error`).
+
 Produkcijski `server/` ne smije uvoziti paket (lint `local/no-fake-server-import`, `boundary.test.ts`), pa se fake ne montira u `server.ts`; montira ga lokalni stog koji već koristi `@ductura/test-fakes`.
 
 ## Načini i oznake

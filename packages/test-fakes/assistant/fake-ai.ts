@@ -111,6 +111,34 @@ function markedMode(input: AssistantPortInput): FakeAiMode | null {
   return null;
 }
 
+/**
+ * The outcome for one input without waiting: the part of `complete` that does
+ * not depend on time. A model id other than the fake's own and an answer above
+ * the port's `maxResponseBytes` are `provider_error`, as a real provider that
+ * cannot serve the call; the fake never returns more than the input allows.
+ */
+export function fakeAiOutcome(
+  input: AssistantPortInput,
+  mode: FakeAiMode = "answer",
+  actualMicro = 0n,
+): AssistantPortOutcome {
+  if (input.modelId !== FAKE_AI_MODEL_ID) return { kind: "provider_error" };
+  switch (markedMode(input) ?? mode) {
+    case "answer": {
+      const text = fakeAiAnswer(input);
+      return Buffer.byteLength(text, "utf8") > input.maxResponseBytes
+        ? { kind: "provider_error" }
+        : { kind: "success", text, actualMicro };
+    }
+    case "refuse":
+      return { kind: "provider_error" };
+    case "timeout":
+      return { kind: "timeout" };
+    case "aborted":
+      return { kind: "aborted" };
+  }
+}
+
 function wait(ms: number, signal: AbortSignal | undefined): Promise<"done" | "aborted"> {
   if (signal?.aborted === true) return Promise.resolve("aborted");
   return new Promise((resolve) => {
@@ -163,17 +191,7 @@ export function createFakeAi(options: FakeAiOptions = {}): FakeAi {
       } else if (signal?.aborted === true) {
         return { kind: "aborted" };
       }
-      if (input.modelId !== FAKE_AI_MODEL_ID) return { kind: "provider_error" };
-      switch (markedMode(input) ?? mode) {
-        case "answer":
-          return { kind: "success", text: fakeAiAnswer(input), actualMicro };
-        case "refuse":
-          return { kind: "provider_error" };
-        case "timeout":
-          return { kind: "timeout" };
-        case "aborted":
-          return { kind: "aborted" };
-      }
+      return fakeAiOutcome(input, mode, actualMicro);
     },
   };
 }

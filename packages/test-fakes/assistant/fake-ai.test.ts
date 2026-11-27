@@ -14,13 +14,14 @@ import {
   fakeAiFromEnv,
 } from "./index.ts";
 
-function input(paragraph: string, modelId = FAKE_AI_MODEL_ID) {
+function input(paragraph: string, modelId = FAKE_AI_MODEL_ID, maxResponseBytes?: number) {
   return buildPortInput({
     instructions: "Izmišljene upute.",
     data: [{ kind: "paragraph", text: paragraph, truncated: false }],
     tools: [],
     purposeKey: "clarity",
     modelId,
+    ...(maxResponseBytes === undefined ? {} : { maxResponseBytes }),
   });
 }
 
@@ -34,6 +35,14 @@ describe("fake local AI", () => {
     if (a.kind !== "success") throw new Error("expected success");
     expect(Buffer.byteLength(a.text)).toBeLessThanOrEqual(RESPONSE_MAX_BYTES);
     expect(fake.calls).toHaveLength(2);
+  });
+
+  it("never returns an answer above the port's maxResponseBytes", async () => {
+    const fake = createFakeAi();
+    const out = await fake.complete(input("Izmišljeni odlomak.", FAKE_AI_MODEL_ID, 10));
+    expect(out).toEqual({ kind: "provider_error" });
+    const ok = await fake.complete(input("Izmišljeni odlomak.", FAKE_AI_MODEL_ID, 1000));
+    expect(ok.kind).toBe("success");
   });
 
   it("different paragraphs can give different answers", async () => {

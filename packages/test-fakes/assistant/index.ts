@@ -11,6 +11,7 @@ export {
   FAKE_AI_PROVIDER_ID,
   fakeAiAnswer,
   fakeAiFromEnv,
+  fakeAiOutcome,
   fakeAiSelected,
   type FakeAi,
   type FakeAiMode,
