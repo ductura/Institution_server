@@ -901,6 +901,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  // AI-RECORDED-5000: the declaration-v3 routes, alike.
+  "student.declaration-third.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v3`,
+      as: "student",
+    },
+  },
+  "student.declaration-third.put": {
+    before: [commit("c0000000-0000-4000-8000-0000000005a3", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v3`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
   "student.declaration-attachments.post": {
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/declaration-attachments`,
@@ -2844,6 +2869,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v2`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.declaration-third.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v3`,
       as: "nastavnik",
     },
   },

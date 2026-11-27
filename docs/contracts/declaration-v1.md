@@ -397,6 +397,21 @@ Klijent ne šalje `reason`, `recorded`, `principalId`, `confirmedAt` ni ID ustan
 
 Novi kodovi dobivaju ključeve poruka u katalogu (`error-catalog.json`, `locales/`); tekst prolazi skener.
 
+### 7.4 Izdanja `declaration-v2` i `declaration-v3` (AI-RECORDED-5000)
+
+Baza zapisuje do 5000 prijenosa po izjavi (`assistant.ai_transfer_max()`), a tijelo `declaration-v2` nosi najviše 500 stavki u `ai.recorded`. Ugovor v2 se ne mijenja; dodaju se rute v3 s istim tijelima, pristupom i greškama, uz granicu 5000:
+
+| v2                               | v3                              | Staza v3                                                                             |
+| -------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------ |
+| `student.declaration-second.get` | `student.declaration-third.get` | `GET /api/v1/student/assignments/{assignmentId}/declaration-v3`                      |
+| `student.declaration-second.put` | `student.declaration-third.put` | `PUT /api/v1/student/assignments/{assignmentId}/declaration-v3`                      |
+| `teacher.declaration-second.get` | `teacher.declaration-third.get` | `GET /api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration-v3` |
+
+- **Razlog 503 na v2.** Izjava s više od 500 zapisanih prijenosa ne stane u tijelo v2, pa ruta v2 odgovara zajedničkim 503 `unavailable` umjesto da vrati odrezan popis (student potvrđuje točno ono što je vidio, a nastavnik ne smije dobiti polovičnu izjavu). To je dokumentirano stanje, a ne kvar: poslužitelj ga ne bilježi kao `server_error`. Klijent tada čita rutu v3.
+- **Spremanje na v2.** `student.declaration-second.put` takvu izjavu ipak spremi (RPC se izvrši), a samo odgovor je 503; ponovno čitanje ide kroz v3.
+- **Iznad 5000.** Odgovor izvan svakog ugovora daje 503 i bilježi se kao `server_error` na studentskim rutama, kao svaki odgovor izvan ugovora.
+- **Rubovi u testovima.** `server/http/statement/recorded-5000.integration.test.ts`: 500 (v2 i v3 200), 501 (v2 503 bez zapisa, v3 200), 5000 (v3 200), 5001 (503).
+
 ## 8. Pohrana i matrica pristupa (skica, PLAN P-7)
 
 Je li potvrda izjave trajni zapis na poslužitelju, PLAN P-7 ostavlja otvorenim, a PO-17 kaže da izjava ne ide u predaju ([OD-1]). Ugovor predlaže trajni zapis, jer bez njega nema ni priloga razgovora za nastavnika (D-41) ni hasha u potvrdi. Ako vlasnik odobri:
