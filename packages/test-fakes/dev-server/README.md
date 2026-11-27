@@ -38,6 +38,7 @@ Računi (vrijednosti iz SRV-01 `seed-lokalni`, w1119r):
 | `nastavnik`     | Petar Kranjčec | `teacher`           | nositelj oba kolegija                                        |
 | `nastavnik-2`   | Maja Džombić   | `teacher`           | nastavnik grupe B seminara                                   |
 | `administrator` | Vesna Upravić  | `institution_admin` | potvrđuje i opoziva nastavnike                               |
+| `operater`      | Oto Operić     | `institution_admin` | lokalni operater, `demo-operater` iz seeda                   |
 | `bez-uloge`     | Iva Neimenić   | (nijedna)           | račun bez potvrđene uloge                                    |
 
 Mentorstvo: Petar Kranjčec je mentor završnog rada Lucije Đaković („Završni rad: zelene površine u izmišljenom gradu”, još nije započet). Brzi put nastavnika dodaje zapis u dnevnik pristupa koji student vidi.
