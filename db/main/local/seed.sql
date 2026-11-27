@@ -45,6 +45,16 @@ FROM identity.institution i
 CROSS JOIN (VALUES ('bachelor_thesis'), ('master_thesis')) AS t(work_type)
 WHERE i.slug = 'demo-fakultet'
 ON CONFLICT (institution_id, work_type) DO NOTHING;
+-- A rule with no version yet becomes version 1 of the operator, which a new
+-- mentored work names (M2.12-P01b); a rerun leaves the chain as it is.
+INSERT INTO institution.faculty_rule_version (
+  institution_id, work_type, version_no, ai_policy, ai_purposes, evidence_profile, import_allowed, origin
+)
+SELECT r.institution_id, r.work_type, 1, r.ai_policy, r.ai_purposes, r.evidence_profile, r.import_allowed, 'operator'
+FROM institution.faculty_work_rule r
+JOIN identity.institution i ON i.id = r.institution_id AND i.slug = 'demo-fakultet'
+WHERE NOT EXISTS (SELECT 1 FROM institution.faculty_rule_version v
+                   WHERE v.institution_id = r.institution_id AND v.work_type = r.work_type);
 
 -- Every invented institution with logins gets its one evidence domain, so
 -- open_student_work can start a work (the same row and region that

@@ -6,7 +6,8 @@
 --   ms2: Vesna mentored Dora's bachelor thesis; ended; zm2, acknowledged
 --   ms3: Nina, whose teacher role nobody confirmed, mentors Boris's master
 --        thesis; zm3, not acknowledged
---   fak-a has the faculty's rule for master and bachelor theses, fak-b none.
+--   fak-a has the faculty's rule for master and bachelor theses, each at
+--        version 1; fak-b none.
 INSERT INTO ref VALUES
   ('ms1', '00000000-0000-4000-8000-0000000000d1'),
   ('ms2', '00000000-0000-4000-8000-0000000000d2'),
@@ -20,6 +21,11 @@ INSERT INTO ref VALUES
 INSERT INTO institution.faculty_work_rule (institution_id, work_type, ai_policy, ai_purposes, evidence_profile, import_allowed)
 VALUES (pg_temp.id('fak_a'), 'master_thesis', 'partially_allowed', '{proofreading,literature_search}', 'extended', false),
        (pg_temp.id('fak_a'), 'bachelor_thesis', 'prohibited', '{}', 'basic', false);
+-- Each rule is version 1 of the operator, which the works below name (M2.12-P01b).
+INSERT INTO institution.faculty_rule_version (institution_id, work_type, version_no, ai_policy, ai_purposes,
+                                              evidence_profile, import_allowed, origin)
+SELECT institution_id, work_type, 1, ai_policy, ai_purposes, evidence_profile, import_allowed, 'operator'
+  FROM institution.faculty_work_rule WHERE institution_id = pg_temp.id('fak_a');
 
 -- The operator writes a mentorship; confirmed_by stays null (#916).
 INSERT INTO institution.mentorship (id, institution_id, mentor_id, student_id, work_type, started_at, ended_at)
