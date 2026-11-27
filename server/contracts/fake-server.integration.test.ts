@@ -204,7 +204,8 @@ describe("fake server over HTTP", () => {
     // F4-PM2-R08-SRV: student.accommodation.put five.
     // F4-PRE-R02-SRV: student.declaration-second.put five, as student.declaration.put.
     // SRV-1809: work.ai-transfer.post five; F4-MEN-R09-SRV: mentorship.working-style.put five.
-    expect(VECTORS.length - overHttp.length).toBe(950);
+    // AI-RECORDED-5000: student.declaration-third.put five, as student.declaration-second.put.
+    expect(VECTORS.length - overHttp.length).toBe(955);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

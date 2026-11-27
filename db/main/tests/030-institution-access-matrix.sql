@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6344);
+SELECT plan(6357);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -832,6 +832,33 @@ FROM (VALUES
   ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
   ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'none'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
 ) AS c (actor, assignment, state);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.my_submission_confirmation_code(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-KOD-POTVRDE: only ductus_app and the owner execute app.my_submission_confirmation_code'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may use ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_confirmation_code_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-KOD-POTVRDE: only its owner and the identity role execute app.submission_confirmation_code_of'
+);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_submission_confirmation_code(%s)', c.assignment)), c.outcome,
+  format('SRV-KOD-POTVRDE: %s reads the own confirmation code on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'found'), ('dora', '{z1}', 'found'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
+  ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'found'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, outcome);
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_assignment_requirements(%s)', c.assignment)), c.outcome,
   format('SRV-20: %s reads the requirements of %s: %s', c.actor, c.assignment, c.outcome)

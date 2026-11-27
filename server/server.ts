@@ -41,6 +41,7 @@ import {
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createTeacherSubmittedVersionRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createAiTransferRoutesFor,
@@ -90,6 +91,7 @@ import {
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
   createTeacherDeclarationV2RouteFor,
+  createTeacherDeclarationV3RouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
@@ -364,6 +366,7 @@ async function main(): Promise<void> {
       createTextCheckConfigRoute(databases.main),
       // The teacher's read of one work by its document id (SRV-2003).
       ...createTeacherWorkRoutesFor(databases.main),
+      ...createTeacherSubmittedVersionRoutesFor(databases.main),
       // The composition of a work by the kind of origin (SRV-0910, P-1).
       ...createOriginCompositionRoutesFor(databases.main),
       // The match of a segment with the answers of the assistant (SRV-1230, P-1 rule 13).
@@ -570,6 +573,7 @@ async function main(): Promise<void> {
       createTeacherSubmissionDetailRouteFor(databases.main),
       createTeacherDeclarationRouteFor(databases.main),
       createTeacherDeclarationV2RouteFor(databases.main),
+      createTeacherDeclarationV3RouteFor(databases.main),
       // F4-NAS-R04-SRV: the conversations attached to the bound declaration.
       createTeacherDeclarationConversationRouteFor(databases.main),
       createTeacherSubmissionNotesRouteFor(databases.main),

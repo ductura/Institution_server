@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.177.0",
+    "version": "1.180.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -80267,6 +80267,2883 @@
         ]
       }
     },
+    "/api/v1/student/assignments/{assignmentId}/declaration-v3": {
+      "get": {
+        "operationId": "student.declaration-third.get",
+        "summary": "Read the student's declaration as student.declaration-second.get does, with up to 5000 recorded transfers; student.declaration-second.get answers 503 unavailable for a declaration that records more than 500.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/declaration-v3/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Declaration state",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "submitted",
+                    "currentRevision",
+                    "version",
+                    "formText",
+                    "currentForm",
+                    "draft",
+                    "payload",
+                    "declarationSha256",
+                    "uploads"
+                  ],
+                  "properties": {
+                    "state": {
+                      "anyOf": [
+                        {
+                          "const": "none",
+                          "type": "string"
+                        },
+                        {
+                          "const": "draft",
+                          "type": "string"
+                        },
+                        {
+                          "const": "confirmed",
+                          "type": "string"
+                        },
+                        {
+                          "const": "stale",
+                          "type": "string"
+                        },
+                        {
+                          "const": "bound",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "submitted": {
+                      "type": "boolean"
+                    },
+                    "currentRevision": {
+                      "anyOf": [
+                        {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "formText": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 40000,
+                          "description": "Up to 20000 Unicode code points.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "currentForm": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "formId",
+                            "formVersion",
+                            "formSha256",
+                            "text"
+                          ],
+                          "properties": {
+                            "formId": {
+                              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                              "type": "string"
+                            },
+                            "formVersion": {
+                              "minimum": 1,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            "formSha256": {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 40000,
+                              "description": "Up to 20000 Unicode code points.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "baseVersion",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirm"
+                          ],
+                          "properties": {
+                            "baseVersion": {
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "attachments",
+                                "externalAttachmentIds"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "anyOf": [
+                                        {
+                                          "const": "used",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "not_used",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 500,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "conversationId",
+                                      "throughSeq",
+                                      "messagesSha256"
+                                    ],
+                                    "properties": {
+                                      "conversationId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "throughSeq": {
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991,
+                                        "type": "integer"
+                                      },
+                                      "messagesSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "externalAttachmentIds": {
+                                  "maxItems": 10,
+                                  "type": "array",
+                                  "items": {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "confirm": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "payload": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "declarationSchema",
+                            "declarationId",
+                            "declarationVersion",
+                            "principalId",
+                            "assignmentId",
+                            "assignmentVersion",
+                            "documentId",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirmedAt"
+                          ],
+                          "properties": {
+                            "declarationSchema": {
+                              "const": "ductura-declaration-v1",
+                              "type": "string"
+                            },
+                            "declarationId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "declarationVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "principalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "documentId": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "const": true,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "recorded",
+                                "attachments"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "const": "used",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "not_used",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "recorded": {
+                                  "maxItems": 5000,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "aiTransferId",
+                                      "aiTransferSha256"
+                                    ],
+                                    "properties": {
+                                      "aiTransferId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "aiTransferSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 510,
+                                  "type": "array",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "conversationId",
+                                          "throughSeq",
+                                          "messagesSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "conversationId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "throughSeq": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "messagesSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "anyOf": [
+                                              {
+                                                "const": "transferred_deleted",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "transferred",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "pasted_known",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "student_added",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "externalAttachmentId",
+                                          "format",
+                                          "byteLength",
+                                          "contentSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "externalAttachmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "format": {
+                                            "anyOf": [
+                                              {
+                                                "const": "application/pdf",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "text/plain",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "byteLength": {
+                                            "minimum": 1,
+                                            "maximum": 2097152,
+                                            "type": "integer"
+                                          },
+                                          "contentSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "const": "external_upload",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "confirmedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "declarationSha256": {
+                      "anyOf": [
+                        {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "uploads": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "externalAttachmentId",
+                          "format",
+                          "byteLength",
+                          "contentSha256"
+                        ],
+                        "properties": {
+                          "externalAttachmentId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "format": {
+                            "anyOf": [
+                              {
+                                "const": "application/pdf",
+                                "type": "string"
+                              },
+                              {
+                                "const": "text/plain",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "byteLength": {
+                            "minimum": 1,
+                            "maximum": 2097152,
+                            "type": "integer"
+                          },
+                          "contentSha256": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "declarationRequired": {
+                      "type": "boolean"
+                    },
+                    "teacherQuestion": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "questionId",
+                            "text"
+                          ],
+                          "properties": {
+                            "questionId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 1000,
+                              "description": "Up to 500 Unicode code points.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "questionAnswer": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "questionId",
+                            "questionText",
+                            "text"
+                          ],
+                          "properties": {
+                            "questionId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "questionText": {
+                              "minLength": 1,
+                              "maxLength": 1000,
+                              "description": "Up to 500 Unicode code points.",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 4000,
+                              "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "student.declaration-third.put",
+        "summary": "Save a draft or confirm a declaration as student.declaration-second.put does, answering with up to 5000 recorded transfers; student.declaration-second.put saves such a declaration but answers 503 unavailable.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/declaration-v3/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "baseVersion",
+                  "revision",
+                  "form",
+                  "ownWork",
+                  "humanHelp",
+                  "ai",
+                  "confirm"
+                ],
+                "properties": {
+                  "baseVersion": {
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  "revision": {
+                    "minimum": 1,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  "form": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "formId",
+                      "formVersion",
+                      "formSha256"
+                    ],
+                    "properties": {
+                      "formId": {
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                        "type": "string"
+                      },
+                      "formVersion": {
+                        "minimum": 1,
+                        "maximum": 2147483647,
+                        "type": "integer"
+                      },
+                      "formSha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "ownWork": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "confirmed"
+                    ],
+                    "properties": {
+                      "confirmed": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "humanHelp": {
+                    "description": "Closed declaration-v1 object with received and entries [{kind,text}].",
+                    "type": "object",
+                    "required": [
+                      "received"
+                    ],
+                    "properties": {
+                      "received": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "ai": {
+                    "description": "Closed declaration-v1 object with use, declaredTools, attachments [{conversationId,throughSeq,messagesSha256}] (up to 500) and externalAttachmentIds.",
+                    "type": "object",
+                    "required": [
+                      "use"
+                    ],
+                    "properties": {
+                      "use": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "const": "used",
+                                "type": "string"
+                              },
+                              {
+                                "const": "not_used",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "confirm": {
+                    "type": "boolean"
+                  },
+                  "questionAnswer": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "questionId",
+                          "text"
+                        ],
+                        "properties": {
+                          "questionId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "text": {
+                            "minLength": 1,
+                            "maxLength": 4000,
+                            "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 736384,
+        "responses": {
+          "200": {
+            "description": "Declaration state",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "submitted",
+                    "currentRevision",
+                    "version",
+                    "formText",
+                    "currentForm",
+                    "draft",
+                    "payload",
+                    "declarationSha256",
+                    "uploads"
+                  ],
+                  "properties": {
+                    "state": {
+                      "anyOf": [
+                        {
+                          "const": "none",
+                          "type": "string"
+                        },
+                        {
+                          "const": "draft",
+                          "type": "string"
+                        },
+                        {
+                          "const": "confirmed",
+                          "type": "string"
+                        },
+                        {
+                          "const": "stale",
+                          "type": "string"
+                        },
+                        {
+                          "const": "bound",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "submitted": {
+                      "type": "boolean"
+                    },
+                    "currentRevision": {
+                      "anyOf": [
+                        {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "formText": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 40000,
+                          "description": "Up to 20000 Unicode code points.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "currentForm": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "formId",
+                            "formVersion",
+                            "formSha256",
+                            "text"
+                          ],
+                          "properties": {
+                            "formId": {
+                              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                              "type": "string"
+                            },
+                            "formVersion": {
+                              "minimum": 1,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            "formSha256": {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 40000,
+                              "description": "Up to 20000 Unicode code points.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "baseVersion",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirm"
+                          ],
+                          "properties": {
+                            "baseVersion": {
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "attachments",
+                                "externalAttachmentIds"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "anyOf": [
+                                        {
+                                          "const": "used",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "not_used",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 500,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "conversationId",
+                                      "throughSeq",
+                                      "messagesSha256"
+                                    ],
+                                    "properties": {
+                                      "conversationId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "throughSeq": {
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991,
+                                        "type": "integer"
+                                      },
+                                      "messagesSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "externalAttachmentIds": {
+                                  "maxItems": 10,
+                                  "type": "array",
+                                  "items": {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "confirm": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "payload": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "declarationSchema",
+                            "declarationId",
+                            "declarationVersion",
+                            "principalId",
+                            "assignmentId",
+                            "assignmentVersion",
+                            "documentId",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirmedAt"
+                          ],
+                          "properties": {
+                            "declarationSchema": {
+                              "const": "ductura-declaration-v1",
+                              "type": "string"
+                            },
+                            "declarationId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "declarationVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "principalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "documentId": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "const": true,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "recorded",
+                                "attachments"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "const": "used",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "not_used",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "recorded": {
+                                  "maxItems": 5000,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "aiTransferId",
+                                      "aiTransferSha256"
+                                    ],
+                                    "properties": {
+                                      "aiTransferId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "aiTransferSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 510,
+                                  "type": "array",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "conversationId",
+                                          "throughSeq",
+                                          "messagesSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "conversationId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "throughSeq": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "messagesSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "anyOf": [
+                                              {
+                                                "const": "transferred_deleted",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "transferred",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "pasted_known",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "student_added",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "externalAttachmentId",
+                                          "format",
+                                          "byteLength",
+                                          "contentSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "externalAttachmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "format": {
+                                            "anyOf": [
+                                              {
+                                                "const": "application/pdf",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "text/plain",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "byteLength": {
+                                            "minimum": 1,
+                                            "maximum": 2097152,
+                                            "type": "integer"
+                                          },
+                                          "contentSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "const": "external_upload",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "confirmedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "declarationSha256": {
+                      "anyOf": [
+                        {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "uploads": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "externalAttachmentId",
+                          "format",
+                          "byteLength",
+                          "contentSha256"
+                        ],
+                        "properties": {
+                          "externalAttachmentId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "format": {
+                            "anyOf": [
+                              {
+                                "const": "application/pdf",
+                                "type": "string"
+                              },
+                              {
+                                "const": "text/plain",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "byteLength": {
+                            "minimum": 1,
+                            "maximum": 2097152,
+                            "type": "integer"
+                          },
+                          "contentSha256": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "declarationRequired": {
+                      "type": "boolean"
+                    },
+                    "teacherQuestion": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "questionId",
+                            "text"
+                          ],
+                          "properties": {
+                            "questionId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 1000,
+                              "description": "Up to 500 Unicode code points.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "questionAnswer": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "questionId",
+                            "questionText",
+                            "text"
+                          ],
+                          "properties": {
+                            "questionId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "questionText": {
+                              "minLength": 1,
+                              "maxLength": 1000,
+                              "description": "Up to 500 Unicode code points.",
+                              "type": "string"
+                            },
+                            "text": {
+                              "minLength": 1,
+                              "maxLength": 4000,
+                              "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error, invalid_json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidJson",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict, already_submitted, form_outdated, incomplete, declaration_conflict, stale_revision, mandatory_attachment_missing, attachment_stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.conflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.alreadySubmitted",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "form_outdated",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "form_outdated",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.formOutdated",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "incomplete",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "incomplete",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.incomplete",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "currentVersion"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "declaration_conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "declaration_conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.declarationConflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "currentVersion": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "currentRevision"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "stale_revision",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "stale_revision",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.staleRevision",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "minimum": 1,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "conversationIds"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "mandatory_attachment_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "mandatory_attachment_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.mandatoryAttachmentMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "conversationIds": {
+                          "minItems": 1,
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "conversationIds"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "attachment_stale",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "attachment_stale",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.attachmentStale",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "conversationIds": {
+                          "minItems": 1,
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupportedMediaType",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input, invalid_attachment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_input",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_input",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidInput",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 422,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_attachment",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_attachment",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidAttachment",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 422,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 409,
+            "code": "conflict",
+            "key": "errors.conflict"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          },
+          {
+            "status": 400,
+            "code": "invalid_json",
+            "key": "errors.invalid_json"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 422,
+            "code": "invalid_attachment",
+            "key": "errors.invalid_attachment"
+          },
+          {
+            "status": 409,
+            "code": "already_submitted",
+            "key": "errors.already_submitted"
+          },
+          {
+            "status": 409,
+            "code": "form_outdated",
+            "key": "errors.form_outdated"
+          },
+          {
+            "status": 409,
+            "code": "incomplete",
+            "key": "errors.incomplete"
+          },
+          {
+            "status": 409,
+            "code": "declaration_conflict",
+            "key": "errors.declaration_conflict"
+          },
+          {
+            "status": 409,
+            "code": "stale_revision",
+            "key": "errors.stale_revision"
+          },
+          {
+            "status": 409,
+            "code": "mandatory_attachment_missing",
+            "key": "errors.mandatory_attachment_missing"
+          },
+          {
+            "status": 409,
+            "code": "attachment_stale",
+            "key": "errors.attachment_stale"
+          }
+        ]
+      }
+    },
     "/api/v1/student/assignments/{assignmentId}/declaration": {
       "get": {
         "operationId": "student.declaration.get",
@@ -94846,6 +97723,179 @@
             "status": 422,
             "code": "invalid_input",
             "key": "errors.invalid_input"
+          }
+        ]
+      }
+    },
+    "/api/v1/student/assignments/{assignmentId}/submission/confirmation-code": {
+      "get": {
+        "operationId": "student.submission-confirmation-code.get",
+        "summary": "The confirmation code of the caller's own submission: 16 characters in 4 groups of 4 from the alphabet without I, L, O and U (for example DK7M-4Q9P-X2HT-R8VN), issued and stored by the server when the signed receipt is bound. code is null when there is no submission, it was withdrawn or it still waits for its receipt (ceka). An inaccessible, unknown or malformed assignment id returns 404.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/submission/confirmation-code/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the code, or null before the receipt is bound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "anyOf": [
+                        {
+                          "pattern": "^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
           }
         ]
       }
@@ -121846,6 +124896,715 @@
         ]
       }
     },
+    "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration-v3": {
+      "get": {
+        "operationId": "teacher.declaration-third.get",
+        "summary": "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. Opening a bound declaration is recorded in the access log.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the bound declaration with its hash, or none",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "state",
+                        "payload",
+                        "declarationSha256"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "none",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "type": "null"
+                        },
+                        "declarationSha256": {
+                          "type": "null"
+                        },
+                        "question": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "questionId",
+                                "text"
+                              ],
+                              "properties": {
+                                "questionId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "minLength": 1,
+                                  "maxLength": 1000,
+                                  "description": "Up to 500 Unicode code points.",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "questionAnswer": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "questionId",
+                                "questionText",
+                                "text"
+                              ],
+                              "properties": {
+                                "questionId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                },
+                                "questionText": {
+                                  "minLength": 1,
+                                  "maxLength": 1000,
+                                  "description": "Up to 500 Unicode code points.",
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "minLength": 1,
+                                  "maxLength": 4000,
+                                  "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "state",
+                        "payload",
+                        "declarationSha256"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "bound",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "declarationSchema",
+                            "declarationId",
+                            "declarationVersion",
+                            "principalId",
+                            "assignmentId",
+                            "assignmentVersion",
+                            "documentId",
+                            "revision",
+                            "form",
+                            "ownWork",
+                            "humanHelp",
+                            "ai",
+                            "confirmedAt"
+                          ],
+                          "properties": {
+                            "declarationSchema": {
+                              "const": "ductura-declaration-v1",
+                              "type": "string"
+                            },
+                            "declarationId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "declarationVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "principalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentVersion": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "documentId": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "type": "string"
+                            },
+                            "revision": {
+                              "minimum": 1,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            },
+                            "form": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "formId",
+                                "formVersion",
+                                "formSha256"
+                              ],
+                              "properties": {
+                                "formId": {
+                                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                                  "type": "string"
+                                },
+                                "formVersion": {
+                                  "minimum": 1,
+                                  "maximum": 2147483647,
+                                  "type": "integer"
+                                },
+                                "formSha256": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "ownWork": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "confirmed"
+                              ],
+                              "properties": {
+                                "confirmed": {
+                                  "const": true,
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "humanHelp": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "received",
+                                "entries"
+                              ],
+                              "properties": {
+                                "received": {
+                                  "type": "boolean"
+                                },
+                                "entries": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "const": "language",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "structure",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "sources",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "content",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "technical",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "other",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "text": {
+                                        "minLength": 1,
+                                        "maxLength": 4000,
+                                        "description": "Up to 2000 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "ai": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "use",
+                                "declaredTools",
+                                "recorded",
+                                "attachments"
+                              ],
+                              "properties": {
+                                "use": {
+                                  "anyOf": [
+                                    {
+                                      "const": "used",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "not_used",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declaredTools": {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "toolLabel",
+                                      "purposeText",
+                                      "phaseText"
+                                    ],
+                                    "properties": {
+                                      "toolLabel": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "purposeText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      },
+                                      "phaseText": {
+                                        "minLength": 1,
+                                        "maxLength": 400,
+                                        "description": "Up to 200 Unicode code points.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "recorded": {
+                                  "maxItems": 5000,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "aiTransferId",
+                                      "aiTransferSha256"
+                                    ],
+                                    "properties": {
+                                      "aiTransferId": {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                        "type": "string"
+                                      },
+                                      "aiTransferSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "attachments": {
+                                  "maxItems": 510,
+                                  "type": "array",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "conversationId",
+                                          "throughSeq",
+                                          "messagesSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "conversationId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "throughSeq": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "messagesSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "anyOf": [
+                                              {
+                                                "const": "transferred_deleted",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "transferred",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "pasted_known",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "student_added",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "externalAttachmentId",
+                                          "format",
+                                          "byteLength",
+                                          "contentSha256",
+                                          "reason"
+                                        ],
+                                        "properties": {
+                                          "externalAttachmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "format": {
+                                            "anyOf": [
+                                              {
+                                                "const": "application/pdf",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "text/plain",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "byteLength": {
+                                            "minimum": 1,
+                                            "maximum": 2097152,
+                                            "type": "integer"
+                                          },
+                                          "contentSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "reason": {
+                                            "const": "external_upload",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "confirmedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "declarationSha256": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "question": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "questionId",
+                                "text"
+                              ],
+                              "properties": {
+                                "questionId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "minLength": 1,
+                                  "maxLength": 1000,
+                                  "description": "Up to 500 Unicode code points.",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "questionAnswer": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "questionId",
+                                "questionText",
+                                "text"
+                              ],
+                              "properties": {
+                                "questionId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                },
+                                "questionText": {
+                                  "minLength": 1,
+                                  "maxLength": 1000,
+                                  "description": "Up to 500 Unicode code points.",
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "minLength": 1,
+                                  "maxLength": 4000,
+                                  "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration": {
       "get": {
         "operationId": "teacher.declaration.get",
@@ -144756,6 +148515,258 @@
             "status": 404,
             "code": "not_found",
             "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/teacher/works/{documentId}/submitted-versions/{revision}": {
+      "get": {
+        "operationId": "teacher.work.submitted-version.get",
+        "summary": "The submitted revision of a student's work, for a teacher of the course of the assignment: the verified canonical text of the revision the student submitted. Only that revision is answered; an earlier or later revision, an unsubmitted or withdrawn work, another course's teacher, the student and an unknown or malformed work id all return 404. A malformed revision returns 422. The read writes a row of the access log.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/works/[documentId]/submitted-versions/[revision]/route.ts",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[1-9][0-9]{0,15}(?![\\s\\S])",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the submitted revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "revision",
+                    "document"
+                  ],
+                  "properties": {
+                    "revision": {
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "document": {
+                      "minLength": 1,
+                      "maxLength": 2097152,
+                      "description": "Canonical JSON of the document.",
+                      "type": "string"
+                    },
+                    "documentKind": {
+                      "anyOf": [
+                        {
+                          "const": "text",
+                          "type": "string"
+                        },
+                        {
+                          "const": "slides",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "workKind": {
+                      "anyOf": [
+                        {
+                          "const": "text",
+                          "type": "string"
+                        },
+                        {
+                          "const": "slides",
+                          "type": "string"
+                        },
+                        {
+                          "const": "spreadsheet",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
           },
           {
             "status": 503,

@@ -341,6 +341,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7145546227",
   },
+  // SRV-KOD-POTVRDE (Ductus#2059 c.7214951129, S-08): the confirmation code of the own
+  // submission; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/submission/confirmation-code/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214951129",
+  },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],
@@ -418,6 +424,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/works/[documentId]/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7024185874",
+  },
+  // F4-NAS-R20-SRV (Ductus#2059 c.7213112541, owner decision 27. 11. 2026): the course teacher's read of the submitted revision of a work; work.version.get stays owner_or_mentor.
+  "app/api/teacher/works/[documentId]/submitted-versions/[revision]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7213112541",
   },
   // SRV-1605 (Ductus#2052 c.7081590679, WEB-2133): the guidance of a teacher on sources (recommendations, required literature, proof requests, the literature mark, the proofs); Ductus has no such route.
   "app/api/teacher/works/[documentId]/source-guidance/route.ts": {
@@ -1335,6 +1346,14 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source:
       "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration-v3/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214299921 (AI-RECORDED-5000)",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214299921 (AI-RECORDED-5000)",
   },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],

@@ -283,6 +283,8 @@ export type {
   StoredWordRange,
 } from "./my-submission-state.ts";
 export { createMyAssignmentSubmissionsReader } from "./my-assignment-submissions.ts";
+export { createMySubmissionConfirmationCodeReader } from "./my-submission-confirmation-code.ts";
+export type { MySubmissionConfirmationCodeReader } from "./my-submission-confirmation-code.ts";
 export type {
   MyAssignmentSubmissionsReader,
   StoredAssignmentSubmission,
@@ -572,6 +574,11 @@ export {
   type TeacherWorkRead,
   type TeacherWorkState,
 } from "./teacher-work/index.ts";
+export {
+  createTeacherSubmittedVersion,
+  type SubmittedVersionOutcome,
+  type TeacherSubmittedVersion,
+} from "./teacher-submitted-version/index.ts";
 export {
   createOriginKind,
   type OriginCompositionOutcome,
