@@ -112,6 +112,8 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  openAiBaseUrlOf,
+  openAiBaseUrlProblems,
   openAiProviderFrom,
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
@@ -237,6 +239,9 @@ const problems = [
   ...deploymentProblems(process.env),
   ...rateLimitConfig.problems,
   ...kmsProblems(process.env),
+  // AI-EU-ADRESA: OPENAI_BASE_URL unset is Europe; a value outside the closed
+  // list refuses the start instead of falling back to the US.
+  ...openAiBaseUrlProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -314,7 +319,10 @@ async function main(): Promise<void> {
   const databases = createDatabases();
   // F4-PM2-R11 (D-316): OpenAI behind the assistant port; null without a key and
   // prices, so ai_disabled. Only metadata is logged, never text, key or identity.
+  // The address is checked above, so it is never null here; Europe by default.
+  const openAiBaseUrl = openAiBaseUrlOf(process.env);
   const assistantProvider = openAiProviderFrom(process.env, {
+    ...(openAiBaseUrl === null ? {} : { baseUrl: openAiBaseUrl }),
     transport: (request) =>
       fetch(request.url, {
         method: "POST",
