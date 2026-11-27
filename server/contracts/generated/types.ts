@@ -1149,6 +1149,13 @@ export type Operations = {
     success: { status: 200; body: { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "unsupported_media_type" | "already_submitted" | "too_many_attachments" | "attachments_too_large";
   };
+  "student.declaration-conversations.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "conversations": ({ "conversationId": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added"; "throughSeq": number; "messagesSha256": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "student.declaration-second.get": {
     params: { "assignmentId": string };
     query: undefined;
