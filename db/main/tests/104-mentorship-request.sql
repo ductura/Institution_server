@@ -395,6 +395,9 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.teacher_mentorship_re
 INSERT INTO institution.faculty_work_rule (
   institution_id, work_type, ai_policy, ai_purposes, evidence_profile, import_allowed
 ) VALUES (pg_temp.id('fak_a'), 'doctoral_thesis', 'partially_allowed', '{proofreading}', 'basic', true);
+INSERT INTO institution.faculty_rule_version (
+  institution_id, work_type, version_no, ai_policy, ai_purposes, evidence_profile, import_allowed, origin
+) VALUES (pg_temp.id('fak_a'), 'doctoral_thesis', 1, 'partially_allowed', '{proofreading}', 'basic', true, 'operator');
 INSERT INTO ref VALUES
   ('md_work', pg_temp.ask('vesna', $$ SELECT app.approve_mentorship_request_with_work({rd_work}) $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'md_work'), '^[0-9a-f-]{36}$', 'approval returns the mentorship');
