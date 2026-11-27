@@ -6,13 +6,16 @@
 import type { Handlers } from "./server.ts";
 import type { State } from "./state.ts";
 
-const MARKS = new WeakMap<State, Set<string>>();
+// Keyed by a map that createState makes anew, so the reset (POST /__lazni/ponovno, which keeps the
+// State object itself) clears every mark, as work-template-routes.ts does.
+type Key = State["milestoneProgress"];
+const MARKS = new WeakMap<Key, Set<string>>();
 
 function marksOf(state: State): Set<string> {
-  let set = MARKS.get(state);
+  let set = MARKS.get(state.milestoneProgress);
   if (set === undefined) {
     set = new Set();
-    MARKS.set(state, set);
+    MARKS.set(state.milestoneProgress, set);
   }
   return set;
 }
@@ -42,10 +45,15 @@ export const WORK_ACCOMMODATION_HANDLERS: Handlers = {
   "student.accommodation.put": ({ state, account, params, body }) => {
     const assignment = studentAssignment(state, params.assignmentId, account?.id);
     if (assignment === null || account === null) return { error: "forbidden" };
-    const submitted = state.works.some(
-      (w) =>
-        w.assignmentId === assignment.id && w.studentId === account.id && w.submittedAt !== null,
-    );
+    // Any submission locks the mark, also one withdrawn since (app.work_submission_requested).
+    const submitted =
+      state.works.some(
+        (w) =>
+          w.assignmentId === assignment.id && w.studentId === account.id && w.submittedAt !== null,
+      ) ||
+      state.submissionWithdrawals.some(
+        (w) => w.assignmentId === assignment.id && w.studentId === account.id,
+      );
     if (submitted) return { error: "conflict" };
     const marks = marksOf(state);
     if (body.marked) marks.add(key(assignment.id, account.id));

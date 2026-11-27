@@ -14,7 +14,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export type WorkAccommodationRefusal =
   "unauthorized" | "forbidden" | "conflict" | "invalidInput" | "unavailable";
 export type WorkAccommodationRead =
-  { kind: "ok"; marked: boolean } | { kind: "notFound" | "unavailable" };
+  { kind: "ok"; marked: boolean } | { kind: "unauthorized" | "notFound" | "unavailable" };
 export type WorkAccommodationWrite =
   { kind: "ok"; marked: boolean } | { kind: WorkAccommodationRefusal };
 
@@ -32,6 +32,18 @@ function refusalOf(error: unknown, what: string): { kind: WorkAccommodationRefus
   return { kind: "unavailable" };
 }
 
+/**
+ * The row of a read: no live session is unauthorized (the client signs in
+ * again), a work the caller may not see is notFound, a broken answer throws.
+ */
+function outcomeOf(row: { live: unknown; marked: unknown } | undefined): WorkAccommodationRead {
+  if (row?.live === false) return { kind: "unauthorized" };
+  if (row?.live !== true) throw new Error("invalid work accommodation");
+  if (row.marked === null) return { kind: "notFound" };
+  if (typeof row.marked !== "boolean") throw new Error("invalid work accommodation");
+  return { kind: "ok", marked: row.marked };
+}
+
 /** Whether one work is marked, for its student or a teacher of the work; notFound for anyone else. */
 export async function readWorkAccommodation(
   token: string | null,
@@ -45,15 +57,13 @@ export async function readWorkAccommodation(
       token,
       async (tx) =>
         (
-          await tx.query<{ marked: unknown }>(
-            "SELECT institution.work_accommodation($1, $2) AS marked",
+          await tx.query<{ live: unknown; marked: unknown }>(
+            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, institution.work_accommodation($1, $2) AS marked",
             [assignmentId, studentId],
           )
-        ).rows[0]?.marked,
+        ).rows[0],
     );
-    if (value === null) return { kind: "notFound" };
-    if (typeof value !== "boolean") throw new Error("invalid work accommodation");
-    return { kind: "ok", marked: value };
+    return outcomeOf(value);
   } catch (error) {
     // A refused read looks like a missing work: nothing tells the caller which.
     return refusalOf(error, "read").kind === "unavailable"
@@ -65,7 +75,7 @@ export async function readWorkAccommodation(
 /**
  * F4-PM2-R08-SRV: whether the caller's own work is marked. The student is the
  * session's person, read in the same statement, so no id comes from outside;
- * a closed session reads no row and is notFound like any other refusal.
+ * a closed session is unauthorized, as for every read.
  */
 export async function readOwnWorkAccommodation(
   token: string | null,
@@ -78,15 +88,13 @@ export async function readOwnWorkAccommodation(
       token,
       async (tx) =>
         (
-          await tx.query<{ marked: unknown }>(
-            "SELECT institution.work_accommodation($1, a.user_id) AS marked FROM app.current_actor() a",
+          await tx.query<{ live: unknown; marked: unknown }>(
+            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, a.user_id) FROM app.current_actor() a) AS marked",
             [assignmentId],
           )
-        ).rows[0]?.marked,
+        ).rows[0],
     );
-    if (value === null || value === undefined) return { kind: "notFound" };
-    if (typeof value !== "boolean") throw new Error("invalid work accommodation");
-    return { kind: "ok", marked: value };
+    return outcomeOf(value);
   } catch (error) {
     return refusalOf(error, "read").kind === "unavailable"
       ? { kind: "unavailable" }

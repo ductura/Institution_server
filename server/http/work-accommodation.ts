@@ -73,6 +73,7 @@ function sendMark(response: ServerResponse, { contract, body }: typeof OWN, mark
 }
 
 function sendRead(response: ServerResponse, route: typeof OWN, read: WorkAccommodationRead) {
+  if (read.kind === "unauthorized") return sendProblem(response, 401, "unauthorized");
   if (read.kind === "notFound") return sendProblem(response, 404, "not_found");
   if (read.kind !== "ok") return sendProblem(response, 503, "unavailable");
   sendMark(response, route, read.marked);
