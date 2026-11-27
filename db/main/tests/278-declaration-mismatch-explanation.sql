@@ -14,7 +14,9 @@ SET LOCAL lc_messages TO 'C';
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
 \ir fixtures/mentorship.inc
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
-SELECT plan(35);
+-- no_plan as in 209 and 228: every section is rolled back to its savepoint,
+-- which would reset the counter a fixed plan is checked against.
+SELECT no_plan();
 
 CREATE TEMP TABLE demo_conversation (
   conversation_id uuid PRIMARY KEY,
