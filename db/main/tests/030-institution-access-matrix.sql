@@ -439,6 +439,7 @@ SELECT bag_eq(
         'work_thesis_committee_change: work_thesis_committee_change_append_only 27 O', 'work_thesis_committee_change: work_thesis_committee_change_no_truncate 34 O',
         'work_thesis_committee_member: work_thesis_committee_member_append_only 27 O', 'work_thesis_committee_member: work_thesis_committee_member_no_truncate 34 O',
         'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O',
+        'consultation_slot: consultation_slot_notify_insert 5 O', 'consultation_slot: consultation_slot_notify_update 17 O',
         'practice_placement: practice_placement_append_only 27 O', 'practice_placement: practice_placement_no_truncate 34 O',
         'practice_entry: practice_entry_append_only 27 O', 'practice_entry: practice_entry_no_truncate 34 O',
         'practice_signoff: practice_signoff_append_only 27 O', 'practice_signoff: practice_signoff_no_truncate 34 O',
@@ -737,6 +738,10 @@ SELECT bag_eq(
     'is_work_interview_note(p_media_type text, p_content bytea)',
     'add_work_interview_note(p_document_id text, p_file_name text, p_media_type text, p_content bytea) definer app',
     'list_mentorship_notifications(p_before uuid) definer app',
+    'list_message_slot_notifications(p_before uuid) definer app',
+    'work_teachers(p_assignment_id uuid, p_student_id uuid, p_except uuid) definer',
+    'notify_work_message() definer',
+    'notify_consultation_slot() definer',
     'insert_consultation_slot(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer)',
     'consultation_slot_details(p_document_id text) definer app',
     'request_consultation_slot_detail(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer) definer app',
@@ -2196,7 +2201,7 @@ FROM (VALUES
   ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
 ) AS c (actor, result);
 -- F4-NAS-R01: only the teacher of the assignment reads it back; another
--- teacher, a student and anyone else read not_found (20261220310000).
+-- teacher, a student and anyone else read not_found (20261220320000).
 SELECT is(
   split_part(pg_temp.ask(c.actor, 'SELECT outcome FROM app.teacher_assignment_late_submission({z1})'), ':', 1),
   c.result, format('F4-NAS-R01: %s reads late submission of Z1 as teacher: %s', c.actor, c.result))
