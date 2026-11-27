@@ -302,6 +302,48 @@ describe("teacher.submissions-bulk-link.post and teacher.submissions-bulk.get", 
     }
   });
 
+  it.each([["withdrawn", { state: "none" } as const], ["submitted again", "other"] as const])(
+    "answers 503 and no ZIP, never A's receipt with another's code, when A's submission is %s as the code is read",
+    async (_case, change) => {
+      const { deps } = await fakePorts();
+      let codeRead = false;
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const host = await start({
+          ...deps,
+          // app.teacher_submission_confirmation_code picks the live submission:
+          // the code read after the change, A's receipt read before it.
+          code: async (...args) => ((codeRead = true), deps.code(...args)),
+          receipt: async (token, assignmentId, studentId) => {
+            const read = await deps.receipt(token, assignmentId, studentId);
+            if (!codeRead || studentId !== STUDENT_A.id || read.status !== 200) return read;
+            if (read.body.state !== "potvrdeno") return read;
+            const body =
+              change === "other"
+                ? {
+                    ...read.body,
+                    receipt: {
+                      ...read.body.receipt,
+                      payload: {
+                        ...read.body.receipt.payload,
+                        submissionId: "00000000-0000-4000-8000-000000000009",
+                      },
+                    },
+                  }
+                : change;
+            return { status: 200, body } as typeof read;
+          },
+        });
+        const link = await linkFor(host, "pdf");
+        const answer = await get(host, link.downloadPath, TEACHER);
+        expect(answer.status).toBe(503);
+        expect(answer.headers.get("content-type")).not.toBe("application/zip");
+      } finally {
+        error.mockRestore();
+      }
+    },
+  );
+
   it("hands out DOCX for format docx, the same receipts, and the same bytes again", async () => {
     const { deps } = await fakePorts();
     const host = await start(deps);

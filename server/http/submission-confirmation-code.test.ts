@@ -35,12 +35,17 @@ async function bound(submissionId = SUBMISSION_ID): Promise<State> {
   } as State;
 }
 
-function codeOf(code: Code, state: State) {
+/** `state`, or `{ before, after }`: the state before and after the code is read. */
+function codeOf(code: Code, state: State | { before: State; after: State }) {
   const calls: unknown[][] = [];
+  let codeRead = false;
   const read = createSubmissionConfirmationCode(
-    { read: async (...args) => (calls.push(["code", ...args]), code) },
+    { read: async (...args) => (calls.push(["code", ...args]), (codeRead = true), code) },
     {
-      state: async (...args) => (calls.push(["state", ...args]), state),
+      state: async (...args) => (
+        calls.push(["state", ...args]),
+        "before" in state ? (codeRead ? state.after : state.before) : state
+      ),
     } as MySubmissionStateReader,
   );
   return { read, calls };
@@ -51,12 +56,23 @@ describe("createSubmissionConfirmationCode", () => {
     const { read, calls } = codeOf({ ok: true, value: CODE }, await bound());
     expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({ ok: true, code: CODE });
     expect(calls).toEqual([
+      ["state", TOKEN, ASSIGNMENT],
       ["code", TOKEN, ASSIGNMENT],
       ["state", TOKEN, ASSIGNMENT],
     ]);
   });
 
-  it("refuses when the code cannot be read, before reading the state", async () => {
+  it("gives no code when another submission was live as the code was read", async () => {
+    // Withdrawn and submitted again around the read: the code read is the
+    // earlier submission's, though the state after it shows this one.
+    const { read } = codeOf(
+      { ok: true, value: CODE },
+      { before: await bound(OTHER), after: await bound() },
+    );
+    expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({ ok: true, code: null });
+  });
+
+  it("refuses when the code cannot be read, before reading the state again", async () => {
     for (const code of [
       "MY_SUBMISSION_STATE_DATABASE_ERROR",
       "MY_SUBMISSION_STATE_UNAUTHENTICATED",
@@ -66,14 +82,14 @@ describe("createSubmissionConfirmationCode", () => {
         ok: false,
         reason: "code_unreadable",
       });
-      expect(calls).toHaveLength(1);
+      expect(calls).toHaveLength(2);
     }
   });
 
   it("gives no code to a student no longer in the course: the code read is not_found", async () => {
     const { read, calls } = codeOf(failed("MY_SUBMISSION_STATE_NOT_FOUND"), await bound());
     expect(await read(TOKEN, ASSIGNMENT, SUBMISSION_ID)).toEqual({ ok: true, code: null });
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 
   it("refuses when the state cannot be read or its receipt does not check", async () => {

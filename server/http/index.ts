@@ -510,6 +510,7 @@ export {
   codeForRecord,
   createSubmissionConfirmationCode,
   createSubmissionConfirmationCodeFor,
+  showsReceiptOf,
   type SubmissionConfirmationCode,
   type SubmissionConfirmationCodeRefusal,
 } from "./submission-confirmation-code.ts";

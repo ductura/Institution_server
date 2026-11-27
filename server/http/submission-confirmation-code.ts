@@ -3,10 +3,11 @@
 // PDF is the same bytes as student.receipt-pdf.get gives. Both reads are the
 // ones that route uses, under the same session: the code through
 // app.my_submission_confirmation_code, then the state through
-// app.my_submission_state. The code is of the live submission of the
-// assignment; it is this submission's only when the state, read after it,
-// still shows this submission's bound receipt (withdrawal is final and a
-// receipt exists before its code is read). A submission that is not the live
+// app.my_submission_state. The code is of the submission live at its read,
+// chosen by assignment, not by submission; it is this submission's only when
+// the state shows this submission's bound receipt both before and after it:
+// withdrawal is final, so a submission live at both reads was live at the
+// read of the code between them (showsReceiptOf). A submission that is not the live
 // one under the session (withdrawn, or its student no longer in the course,
 // where both reads answer not_found) has no code to carry: its PDF is the one
 // without a code, as before Dizajn 1.1, so the record is not lost. A read
@@ -21,7 +22,7 @@ import {
   type MySubmissionStateReader,
   type WithActor,
 } from "../database/index.ts";
-import { readStudentSubmission } from "../institution/index.ts";
+import { readStudentSubmission, type StudentSubmissionAnswer } from "../institution/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
@@ -43,25 +44,45 @@ export type SubmissionConfirmationCode = (
   | { readonly ok: false; readonly reason: SubmissionConfirmationCodeRefusal }
 >;
 
+/**
+ * Whether a state read shows the bound receipt of `submissionId`. The code
+ * readers pick the live submission by assignment (and student); a code read
+ * between two reads that both show this receipt is this submission's, since
+ * a withdrawn submission never becomes live again. Every PDF route reads the
+ * receipt, the code, then the receipt again and checks it with this.
+ */
+export function showsReceiptOf(answer: StudentSubmissionAnswer, submissionId: string): boolean {
+  return (
+    answer.status === 200 &&
+    answer.body.state === "potvrdeno" &&
+    answer.body.receipt.payload.submissionId === submissionId
+  );
+}
+
 export function createSubmissionConfirmationCode(
   codes: Pick<MySubmissionConfirmationCodeReader, "read">,
   states: MySubmissionStateReader,
 ): SubmissionConfirmationCode {
+  const live = async (token: string, assignmentId: string, submissionId: string) => {
+    const state = await readStudentSubmission(states, token, assignmentId);
+    if (state.status === 404) return false;
+    if (state.status !== 200) return "state_unreadable" as const;
+    return showsReceiptOf(state, submissionId);
+  };
   return async (token, assignmentId, submissionId) => {
+    const before = await live(token, assignmentId, submissionId);
+    if (before !== true) {
+      return before === false ? { ok: true, code: null } : { ok: false, reason: before };
+    }
     const code = await codes.read(token, assignmentId);
     if (!code.ok) {
       return code.error.code === NOT_FOUND
         ? { ok: true, code: null }
         : { ok: false, reason: "code_unreadable" };
     }
-    const state = await readStudentSubmission(states, token, assignmentId);
-    if (state.status === 404) return { ok: true, code: null };
-    if (state.status !== 200) return { ok: false, reason: "state_unreadable" };
-    if (
-      state.body.state !== "potvrdeno" ||
-      state.body.receipt.payload.submissionId !== submissionId
-    ) {
-      return { ok: true, code: null };
+    const after = await live(token, assignmentId, submissionId);
+    if (after !== true) {
+      return after === false ? { ok: true, code: null } : { ok: false, reason: after };
     }
     // A bound receipt has its code from the same insert; null here is not that.
     if (code.value === null) return { ok: false, reason: "code_missing" };

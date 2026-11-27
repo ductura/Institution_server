@@ -62,8 +62,11 @@ describe("receipt PDF downloads", () => {
     const host = await start(read);
     const student = await fetch(host + STUDENT, { headers: SESSION });
     const teacher = await fetch(host + TEACHER, { headers: SESSION });
+    // Each receipt is read again after the code, with the same session.
     expect(read.mock.calls).toEqual([
       [TOKEN, assignmentId, undefined],
+      [TOKEN, assignmentId, undefined],
+      [TOKEN, assignmentId, principalId],
       [TOKEN, assignmentId, principalId],
     ]);
     for (const response of [student, teacher]) {
@@ -97,6 +100,49 @@ describe("receipt PDF downloads", () => {
       Buffer.from(await renderReceiptPdf(CONFIRMED.receipt, ORIGIN, receiptPdfHr)),
     );
   });
+
+  const other = {
+    ...CONFIRMED,
+    receipt: {
+      ...CONFIRMED.receipt,
+      payload: {
+        ...CONFIRMED.receipt.payload,
+        submissionId: "00000000-0000-4000-8000-000000000009",
+      },
+    },
+  } as Confirmed;
+  it.each([
+    ["withdrawn", { state: "none" } as AnswerBody],
+    ["submitted again", other],
+  ])(
+    "answers 503, never the PDF with another's code, when the submission is %s as the code is read",
+    async (_case, after) => {
+      for (const path of [STUDENT, TEACHER]) {
+        let codeRead = false;
+        // app.*_confirmation_code picks the live submission: the code read
+        // after the change, the receipt read before it.
+        const read = vi.fn<Read>(async () => ({
+          status: 200,
+          body: codeRead ? after : CONFIRMED,
+        }));
+        const readCode = vi.fn<ReadCode>(
+          async () => ((codeRead = true), { ok: true, value: CODE }),
+        );
+        const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+        try {
+          const response = await fetch((await start(read, ORIGIN, readCode)) + path, {
+            headers: SESSION,
+          });
+          expect(response.status).toBe(503);
+          expect(await response.json()).not.toHaveProperty("pdfBase64");
+        } finally {
+          error.mockRestore();
+          await running?.close();
+          running = undefined;
+        }
+      }
+    },
+  );
 
   it("answers 503 without PDF data when the code cannot be read", async () => {
     const read = vi.fn<Read>().mockResolvedValue({ status: 200, body: CONFIRMED });

@@ -49,6 +49,7 @@ import {
   requestIdOf,
   sendJson,
   sendProblem,
+  showsReceiptOf,
   type Route,
 } from "../index.ts";
 
@@ -182,6 +183,14 @@ async function receiptsOf(
     // session; a failed read ends the download, never a PDF without its code.
     const code = await deps.code(token, assignmentId, studentId);
     if (!code.ok) return { codeError: code.error.code };
+    // The code is of the student's submission live at its read: only the
+    // receipt read again as the same submission's vouches for it. A
+    // withdrawal or a new submission in between ends the download (503),
+    // never a receipt with another submission's code.
+    const again = await deps.receipt(token, assignmentId, studentId);
+    if (!showsReceiptOf(again, receipt.payload.submissionId)) {
+      return { codeError: "receipt_changed" };
+    }
     receipts.set(studentId, await render(receipt, code.value));
   }
   return receipts;
