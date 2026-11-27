@@ -28,6 +28,7 @@ export {
 } from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export { createMentorWorkingStyleStore } from "./mentor-working-style/index.ts";
 export { createPracticeJournalStore } from "./practice-journal/index.ts";
 export { createQuestionnaireStore, type QuestionnaireForm } from "./questionnaire/index.ts";
 export { createQualitativeCodingStore, type QualCode } from "./qualitative-coding.ts";

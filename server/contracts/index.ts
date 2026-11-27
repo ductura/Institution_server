@@ -10,6 +10,7 @@ import {
   workInterviewPdfRoutes,
   mentorshipRoutes,
   mentorshipStudentRoutes,
+  mentorWorkingStyleRoutes,
   mentorshipConsultationRoutes,
   studentWorkRoutes,
   keyDatesGet,
@@ -277,6 +278,12 @@ export {
 };
 export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
 export {
+  MentorWorkingStyleInput,
+  MentorWorkingStyleParams,
+  mentorWorkingStyleGet,
+  mentorWorkingStylePut,
+} from "./routes/index.ts";
+export {
   MentorNoteInput,
   MentorshipNoteParams,
   mentorNotesGet,
@@ -390,6 +397,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...workInterviewPdfRoutes,
   ...mentorshipRoutes,
   ...mentorshipStudentRoutes,
+  ...mentorWorkingStyleRoutes,
   ...mentorshipConsultationRoutes,
   ...studentWorkRoutes,
   keyDatesGet,

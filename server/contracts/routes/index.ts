@@ -274,6 +274,14 @@ export { workInterviewPdfRoutes } from "./work-interview-pdf.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
 export {
+  MENTOR_WORKING_STYLE_MAX,
+  MentorWorkingStyleInput,
+  MentorWorkingStyleParams,
+  mentorWorkingStyleGet,
+  mentorWorkingStylePut,
+  mentorWorkingStyleRoutes,
+} from "./mentor-working-style.ts";
+export {
   MentorshipNotificationsPage,
   mentorshipConsultationRoutes,
 } from "./mentorship-consultations.ts";
