@@ -181,6 +181,7 @@ export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { workAccommodationRoutes } from "./work-accommodation.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
+export { submissionReconstructionRoutes } from "./submission-reconstruction.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
 export { questionnaireExportRoutes } from "./questionnaire-export.ts";

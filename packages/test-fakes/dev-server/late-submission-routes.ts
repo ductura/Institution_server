@@ -29,6 +29,21 @@ function taught(state: State, account: Account | null, id: string) {
 }
 
 export const LATE_SUBMISSION_HANDLERS: Handlers = {
+  // F4-PM2-R01: the student reads the state of the worker's reconstruction of the
+  // own submission; the fake has no worker, so a submitted work reads verified.
+  // Anyone else, or an assignment without a submission, reads 404.
+  "student.assignment-submission-reconstruction.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find(
+      (w) =>
+        w.assignmentId === params.assignmentId.toLowerCase() &&
+        w.studentId === account.id &&
+        w.submissionReceipt !== null,
+    );
+    return work === undefined
+      ? { error: "not_found" }
+      : { status: 200, body: { state: "verified" } };
+  },
   "institution.assignment-late-submission.put": ({ state, account, params, body }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = taught(state, account, params.assignmentId);

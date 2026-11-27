@@ -196,9 +196,35 @@ export async function reconstructSubmissionRecord(
   if (!UUID.test(submissionRequestId)) return { status: "not_found" };
   const read = await readRecord(dependencies.withActor, token, submissionRequestId);
   if (read.status !== "found") return read;
-  const payloads = bindPayloadReader(dependencies.payloads, read.record.institutionId);
-  if (read.documentKind === "spreadsheet") {
-    const sheet = await reconstructSheetSubmission({ payloads, keys: read.keys }, read.record);
+  const outcome = await reconstructRecordedSubmission(
+    {
+      payloads: dependencies.payloads,
+      keys: read.keys,
+      ...(dependencies.log ? { log: dependencies.log } : {}),
+    },
+    read.record,
+    read.documentKind,
+  );
+  return { status: "reconstructed", record: read.record, outcome, documentKind: read.documentKind };
+}
+
+/**
+ * The reconstruction of an already read record, by the kind of its work. Used
+ * by the submission itself and by the worker that reconstructs a recorded
+ * submission once more (F4-PM2-R01); the same checks, the same outcome.
+ */
+export async function reconstructRecordedSubmission(
+  dependencies: {
+    payloads: InstitutionEvidencePayloadReader;
+    keys: EvidenceDomainKey[];
+    log?: Log;
+  },
+  record: SubmissionRecord,
+  documentKind: SubmittedKind,
+): Promise<EvidenceReconstructionOutcome> {
+  const payloads = bindPayloadReader(dependencies.payloads, record.institutionId);
+  if (documentKind === "spreadsheet") {
+    const sheet = await reconstructSheetSubmission({ payloads, keys: dependencies.keys }, record);
     let outcome = sheet.outcome;
     if (outcome.status === "match" || outcome.status === "match_across_gaps") {
       const check = checkSheetSubmission(sheet.document);
@@ -208,9 +234,9 @@ export async function reconstructSubmissionRecord(
       else if (outcome.status === "match")
         (dependencies.log ?? consoleLog)("submission", "calculation", check.status);
     }
-    return { status: "reconstructed", record: read.record, outcome, documentKind: "spreadsheet" };
+    return outcome;
   }
-  const outcome = await reconstructSubmission(
+  return reconstructSubmission(
     {
       payloads,
       replayers: {
@@ -218,12 +244,11 @@ export async function reconstructSubmissionRecord(
         v2: createEditStepsV2Replayer(),
         v3: createEditStepsV3Replayer(),
       },
-      keys: read.keys,
+      keys: dependencies.keys,
     },
-    read.record,
+    record,
     // Until the record carries the document's version (DB step 1, contract
     // §7), every submitted document is v1.
     DOCUMENT_SCHEMA_VERSION,
   );
-  return { status: "reconstructed", record: read.record, outcome, documentKind: "text" };
 }

@@ -600,6 +600,12 @@ export {
   type LateSubmissionSetting,
 } from "./late-submission.ts";
 export {
+  createSubmissionReconstructionPort,
+  type SubmissionReconstructionPort,
+  type SubmissionReconstructionRead,
+  type SubmissionReconstructionState,
+} from "./submission-reconstruction.ts";
+export {
   createCourseAssistantPort,
   type AssistantAvailability,
   type AssistantRequestCount,

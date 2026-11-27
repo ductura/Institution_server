@@ -704,6 +704,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055",
   },
+  // F4-PM2-R01 (Ductus#2059): the student reads the worker's verdict of the own submission.
+  "app/api/student/assignments/[assignmentId]/submission-reconstruction/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059",
+  },
   // F4-NAS-R01-SRV (Ductus#2055): the teacher of the assignment reads the value in force.
   "app/api/teacher/assignments/[assignmentId]/late-submission/route.ts": {
     methods: ["GET"],

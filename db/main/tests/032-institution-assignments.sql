@@ -294,6 +294,7 @@ ALTER TABLE audit.access_log DISABLE TRIGGER access_log_no_truncate;
 ALTER TABLE institution.notice_read DISABLE TRIGGER notice_read_no_truncate;
 -- A student's note (SRV-21) references the assignment and is append-only.
 ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate;
+ALTER TABLE evidence.submission_reconstruction DISABLE TRIGGER submission_reconstruction_no_truncate;
 -- A student's amendment or dispute of an event (SRV-1314) references the assignment and is append-only.
 ALTER TABLE evidence.event_dispute DISABLE TRIGGER event_dispute_no_truncate;
 -- The kind of origin of a change (SRV-0910) references the assignment and is append-only.
@@ -379,6 +380,7 @@ SELECT is(
 ALTER TABLE evidence.revision_restore ENABLE TRIGGER revision_restore_no_truncate;
 ALTER TABLE evidence.origin_segment ENABLE TRIGGER origin_segment_no_truncate;
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
+ALTER TABLE evidence.submission_reconstruction ENABLE TRIGGER submission_reconstruction_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;
 ALTER TABLE evidence.origin_change ENABLE TRIGGER origin_change_no_truncate;
 ALTER TABLE evidence.assistant_match_finding ENABLE TRIGGER assistant_match_finding_no_truncate;
