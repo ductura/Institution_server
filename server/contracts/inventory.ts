@@ -675,6 +675,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
   },
+  // F4-PM2-R08-SRV (M2.9, D-50): the student reads and sets the accommodation
+  // mark of their own work; the holder of the work reads it.
+  "app/api/student/assignments/[assignmentId]/accommodation/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7205801182",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/accommodation/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7205801182",
+  },
   // SRV-NF4-KASNA-POLJE (Ductus#2055, orchestrator decision A): the teacher sets whether a
   // submission after the deadline is allowed, a student of the course reads it.
   "app/api/institution/assignments/[assignmentId]/late-submission/route.ts": {
@@ -1297,6 +1307,16 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/declaration-attachments/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060488877",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration-v2/route.ts": {
+    methods: ["GET", "PUT"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v2/route.ts": {
+    methods: ["GET"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
   },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],

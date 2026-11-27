@@ -59,6 +59,7 @@ import { FORMAT_RULES_HANDLERS } from "./format-rules-routes.ts";
 import { RETURN_FOR_REVISION_HANDLERS } from "./return-for-revision-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { DECLARATION_REQUIRED_HANDLERS } from "./declaration-required-routes.ts";
+import { WORK_ACCOMMODATION_HANDLERS } from "./work-accommodation-routes.ts";
 import { DECLARATION_QUESTION_HANDLERS } from "./declaration-question-routes.ts";
 import { LATE_SUBMISSION_HANDLERS } from "./late-submission-routes.ts";
 import { COURSE_ASSISTANT_HANDLERS } from "./course-assistant-routes.ts";
@@ -188,6 +189,7 @@ export const DEV_HANDLERS: Handlers = {
   ...RETURN_FOR_REVISION_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...DECLARATION_REQUIRED_HANDLERS,
+  ...WORK_ACCOMMODATION_HANDLERS,
   ...DECLARATION_QUESTION_HANDLERS,
   ...LATE_SUBMISSION_HANDLERS,
   ...COURSE_ASSISTANT_HANDLERS,

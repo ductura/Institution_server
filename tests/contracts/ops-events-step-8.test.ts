@@ -141,6 +141,7 @@ import {
   createSubmissionRouteFor,
   createSubmissionWithdrawalRoutesFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createTeacherFastPathRouteFor,
@@ -181,6 +182,7 @@ import {
   type Route,
   routesOf,
   type SecondFactor,
+  createWorkAccommodationRoutesFor,
 } from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
 import { newSessionToken, sessionTokenFromCookie } from "../../server/session/index.ts";
@@ -681,6 +683,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
     () => [createTeacherSubmissionDetailRouteFor(STAND_IN)],
   ],
   ["createTeacherDeclarationRouteFor", () => [createTeacherDeclarationRouteFor(STAND_IN)]],
+  ["createTeacherDeclarationV2RouteFor", () => [createTeacherDeclarationV2RouteFor(STAND_IN)]],
   [
     "createTeacherDeclarationConversationRouteFor",
     () => [createTeacherDeclarationConversationRouteFor(STAND_IN)],
@@ -723,6 +726,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
     "createTeacherMentorshipRequestRoutesFor",
     () => createTeacherMentorshipRequestRoutesFor(STAND_IN),
   ],
+  ["createWorkAccommodationRoutesFor", () => createWorkAccommodationRoutesFor(STAND_IN)],
   ["createInternalInstitutionRoutes", () => createInternalInstitutionRoutes({ env: {} })],
   ["createAuthRoutes", () => createAuthRoutes({})],
   ["routesOf", () => routesOf(AREA_NAMES)],
