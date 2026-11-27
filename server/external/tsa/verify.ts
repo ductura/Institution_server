@@ -248,6 +248,41 @@ async function signatureValid(
       );
 }
 
+function algorithmBytes(algorithm: pkijs.AlgorithmIdentifier): Uint8Array {
+  return new Uint8Array(algorithm.toSchema().toBER(false));
+}
+
+/**
+ * RFC 5280 §4.1.1.2 and §4.1.1.3 for the parts outside tbsCertificate, which
+ * the issuer's signature does not cover: the outer algorithm equals the one in
+ * tbsCertificate, the signature BIT STRING has no unused bits, and an ECDSA
+ * signature inside it is strict DER. WebCrypto and pkijs ignore those bytes or
+ * read them leniently, so another value would verify with other bytes.
+ */
+const OID_ECDSA_PREFIX = "1.2.840.10045.4.";
+
+/** An ECDSA signature is one DER SEQUENCE of two INTEGERs, with no other encoding. */
+function canonicalSignatureBytes(certificate: pkijs.Certificate): boolean {
+  if (!certificate.signatureAlgorithm.algorithmId.startsWith(OID_ECDSA_PREFIX)) return true;
+  const bytes = bytesOf(certificate.signatureValue.valueBlock.valueHexView);
+  const asn = parseOne(bytes);
+  if (!(asn instanceof asn1js.Sequence)) return false;
+  const parts = asn.valueBlock.value;
+  if (parts.length !== 2 || !parts.every((p) => p instanceof asn1js.Integer)) return false;
+  return equalBytes(new Uint8Array(asn.toBER(false)), bytes);
+}
+
+function canonicalCertificate(certificate: pkijs.Certificate): boolean {
+  return (
+    certificate.signatureValue.valueBlock.unusedBits === 0 &&
+    canonicalSignatureBytes(certificate) &&
+    equalBytes(
+      algorithmBytes(certificate.signatureAlgorithm),
+      algorithmBytes(certificate.signature),
+    )
+  );
+}
+
 function validAt(certificate: pkijs.Certificate, at: Date): boolean {
   return certificate.notBefore.value <= at && at <= certificate.notAfter.value;
 }
@@ -274,6 +309,11 @@ function readToken(der: Uint8Array): TsaResult<Token> {
   const [signerInfo] = signedData.signerInfos;
   const { eContentType, eContent } = signedData.encapContentInfo;
   if (!signerInfo || eContentType !== OID_TST_INFO || !eContent) return fail("TSA_MALFORMED");
+  // RFC 5652 §5.1: digestAlgorithms lists the signer's digest algorithm. It is
+  // outside the signature, so it must at least agree with the signed one.
+  const digestOid = signerInfo.digestAlgorithm.algorithmId;
+  if (!signedData.digestAlgorithms.some((a) => a.algorithmId === digestOid))
+    return fail("TSA_MALFORMED");
   const content = attempt(() => bytesOf(eContent.getValue()));
   const tstAsn = content === null ? null : parseOne(content);
   const tstInfo = tstAsn === null ? null : attempt(() => new pkijs.TSTInfo({ schema: tstAsn }));
@@ -358,7 +398,8 @@ async function verifyChecked(
     chain?.result !== true ||
     path.length < 2 ||
     !leaf ||
-    !equalBytes(certificateDer(leaf), signerDer)
+    !equalBytes(certificateDer(leaf), signerDer) ||
+    !path.every(canonicalCertificate)
   )
     return fail("TSA_CHAIN");
 

@@ -21,6 +21,7 @@ const DIGEST = new Uint8Array(32).map((_, i) => (i * 37 + 11) & 0xff);
 let der: Uint8Array;
 let expectation: TimeStampExpectation;
 let trust: TrustMaterial;
+let intermediateDer: Uint8Array;
 
 beforeAll(async () => {
   const clock = createFakeClock(START);
@@ -41,6 +42,7 @@ beforeAll(async () => {
     notAfter: new Date(Date.parse(START) + 60_000),
   };
   trust = { anchors: parseCertificates([pki.root.der]) ?? [] };
+  intermediateDer = pki.intermediate.der;
   const baseline = await verifyTimeStampResponse(der, expectation, trust);
   if (!baseline.ok) throw new Error(`baseline must verify: ${baseline.error.code}`);
 });
@@ -125,6 +127,38 @@ describe("arbitrary input", () => {
       }),
       { numRuns: 100 },
     );
+  });
+
+  // Found by the response property in CI (seed -16856531) and a sweep of every
+  // byte: parts of a certificate's signature are outside what the issuer
+  // signed and WebCrypto reads them leniently, so the path verified with
+  // other bytes. Offsets: the signature BIT STRING of the intermediate.
+  function intermediateSignature(): { at: number; bitString: number } {
+    const inter = Buffer.from(intermediateDer);
+    const at = Buffer.from(der).indexOf(inter);
+    for (let i = inter.length - 4; i > 0; i--)
+      if (
+        inter[i] === 0x03 &&
+        inter[i + 2] === 0x00 &&
+        inter[i + 3] === 0x30 &&
+        i + 2 + (inter[i + 1] ?? 0) === inter.length
+      )
+        return { at, bitString: i };
+    throw new Error("intermediate signature not found");
+  }
+
+  it.each([
+    ["unused bits in the signature BIT STRING", 2],
+    ["the length of the ECDSA signature SEQUENCE", 4],
+  ])("refuses a path certificate with changed %s", async (_, offset) => {
+    const { at, bitString } = intermediateSignature();
+    expect(at).toBeGreaterThan(0);
+    const result = await verifyTimeStampResponse(
+      flip(der, at + bitString + offset, 0x01),
+      expectation,
+      trust,
+    );
+    expect(!result.ok && result.error.code).toBe("TSA_CHAIN");
   });
 
   it("returns its own copy of exactly the response bytes, also for a pooled Buffer", async () => {
