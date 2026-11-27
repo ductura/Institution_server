@@ -36,7 +36,8 @@ const LOCAL_SECRETS = new Set(["ductus-local-only", "ductus-fake-oidc-local-only
 
 /** Server paths behind APP_ORIGIN (the front forwards /api/v1 to the server). */
 const CALLBACK_PATH = "/api/v1/auth/callback";
-const POST_LOGOUT_PATH = "/app/web/";
+/** Where the server sends the browser after sign-out (SIGNED_OUT_PATH, "/"; D-318). */
+const POST_LOGOUT_PATH = "/";
 const BACKCHANNEL_PATH = "/api/v1/auth/backchannel-logout";
 
 export type StagingSettings = {
