@@ -434,6 +434,9 @@ export const TEACHER_HANDLERS: Handlers = {
     const course = state.courses.find((c) => c.id === params.courseId.toLowerCase());
     if (course === undefined || account === null || !teachesCourse(course, account))
       return { status: 200, body: { students: [] } };
+    // As the real reader: the holder reads the assignment itself and gets the
+    // title and work type; a group teacher may not (C-23) and gets neither.
+    const holder = course.holderId === account.id;
     const assignments = state.assignments.filter((a) => a.courseId === course.id);
     const students = visibleStudents(course, account)
       .sort()
@@ -445,13 +448,20 @@ export const TEACHER_HANDLERS: Handlers = {
           const work = state.works.find(
             (w) => w.assignmentId === a.id && w.studentId === studentId,
           );
+          const named = holder ? { title: a.content.title, workType: a.content.workType } : {};
           if (work === undefined)
-            return { assignmentId: a.id, documentId: null, workState: "not_started" as const };
+            return {
+              assignmentId: a.id,
+              documentId: null,
+              workState: "not_started" as const,
+              ...named,
+            };
           return {
             assignmentId: a.id,
             documentId: work.documentId,
             workState:
               work.submittedAt === null ? ("in_progress" as const) : ("submitted" as const),
+            ...named,
           };
         }),
       }));

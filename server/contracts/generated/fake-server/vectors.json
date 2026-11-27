@@ -41637,7 +41637,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.182.0",
+        "apiVersion": "1.184.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41653,7 +41653,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.182.0",
+        "apiVersion": "1.184.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -59772,7 +59772,9 @@
           "evidenceProfile": "basic",
           "wordMin": 1500,
           "wordMax": 2500
-        }
+        },
+        "courseName": "Izmišljeni kolegij: Urbana ekologija",
+        "mentorName": "Izmišljena Mentorica"
       }
     }
   },
@@ -59808,7 +59810,9 @@
         "acknowledgedAt": "2026-11-03T09:20:00.000Z",
         "purposeCatalogVersion": 1,
         "aiSummaryOnly": true,
-        "previousVersion": null
+        "previousVersion": null,
+        "courseName": null,
+        "mentorName": null
       }
     }
   },
@@ -83223,7 +83227,9 @@
               {
                 "assignmentId": "00000000-0000-4000-8000-0000000000a1",
                 "documentId": "izmisljeni-rad-predaje-0001",
-                "workState": "submitted"
+                "workState": "submitted",
+                "title": "Izmišljeni seminar",
+                "workType": "seminar_paper"
               }
             ]
           },
