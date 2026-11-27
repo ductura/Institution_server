@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.169.0",
+    "version": "1.170.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -79786,6 +79786,164 @@
                     },
                     "aiSummaryOnly": {
                       "type": "boolean"
+                    },
+                    "previousVersion": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "versionNo",
+                            "title",
+                            "instructions",
+                            "workType",
+                            "opensAt",
+                            "dueAt",
+                            "aiPolicy",
+                            "aiPurposes",
+                            "evidenceProfile",
+                            "wordMin",
+                            "wordMax"
+                          ],
+                          "properties": {
+                            "versionNo": {
+                              "minimum": 1,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            "title": {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            },
+                            "workType": {
+                              "anyOf": [
+                                {
+                                  "const": "short_paper",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "essay",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "seminar_paper",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bachelor_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "master_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "specialist_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "doctoral_thesis",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "opensAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                              "type": "string"
+                            },
+                            "dueAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                              "type": "string"
+                            },
+                            "aiPolicy": {
+                              "anyOf": [
+                                {
+                                  "const": "prohibited",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "partially_allowed",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "encouraged",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "aiPurposes": {
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "const": "formatting",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "proofreading",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "literature_search",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "transcription",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "translation",
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "evidenceProfile": {
+                              "anyOf": [
+                                {
+                                  "const": "basic",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "extended",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "wordMin": {
+                              "anyOf": [
+                                {
+                                  "minimum": 1,
+                                  "maximum": 1000000,
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "wordMax": {
+                              "anyOf": [
+                                {
+                                  "minimum": 1,
+                                  "maximum": 1000000,
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
