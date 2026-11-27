@@ -1,13 +1,13 @@
 import { createEditStepsV1Replayer } from "../external/storage/edit-steps-v1-replayer.ts";
 import {
-  createEditStepsV2Replayer,
+  createEditStepsV1OnV2Replayer,
   createEditStepsV3Replayer,
 } from "../external/storage/edit-steps-v2-replayer.ts";
 import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
 import {
   reconstructSheetSubmission,
   reconstructSlidesSubmission,
-  reconstructSubmission,
+  reconstructTextSubmission,
   type SubmissionRecord,
 } from "./submission-reconstruction.ts";
 import { consoleLog, type Log } from "./ingest-http.ts";
@@ -18,7 +18,6 @@ import {
   bindPayloadReader,
   type InstitutionEvidencePayloadReader,
 } from "../application/ports/evidence-reconstruction.ts";
-import { DOCUMENT_SCHEMA_VERSION } from "../domain/document/schema.ts";
 import { isEvidenceDomainId, isReceiptPrincipalId } from "../domain/forensics/evidence-receipt.ts";
 import type { EvidenceDomainKey } from "../domain/forensics/evidence-receipt-verifier.ts";
 import type { WithActor } from "../database/with-actor.ts";
@@ -241,19 +240,19 @@ export async function reconstructRecordedSubmission(
   if (documentKind === "slides") {
     return reconstructSlidesSubmission({ payloads, keys: dependencies.keys }, record);
   }
-  return reconstructSubmission(
+  // SRV-33C: the version and the step format come from the record itself
+  // (its first segment), never from a version assumed for every work; a work
+  // of document v2 records ductus-edit-steps-v1 (v4 §9 t. 9).
+  return reconstructTextSubmission(
     {
       payloads,
       replayers: {
         v1: createEditStepsV1Replayer(),
-        v2: createEditStepsV2Replayer(),
+        v2: createEditStepsV1OnV2Replayer(),
         v3: createEditStepsV3Replayer(),
       },
       keys: dependencies.keys,
     },
     record,
-    // Until the record carries the document's version (DB step 1, contract
-    // §7), every submitted document is v1.
-    DOCUMENT_SCHEMA_VERSION,
   );
 }

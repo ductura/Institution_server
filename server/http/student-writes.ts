@@ -3,6 +3,12 @@
 // port of institution.enroll_with_code (SRV-05), and
 // POST /api/v1/student/assignments/{assignmentId}/notice-read
 // (student.notice-read.post, PO-7) over institution.mark_notice_read (SRV-06).
+// F4-OPE-R03-SRV: POST /api/v1/institution/enrollments
+// (institution.enrollments.post), the v1 route of Ductus enrollment-route.ts,
+// over the same port and edge: the RPC alone decides, from the session's
+// account, which course a code opens. Its contract tells no outcome apart: a
+// wrong, foreign or expired code is one 422 refused, so a code of another
+// institution reads exactly as one no course has, and a success is {courseId}.
 // The edge is that of acknowledgment-route in Ductus 078c780: origin and
 // Sec-Fetch-Site are pipeline step 7; then the assignment id (400
 // invalid_assignment_id, before the session), the session token (401),
@@ -61,6 +67,14 @@ const ENROLLMENT_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new 
   [ENROLLMENT_FORBIDDEN.code, [403, "forbidden"]],
   [ENROLLMENT_REFUSED.code, [422, "invalid_code"]],
   [ENROLLMENT_EXPIRED_CODE.code, [422, "expired_code"]],
+  [ENROLLMENT_TOO_MANY_ATTEMPTS.code, [429, "too_many_attempts"]],
+]);
+/** The v1 route: invalid_code and expired_code are one refusal (no new error on API v1). */
+const V1_ENROLLMENT_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
+  [ENROLLMENT_UNAUTHENTICATED.code, [401, "unauthorized"]],
+  [ENROLLMENT_FORBIDDEN.code, [403, "forbidden"]],
+  [ENROLLMENT_REFUSED.code, [422, "refused"]],
+  [ENROLLMENT_EXPIRED_CODE.code, [422, "refused"]],
   [ENROLLMENT_TOO_MANY_ATTEMPTS.code, [429, "too_many_attempts"]],
 ]);
 const NOTICE_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
@@ -147,10 +161,22 @@ export function createStudentWriteRoutes(options: StudentWriteOptions): Route[] 
       },
       options,
     ),
+    writeRoute(
+      "institution.enrollments.post",
+      parseStudentEnrollmentBody,
+      V1_ENROLLMENT_REFUSALS,
+      async (token, { code }) => {
+        const enrolled = await options.enrollment.enrollWithCode(token, code);
+        return enrolled.ok
+          ? { ok: true, body: { courseId: enrolled.value.courseId } }
+          : { ok: false, refusal: enrolled.error.code };
+      },
+      options,
+    ),
   ];
 }
 
-/** The two routes over main's application withActor. */
+/** The three routes over main's application withActor. */
 export function createStudentWriteRoutesFor(main: Pick<Databases["main"], "withActor">): Route[] {
   return createStudentWriteRoutes({
     enrollment: createInstitutionEnrollment(main.withActor),

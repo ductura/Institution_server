@@ -17,9 +17,14 @@ import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.t
 
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 import { removedRangeCanonical } from "./edit-steps-v1-rules.ts";
-import { createEditStepsV2Replayer, sourceRecordSha256 } from "./edit-steps-v2-replayer.ts";
+import {
+  createEditStepsV1OnV2Replayer,
+  createEditStepsV2Replayer,
+  sourceRecordSha256,
+} from "./edit-steps-v2-replayer.ts";
 import {
   editStepJsonV2,
+  runEditSteps,
   editStepsV2Schema,
   type EditStepsV2Document,
 } from "./edit-steps-v2-rules.ts";
@@ -396,5 +401,119 @@ describe("format selection (§5.4, class 28)", () => {
     expect(
       await replayEvidenceSegmentsV2(start, [segment([event([forged])], initial)], replayer),
     ).toMatchObject({ ok: false, reason: "step_failed", sequence: 1 });
+  });
+});
+
+// SRV-33C: a work of document v2 records ductus-edit-steps-v1 (v4 §9 t. 9).
+describe("ductus-edit-steps-v1 over document v2 (SRV-33C)", () => {
+  const v1OnV2 = createEditStepsV1OnV2Replayer();
+  const plain: JcsJsonValue = {
+    schemaVersion: 2,
+    nodes: [{ type: "paragraph", id: A, children: [text("Odlomak.")] }],
+    sources: [book(S1)],
+  } as unknown as JcsJsonValue;
+  const plainState = v1OnV2.load(plain);
+
+  it("names the v1 format and loads and writes document v2 only", () => {
+    expect(v1OnV2.transactionFormat).toBe("ductus-edit-steps-v1");
+    expect(v1OnV2.toCanonical(plainState)).toEqual(plain);
+    expect(() =>
+      v1OnV2.load({
+        schemaVersion: 1,
+        nodes: [{ type: "paragraph", id: A, children: [text("Odlomak.")] }],
+      } as unknown as JcsJsonValue),
+    ).toThrow("invalid_document");
+  });
+
+  it("applies a v1 insertion and a removal with its hash, as the v1 replayer would", () => {
+    const inserted = v1OnV2.apply(
+      plainState,
+      event([
+        { stepType: "replace", from: 9, to: 9, slice: { content: [{ type: "text", text: " B" }] } },
+      ]),
+    );
+    expect(v1OnV2.toCanonical(inserted)).toMatchObject({
+      schemaVersion: 2,
+      nodes: [{ children: [text("Odlomak. B")] }],
+      sources: [book(S1)],
+    });
+    const removed = v1OnV2.apply(
+      inserted,
+      event([
+        {
+          stepType: "replace",
+          from: 9,
+          to: 11,
+          removedSha256: removedRangeSha256(inserted.doc, 9, 11),
+        },
+      ]),
+    );
+    expect(v1OnV2.toCanonical(removed)).toEqual(plain);
+    expect(() =>
+      v1OnV2.apply(
+        inserted,
+        event([{ stepType: "replace", from: 9, to: 11, removedSha256: OTHER_HASH }]),
+      ),
+    ).toThrow();
+  });
+
+  it("refuses what the v1 format does not have: a source step and a citation", () => {
+    expect(() =>
+      v1OnV2.apply(plainState, event([{ stepType: "sourceSet", source: book(S2) }])),
+    ).toThrow();
+    expect(() =>
+      v1OnV2.apply(
+        plainState,
+        event([
+          { stepType: "sourceRemove", sourceId: S1, removedSha256: sourceRecordSha256(book(S1)) },
+        ]),
+      ),
+    ).toThrow();
+    expect(() =>
+      v1OnV2.apply(
+        plainState,
+        event([
+          {
+            stepType: "replace",
+            from: 1,
+            to: 1,
+            slice: { content: [{ type: "citation", sourceId: S1 }] },
+          },
+        ]),
+      ),
+    ).toThrow();
+    // The same steps in v2 are accepted, so the refusal is the format's.
+    expect(() =>
+      replayer.apply(plainState, event([{ stepType: "sourceSet", source: book(S2) }])),
+    ).not.toThrow();
+  });
+
+  it("refuses a segment of any other format than v1", async () => {
+    const initial = (await digestCanonicalDocumentV2(v1OnV2.toCanonical(plainState))).sha256;
+    for (const transactionFormat of [
+      "ductus-edit-steps-v2",
+      "ductus-edit-steps-v3",
+      "ductus-edit-steps-v4",
+    ]) {
+      expect(
+        await replayEvidenceSegmentsV2(
+          plain,
+          [
+            {
+              initialDocumentHash: initial,
+              finalDocumentHash: initial,
+              events: [],
+              captureContext: { editorModel: "prosemirror", transactionFormat },
+            } as unknown as EvidenceSegmentV2,
+          ],
+          v1OnV2,
+        ),
+      ).toMatchObject({ ok: false, reason: "unsupported_format", segmentIndex: 0 });
+    }
+  });
+
+  it("reads v1 steps only on the v2 schema, never on v3", () => {
+    const run = runEditSteps(3, plainState, event([]), "ductus-edit-steps-v1" as never);
+    expect(() => run.next()).toThrow("unsupported_format");
   });
 });

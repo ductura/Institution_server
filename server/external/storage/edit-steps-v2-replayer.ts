@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
-import { EDIT_STEP_FORMAT_V2, EDIT_STEP_FORMAT_V3 } from "../../domain/document/edit-step.ts";
+import {
+  EDIT_STEP_FORMAT_V1,
+  EDIT_STEP_FORMAT_V2,
+  EDIT_STEP_FORMAT_V3,
+} from "../../domain/document/edit-step.ts";
 import type { DocumentSource } from "../../domain/document/schema.ts";
 import type { EvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
@@ -11,6 +15,7 @@ import {
   editStepsCanonical,
   loadEditStepsDocument,
   runEditSteps,
+  type EditStepsReadFormat,
   type EditStepsV2Document,
   type EditStepsVersion,
 } from "./edit-steps-v2-rules.ts";
@@ -45,12 +50,27 @@ export function createEditStepsV3Replayer(): EvidenceStepReplayerV2<EditStepsV2D
   return createReplayer(3);
 }
 
-function createReplayer(version: EditStepsVersion): EvidenceStepReplayerV2<EditStepsV2Document> {
+/**
+ * SRV-33C: replayer of `ductus-edit-steps-v1` over document v2, the one step
+ * format a work of document v2 records (v4 §9 t. 9, `FORMAT_OF_WORK` in
+ * domain/forensics/evidence-segment-v2.ts). It loads and writes document v2
+ * and reads each event's steps as v1: a citation or a source step is refused,
+ * as the v1 format has neither, and any other format of a segment is refused
+ * by the replay, which compares it with `transactionFormat`.
+ */
+export function createEditStepsV1OnV2Replayer(): EvidenceStepReplayerV2<EditStepsV2Document> {
+  return createReplayer(2, EDIT_STEP_FORMAT_V1);
+}
+
+function createReplayer(
+  version: EditStepsVersion,
+  format: EditStepsReadFormat = version === 2 ? EDIT_STEP_FORMAT_V2 : EDIT_STEP_FORMAT_V3,
+): EvidenceStepReplayerV2<EditStepsV2Document> {
   return {
-    transactionFormat: version === 2 ? EDIT_STEP_FORMAT_V2 : EDIT_STEP_FORMAT_V3,
+    transactionFormat: format,
     load: (canonical) => loadEditStepsDocument(version, canonical),
     apply(state: EditStepsV2Document, event: EvidenceEventV3): EditStepsV2Document {
-      const run = runEditSteps(version, state, event);
+      const run = runEditSteps(version, state, event, format);
       for (let next = run.next(); ; next = run.next()) {
         if (next.done) {
           return next.value;
