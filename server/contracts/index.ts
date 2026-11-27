@@ -77,6 +77,7 @@ import {
   teacherWorkRoutes,
   originCompositionRoutes,
   assistantMatchRoutes,
+  aiTransferRoutes,
   inputRhythmRoutes,
   declarationRequiredRoutes,
   declarationQuestionRoutes,
@@ -322,6 +323,12 @@ export {
 export { isWorkId, WORK_ID_MAX, workIdFromPath } from "./work-id.ts";
 // SRV-1803: the import contract (SRV-1801) for its first caller, the DOCX import.
 export * from "./import/index.ts";
+// SRV-1809: what the route of the AI transfer reads its record with.
+export {
+  canonicalAiTransferRecordV1,
+  parseAiTransferRecordV1Text,
+  type AiTransferRecordV1,
+} from "./evidence-transfer/index.ts";
 
 /** Every route of /api/v1 with a contract. */
 export const ROUTES: readonly RouteContract[] = [
@@ -342,6 +349,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkRoutes,
   ...originCompositionRoutes,
   ...assistantMatchRoutes,
+  ...aiTransferRoutes,
   ...inputRhythmRoutes,
   ...declarationRequiredRoutes,
   ...declarationQuestionRoutes,

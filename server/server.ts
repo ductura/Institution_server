@@ -43,6 +43,7 @@ import {
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
+  createAiTransferRoutesFor,
   createInputRhythmRoutesFor,
   createRevisionRestoreRouteFor,
   createFacultyThresholdRoutesFor,
@@ -362,6 +363,7 @@ async function main(): Promise<void> {
       ...createOriginCompositionRoutesFor(databases.main),
       // The match of a segment with the answers of the assistant (SRV-1230, P-1 rule 13).
       ...createAssistantMatchRoutesFor(databases.main),
+      ...createAiTransferRoutesFor(databases.main),
       // The rhythm of typing and the teacher's switch of it (PIL-P1-RITAM-SRV, P-1 rule 4).
       ...createInputRhythmRoutesFor(databases.main),
       createRevisionRestoreRouteFor(databases.main),

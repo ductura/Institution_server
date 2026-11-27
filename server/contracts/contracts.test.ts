@@ -137,6 +137,7 @@ describe("route inventory", () => {
       "work.assistant-match.get: app/api/works/[documentId]/assistant-match/route.ts is not in the inventory",
       "work.assistant-match.post: app/api/works/[documentId]/assistant-match/route.ts is not in the inventory",
       "work.assistant-match-explanation.post: app/api/works/[documentId]/assistant-match/explanation/route.ts is not in the inventory",
+      "work.ai-transfer.post: app/api/works/[documentId]/ai-transfers/route.ts is not in the inventory",
       "work.input-rhythm.post: app/api/works/[documentId]/input-rhythm/route.ts is not in the inventory",
       "work.input-rhythm.get: app/api/works/[documentId]/input-rhythm/route.ts is not in the inventory",
       "work.input-rhythm.delete: app/api/works/[documentId]/input-rhythm/route.ts is not in the inventory",

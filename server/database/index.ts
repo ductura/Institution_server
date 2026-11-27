@@ -629,6 +629,12 @@ export {
   type AssistantMatchListOutcome,
 } from "./assistant-match/index.ts";
 export {
+  createAiTransfers,
+  type AiTransferCreated,
+  type AiTransferCreateOutcome,
+  type AiTransfers,
+} from "./ai-transfer/index.ts";
+export {
   createFacultyThresholds,
   THRESHOLD_ORIGINS,
   type FacultyThresholds,

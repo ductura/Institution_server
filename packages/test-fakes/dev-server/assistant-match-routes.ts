@@ -12,9 +12,10 @@
 import type { Handlers } from "./server.ts";
 import { readerOf } from "./state.ts";
 
-const CONVERSATION = "000000a1-0000-4000-8000-000000000001";
-const MESSAGE = "000000a1-0000-4000-8000-000000000002";
-const ANSWER_WORDS = "kišobrani na tramvajskoj stanici čuvaju putnike od kiše".split(" ");
+export const CONVERSATION = "000000a1-0000-4000-8000-000000000001";
+export const MESSAGE = "000000a1-0000-4000-8000-000000000002";
+export const ANSWER_TEXT = "kišobrani na tramvajskoj stanici čuvaju putnike od kiše";
+const ANSWER_WORDS = ANSWER_TEXT.split(" ");
 
 type Finding = {
   segmentRef: string;
