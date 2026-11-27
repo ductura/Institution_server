@@ -37,6 +37,7 @@ export {
 } from "./migrations-ledger.ts";
 export { newMigration, nextVersion, openPrVersions, refVersions } from "./new-migration.ts";
 export type { Runner } from "./new-migration.ts";
+export { planMoves, renumber } from "./renumber-migrations.ts";
 export {
   dbmateArgs,
   dbmateBinary,
