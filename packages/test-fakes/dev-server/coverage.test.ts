@@ -2931,6 +2931,28 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { required: true },
     },
   },
+  "student.accommodation.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/accommodation`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "student.accommodation.put": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/accommodation`,
+      as: "student",
+      method: "PUT",
+      body: { marked: true },
+    },
+  },
+  "teacher.student-accommodation.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/accommodation`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
   "institution.assignment-late-submission.put": {
     request: {
       path: `/api/v1/institution/assignments/${IDS.assignment}/late-submission`,

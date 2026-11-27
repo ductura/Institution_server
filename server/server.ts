@@ -188,6 +188,7 @@ import {
   serverShutdownHooks,
   startServer,
   trafficLogFor,
+  createWorkAccommodationRoutesFor,
 } from "./http/index.ts";
 import {
   deploymentProblems,
@@ -611,6 +612,8 @@ async function main(): Promise<void> {
       createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
+      // F4-PM2-R08-SRV: student.accommodation.get.
+      ...createWorkAccommodationRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
       ...createInternalInstitutionRoutes({ env: process.env }),

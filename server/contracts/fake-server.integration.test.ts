@@ -201,8 +201,9 @@ describe("fake server over HTTP", () => {
     // SRV-V18-KODIRANJE-OZNAKE: student.qual-segments.post and student.qual-segment.delete five each.
     // SRV-ED42-PRIJEDLOZI: the four suggestion routes five each.
     // SRV-F4-PM2-R15: work.plan.put five.
+    // F4-PM2-R08-SRV: student.accommodation.put five.
     // F4-PRE-R02-SRV: student.declaration-second.put five, as student.declaration.put.
-    expect(VECTORS.length - overHttp.length).toBe(935);
+    expect(VECTORS.length - overHttp.length).toBe(940);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

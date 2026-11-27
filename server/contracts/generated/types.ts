@@ -981,6 +981,20 @@ export type Operations = {
     success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.accommodation.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "marked": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.accommodation.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "marked": boolean };
+    success: { status: 200; body: { "marked": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict" | "unavailable";
+  };
   "student.assignment-assistant-requests.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1953,6 +1967,13 @@ export type Operations = {
     body: { "record": { [key: string]: unknown }; "doi"?: string | null; "isbn"?: string | null; "undated"?: boolean; "requirement": "recommended" | "required" };
     success: { status: 200; body: { "id": string; "record": { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "book"; "place": string; "publisher": string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "article"; "journal": string; "volume"?: string; "issue"?: string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "chapter"; "editors": ({ "kind": "person"; "family": string; "given": string })[]; "bookTitle": string; "place": string; "publisher": string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "web"; "url": string; "accessed": string }; "doi": string | null; "isbn": string | null; "undated": boolean; "requirement": "recommended" | "required" | null; "createdAt": string; "updatedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "teacher.student-accommodation.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "marked": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "teacher.submission-detail.get": {
     params: { "assignmentId": string; "studentId": string };
