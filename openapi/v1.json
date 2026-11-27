@@ -88259,6 +88259,7 @@
                       ]
                     },
                     "mentorName": {
+                      "description": "A display string only: one mentor, or several teachers joined by \", \". Clients show it as is and never split or parse it.",
                       "anyOf": [
                         {
                           "minLength": 1,

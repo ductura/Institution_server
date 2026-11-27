@@ -379,7 +379,12 @@ export const studentNoticeGet = defineRoute({
          * none or no name is recorded. Not a member of the notice fingerprint;
          * the server always sends it.
          */
-        mentorName: Type.Optional(Type.Union([Type.String({ minLength: 1 }), Type.Null()])),
+        mentorName: Type.Optional(
+          Type.Union([Type.String({ minLength: 1 }), Type.Null()], {
+            description:
+              'A display string only: one mentor, or several teachers joined by ", ". Clients show it as is and never split or parse it.',
+          }),
+        ),
       }),
     },
   ],
