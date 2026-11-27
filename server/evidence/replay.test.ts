@@ -17,6 +17,10 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   REVISION_ZERO_JCS,
   REVISION_ZERO_SHA256,
+  REVISION_ZERO_V2_JCS,
+  REVISION_ZERO_V2_SHA256,
+  REVISION_ZERO_V3_JCS,
+  REVISION_ZERO_V3_SHA256,
   canonicalizeJcs,
   sha256WebCrypto,
 } from "../domain/index.ts";
@@ -725,5 +729,34 @@ describe("a removing step without a valid removedSha256 (B-12, DAN-818)", () => 
       status: "unavailable",
       reason: "invalid_segment",
     });
+  });
+});
+
+// SRV-33C: a work of document v2 (or v3) starts at its own revision 0, fixed
+// bytes like v1's, so its replay needs no checkpoint either.
+describe("readReplayPage from revision 0 of document v2 and v3 (SRV-33C)", () => {
+  it.each([
+    ["v2", REVISION_ZERO_V2_SHA256, REVISION_ZERO_V2_JCS],
+    ["v3", REVISION_ZERO_V3_SHA256, REVISION_ZERO_V3_JCS],
+  ])(
+    "gives revision 0 of %s as the start document, without reading a checkpoint",
+    async (_v, hash, text) => {
+      const record = await buildRecord([{ initial: hash }, {}]);
+      const source = sourceOf(found(record.hashes));
+      const result = await page(source, await storeOf(record));
+      expect(result).toMatchObject({ status: "ok" });
+      expect(result.status === "ok" && result.page.startDocument).toBe(text);
+      expect(source.readCheckpoints).not.toHaveBeenCalled();
+    },
+  );
+
+  it("gives revision 0 of v2 as the document a break resumes from", async () => {
+    const record = await buildRecord([{}, { initial: REVISION_ZERO_V2_SHA256 }]);
+    const source = sourceOf(found(record.hashes));
+    const result = await page(source, await storeOf(record));
+    expect(result.status === "ok" && result.page.resumeDocuments).toStrictEqual({
+      [REVISION_ZERO_V2_SHA256]: REVISION_ZERO_V2_JCS,
+    });
+    expect(source.readCheckpoints).not.toHaveBeenCalled();
   });
 });
