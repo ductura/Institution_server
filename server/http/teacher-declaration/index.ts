@@ -21,10 +21,13 @@ export { createTeacherDeclarationConversationRouteFor } from "./conversation.ts"
 const ID = "teacher.declaration.get";
 // F4-PRE-R06-SRV: the same read checked against the declaration-v2 body.
 const ID_V2 = "teacher.declaration-second.get";
+// AI-RECORDED-5000: the same read with up to 5000 recorded transfers. A v2 read
+// of a declaration that records more than 500 is the documented 503 below.
+const ID_V3 = "teacher.declaration-third.get";
 
 export function createTeacherDeclarationRoute(
   read: TeacherDeclarationReader,
-  id: typeof ID | typeof ID_V2 = ID,
+  id: typeof ID | typeof ID_V2 | typeof ID_V3 = ID,
 ): Route {
   const contract = ROUTES.find((entry) => entry.id === id);
   const body = contract?.responses.find((response) => response.status === 200)?.body;
@@ -43,7 +46,7 @@ export function createTeacherDeclarationRoute(
       const result = await read(token, assignmentId, studentId);
       switch (result.status) {
         case "ok": {
-          // SRV-1809: v1 shows ai.recorded empty; v2 shows the list.
+          // SRV-1809: v1 shows ai.recorded empty; v2 and v3 show the list.
           const answer = id === ID ? withoutRecorded(result.body) : result.body;
           if (Value.Check(body, answer)) return sendJson(response, 200, answer);
           return sendProblem(response, 503, "unavailable");
@@ -65,4 +68,8 @@ export function createTeacherDeclarationRouteFor(main: { withActor: WithActor })
 
 export function createTeacherDeclarationV2RouteFor(main: { withActor: WithActor }): Route {
   return createTeacherDeclarationRoute(createTeacherDeclarationReader(main.withActor), ID_V2);
+}
+
+export function createTeacherDeclarationV3RouteFor(main: { withActor: WithActor }): Route {
+  return createTeacherDeclarationRoute(createTeacherDeclarationReader(main.withActor), ID_V3);
 }
