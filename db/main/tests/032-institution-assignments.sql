@@ -327,6 +327,8 @@ ALTER TABLE assistant.tool_step DISABLE TRIGGER tool_step_no_truncate;
 ALTER TABLE assistant.tool_loop_reservation DISABLE TRIGGER tool_loop_reservation_no_truncate;
 -- SRV-1809: a transfer record references the conversation and is append-only.
 ALTER TABLE assistant.ai_transfer DISABLE TRIGGER ai_transfer_no_truncate;
+-- SRV-1809: the links of a segment to transfer records reference the segment; append-only.
+ALTER TABLE evidence.segment_ai_transfer DISABLE TRIGGER segment_ai_transfer_no_truncate;
 -- Declarations, their uploads and conversation attachments reference evidence projects of the assignment.
 ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
@@ -396,6 +398,7 @@ ALTER TABLE audit.assistant_tool_setting_event ENABLE TRIGGER assistant_tool_set
 ALTER TABLE assistant.tool_step ENABLE TRIGGER tool_step_no_truncate;
 ALTER TABLE assistant.tool_loop_reservation ENABLE TRIGGER tool_loop_reservation_no_truncate;
 ALTER TABLE assistant.ai_transfer ENABLE TRIGGER ai_transfer_no_truncate;
+ALTER TABLE evidence.segment_ai_transfer ENABLE TRIGGER segment_ai_transfer_no_truncate;
 ALTER TABLE declaration.statement ENABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncate;
 ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_attachment_no_truncate;
