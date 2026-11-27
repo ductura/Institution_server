@@ -209,7 +209,8 @@ describe("dev fake server: live view and collaboration", () => {
     };
     // INT-15-SRV: a teacher's thread names a revision that exists (here 1 to 2).
     state.works.find((w) => w.documentId === IDS.document)!.revision = 2;
-    for (const revision of [undefined, 0, 3]) {
+    // A revision that is no whole number is refused too (wint15, SIROCE-SRV).
+    for (const revision of [undefined, 0, 3, 1.5]) {
       const refused = await send(state, "/api/v1/comments/create", {
         body: { anchor, body: "Izmišljeni komentar.", documentId: IDS.document, revision },
         headers: teacher,

@@ -149,5 +149,20 @@ UPDATE institution.course_member SET member_to = now()
  WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna');
 SELECT is(pg_temp.comment('vesna', 1), 'ZD403: forbidden', 'Vesna, gone from K1, cannot comment');
 
+-- A revision of another document does not count (wint15, SIROCE-SRV): Ana's second
+-- document on Z1 has revisions 0 to 5, doc-a only 0 to 3, so revision 5 of doc-a
+-- is still missing although Ana has a revision 5 elsewhere.
+SET CONSTRAINTS ALL DEFERRED;
+SET LOCAL ROLE ductus_evidence;
+INSERT INTO evidence.document (id, institution_id, project_id, principal_id, current_revision, current_content_hash)
+VALUES ('doc-a2', pg_temp.id('fak_a'), 'project-a', pg_temp.id('ana'), 5, pg_temp.h('5'));
+INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+SELECT 'doc-a2', pg_temp.id('fak_a'), r, nullif(r - 1, -1), pg_temp.id('ana'), pg_temp.h(r::text)
+  FROM generate_series(0, 5) AS r;
+SET CONSTRAINTS ALL IMMEDIATE;
+RESET ROLE;
+SELECT matches(pg_temp.comment('ana', 5, 'doc-a2'), '^[0-9a-f-]{36}$', 'Ana comments on revision 5 of her second document');
+SELECT is(pg_temp.comment('ana', 5), 'ZD422: invalid input', 'revision 5 of Ana''s second document does not count for doc-a');
+
 SELECT * FROM finish();
 ROLLBACK;
