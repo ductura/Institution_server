@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6342);
+SELECT plan(6343);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -63,7 +63,9 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
                ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'),
-               ('declaration.is_fresh(declaration.statement,text,bigint,integer)')) f(signature)
+               ('declaration.is_fresh(declaration.statement,text,bigint,integer)'),
+               -- SRV-1809: ai.recorded of a confirmed declaration (276).
+               ('declaration.recorded_transfers(uuid,uuid,text,bigint)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
 -- loop reservation and the setting trail are reached only by their owner; the
@@ -136,7 +138,8 @@ SELECT bag_eq(
         'declaration.require_pinned_submission()',
         'declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
         'declaration.answer_ref(declaration.question_answer)', 'declaration.bound_answer_of(uuid,uuid,uuid)',
-        'declaration.reject_answer_change()', 'declaration.delete_draft_answer()'],
+        'declaration.reject_answer_change()', 'declaration.delete_draft_answer()',
+        'declaration.recorded_transfers(uuid,uuid,text,bigint)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
