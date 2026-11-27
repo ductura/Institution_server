@@ -9,9 +9,19 @@
  *
  * What goes to the provider is only what the port input holds (G8, G9): the
  * server instructions, the untrusted data as one fenced JSON text, the closed
- * tool schemas and the model. Nothing is stored at the provider (`store:
- * false`). What the adapter reports out is metadata only: model, status,
- * token counts and duration, never a text, a key or a header.
+ * tool schemas and the model. `store: false` keeps the response out of the
+ * provider's stored conversation state, but it is not "nothing is kept": the
+ * provider keeps abuse monitoring logs of the request for up to 30 days,
+ * unless zero data retention (ZDR) is approved for the account. Whether that
+ * is acceptable is the DPIA (ductura/.github docs/pravo/DPIA-OPENAI.md) and
+ * the DPO's call, not this file's. What the adapter reports out is metadata
+ * only: model, status, token counts and duration, never a text, a key or a
+ * header.
+ *
+ * The base address is one of a closed list (AI-EU-ADRESA): the European
+ * project's address by default (DPIA-OPENAI, EVIDENCIJA-OBRADA), the US one
+ * only when OPENAI_BASE_URL names it exactly. Any other value refuses the
+ * start (openAiBaseUrlProblems), never a quiet fall back to the US.
  */
 import {
   type AssistantPort,
@@ -22,8 +32,43 @@ import {
   type PortToolCall,
 } from "../../domain/index.ts";
 
-/** The address of the provider's API; the one place it is named. */
-export const OPENAI_BASE_URL = "https://api.openai.com/v1";
+/** The European project's address (EEA and Switzerland); the default. */
+export const OPENAI_EU_BASE_URL = "https://eu.api.openai.com/v1";
+/** The provider's US address; used only when OPENAI_BASE_URL names it exactly. */
+export const OPENAI_US_BASE_URL = "https://api.openai.com/v1";
+/** The closed list of base addresses; this file is the one place they are named. */
+export const OPENAI_BASE_URLS: readonly string[] = Object.freeze([
+  OPENAI_EU_BASE_URL,
+  OPENAI_US_BASE_URL,
+]);
+/** The default base address: Europe, never the US by accident. */
+export const OPENAI_BASE_URL = OPENAI_EU_BASE_URL;
+/** The environment variable that may choose another address from the list. */
+export const OPENAI_BASE_URL_VARIABLE = "OPENAI_BASE_URL";
+
+/** The environment handed in by the composition; this file never reads the process's own. */
+export type OpenAiBaseUrlEnv = Readonly<Record<string, string | undefined>>;
+
+/**
+ * The base address chosen by the environment: the default (Europe) when the
+ * variable is unset, the value when it is exactly one of the list, else null.
+ * An empty value, another host, another scheme, a trailing slash or spaces
+ * are all null: the start is refused, nothing falls back to the US.
+ */
+export function openAiBaseUrlOf(env: OpenAiBaseUrlEnv): string | null {
+  const value = Object.hasOwn(env, OPENAI_BASE_URL_VARIABLE)
+    ? env[OPENAI_BASE_URL_VARIABLE]
+    : undefined;
+  if (value === undefined) return OPENAI_BASE_URL;
+  return OPENAI_BASE_URLS.includes(value) ? value : null;
+}
+
+/** Startup problems (server.ts): one line naming the variable, never its value. */
+export function openAiBaseUrlProblems(env: OpenAiBaseUrlEnv): string[] {
+  return openAiBaseUrlOf(env) === null
+    ? [`${OPENAI_BASE_URL_VARIABLE} is not one of the allowed OpenAI addresses`]
+    : [];
+}
 
 const TOKEN_UNIT = 1_000_000;
 
@@ -55,6 +100,7 @@ export type OpenAiAssistantDeps = {
   readonly transport: OpenAiTransport;
   /** Whole units of the account currency per million tokens, as bigint micro-units. */
   readonly rates: { readonly input: bigint; readonly output: bigint };
+  /** One of OPENAI_BASE_URLS; the default is Europe. Any other value is a programming error. */
   readonly baseUrl?: string;
   readonly timeoutMs: number;
   readonly now?: () => number;
@@ -153,10 +199,14 @@ function outcomeOfBody(body: unknown, rates: OpenAiAssistantDeps["rates"]): Assi
   return { kind: "success", text, actualMicro };
 }
 
-/** The adapter. An input that is not exactly a port input is a programming error. */
+/**
+ * The adapter. An input that is not exactly a port input, or a base address
+ * outside the closed list, is a programming error.
+ */
 export function createOpenAiAssistant(deps: OpenAiAssistantDeps): AssistantPort {
   const now = deps.now ?? Date.now;
   const base = deps.baseUrl ?? OPENAI_BASE_URL;
+  if (!OPENAI_BASE_URLS.includes(base)) throw new TypeError("not an allowed OpenAI base address");
   return Object.freeze({
     async complete(input: AssistantPortInput): Promise<AssistantPortOutcome> {
       if (!isAssistantPortInput(input)) throw new TypeError("not an assistant port input");
