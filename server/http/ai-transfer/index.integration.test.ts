@@ -153,6 +153,20 @@ describe("the text and the record", () => {
     expect(calls).toEqual([]);
   });
 
+  it.each([
+    ["a lone high surrogate", '{"responseId":"RID","text":"Lorem \\ud800 vijeće"}'],
+    ["a lone low surrogate", '{"responseId":"RID","text":"\\udc00"}'],
+    ["a reversed pair", '{"responseId":"RID","text":"a\\udc00\\ud800b"}'],
+  ])("a text with %s is 422 and the database is not asked", async (_name, raw) => {
+    const got = await send({
+      ...request,
+      body: undefined,
+      rawBody: raw.replace("RID", RECORD.responseId),
+    });
+    expect(got.status).toBe(422);
+    expect(calls).toEqual([]);
+  });
+
   it("a malformed work is 404 and never reaches the database", async () => {
     const got = await send({ ...request, params: { documentId: "nije%00rad" } });
     expect(got.status).toBe(404);

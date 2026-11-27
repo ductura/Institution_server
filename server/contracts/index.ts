@@ -326,6 +326,7 @@ export * from "./import/index.ts";
 // SRV-1809: what the route of the AI transfer reads its record with.
 export {
   canonicalAiTransferRecordV1,
+  eventTextBytes,
   parseAiTransferRecordV1Text,
   type AiTransferRecordV1,
 } from "./evidence-transfer/index.ts";

@@ -4,6 +4,7 @@ import type { ServerResponse } from "node:http";
 import { Value } from "@sinclair/typebox/value";
 
 import {
+  eventTextBytes,
   isWorkId,
   parseAiTransferRecordV1Text,
   ROUTES,
@@ -77,6 +78,9 @@ export function createAiTransferRoutesFor({ withActor }: { withActor: WithActor 
           return sendProblem(response, 422, "invalid_input");
         }
         const { responseId, text } = json.value as { responseId: string; text: string };
+        // A lone surrogate has no UTF-8 spelling: the driver would send U+FFFD
+        // and the substring check would run on another text than the hashed one.
+        if (eventTextBytes(text) === null) return sendProblem(response, 422, "invalid_input");
         const documentId = workOf(params?.documentId);
         if (documentId === null) return sendProblem(response, 404, "not_found");
         const result = await transfers.create(token, documentId, responseId, text);
