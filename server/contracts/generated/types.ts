@@ -999,7 +999,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" })[] }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en"; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet"; "noticeChangedSinceSeen"?: boolean; "afterDeadline"?: boolean })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "student.access-log.get": {
