@@ -206,6 +206,7 @@ describe("createEvidenceService().commit", () => {
       golden.segmentHash,
       "memory:put-ref",
       new TextDecoder().decode(DOCUMENT),
+      null,
     ]);
   });
 
@@ -467,7 +468,7 @@ describe("createEvidenceService().commit with a document v2", () => {
     const { run, queries, payloads } = setup(CONTEXT_ROW, V2_ZERO);
     expect((await run(ending(text))).status).toBe("stale_base");
     expect(payloads.putImmutable).toHaveBeenCalledOnce();
-    expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(text);
+    expect(queries.find((q) => q.kind === "commit")?.values[8]).toBe(text);
   });
 
   it("refuses a v2 snapshot with an unknown field before anything is stored", async () => {
@@ -521,7 +522,7 @@ describe("createEvidenceService().commit by the version of the work", () => {
     expect((await run(ending(V3_DOCUMENT, V3_STEPS))).status).toBe("stale_base");
     expect(payloads.putImmutable).toHaveBeenCalledOnce();
     expect(zeroReads.map((q) => q.values)).toEqual([[REQUEST.documentId]]);
-    expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(V3_DOCUMENT);
+    expect(queries.find((q) => q.kind === "commit")?.values[8]).toBe(V3_DOCUMENT);
   });
 
   it.each([
@@ -631,7 +632,7 @@ describe("createEvidenceService().commit by the version of the work, v4", () => 
       if (goldenStepsAreV4) {
         expect(outcome.status).toBe("stale_base");
         expect(payloads.putImmutable).toHaveBeenCalledOnce();
-        expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(text);
+        expect(queries.find((q) => q.kind === "commit")?.values[8]).toBe(text);
       } else {
         // Until the document reads ductus-edit-steps-v4 (SRV-10A §11 t. 5).
         expect(outcome).toEqual({ status: "invalid" });
