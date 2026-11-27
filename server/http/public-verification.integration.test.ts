@@ -1,15 +1,9 @@
 // SRV-9B (✓ C-6): POST /api/v1/public/verification over a real server and a
 // fake read. Every id, hash and key here is invented; the read answers
 // no_match, so the signature path stays in server/public-verification's tests.
-import { createPrivateKey, sign } from "node:crypto";
-
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/index.ts";
-import {
-  digestSubmissionReceiptPayloadV2,
-  type SubmissionReceiptPayloadV2,
-} from "../domain/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { startServer, type Running } from "./start.ts";
@@ -125,9 +119,11 @@ describe("POST /api/v1/public/verification", () => {
 
 // DIZAJN-27-11 1.1 (3): POST /api/v1/public/verification/code beside the pair
 // route, both over one limiter as server.ts mounts them. The receipt is
-// invented and signed with the public RFC 8032 test vector 1, never a deployed key.
+// invented and signed with the public RFC 8032 test vector 1, never a deployed
+// key. http may not import domain (server-map §2), so its digest and signature
+// are fixed here; server/public-verification's tests derive them.
 const CODE = "DK7M-4Q9P-X2HT-R8VN";
-const payload: SubmissionReceiptPayloadV2 = {
+const payload = {
   receiptSchema: "ductus-submission-receipt-v2",
   signedAt: "2026-11-20T10:59:00.654321Z",
   submissionId: "c4a1e9d2-7b3f-4a65-8e0c-1f2d3b4c5a69",
@@ -146,28 +142,20 @@ const payload: SubmissionReceiptPayloadV2 = {
   afterDeadline: false,
 };
 
-async function matchRow() {
-  const key = createPrivateKey({
-    key: Buffer.from(
-      "302e020100300506032b6570042204209d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
-      "hex",
-    ),
-    format: "der",
-    type: "pkcs8",
-  });
-  const digest = await digestSubmissionReceiptPayloadV2(payload);
+function matchRow() {
   return {
     outcome: "match",
     submissionId: payload.submissionId,
     artifactSha256: payload.artifactSha256,
     payload: JSON.stringify(payload),
-    digest: digest.sha256,
+    digest: "254af0f37e20e05a88188bd119d708a30da7aa5846a7c7a3a02af0f044f4a15e",
     signature: {
       algorithm: "Ed25519",
       keyId: "izmisljeni-kljuc",
       keyVersion: "1",
       signatureEncoding: "raw",
-      signatureBase64Url: sign(null, Buffer.from(digest.signingInput), key).toString("base64url"),
+      signatureBase64Url:
+        "Sc8PXaShMNGt89-uNhxSGNke3WxlyzGycRgBSRJp55_8AVJ2m_7dj7uaydPcmYyr6KkCnec5d-IIFWjmD5QoCg",
     },
     keyBase64Url: Buffer.from(
       "302a300506032b6570032100d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
@@ -211,7 +199,7 @@ async function openBoth(rows: unknown[]) {
 
 describe("POST /api/v1/public/verification/code", () => {
   it("answers match for the code of a bound receipt, without a login", async () => {
-    const { send, reads } = await openBoth([await matchRow()]);
+    const { send, reads } = await openBoth([matchRow()]);
     const response = await send("/code", { code: CODE });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
