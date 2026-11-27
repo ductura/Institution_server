@@ -194,6 +194,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('identity', 'user_preference', '128-interface-locale.sql'),
     ('identity', 'webauthn_credential', '136-webauthn-credential.sql'),
     ('institution', 'assignment', '030-institution-access-matrix.sql'),
+    ('institution', 'assignment_group', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_code_tests', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_rubric_version', '030-institution-access-matrix.sql'),
     ('institution', 'assignment_team_setting', '030-institution-access-matrix.sql'),
@@ -313,7 +314,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 217, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 218, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');
