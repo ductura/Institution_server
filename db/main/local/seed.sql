@@ -70,26 +70,29 @@ SELECT i.id, 'local' FROM identity.institution i
 --   demo-teacher-2  confirmed teacher, teaches group B (course team, collaborator)
 --   demo-student    enrolled in the seminar, group A, notice confirmed, work open
 --   demo-student-2  not enrolled (empty "Moji zadaci")
+--   demo-operater   second administrator (djelatnik): the local operator
 --   demo-bez-uloge  file account (djelatnik) with no confirmed role; not made here
 -- Codes: UPIS2026DEMO (seminar, valid), STARI2025KOD (seminar, expired and
 -- replaced), PRAZNI2026DEMO (the course without an assignment, valid).
 --
 -- A rerun adds no row: every step is idempotent or skipped when done. Each run
--- leaves five closed sessions, as five sign-ins and sign-outs would. One DO
+-- leaves six closed sessions, as six sign-ins and sign-outs would. One DO
 -- block is one transaction: a failed step leaves nothing behind.
 DO $demo$
 DECLARE
   c_issuer constant text := 'http://localhost:8090';
   c_home_org constant text := 'demo.ductus.test';
-  -- Order: admin, teacher, teacher 2, student, student 2. The admin is a file
-  -- account of the simulator, so its subject is the simulator's account id.
+  -- Order: admin, teacher, teacher 2, student, student 2, operator. The admin is
+  -- a file account of the simulator, so its subject is the simulator's account
+  -- id; the others are accounts of accounts.ts, whose subject is the account id.
   c_subjects constant text[] := ARRAY['sim:nastavnik:demo-admin@demo.ductus.test', 'demo-teacher',
-                                      'demo-teacher-2', 'demo-student', 'demo-student-2'];
+                                      'demo-teacher-2', 'demo-student', 'demo-student-2',
+                                      'demo-operater'];
   c_users constant text[] := ARRAY['demo-admin', 'demo-teacher', 'demo-teacher-2', 'demo-student',
-                                   'demo-student-2'];
-  c_given constant text[] := ARRAY['Vesna', 'Petar', 'Maja', 'Lucija', 'Marko'];
-  c_family constant text[] := ARRAY['Upravić', 'Kranjčec', 'Džombić', 'Đaković', 'Ljubić'];
-  c_eligible constant boolean[] := ARRAY[true, true, true, false, false];
+                                   'demo-student-2', 'demo-operater'];
+  c_given constant text[] := ARRAY['Vesna', 'Petar', 'Maja', 'Lucija', 'Marko', 'Oto'];
+  c_family constant text[] := ARRAY['Upravić', 'Kranjčec', 'Džombić', 'Đaković', 'Ljubić', 'Operić'];
+  c_eligible constant boolean[] := ARRAY[true, true, true, false, false, true];
   c_request constant uuid := 'c5ed0000-0000-4000-8000-000000000001';
   c_course constant text := 'Izmišljeni seminar iz ekologije grada';
   c_empty_course constant text := 'Izmišljeni praktikum iz urbane sociologije';
@@ -139,6 +142,11 @@ BEGIN
 
   -- 2. The first administrator, as provisioning appoints one (no actor).
   PERFORM institution.appoint_institution_admin(v_ids[1], 'lokalni-seed');
+  -- SEED-OIDC-OPERATER: the invented local operator account. The model has no
+  -- operator role of its own: the dev fake lets the administrator stand in for
+  -- the operator (packages/test-fakes/dev-server/ops-routes.ts), so this account
+  -- is a second administrator of demo-fakultet, nothing else. No new role or right.
+  PERFORM institution.appoint_institution_admin(v_ids[6], 'lokalni-seed');
 
   -- 3. The administrator confirms both teachers (the product flow).
   SET LOCAL ROLE ductus_app;
@@ -215,7 +223,7 @@ BEGIN
     RESET ROLE;
   END IF;
 
-  -- 7. Sign-out of all five sessions.
+  -- 7. Sign-out of all six sessions.
   SET LOCAL ROLE ductus_app;
   FOR i IN 1 .. cardinality(v_tokens) LOOP
     PERFORM set_config('app.session_token', v_tokens[i], true);
