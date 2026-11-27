@@ -19,6 +19,11 @@ export const FILE_OVERHEAD_MS = 150;
 // The property tests (68 files, about 73 s of test time, run in parallel with
 // less gain than the others) weigh like this on the legs that run them.
 export const RESERVED_LOAD_MS = 100_000;
+// A file this slow keeps a leg's CPU busy for a long time; tests that run beside
+// it get slow too and can pass their testTimeout (CI run 45938010744, dynamic-load
+// beside check-breaking). Such files go on different legs while there are legs
+// without one.
+export const HEAVY_FILE_MS = 20_000;
 
 export function plan(
   files: readonly string[],
@@ -42,13 +47,22 @@ export function plan(
   const load: number[] = Array.from({ length: legCount }, (_, i) =>
     reserved.includes(i + 1) ? RESERVED_LOAD_MS : 0,
   );
+  const heavy: number[] = Array.from({ length: legCount }, () => 0);
   const legs: string[][] = Array.from({ length: legCount }, () => []);
   const order = [...unique].sort((a, b) => cost(b) - cost(a) || (a < b ? -1 : 1));
   for (const file of order) {
+    const isHeavy = cost(file) >= HEAVY_FILE_MS;
+    // A heavy file first compares the number of heavy files on a leg, then load.
+    const rank = (i: number): [number, number] => [isHeavy ? (heavy[i] ?? 0) : 0, load[i] ?? 0];
     let best = 0;
-    for (let i = 1; i < legCount; i++) if ((load[i] ?? 0) < (load[best] ?? 0)) best = i;
+    for (let i = 1; i < legCount; i++) {
+      const [ha, la] = rank(i);
+      const [hb, lb] = rank(best);
+      if (ha < hb || (ha === hb && la < lb)) best = i;
+    }
     legs[best]?.push(file);
     load[best] = (load[best] ?? 0) + cost(file);
+    if (isHeavy) heavy[best] = (heavy[best] ?? 0) + 1;
   }
   const all = legs.flat().sort();
   if (all.length !== unique.length || all.some((file, i) => file !== unique[i])) {

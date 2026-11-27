@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { FILE_OVERHEAD_MS, plan, RESERVED_LOAD_MS } from "../../.github/workflows/index.ts";
+import {
+  FILE_OVERHEAD_MS,
+  HEAVY_FILE_MS,
+  plan,
+  RESERVED_LOAD_MS,
+} from "../../.github/workflows/index.ts";
 
 const planner = plan;
 
@@ -38,6 +43,18 @@ describe("shard plan of the checks job", () => {
     expect(c + RESERVED_LOAD_MS).toBeGreaterThan(a - 5000);
     expect(c).toBeLessThan(a);
     expect(d).toBeLessThan(b);
+  });
+
+  it("keeps heavy files on different legs while there are legs without one", () => {
+    const heavy = files.slice(0, 4);
+    const table = {
+      ...timings,
+      ...Object.fromEntries(heavy.map((f, i) => [f, HEAVY_FILE_MS + i * 1000])),
+    };
+    for (const reserved of [[], [3, 4]]) {
+      const legs = planner(files, table, 4, reserved);
+      for (const leg of legs) expect(leg.filter((f) => heavy.includes(f))).toHaveLength(1);
+    }
   });
 
   it("still runs a file the timing table does not know, once", () => {
