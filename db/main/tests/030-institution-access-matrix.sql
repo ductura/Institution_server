@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6341);
+SELECT plan(6342);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -107,7 +107,9 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
                ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()'),
                ('assistant.ai_transfer_canonical(uuid,text,uuid,uuid,text,text,integer,text,text,text,timestamptz)'),
                ('assistant.refuse_ai_transfer_rewrite()'), ('assistant.ai_transfer_phase(text,uuid)'),
-               ('assistant.ai_transfer_max()')) f(signature)
+               ('assistant.ai_transfer_max()'),
+               -- SRV-1809: for the evidence owner alone (275).
+               ('assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
