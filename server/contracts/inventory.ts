@@ -1322,6 +1322,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060488877",
   },
+  "app/api/student/assignments/[assignmentId]/declaration-conversations/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196164922",
+  },
   "app/api/student/assignments/[assignmentId]/declaration-v2/route.ts": {
     methods: ["GET", "PUT"],
     source:

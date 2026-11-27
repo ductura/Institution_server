@@ -2574,6 +2574,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "student.declaration-conversations.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-conversations`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.declaration.put": {
     method: "PUT",
     path: `/api/v1/student/assignments/${randomUUID()}/declaration`,
