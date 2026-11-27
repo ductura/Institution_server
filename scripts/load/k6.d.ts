@@ -29,7 +29,7 @@ declare module "k6/data" {
 }
 
 declare module "k6/execution" {
-  const execution: { vu: { idInTest: number } };
+  const execution: { vu: { idInTest: number }; scenario: { iterationInTest: number } };
   export default execution;
 }
 

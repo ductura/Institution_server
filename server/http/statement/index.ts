@@ -37,6 +37,9 @@ const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const READ = "student.declaration.get";
 const SAVE = "student.declaration.put";
 const UPLOAD = "student.declaration-attachments.post";
+// F4-PRE-R02-SRV, F4-PRE-R06-SRV: the declaration-v2 routes over the same port.
+const READ_V2 = "student.declaration-second.get";
+const SAVE_V2 = "student.declaration-second.put";
 
 /** A plain JSON object, so its own questionAnswer key can be set apart. */
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -92,14 +95,16 @@ function sendRefusal(
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
-  return [READ, SAVE, UPLOAD].map((id) => {
+  return [READ, SAVE, UPLOAD, READ_V2, SAVE_V2].map((id) => {
     const contract = ROUTES.find((route) => route.id === id);
     if (contract === undefined) throw new Error(`Missing contract for ${id}`);
+    const isRead = id === READ || id === READ_V2;
+    const isSave = id === SAVE || id === SAVE_V2;
     return {
       contract,
       async handle(request, response, params) {
         const site = request.headersDistinct["sec-fetch-site"];
-        if (id === READ && site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        if (isRead && site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
           return sendProblem(response, 403, "forbidden");
         }
         const token = liveSessionTokenFromCookie(request.headers.cookie);
@@ -110,11 +115,11 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           const assignmentId = params?.assignmentId ?? "";
           if (!UUID.test(assignmentId)) return refuse(response, 404, "not_found");
           let op: StatementOperation = { type: "read" };
-          if (id !== READ) {
+          if (!isRead) {
             const format = mediaType(request);
             if (id === UPLOAD && !isExternalFormat(format))
               return refuse(response, 415, "unsupported_media_type");
-            if (id === SAVE && format !== "application/json")
+            if (isSave && format !== "application/json")
               return refuse(response, 415, "unsupported_media_type");
             const raw = await readBodyWithLimit(
               request,
@@ -122,7 +127,7 @@ export function createStatementRoutes(port: StatementPort): Route[] {
               BODY_TIMEOUT_MS,
             );
             if (!raw.ok) return refuse(response, raw.status, raw.reason);
-            if (id === SAVE) {
+            if (isSave) {
               const json = parseJson(raw.bytes);
               if (!json.ok) return sendProblem(response, 400, "invalid_json");
               // SRV-IZJAVA-PITANJE: the optional answer travels beside the
@@ -132,7 +137,13 @@ export function createStatementRoutes(port: StatementPort): Route[] {
               if (isRecord(json.value)) ({ questionAnswer, ...declaration } = json.value);
               const parsed = parseDeclarationPutBody(declaration);
               const answer = parseDeclarationQuestionAnswer(questionAnswer);
-              if (!parsed.ok || !answer.ok || parsed.body.ai.attachments.length !== 0) {
+              // A v1 body attaches no conversation; a v2 one sends them to the
+              // save RPC, which checks each against the student's own.
+              if (
+                !parsed.ok ||
+                !answer.ok ||
+                (id === SAVE && parsed.body.ai.attachments.length !== 0)
+              ) {
                 return sendProblem(response, 422, "invalid_input");
               }
               if (parsed.body.confirm && incompleteFields(parsed.body).length > 0) {

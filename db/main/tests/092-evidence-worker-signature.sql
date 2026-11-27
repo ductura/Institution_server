@@ -103,6 +103,7 @@ SELECT bag_eq(
             ('app.worker_receipt_object(uuid,uuid)'), ('app.worker_package_checkpoints(uuid,text,text[])'),
             ('app.worker_record_reconstruction_checkpoint(uuid,text,bigint,text,text)'),
             ('app.worker_reconstruction_checkpoint(uuid,text,bigint)'),
+            ('app.worker_packages_due_checkpoints(uuid,integer,text,integer)'), ('app.worker_package_chain(uuid,text)'),
             ('pgboss.job_now()'), ('pgboss.create_queue(text,jsonb)'),
             ('assistant.sweep_and_settle(uuid)'), ('assistant.sweep_due(integer)'),
             ('app.worker_student_data_exports_to_prepare()'),
@@ -111,7 +112,7 @@ SELECT bag_eq(
             ('app.worker_student_data_export_access_log(uuid)'),
             ('app.worker_submissions_to_reconstruct(uuid,integer,uuid)'), ('app.worker_submission_record(uuid,uuid)'),
             ('app.worker_record_submission_reconstruction(uuid,uuid,text)') $$,
-  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the reconstruction checkpoint write and read (195-reconstruction-checkpoint.sql), the two pg-boss functions of its queue (DAN-517), the assistant sweep (171-assistant-rpcs.sql), its listing of due requests (172-assistant-sweep-due.sql) the three steps of the student data export (184-student-data-export.sql) and the three reads of its package (185-student-data-export-contents.sql) and the three of the submission verdict (262-submission-reconstruction.sql)');
+  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the reconstruction checkpoint write and read (195-reconstruction-checkpoint.sql), the two reads of the reconstruction loop (261-worker-reconstruction-due.sql), the two pg-boss functions of its queue (DAN-517), the assistant sweep (171-assistant-rpcs.sql), its listing of due requests (172-assistant-sweep-due.sql) the three steps of the student data export (184-student-data-export.sql) and the three reads of its package (185-student-data-export-contents.sql) and the three of the submission verdict (262-submission-reconstruction.sql)');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_retention', 'ductus_auth', 'ductus_identity', 'ductus_test_stranger']) AS r

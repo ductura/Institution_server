@@ -177,6 +177,60 @@ const Statement = closed({
   teacherQuestion: Type.Optional(TeacherQuestion),
   questionAnswer: Type.Optional(QuestionAnswer),
 });
+// F4-PRE-R02-SRV, F4-PRE-R06-SRV: declaration-v2 bodies. The v1 routes keep
+// their empty attachments and recorded lists; the v2 routes carry the
+// conversations with the Asistent a declaration attaches (declaration-v1
+// sections 2.1 and 2.2) and the recorded transfers. The PUT parser takes up to
+// ten times the student_added limit (MAX_PUT_CONVERSATIONS); the save RPC
+// refuses more than fifty student_added ones and names a missing mandatory one
+// (mandatory_attachment_missing) or a stale one (attachment_stale).
+const MAX_CONVERSATION_REFS = 500;
+const ConversationRef = closed({ conversationId: ID, throughSeq: Version, messagesSha256: SHA256 });
+const ConversationReason = Type.Union(
+  ["transferred_deleted", "transferred", "pasted_known", "student_added"].map((reason) =>
+    Type.Literal(reason),
+  ),
+);
+const PutV2 = closed({
+  ...Put.properties,
+  ai: closed({
+    ...Put.properties.ai.properties,
+    attachments: Type.Array(ConversationRef, { maxItems: MAX_CONVERSATION_REFS }),
+  }),
+});
+const PutRequestV2 = closed({
+  ...PutRequest.properties,
+  ai: Type.Object(
+    { use: Type.Union([Use, Type.Null()]) },
+    {
+      description:
+        "Closed declaration-v1 object with use, declaredTools, attachments [{conversationId,throughSeq,messagesSha256}] (up to 500) and externalAttachmentIds.",
+    },
+  ),
+});
+const PayloadV2 = closed({
+  ...Payload.properties,
+  ai: closed({
+    ...Payload.properties.ai.properties,
+    recorded: Type.Array(closed({ aiTransferId: ID, aiTransferSha256: SHA256 }), {
+      maxItems: MAX_CONVERSATION_REFS,
+    }),
+    // The attached conversations come first, by reason in table order and
+    // then by id; external uploads last.
+    attachments: Type.Array(
+      Type.Union([
+        closed({ ...ConversationRef.properties, reason: ConversationReason }),
+        closed({ ...Attachment.properties, reason: Type.Literal("external_upload") }),
+      ]),
+      { maxItems: MAX_CONVERSATION_REFS + 10 },
+    ),
+  }),
+});
+const StatementV2 = closed({
+  ...Statement.properties,
+  draft: Type.Union([PutV2, Type.Null()]),
+  payload: Type.Union([PayloadV2, Type.Null()]),
+});
 const Params = closed({ assignmentId: Type.String({ minLength: 1 }) });
 const READ_ERRORS = [
   error(401, "unauthorized"),
@@ -225,6 +279,8 @@ const UPLOAD_ERRORS = [
 const INVENTORY = "app/api/student/assignments/[assignmentId]";
 const URL = "/api/v1/student/assignments/{assignmentId}";
 export const STATEMENT_MAX_BODY_BYTES = (20 * 2000 + 20 * 3 * 200) * 12 + 16 * 1024;
+// Each conversation reference is plain ASCII, at most 192 bytes.
+export const STATEMENT_V2_MAX_BODY_BYTES = STATEMENT_MAX_BODY_BYTES + MAX_CONVERSATION_REFS * 192;
 
 export const studentDeclarationGet = defineRoute({
   id: "student.declaration.get",
@@ -276,14 +332,53 @@ export const studentDeclarationAttachmentsPost = defineRoute({
   ],
   errors: UPLOAD_ERRORS,
 });
+export const studentDeclarationV2Get = defineRoute({
+  id: "student.declaration-second.get",
+  method: "GET",
+  path: `${URL}/declaration-v2`,
+  inventory: `${INVENTORY}/declaration-v2/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "Read the student's declaration as student.declaration.get does, with the attached conversations and the recorded transfers of declaration-v2 bodies.",
+  request: { params: Params },
+  responses: [
+    {
+      status: 200,
+      body: StatementV2,
+      description: "Declaration state",
+      headers: ["cache-control"],
+    },
+  ],
+  errors: READ_ERRORS,
+});
+export const studentDeclarationV2Put = defineRoute({
+  id: "student.declaration-second.put",
+  method: "PUT",
+  path: `${URL}/declaration-v2`,
+  inventory: `${INVENTORY}/declaration-v2/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "Save a draft or confirm a declaration as student.declaration.put does, attaching up to 500 conversation references. A missing mandatory or stale conversation returns 409 with its conversationIds.",
+  request: {
+    params: Params,
+    contentType: "application/json",
+    maxBodyBytes: STATEMENT_V2_MAX_BODY_BYTES,
+    body: PutRequestV2,
+  },
+  responses: studentDeclarationV2Get.responses,
+  errors: SAVE_ERRORS,
+});
 export const statementRoutes = [
   studentDeclarationGet,
   studentDeclarationPut,
   studentDeclarationAttachmentsPost,
+  studentDeclarationV2Get,
+  studentDeclarationV2Put,
 ] as const;
 
 // The confirmed declaration payload, shared with the teacher's read (SRV-1213).
 export { Payload as DeclarationPayload, SHA256 as DeclarationSha256 };
+export { PayloadV2 as DeclarationPayloadV2 };
 export {
   QuestionAnswer as DeclarationQuestionAnswer,
   TeacherQuestion as DeclarationTeacherQuestion,

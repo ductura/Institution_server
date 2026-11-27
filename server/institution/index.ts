@@ -105,3 +105,11 @@ export {
   type OrphanWorkDataPort,
   type PurgeOrphanWorkDataJob,
 } from "./purge-orphan-work-data.ts";
+// F4-PM2-R08-SRV: the accommodation mark of a work, read and set over HTTP.
+export {
+  readOwnWorkAccommodation,
+  readWorkAccommodation,
+  setWorkAccommodation,
+  type WorkAccommodationRead,
+  type WorkAccommodationWrite,
+} from "./work-accommodation.ts";

@@ -343,6 +343,29 @@ export const studentNoticeGet = defineRoute({
          * of the notice fingerprint; the server always sends it.
          */
         aiSummaryOnly: Type.Optional(Type.Boolean()),
+        /**
+         * F4-STU-R11-SRV (P-16): the fingerprint content of the version before
+         * this one, for "what changed (v1 → v2)"; null when this version is the
+         * first. Not a member of the notice fingerprint; the server always sends it.
+         */
+        previousVersion: Type.Optional(
+          Type.Union([
+            closed({
+              versionNo: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+              title: Type.String({ minLength: 1 }),
+              instructions: Type.String(),
+              workType: WorkType,
+              opensAt: Instant,
+              dueAt: Instant,
+              aiPolicy: oneOf(["prohibited", "partially_allowed", "encouraged"]),
+              aiPurposes: Type.Array(AiPurpose, { maxItems: 5 }),
+              evidenceProfile: oneOf(["basic", "extended"]),
+              wordMin: WordBound,
+              wordMax: WordBound,
+            }),
+            Type.Null(),
+          ]),
+        ),
       }),
     },
   ],

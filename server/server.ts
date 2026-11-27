@@ -87,6 +87,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
@@ -188,6 +189,7 @@ import {
   serverShutdownHooks,
   startServer,
   trafficLogFor,
+  createWorkAccommodationRoutesFor,
 } from "./http/index.ts";
 import {
   deploymentProblems,
@@ -560,6 +562,7 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
       createTeacherDeclarationRouteFor(databases.main),
+      createTeacherDeclarationV2RouteFor(databases.main),
       // F4-NAS-R04-SRV: the conversations attached to the bound declaration.
       createTeacherDeclarationConversationRouteFor(databases.main),
       createTeacherSubmissionNotesRouteFor(databases.main),
@@ -611,6 +614,8 @@ async function main(): Promise<void> {
       createStudentConversationsRouteFor(databases.main),
       ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
+      // F4-PM2-R08-SRV: student.accommodation.get.
+      ...createWorkAccommodationRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
       ...createInternalInstitutionRoutes({ env: process.env }),

@@ -83,6 +83,22 @@ export {
   verifyCanonicalEvidencePayloadV2,
   verifyVersionedDocumentSnapshot,
 } from "../domain/index.ts";
+
+// The reconstruction checkpoints the worker writes (SRV-1503, F4-PM2-R02): its
+// reads of the due packages and of one chain, the per-package recorder and the
+// store of the checkpoints themselves. Only the worker process composes them.
+export {
+  createPackageCheckpointRecorder,
+  createWorkerEvidenceChainSource,
+  createWorkerReconstructionCheckpointStore,
+  type DuePackagesResult,
+  type PackageCheckpointRecorder,
+  type PackageCheckpointRecorderDeps,
+  type PackagePassOutcome,
+  type ReconstructionCheckpointStore,
+  type WorkerEvidenceChainSource,
+  type WorkerReconstructionQuery,
+} from "./reconstruction/index.ts";
 // F4-PM2-R01: the worker's second reconstruction of a recorded submission and
 // the verdict it asks the database to keep.
 export {

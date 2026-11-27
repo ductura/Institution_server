@@ -3,3 +3,4 @@
 // composition root). Other areas import only this file.
 export * from "./signing/index.ts";
 export * from "./submission-verdict/index.ts";
+export * from "./reconstruction/index.ts";
