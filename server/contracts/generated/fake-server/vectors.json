@@ -37531,7 +37531,8 @@
             "requestedAt": "2027-01-10T12:00:00.000Z",
             "state": "declined",
             "endedAt": "2027-01-12T12:00:00.000Z",
-            "mentorshipId": null
+            "mentorshipId": null,
+            "declineReason": "Ovaj semestar nemam slobodnih termina."
           },
           {
             "requestId": "00000000-0000-4000-8000-000000001424",
@@ -37541,7 +37542,8 @@
             "requestedAt": "2027-01-05T12:00:00.000Z",
             "state": "withdrawn",
             "endedAt": "2027-01-06T12:00:00.000Z",
-            "mentorshipId": null
+            "mentorshipId": null,
+            "declineReason": null
           }
         ]
       }
@@ -41637,7 +41639,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.185.0",
+        "apiVersion": "1.186.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41653,7 +41655,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.185.0",
+        "apiVersion": "1.186.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
