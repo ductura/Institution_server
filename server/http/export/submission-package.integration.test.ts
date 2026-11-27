@@ -19,11 +19,14 @@ import { receiptPdfHr } from "../../../locales/index.ts";
 import type { ActorTransaction, MySubmissionStateReader, WithActor } from "../../database/index.ts";
 import { createPortableRecordReader } from "../../database/index.ts";
 import { renderReceiptPdf, verifyPortableRecord } from "../../downloads/index.ts";
-import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
 import {
+  createDatabases,
+  createLayers,
   createSubmissionConfirmationCode,
+  startServer,
+  type Running,
   type SubmissionConfirmationCode,
-} from "../submission-confirmation-code.ts";
+} from "../index.ts";
 
 import {
   createSubmissionPackageRoutes,

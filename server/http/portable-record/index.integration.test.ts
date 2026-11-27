@@ -22,11 +22,14 @@ import {
   renderReceiptPdf,
   verifyPortableRecord,
 } from "../../downloads/index.ts";
-import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
 import {
+  createDatabases,
+  createLayers,
   createSubmissionConfirmationCode,
+  startServer,
+  type Running,
   type SubmissionConfirmationCode,
-} from "../submission-confirmation-code.ts";
+} from "../index.ts";
 
 import { createPortableRecordRoute, type PortableRecordRouteDeps } from "./index.ts";
 

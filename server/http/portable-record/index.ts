@@ -20,18 +20,16 @@ import {
   type PortableDailyRootSource,
 } from "../../downloads/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
+
 import {
   codeForRecord,
   createSubmissionConfirmationCodeFor,
-  type SubmissionConfirmationCode,
-} from "../submission-confirmation-code.ts";
-
-import {
   reportServerError,
   requestIdOf,
   sendProblem,
   type Databases,
   type Route,
+  type SubmissionConfirmationCode,
 } from "../index.ts";
 
 const CONTRACT = (() => {

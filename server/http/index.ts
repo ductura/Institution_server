@@ -507,6 +507,13 @@ export {
 export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
 export { createReceiptPdfRoutesFor } from "./receipt-pdf.ts";
 export {
+  codeForRecord,
+  createSubmissionConfirmationCode,
+  createSubmissionConfirmationCodeFor,
+  type SubmissionConfirmationCode,
+  type SubmissionConfirmationCodeRefusal,
+} from "./submission-confirmation-code.ts";
+export {
   createStudentConversationsRoute,
   createStudentConversationsRouteFor,
 } from "./student-assistant-conversations.ts";

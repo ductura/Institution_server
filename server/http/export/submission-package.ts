@@ -29,13 +29,10 @@ import {
   type PortableDailyRootSource,
 } from "../../downloads/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
+
 import {
   codeForRecord,
   createSubmissionConfirmationCodeFor,
-  type SubmissionConfirmationCode,
-} from "../submission-confirmation-code.ts";
-
-import {
   parseJson,
   readBodyWithLimit,
   refuse,
@@ -45,6 +42,7 @@ import {
   sendProblem,
   type Databases,
   type Route,
+  type SubmissionConfirmationCode,
 } from "../index.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
