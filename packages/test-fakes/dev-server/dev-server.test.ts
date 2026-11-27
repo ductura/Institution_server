@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ROUTES } from "../../../server/contracts/index.ts";
 import { CODES, createState, DEFAULT_PORT, devServerPort, IDS } from "./index.ts";
+import { FAKE_AAI_IDENTIFIERS } from "./roster-import-routes.ts";
 import { contractProblems, send, signIn } from "./testing.ts";
 
 const PORT_VAR = "DUCTURA_LAZNI_PORT";
@@ -15,6 +16,20 @@ describe("dev fake server: sessions and switches", () => {
     const me = await send(state, "/api/v1/me", { headers: await signIn(state, "nastavnik") });
     expect(me.json).toMatchObject({ roles: ["teacher"], displayName: "Petar Kranjčec" });
     expect(contractProblems("profile.me.get", me)).toEqual([]);
+  });
+
+  // SEED-OIDC-OPERATER: demo-operater of db/main/local/seed.sql, a second
+  // administrator who stands in for the operator, as on the real stack.
+  it("the operater switch opens a session of the seed's operator, Oto Operić", async () => {
+    const state = createState();
+    expect((await send(state, "/__lazni/uloga")).body).toContain("kao=operater");
+    const headers = await signIn(state, "operater");
+    const me = await send(state, "/api/v1/me", { headers });
+    expect(me.json).toMatchObject({ roles: ["institution_admin"], displayName: "Oto Operić" });
+    expect(contractProblems("profile.me.get", me)).toEqual([]);
+    const ops = await send(state, "/api/v1/ops/pilot-metrics", { headers });
+    expect(ops.status).toBe(200);
+    expect(FAKE_AAI_IDENTIFIERS.operater).toBe("demo-operater@demo.ductus.test");
   });
 
   it("login sends the browser to the role switch, never to a provider", async () => {

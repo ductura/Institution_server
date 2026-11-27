@@ -21,6 +21,7 @@ export const FAKE_AAI_IDENTIFIERS: Readonly<Record<AccountKey, string>> = {
   nastavnik: "demo-teacher@demo.ductus.test",
   "nastavnik-2": "demo-teacher-2@demo.ductus.test",
   administrator: "demo-admin@demo.ductus.test",
+  operater: "demo-operater@demo.ductus.test",
   "bez-uloge": "demo-bez-uloge@demo.ductus.test",
 };
 const VALID_FOR_MS = 30 * 60 * 1000;
