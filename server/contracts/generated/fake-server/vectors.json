@@ -41637,7 +41637,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.185.0",
+        "apiVersion": "1.186.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41653,7 +41653,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.185.0",
+        "apiVersion": "1.186.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -107714,6 +107714,41 @@
         "topic": "Izmišljena struktura rada",
         "agreement": "Dodati zaključak do petka.",
         "additions": []
+      }
+    }
+  },
+  {
+    "route": "work.consultation-records.post",
+    "name": "created-with-time",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "body": {
+        "heldOn": "2026-11-18",
+        "revision": 3,
+        "topic": "Izmišljena struktura rada",
+        "agreement": "Dodati zaključak do petka.",
+        "heldAt": "2026-11-18T10:15:42.123Z"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c12",
+        "heldOn": "2026-11-18",
+        "revision": 3,
+        "topic": "Izmišljena struktura rada",
+        "agreement": "Dodati zaključak do petka.",
+        "additions": [],
+        "heldAt": "2026-11-18T10:15:00.000Z"
       }
     }
   },

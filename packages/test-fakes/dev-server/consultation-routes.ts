@@ -44,7 +44,7 @@ export const CONSULTATION_HANDLERS: Handlers = {
       .map(({ documentId: _work, ...record }) => record);
     return { status: 200, body: { records } };
   },
-  "work.consultation-records.post": ({ state, account, params, body }) => {
+  "work.consultation-records.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find((w) => w.documentId === params.documentId);
     // SRV-MENTOR-1, owner decision (1) of 23 Nov 2026: only the teacher of the work writes.
@@ -54,6 +54,19 @@ export const CONSULTATION_HANDLERS: Handlers = {
     if (body.topic.trim() === "" || !isCalendarDate(body.heldOn) || body.revision > work.revision) {
       return { error: "invalid_input" };
     }
+    // F4 wave 2 #2: the time it was held, at most 5 minutes ahead and within a
+    // day of heldOn (as create_consultation_record_v2), kept as a whole minute.
+    const heldAt = body.heldAt ?? null;
+    const heldTime = heldAt === null ? null : Date.parse(heldAt);
+    if (
+      heldAt !== null &&
+      heldTime !== null &&
+      (!Number.isFinite(heldTime) ||
+        heldTime > now.getTime() + 5 * 60_000 ||
+        Math.abs(Date.parse(heldAt.slice(0, 10)) - Date.parse(body.heldOn)) > 86_400_000)
+    ) {
+      return { error: "invalid_input" };
+    }
     const record = {
       id: idOf(0, state.consultations.length + 1),
       heldOn: body.heldOn,
@@ -61,6 +74,7 @@ export const CONSULTATION_HANDLERS: Handlers = {
       topic: body.topic,
       agreement: body.agreement,
       additions: [],
+      heldAt: heldTime === null ? null : minuteOf(new Date(heldTime)),
     };
     state.consultations.push({ documentId: work.documentId, ...record });
     return { status: 201, body: record };
