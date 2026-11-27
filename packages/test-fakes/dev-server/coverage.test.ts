@@ -1093,6 +1093,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  "public.verification-code.post": {
+    request: { path: "/api/v1/public/verification/code", body: { code: "DK7M-4Q9P-X2HT-R8VN" } },
+  },
   "client.context.post": {
     request: {
       path: "/api/v1/client-context",

@@ -125,6 +125,8 @@ SELECT bag_eq(
             ('app.student_mentored_workspace()'),
             -- SRV-9B (✓ C-6): the public check of a receipt, with or without a session.
             ('app.public_receipt_verification(uuid,text)'),
+            -- DIZAJN-27-11 1.1 (3): the same public check by the receipt's confirmation code.
+            ('app.public_receipt_verification_by_code(text)'),
             ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
             ('declaration.upload_attachment(uuid,text,bytea)'),
             -- PIL-K-IZJAVA-SRV: the declaration a submission requires, read before the request.

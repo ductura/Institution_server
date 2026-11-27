@@ -30,18 +30,27 @@ export type PublicVerification = (
   artifactSha256: string,
 ) => Promise<PublicVerificationResult>;
 
+/** Checks one receipt by its confirmation code alone (DIZAJN-27-11 1.1, step 3). */
+export type PublicVerificationByCode = (code: string) => Promise<PublicVerificationResult>;
+
 const SUBMISSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
+/** The code as the database's CHECK keeps it (20261220530000). */
+const CODE = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/u;
 
 // ISO 8601 in UTC with milliseconds, by the database clock's own value, as
 // server/database/receipt-keys.ts reads the same key columns.
 const iso = (column: string, name: string) =>
   `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "${name}"`;
-const SQL = `SELECT outcome, receipt_payload AS "payload", payload_digest_sha256 AS "digest",
+const COLUMNS = `outcome, receipt_payload AS "payload", payload_digest_sha256 AS "digest",
        signature, key_base64url AS "keyBase64Url", key_evidence_domain_id::text AS "domain",
        key_purpose AS "purpose", ${iso("key_valid_from", "validFrom")},
-       ${iso("key_valid_to", "validTo")}, ${iso("key_revoked_at", "revokedAt")}
-  FROM app.public_receipt_verification($1::uuid, $2)`;
+       ${iso("key_valid_to", "validTo")}, ${iso("key_revoked_at", "revokedAt")}`;
+const SQL = `SELECT ${COLUMNS} FROM app.public_receipt_verification($1::uuid, $2)`;
+// The match row names the submission and its hash: the receipt must bind those.
+const CODE_SQL = `SELECT ${COLUMNS}, submission_id::text AS "submissionId",
+       artifact_sha256 AS "artifactSha256"
+  FROM app.public_receipt_verification_by_code($1)`;
 
 type Row = {
   outcome: unknown;
@@ -113,23 +122,43 @@ async function check(
   };
 }
 
+/** One read without a token: the database sees no actor, whatever cookie came. */
+async function readOne<T extends Row>(
+  withActor: WithActor,
+  sql: string,
+  values: readonly string[],
+): Promise<T | null> {
+  try {
+    const rows = await withActor(null, async (tx) => (await tx.query<T>(sql, [...values])).rows);
+    return rows.length === 1 ? (rows[0] ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function createPublicVerification(withActor: WithActor): PublicVerification {
   return async (submissionId, artifactSha256) => {
     if (!SUBMISSION_ID.test(submissionId) || !SHA256.test(artifactSha256)) return NO_MATCH;
-    let rows: Row[];
-    try {
-      // No token: the read runs as nobody, whatever cookie the request had.
-      rows = await withActor(null, async (tx) => {
-        const result = await tx.query<Row>(SQL, [submissionId, artifactSha256]);
-        return result.rows;
-      });
-    } catch {
-      return UNAVAILABLE;
-    }
-    const row = rows.length === 1 ? rows[0] : undefined;
-    if (row === undefined) return UNAVAILABLE;
+    const row = await readOne(withActor, SQL, [submissionId, artifactSha256]);
+    if (row === null) return UNAVAILABLE;
     if (row.outcome === "no_match") return NO_MATCH;
     if (row.outcome !== "match") return UNAVAILABLE;
+    return check(row, submissionId, artifactSha256);
+  };
+}
+
+export function createPublicVerificationByCode(withActor: WithActor): PublicVerificationByCode {
+  return async (code) => {
+    // A malformed code is the same match false as an unknown one.
+    if (!CODE.test(code)) return NO_MATCH;
+    type CodeRow = Row & { submissionId: unknown; artifactSha256: unknown };
+    const row = await readOne<CodeRow>(withActor, CODE_SQL, [code]);
+    if (row === null) return UNAVAILABLE;
+    if (row.outcome === "no_match") return NO_MATCH;
+    if (row.outcome !== "match") return UNAVAILABLE;
+    const { submissionId, artifactSha256 } = row;
+    if (typeof submissionId !== "string" || typeof artifactSha256 !== "string") return NO_MATCH;
+    if (!SUBMISSION_ID.test(submissionId) || !SHA256.test(artifactSha256)) return NO_MATCH;
     return check(row, submissionId, artifactSha256);
   };
 }
