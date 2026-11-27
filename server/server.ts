@@ -41,6 +41,7 @@ import {
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createTeacherSubmittedVersionRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createAiTransferRoutesFor,
@@ -362,6 +363,7 @@ async function main(): Promise<void> {
       createTextCheckConfigRoute(databases.main),
       // The teacher's read of one work by its document id (SRV-2003).
       ...createTeacherWorkRoutesFor(databases.main),
+      ...createTeacherSubmittedVersionRoutesFor(databases.main),
       // The composition of a work by the kind of origin (SRV-0910, P-1).
       ...createOriginCompositionRoutesFor(databases.main),
       // The match of a segment with the answers of the assistant (SRV-1230, P-1 rule 13).
