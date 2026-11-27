@@ -77,6 +77,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('app', 'institution_config', '188-institution-config.sql'),
     ('app', 'registry_clerk', '184-student-data-export.sql'),
     ('app', 'student_data_export', '184-student-data-export.sql'),
+    ('assistant', 'ai_transfer', '274-ai-transfer-record.sql'),
     ('assistant', 'assignment_tool_setting', '173-assistant-tools.sql'),
     ('assistant', 'budget_counter', '170-assistant-access.sql'),
     ('assistant', 'conversation', '170-assistant-access.sql'),
@@ -308,7 +309,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 212, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 213, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');

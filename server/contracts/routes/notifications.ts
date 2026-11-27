@@ -53,6 +53,36 @@ export const RevisionNotificationsPage = closed({
   nextBefore: Type.Union([NotificationId, Type.Null()]),
 });
 
+// F4-MEN-R10-SRV (MEN-05): a new message of a work and a consultation slot that waits for an
+// answer. Like the two lists above, NOT kinds of notifications.list.get (a wider enum breaks
+// clients, contracts:breaking): its own list; notifications.list.get leaves them out and
+// notifications.read.post marks them. Only identifiers and the kind: the text of a message and
+// the time of a slot are read with work.messages.get and work.consultation-slots.get.
+//   message_posted  the other side of the work wrote: the student owner (a teacher wrote) or a
+//                   teacher of the work (the student wrote); never the author
+//   slot_requested  the student asked for a slot: a teacher of the work
+//   slot_proposed   the teacher proposed another time: the student owner
+const MessageSlotNotification = closed({
+  id: NotificationId,
+  kind: Type.Union([
+    Type.Literal("message_posted"),
+    Type.Literal("slot_requested"),
+    Type.Literal("slot_proposed"),
+  ]),
+  /** The assignment of the work; it carries no access to it. */
+  targetId: NotificationId,
+  /** The work the message or slot belongs to. */
+  documentId: DocumentId,
+  /** The slot of slot_requested and slot_proposed; null for a message. */
+  slotId: Type.Union([NotificationId, Type.Null()]),
+  createdAt: Instant,
+  readAt: Type.Union([Instant, Type.Null()]),
+});
+export const MessageSlotNotificationsPage = closed({
+  notifications: Type.Array(MessageSlotNotification, { maxItems: NOTIFICATIONS_PAGE_SIZE }),
+  nextBefore: Type.Union([NotificationId, Type.Null()]),
+});
+
 const unauthorized = error(401, "unauthorized");
 const notFound = error(404, "not_found");
 const unavailable = error(503, "unavailable");
@@ -110,8 +140,29 @@ export const notificationsRevisionsGet = defineRoute({
   errors: [unauthorized, notFound, error(422, "invalid_input"), unavailable],
 });
 
+export const notificationsMessagesAndSlotsGet = defineRoute({
+  id: "notifications.messages-and-slots.list.get",
+  method: "GET",
+  path: "/api/v1/notifications/messages-and-slots",
+  inventory: "app/api/notifications/messages-and-slots/route.ts",
+  access: "signed_in",
+  summary:
+    "The signed-in account's notifications of a new message of a work and of a consultation slot that waits for its answer, newest first, each with the kind, the work and (for a slot) the slot. A student is told when a teacher writes or proposes another time; a teacher of the work is told when the student writes or asks for a slot; nobody is told of their own act. Only the one told sees a notification, and only while they keep their relation to the work. Start without a cursor; pass nextBefore as before to continue. Mark one read with notifications.read.post. notifications.list.get leaves these out.",
+  request: { query: closed({ before: Type.Optional(NotificationId) }) },
+  responses: [
+    {
+      status: 200,
+      description: "one page of notifications",
+      body: MessageSlotNotificationsPage,
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [unauthorized, notFound, error(422, "invalid_input"), unavailable],
+});
+
 export const notificationsRoutes = [
   notificationsGet,
   notificationReadPost,
   notificationsRevisionsGet,
+  notificationsMessagesAndSlotsGet,
 ] as const;

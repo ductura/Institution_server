@@ -261,6 +261,7 @@ export {
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
   RevisionNotificationsPage,
+  MessageSlotNotificationsPage,
   notificationsRoutes,
 } from "./routes/index.ts";
 

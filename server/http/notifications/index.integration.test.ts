@@ -160,3 +160,74 @@ it("answers the returned-for-revision list like the inbox: session, query and cu
     nextBefore: null,
   });
 });
+
+// F4-MEN-R10-SRV: a new message and a slot that waits for an answer have a list of their own.
+const MESSAGE_ID = "00000000-0000-4000-8000-000000001721";
+const messageRow = (i: number) => ({
+  id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+  kind: i % 2 === 0 ? "message_posted" : "slot_requested",
+  targetId: ID,
+  documentId: "doc-demo-1",
+  slotId: i % 2 === 0 ? null : ID,
+  createdAt: AT,
+  readAt: null,
+});
+
+it("leaves message and slot kinds out of the inbox but counts them in the page", async () => {
+  const row = (i: number, kind: string) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+    targetId: ID,
+    kind,
+    createdAt: new Date(AT),
+    readAt: null,
+  });
+  const rows = [
+    row(1, "message_posted"),
+    row(2, "slot_requested"),
+    row(3, "slot_proposed"),
+    row(4, "comment_posted"),
+  ];
+  query.mockResolvedValueOnce({ rows, rowCount: rows.length });
+  const body = (await (await get()).json()) as { notifications: { id: string }[] };
+  expect(body.notifications.map((n) => n.id)).toEqual([rows[3]?.id]);
+});
+
+it("lists the notifications of messages and slots, a page of 50 with a cursor", async () => {
+  const rows = Array.from({ length: 51 }, (_, i) => ({
+    ...messageRow(i),
+    createdAt: new Date(AT),
+  }));
+  query.mockResolvedValueOnce({ rows, rowCount: rows.length });
+  const response = await get(`/messages-and-slots?before=${MESSAGE_ID}`);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(await response.json()).toEqual({
+    notifications: Array.from({ length: 50 }, (_, i) => messageRow(i)),
+    nextBefore: rows[49]?.id,
+  });
+  expect(query.mock.calls[0]?.[1]).toEqual([MESSAGE_ID]);
+});
+
+it("answers the messages-and-slots list like the inbox: session, query, cursor and outage", async () => {
+  expect((await fetch(url("/messages-and-slots"))).status).toBe(401);
+  for (const suffix of ["?before=", "?before=wrong", `?before=${ID}&userId=${ID}`])
+    expect((await get(`/messages-and-slots${suffix}`)).status).toBe(422);
+  expect(query).not.toHaveBeenCalled();
+  query.mockRejectedValueOnce(Object.assign(new Error(), { code: "ZD403" }));
+  expect((await get(`/messages-and-slots?before=${ID}`)).status).toBe(404);
+  query.mockRejectedValueOnce(new Error("down"));
+  expect((await get("/messages-and-slots")).status).toBe(503);
+  query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+  expect(await (await get("/messages-and-slots")).json()).toEqual({
+    notifications: [],
+    nextBefore: null,
+  });
+});
+
+it("never lets a row outside its contract out (a kind of another list)", async () => {
+  query.mockResolvedValueOnce({
+    rows: [{ ...messageRow(1), kind: "comment_posted", createdAt: new Date(AT) }],
+    rowCount: 1,
+  });
+  expect((await get("/messages-and-slots")).status).toBe(503);
+});
