@@ -56,15 +56,10 @@ LANGUAGE sql AS $f$
     pg_temp.id(p_author))
 $f$;
 
--- 1. The column, its key and the trigger function.
+-- 1. The column and the trigger function.
 SELECT is((SELECT attnotnull FROM pg_attribute
             WHERE attrelid = 'institution.assignment_version'::regclass AND attname = 'faculty_rule_version'),
   false, 'faculty_rule_version is nullable: no rule for the kind of work, no version');
-SELECT matches((SELECT pg_get_constraintdef(oid) FROM pg_constraint
-                 WHERE conrelid = 'institution.assignment_version'::regclass
-                   AND conname = 'assignment_version_faculty_rule_version_fkey'),
-  '^FOREIGN KEY \(institution_id, work_type, faculty_rule_version\) REFERENCES (institution\.)?faculty_rule_version\(institution_id, work_type, version_no\)$',
-  'the value is a version of the same institution and kind of work');
 SELECT is((SELECT p.prosecdef::text || ' ' || has_function_privilege('ductus_app', p.oid, 'EXECUTE')::text
                   || ' ' || has_function_privilege('public', p.oid, 'EXECUTE')::text
              FROM pg_proc p WHERE p.oid = 'institution.link_assignment_rule_version()'::regprocedure),
@@ -170,6 +165,16 @@ SELECT throws_ok(pg_temp.insert_version('00000000-0000-4000-8000-0000000000b7', 
 SELECT throws_ok(pg_temp.insert_version('00000000-0000-4000-8000-0000000000b7', 1, 'essay',
                                         'prohibited', '{}', 'basic', 2, 'vesna'),
   'ZD503', 'not set up', 'nor is it when the version is of a kind that has one');
+
+-- 9. With no foreign key, every value written above is still a version of the
+-- same institution and kind of work.
+SELECT is_empty(
+  $$ SELECT v.assignment_id::text || '.' || v.version_no FROM institution.assignment_version v
+      WHERE v.faculty_rule_version IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM institution.faculty_rule_version r
+                         WHERE r.institution_id = v.institution_id AND r.work_type = v.work_type
+                           AND r.version_no = v.faculty_rule_version) $$,
+  'every assignment version names a version of its own institution and kind of work');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -12,8 +12,10 @@
 -- version before it of that kind named, so the assignment stays on the rule
 -- it was created under while the faculty publishes newer ones. No version for
 -- the kind leaves the column NULL, as config_version does for an assignment
--- created before any configuration. The foreign key ties the value to a
--- version of the same institution and kind of work.
+-- created before any configuration. There is no foreign key: a key on
+-- faculty_rule_version would change how its TRUNCATE is refused (105), and
+-- the value needs none, since only the trigger below writes it, from versions
+-- that are never updated, deleted or truncated.
 --
 -- Existing versions take the latest version of their institution and kind at
 -- this migration, which is version 1 of the conversion in P01a unless an
@@ -63,11 +65,6 @@ UPDATE institution.assignment_version av
          GROUP BY v.institution_id, v.work_type) l
  WHERE l.institution_id = av.institution_id AND l.work_type = av.work_type;
 ALTER TABLE institution.assignment_version ENABLE TRIGGER assignment_version_immutable;
-ALTER TABLE institution.assignment_version
-  -- squawk-ignore constraint-missing-not-valid, adding-foreign-key-constraint
-  ADD CONSTRAINT assignment_version_faculty_rule_version_fkey
-  FOREIGN KEY (institution_id, work_type, faculty_rule_version)
-  REFERENCES institution.faculty_rule_version (institution_id, work_type, version_no);
 
 -- Runs after assignment_version_institution_fill and before
 -- assignment_version_mentorship_rule, which fire in the order of their names.
@@ -187,7 +184,6 @@ END
 $$;
 DROP TRIGGER assignment_version_link_faculty_rule ON institution.assignment_version;
 DROP FUNCTION institution.link_assignment_rule_version();
-ALTER TABLE institution.assignment_version DROP CONSTRAINT assignment_version_faculty_rule_version_fkey;
 ALTER TABLE institution.assignment_version DROP COLUMN faculty_rule_version;
 
 RESET ROLE;
