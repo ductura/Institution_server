@@ -515,7 +515,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionConfigRoutesFor(NO_ACTOR).map((r) => r.contract.id),
   },
   {
-    call: "...createAnalysisRoutesFor(databases.main)",
+    call: "...createAnalysisRoutesFor(databases.main, { enabled: ANALYSIS_LOCAL })",
     ids: ["analysis.catalogue.get", "analysis.runs.post"],
     routes: () => createAnalysisRoutesFor(NO_ACTOR).map((r) => r.contract.id),
   },
