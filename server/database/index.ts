@@ -74,6 +74,7 @@ export type {
   EvidenceCommitState,
 } from "./commit-context.ts";
 export type {
+  EvidenceAiTransferLink,
   EvidenceCommitFault,
   EvidenceCommitInput,
   EvidenceCommitOutcome,

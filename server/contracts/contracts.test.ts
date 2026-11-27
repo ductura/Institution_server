@@ -270,6 +270,7 @@ describe("route inventory", () => {
       "student.assistant-conversation.get: app/api/student/assistant/conversations/[conversationId]/route.ts is not in the inventory",
       "student.assistant-conversations.get: app/api/student/assignments/[assignmentId]/assistant-conversations/route.ts is not in the inventory",
       "student.declaration.get: app/api/student/assignments/[assignmentId]/declaration/route.ts is not in the inventory",
+      "student.declaration-conversations.get: app/api/student/assignments/[assignmentId]/declaration-conversations/route.ts is not in the inventory",
       "student.declaration.put: app/api/student/assignments/[assignmentId]/declaration/route.ts is not in the inventory",
       "student.declaration-attachments.post: app/api/student/assignments/[assignmentId]/declaration-attachments/route.ts is not in the inventory",
       "student.declaration-second.get: app/api/student/assignments/[assignmentId]/declaration-v2/route.ts is not in the inventory",

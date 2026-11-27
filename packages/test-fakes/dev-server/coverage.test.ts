@@ -852,6 +852,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.declaration.get": {
     request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
   },
+  "student.declaration-conversations.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-conversations`,
+      as: "student",
+    },
+  },
   "student.declaration.put": {
     before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
     request: {

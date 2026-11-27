@@ -332,6 +332,35 @@ export const studentDeclarationAttachmentsPost = defineRoute({
   ],
   errors: UPLOAD_ERRORS,
 });
+export const studentDeclarationConversationsGet = defineRoute({
+  id: "student.declaration-conversations.get",
+  method: "GET",
+  path: `${URL}/declaration-conversations`,
+  inventory: `${INVENTORY}/declaration-conversations/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "List the student's own assistant conversations of this assignment that a declaration can attach, each with the throughSeq and messagesSha256 of a reference. Send them with student.declaration-second.put. Only conversations with a message; never another student's.",
+  request: { params: Params },
+  responses: [
+    {
+      status: 200,
+      body: closed({
+        conversations: Type.Array(
+          closed({
+            conversationId: ID,
+            reason: ConversationReason,
+            throughSeq: Version,
+            messagesSha256: SHA256,
+          }),
+          { maxItems: 200 },
+        ),
+      }),
+      description: "Attachable conversations",
+      headers: ["cache-control"],
+    },
+  ],
+  errors: READ_ERRORS,
+});
 export const studentDeclarationV2Get = defineRoute({
   id: "student.declaration-second.get",
   method: "GET",
@@ -370,6 +399,7 @@ export const studentDeclarationV2Put = defineRoute({
 });
 export const statementRoutes = [
   studentDeclarationGet,
+  studentDeclarationConversationsGet,
   studentDeclarationPut,
   studentDeclarationAttachmentsPost,
   studentDeclarationV2Get,

@@ -39,6 +39,7 @@ const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const READ = "student.declaration.get";
 const SAVE = "student.declaration.put";
 const UPLOAD = "student.declaration-attachments.post";
+const CONVERSATIONS = "student.declaration-conversations.get";
 // F4-PRE-R02-SRV, F4-PRE-R06-SRV: the declaration-v2 routes over the same port.
 const READ_V2 = "student.declaration-second.get";
 const SAVE_V2 = "student.declaration-second.put";
@@ -97,7 +98,7 @@ function sendRefusal(
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
-  return [READ, SAVE, UPLOAD, READ_V2, SAVE_V2].map((id) => {
+  return [READ, CONVERSATIONS, SAVE, UPLOAD, READ_V2, SAVE_V2].map((id) => {
     const contract = ROUTES.find((route) => route.id === id);
     if (contract === undefined) throw new Error(`Missing contract for ${id}`);
     const isRead = id === READ || id === READ_V2;
@@ -106,7 +107,11 @@ export function createStatementRoutes(port: StatementPort): Route[] {
       contract,
       async handle(request, response, params) {
         const site = request.headersDistinct["sec-fetch-site"];
-        if (isRead && site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        if (
+          (isRead || id === CONVERSATIONS) &&
+          site !== undefined &&
+          (site.length !== 1 || site[0] !== "same-origin")
+        ) {
           return sendProblem(response, 403, "forbidden");
         }
         const token = liveSessionTokenFromCookie(request.headers.cookie);
@@ -116,8 +121,9 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           if (slug === null) return refuse(response, 401, "unauthorized");
           const assignmentId = params?.assignmentId ?? "";
           if (!UUID.test(assignmentId)) return refuse(response, 404, "not_found");
-          let op: StatementOperation = { type: "read" };
-          if (!isRead) {
+          let op: StatementOperation =
+            id === CONVERSATIONS ? { type: "conversations" } : { type: "read" };
+          if (!isRead && id !== CONVERSATIONS) {
             const format = mediaType(request);
             if (id === UPLOAD && !isExternalFormat(format))
               return refuse(response, 415, "unsupported_media_type");
