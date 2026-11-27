@@ -154,6 +154,7 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createSubmissionReconstructionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
@@ -1820,6 +1821,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // F4-PM2-R01: a live session without a submission of its own reads 404.
+  "student.assignment-submission-reconstruction.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission-reconstruction`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-ASIST-PREKIDAC: a live session with no relation to such a course or assignment gets 404.
   "teacher.course-assistant.get": {
     method: "GET",
@@ -2927,6 +2935,7 @@ const FACTORIES = [
   "createDeclarationRequiredRoutesFor",
   "createDeclarationQuestionRoutesFor",
   "createLateSubmissionRoutesFor",
+  "createSubmissionReconstructionRoutesFor",
   "createCourseAssistantRoutesFor",
   "createQuestionnaireResponsesRoutesFor",
   "createQuestionnaireExportRoutesFor",
@@ -3092,6 +3101,7 @@ const MOUNTED = [
   ...createDeclarationRequiredRoutesFor(databases.main),
   ...createDeclarationQuestionRoutesFor(databases.main),
   ...createLateSubmissionRoutesFor(databases.main),
+  ...createSubmissionReconstructionRoutesFor(databases.main),
   ...createCourseAssistantRoutesFor(databases.main),
   ...createQuestionnaireResponsesRoutesFor(databases.main),
   ...createQuestionnaireExportRoutesFor(databases.main),
