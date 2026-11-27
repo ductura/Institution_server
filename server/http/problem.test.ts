@@ -95,6 +95,10 @@ const WITH_FIELDS: Record<string, Record<string, unknown>> = {
   "student.declaration.put stale_revision": { currentRevision: 2 },
   "student.declaration.put mandatory_attachment_missing": { conversationIds: [ID] },
   "student.declaration.put attachment_stale": { conversationIds: [ID] },
+  "student.declaration-second.put declaration_conflict": { currentVersion: 3 },
+  "student.declaration-second.put stale_revision": { currentRevision: 2 },
+  "student.declaration-second.put mandatory_attachment_missing": { conversationIds: [ID] },
+  "student.declaration-second.put attachment_stale": { conversationIds: [ID] },
 };
 
 function properties(schema: TSchema): Record<string, TSchema> {

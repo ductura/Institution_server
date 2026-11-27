@@ -1297,6 +1297,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060488877",
   },
+  "app/api/student/assignments/[assignmentId]/declaration-v2/route.ts": {
+    methods: ["GET", "PUT"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v2/route.ts": {
+    methods: ["GET"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",

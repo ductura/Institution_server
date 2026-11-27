@@ -857,6 +857,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     },
   },
+  // F4-PRE-R02-SRV: the declaration-v2 routes over the same store.
+  "student.declaration-second.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v2`,
+      as: "student",
+    },
+  },
+  "student.declaration-second.put": {
+    before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v2`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
   "student.declaration-attachments.post": {
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/declaration-attachments`,
@@ -2781,6 +2806,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration`,
+      as: "nastavnik",
+    },
+  },
+  // F4-PRE-R06-SRV: the same read checked against the declaration-v2 body.
+  "teacher.declaration-second.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v2`,
       as: "nastavnik",
     },
   },

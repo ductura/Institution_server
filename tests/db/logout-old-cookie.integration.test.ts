@@ -116,6 +116,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
@@ -2071,6 +2072,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // F4-PRE-R06-SRV: the same for its declaration-v2 read.
+  "teacher.declaration-second.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/declaration-v2`,
+    body: () => undefined,
+    live: 404,
+  },
   // F4-NAS-R04-SRV: the same for a conversation of that declaration.
   "teacher.declaration-conversation.get": {
     method: "GET",
@@ -2534,6 +2542,18 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 422,
   },
+  "student.declaration-second.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-v2`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.declaration-second.put": {
+    method: "PUT",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-v2`,
+    body: () => ({}),
+    live: 422,
+  },
   "student.declaration-attachments.post": {
     path: `/api/v1/student/assignments/${randomUUID()}/declaration-attachments`,
     body: () => ({}),
@@ -2921,6 +2941,7 @@ const FACTORIES = [
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createTeacherDeclarationRouteFor",
+  "createTeacherDeclarationV2RouteFor",
   "createTeacherDeclarationConversationRouteFor",
   "createTeacherSubmissionNotesRouteFor",
   "createCourseAggregateRouteFor",
@@ -3085,6 +3106,7 @@ const MOUNTED = [
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createTeacherDeclarationRouteFor(databases.main),
+  createTeacherDeclarationV2RouteFor(databases.main),
   createTeacherDeclarationConversationRouteFor(databases.main),
   createTeacherSubmissionNotesRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),

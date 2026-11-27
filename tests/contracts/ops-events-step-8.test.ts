@@ -140,6 +140,7 @@ import {
   createSubmissionRouteFor,
   createSubmissionWithdrawalRoutesFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createTeacherFastPathRouteFor,
@@ -680,6 +681,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
     () => [createTeacherSubmissionDetailRouteFor(STAND_IN)],
   ],
   ["createTeacherDeclarationRouteFor", () => [createTeacherDeclarationRouteFor(STAND_IN)]],
+  ["createTeacherDeclarationV2RouteFor", () => [createTeacherDeclarationV2RouteFor(STAND_IN)]],
   [
     "createTeacherDeclarationConversationRouteFor",
     () => [createTeacherDeclarationConversationRouteFor(STAND_IN)],
