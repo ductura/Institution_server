@@ -16,6 +16,8 @@ SET LOCAL ROLE ductus_identity;
 ALTER TABLE collaboration.import_event
   DROP CONSTRAINT import_event_file_format_check,
   ADD CONSTRAINT import_event_file_format_check CHECK (file_format IN ('docx', 'pdf', 'odt'));
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
 
 -- migrate:down
 -- Local only; staging and production only go forward (docs/BACKEND.md §6).
@@ -25,3 +27,5 @@ SET LOCAL ROLE ductus_identity;
 ALTER TABLE collaboration.import_event
   DROP CONSTRAINT import_event_file_format_check,
   ADD CONSTRAINT import_event_file_format_check CHECK (file_format IN ('docx', 'pdf'));
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
