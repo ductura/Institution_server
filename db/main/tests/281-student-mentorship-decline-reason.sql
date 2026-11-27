@@ -74,7 +74,7 @@ SELECT is(pg_temp.ask('ana', $$ SELECT coalesce(app.student_mentorship_decline_r
 SELECT is(pg_temp.ask('ana', $$ SELECT coalesce(app.student_mentorship_decline_reason(NULL), 'null') $$),
   'ZD403: forbidden', 'a null request reads as one that is not the caller''s');
 -- The error carries no input: neither the request nor the reason.
-SELECT unlike(pg_temp.ask('vesna', $$ SELECT app.student_mentorship_decline_reason({rq_reason}) $$),
+SELECT unalike(pg_temp.ask('vesna', $$ SELECT app.student_mentorship_decline_reason({rq_reason}) $$),
   '%' || (SELECT val FROM ref WHERE name = 'rq_reason') || '%', 'the refusal does not name the request');
 
 SELECT * FROM finish();
