@@ -28,6 +28,7 @@ export {
 } from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
+export { createMentorWorkingStyleStore } from "./mentor-working-style/index.ts";
 export { createPracticeJournalStore } from "./practice-journal/index.ts";
 export { createQuestionnaireStore, type QuestionnaireForm } from "./questionnaire/index.ts";
 export { createQualitativeCodingStore, type QualCode } from "./qualitative-coding.ts";
@@ -600,6 +601,12 @@ export {
   type LateSubmissionSetting,
 } from "./late-submission.ts";
 export {
+  createSubmissionReconstructionPort,
+  type SubmissionReconstructionPort,
+  type SubmissionReconstructionRead,
+  type SubmissionReconstructionState,
+} from "./submission-reconstruction.ts";
+export {
   createCourseAssistantPort,
   type AssistantAvailability,
   type AssistantRequestCount,
@@ -628,6 +635,12 @@ export {
   type AssistantMatchFound,
   type AssistantMatchListOutcome,
 } from "./assistant-match/index.ts";
+export {
+  createAiTransfers,
+  type AiTransferCreated,
+  type AiTransferCreateOutcome,
+  type AiTransfers,
+} from "./ai-transfer/index.ts";
 export {
   createFacultyThresholds,
   THRESHOLD_ORIGINS,

@@ -64,6 +64,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createMentorWorkingStyleRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
@@ -268,6 +269,7 @@ const SRV_1408 = [
   "institution.teaching-group-members.put",
 ];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
+const SRV_F4_MEN_R09 = ["mentorship.working-style.get", "mentorship.working-style.put"];
 // SRV-V19-DNEVNIK-RUTE: the six routes of the practice journal.
 const SRV_V19_DNEVNIK = [
   "practice.placements.post",
@@ -704,6 +706,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createTeachingTeamRoutesFor(databases.main)",
     ids: SRV_1408,
     routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createMentorWorkingStyleRoutesFor(databases.main)",
+    ids: SRV_F4_MEN_R09,
+    routes: () => createMentorWorkingStyleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createMentorNotesRoutesFor(databases.main)",
@@ -1241,6 +1248,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_1412,
       "mentorship.key-dates.get",
       ...SRV_1408,
+      ...SRV_F4_MEN_R09,
       ...SRV_1413,
       ...SRV_V19_DNEVNIK,
       ...SRV_V19_GRUPA,

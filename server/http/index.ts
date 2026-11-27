@@ -22,6 +22,7 @@ export { createStudentWorkRoutesFor } from "./student-work/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
+export { createMentorWorkingStyleRoutesFor } from "./mentor-working-style/index.ts";
 export { createPracticeJournalRoutesFor } from "./practice-journal/index.ts";
 export { createWorkTeamRoutesFor } from "./work-team/index.ts";
 export { createPeerReviewRoutesFor } from "./peer-review/index.ts";
@@ -57,6 +58,7 @@ export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";
 export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
 export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
 export { createAssistantMatchRoutesFor } from "./assistant-match/index.ts";
+export { createAiTransferRoutesFor } from "./ai-transfer/index.ts";
 export { createInputRhythmRoutesFor } from "./input-rhythm/index.ts";
 export { createRevisionRestoreRouteFor } from "./revision-restore/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
@@ -244,6 +246,10 @@ export {
   type WorkAccommodationPort,
 } from "./work-accommodation.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
+export {
+  createSubmissionReconstructionRoutes,
+  createSubmissionReconstructionRoutesFor,
+} from "./submission-reconstruction.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
 export { createQualitativeSegmentsRoutesFor } from "./qualitative-segments.ts";

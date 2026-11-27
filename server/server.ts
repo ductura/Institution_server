@@ -43,6 +43,7 @@ import {
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
+  createAiTransferRoutesFor,
   createInputRhythmRoutesFor,
   createRevisionRestoreRouteFor,
   createFacultyThresholdRoutesFor,
@@ -73,6 +74,7 @@ import {
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
+  createMentorWorkingStyleRoutesFor,
   createPracticeJournalRoutesFor,
   createWorkTeamRoutesFor,
   createPeerReviewRoutesFor,
@@ -159,6 +161,7 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createSubmissionReconstructionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
@@ -362,6 +365,7 @@ async function main(): Promise<void> {
       ...createOriginCompositionRoutesFor(databases.main),
       // The match of a segment with the answers of the assistant (SRV-1230, P-1 rule 13).
       ...createAssistantMatchRoutesFor(databases.main),
+      ...createAiTransferRoutesFor(databases.main),
       // The rhythm of typing and the teacher's switch of it (PIL-P1-RITAM-SRV, P-1 rule 4).
       ...createInputRhythmRoutesFor(databases.main),
       createRevisionRestoreRouteFor(databases.main),
@@ -496,6 +500,7 @@ async function main(): Promise<void> {
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
+      ...createMentorWorkingStyleRoutesFor(databases.main),
       ...createPracticeJournalRoutesFor(databases.main),
       ...createWorkTeamRoutesFor(databases.main),
       ...createPeerReviewRoutesFor(databases.main),
@@ -520,6 +525,7 @@ async function main(): Promise<void> {
       ...createDeclarationQuestionRoutesFor(databases.main),
       // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
       ...createLateSubmissionRoutesFor(databases.main),
+      ...createSubmissionReconstructionRoutesFor(databases.main),
       // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
       ...createCourseAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.

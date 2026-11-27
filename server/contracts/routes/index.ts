@@ -175,11 +175,13 @@ export { teacherSourcesRoutes } from "./teacher-sources.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
 export { assistantMatchRoutes } from "./assistant-match.ts";
+export { aiTransferRoutes, AI_TRANSFER_TEXT_MAX } from "./ai-transfer.ts";
 export { inputRhythmRoutes, RHYTHM_MAX_GAP_MS, RHYTHM_MAX_GAPS } from "./input-rhythm.ts";
 export { declarationRequiredRoutes } from "./declaration-required.ts";
 export { declarationQuestionRoutes } from "./declaration-question.ts";
 export { workAccommodationRoutes } from "./work-accommodation.ts";
 export { lateSubmissionRoutes } from "./late-submission.ts";
+export { submissionReconstructionRoutes } from "./submission-reconstruction.ts";
 export { courseAssistantRoutes } from "./course-assistant.ts";
 export { questionnaireResponsesRoutes } from "./questionnaire-responses.ts";
 export { questionnaireExportRoutes } from "./questionnaire-export.ts";
@@ -271,6 +273,14 @@ export {
 export { workInterviewPdfRoutes } from "./work-interview-pdf.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
+export {
+  MENTOR_WORKING_STYLE_MAX,
+  MentorWorkingStyleInput,
+  MentorWorkingStyleParams,
+  mentorWorkingStyleGet,
+  mentorWorkingStylePut,
+  mentorWorkingStyleRoutes,
+} from "./mentor-working-style.ts";
 export {
   MentorshipNotificationsPage,
   mentorshipConsultationRoutes,

@@ -237,8 +237,17 @@ describe("ci.yml", () => {
     for (const script of ["typecheck", "lint", "format:check", "test:equality", "test:property"]) {
       expect(checks).toMatch(new RegExp(`\\n {8}run: pnpm ${script}\\n`));
     }
+    // SRV-CI-SHARD-PO-VREMENU: the unit and integration files of a leg come from
+    // the time-based plan (was vitest --shard by file count); an empty plan fails
+    // instead of running every file.
     for (const script of ["test:unit", "test:integration"]) {
-      expect(checks).toContain(`${CHECKS_SHARD_ENV}        run: pnpm ${script} --shard="$SHARD"\n`);
+      const project = script.slice("test:".length);
+      expect(checks).toContain(
+        `${CHECKS_SHARD_ENV}        run: |\n` +
+          `          mapfile -t FILES < <(node .github/workflows/shard-plan.ts ${project} "$SHARD" --reserve 3,4)\n` +
+          `          [ "\${#FILES[@]}" -gt 0 ]\n` +
+          `          pnpm ${script} "\${FILES[@]}"\n`,
+      );
     }
     // Each static check runs on the static leg, the property tests on two test
     // legs (two seeds per run, as before); the sharded tests on every test leg.
@@ -256,8 +265,8 @@ describe("ci.yml", () => {
       "pnpm contracts:breaking FETCH_HEAD": `github.event_name == 'pull_request' && ${onStatic}`,
       "docker build -f infra/web/Dockerfile -t ductura-web:ci .": onStatic,
       "docker build -f infra/web/Dockerfile --target test-server": onStatic,
-      "pnpm test:unit --shard": `matrix.leg != '${STATIC_LEG}'`,
-      "pnpm test:integration --shard": `matrix.leg != '${STATIC_LEG}'`,
+      'pnpm test:unit "${FILES': `matrix.leg != '${STATIC_LEG}'`,
+      'pnpm test:integration "${FILES': `matrix.leg != '${STATIC_LEG}'`,
     };
     for (const [command, leg] of Object.entries(legs)) {
       const at = checks.indexOf(command);
@@ -290,9 +299,13 @@ describe("ci.yml", () => {
       expect(body.split("\n")[2], name).toMatch(legName);
       expect(matrix, name).toBeGreaterThan(body.indexOf("\n    strategy:\n"));
       expect(matrix, name).toBeLessThan(body.indexOf("\n    steps:\n"));
-      expect([...body.matchAll(/--shard="\$SHARD"/g)], name).toHaveLength(2);
+      // checks plans its files by time (shard-plan.ts, SRV-CI-SHARD-PO-VREMENU),
+      // so vitest --shard stays only in database.
+      expect([...body.matchAll(/--shard="\$SHARD"/g)], name).toHaveLength(
+        name === "checks" ? 0 : 2,
+      );
     }
-    expect([...CI.matchAll(/strategy:|--shard=/g)]).toHaveLength(6);
+    expect([...CI.matchAll(/strategy:|--shard=/g)]).toHaveLength(4);
     expect([...job("checks").matchAll(/SHARD: /g)]).toHaveLength(2);
     const database = job("database");
     const tests = database.search(DATABASE_TESTS);

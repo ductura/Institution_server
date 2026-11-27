@@ -168,6 +168,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('evidence', 'submission_receipt', '067-submission-receipt.sql'),
     ('evidence', 'submission_receipt_issuance', '063-submission-receipt-issuance.sql'),
     ('evidence', 'submission_request', '060-submission-request.sql'),
+    ('evidence', 'submission_reconstruction', '262-submission-reconstruction.sql'),
     ('evidence', 'submission_return', '206-work-return-for-revision.sql'),
     ('evidence', 'submission_withdrawal', '205-submission-withdrawal.sql'),
     ('evidence', 'submission_withdrawal_receipt', '205-submission-withdrawal.sql'),
@@ -212,6 +213,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('institution', 'institution_settings', '030-institution-access-matrix.sql'),
     ('institution', 'late_submission_exception', '030-institution-access-matrix.sql'),
     ('institution', 'mentor_note', '030-institution-access-matrix.sql'),
+    ('institution', 'mentor_working_style', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship_opening', '030-institution-access-matrix.sql'),
     ('institution', 'mentorship_request', '030-institution-access-matrix.sql'),
@@ -308,7 +310,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 212, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 214, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');

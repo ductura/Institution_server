@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6278);
+SELECT plan(6342);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -198,7 +198,7 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
+        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'mentor_working_style', 'submission_withdrawal_setting',
         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'origin_threshold',
         'course_required_source', 'source_proof_request', 'work_literature_seen',
         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
@@ -306,6 +306,7 @@ SELECT bag_eq(
     'mentorship: mentorship_owner ALL to ductus_identity',
     'mentorship: mentorship_read SELECT to ductus_app',
     'mentor_note: mentor_note_owner ALL to ductus_identity',
+    'mentor_working_style: mentor_working_style_owner ALL to ductus_identity',
     'mentor_note: mentor_note_read SELECT to ductus_app',
     'notification: notification_owner ALL to ductus_identity',
     'course_holder: course_holder_owner ALL to ductus_identity',
@@ -530,6 +531,8 @@ SELECT bag_eq(
     'list_teacher_courses() app',
     'actor_mentorship_role(p_mentorship_id uuid) definer app',
     'create_mentor_note(p_mentorship_id uuid, p_body text) definer app',
+    'set_mentor_working_style(p_body text) definer app',
+    'read_mentor_working_style(p_mentor_id uuid) definer app',
     'check_mentorship_version() definer',
     'assignment_version_institution_fill()',
     'course_enrollment_code_institution_fill()',
@@ -2545,7 +2548,7 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'submission_withdrawal_setting',
+                        'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'mentor_note', 'mentor_working_style', 'submission_withdrawal_setting',
                         'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note',
                         'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event',
                         'mentorship_opening', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'work_thesis_committee_change', 'work_thesis_committee_member', 'practice_placement', 'practice_entry', 'practice_signoff',
@@ -2556,7 +2559,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'work_thesis_committee_change', 'work_thesis_committee_member', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'late_submission_exception', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'work_milestone_progress', 'work_milestone_event', 'milestone_template_version', 'assignment_rubric_version', 'work_template_version', 'assignment_template_pin', 'course_assistant', 'submission_withdrawal_setting', 'work_interview', 'work_interview_question', 'work_interview_explanation', 'work_interview_note', 'thesis_form', 'thesis_setting', 'work_thesis_form_event', 'work_mentor_consent_event', 'work_thesis_stage_event', 'work_thesis_topic_version', 'work_thesis_topic_decision', 'work_thesis_committee_change', 'work_thesis_committee_member', 'mentorship_opening', 'practice_placement', 'practice_entry', 'practice_signoff', 'assignment_team_setting', 'work_team', 'work_team_member_event', 'peer_review_round', 'peer_review_allocation', 'peer_review', 'peer_review_withdrawal', 'questionnaire', 'questionnaire_question', 'questionnaire_response', 'questionnaire_answer', 'questionnaire_participation', 'qual_material', 'qual_code', 'qual_segment', 'assignment_code_tests', 'course_assistant_setting', 'mentor_working_style') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

@@ -465,6 +465,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-1809 (Ductus#2059 c.7208831876, evidence-segment-v4 step 3): the record of a transfer from an answer of the assistant; Ductus has no such route.
+  "app/api/works/[documentId]/ai-transfers/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7208831876",
+  },
   // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV (Ductus#2052 c.7092390512, P-1, rule 13): the student's explanation of a finding; Ductus has no such route.
   // SRV-V19-DNEVNIK-UGOVOR (Ductus#2055 c.7146962118, val 19): the practice journal beside a mentorship; Ductus has no such route.
   "app/api/practice/placements/route.ts": {
@@ -699,6 +704,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055",
   },
+  // F4-PM2-R01 (Ductus#2059): the student reads the worker's verdict of the own submission.
+  "app/api/student/assignments/[assignmentId]/submission-reconstruction/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059",
+  },
   // F4-NAS-R01-SRV (Ductus#2055): the teacher of the assignment reads the value in force.
   "app/api/teacher/assignments/[assignmentId]/late-submission/route.ts": {
     methods: ["GET"],
@@ -736,6 +746,17 @@ export const SERVER_SOURCES: Readonly<
   },
   // SRV-ED35-KRITERIJI-STUDENT (Daniel 26. 11. 2026, replacing B-9): the owner
   // student reads each teacher's working criteria; no Ductus route.
+  // F4-MEN-R09-SRV (orchestrator decision of 26. 11. 2026): the mentor's own
+  // "Kako mentor radi" text and the read of it by the mentor's student; no
+  // Ductus route.
+  "app/api/teacher/mentor-working-style/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196658858",
+  },
+  "app/api/student/mentors/[teacherId]/working-style/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196658858",
+  },
   "app/api/student/works/[documentId]/working-criteria/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7192734757",

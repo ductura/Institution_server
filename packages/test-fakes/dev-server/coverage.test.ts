@@ -595,6 +595,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { body: "Izmisljena privatna biljeska." },
     },
   },
+  // F4-MEN-R09-SRV: the mentor writes the own text, the student of the mentor reads it.
+  "mentorship.working-style.put": {
+    request: {
+      path: "/api/v1/teacher/mentor-working-style",
+      as: "nastavnik",
+      method: "PUT",
+      headers: ORIGIN,
+      body: { text: "Izmisljeni nacin rada: tjedni sastanak." },
+    },
+  },
+  "mentorship.working-style.get": {
+    request: { path: `/api/v1/student/mentors/${IDS.teacher}/working-style`, as: "student" },
+  },
   // SRV-V19-DNEVNIK-UGOVOR: the practice journal; the invented placement exists from the start.
   "practice.placements.post": {
     request: {
@@ -2006,6 +2019,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `/api/v1/works/${IDS.document}/assistant-match`, as: "nastavnik" },
   },
   "work.assistant-match.post": { request: ASSISTANT_MATCH_POST },
+  "work.ai-transfer.post": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/ai-transfers`,
+      as: "student",
+      headers: ORIGIN,
+      body: { responseId: "000000a1-0000-4000-8000-000000000002", text: "tramvajskoj stanici" },
+    },
+  },
   "work.assistant-match-explanation.post": {
     before: [ASSISTANT_MATCH_POST],
     request: {
@@ -2973,6 +2994,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.assignment-late-submission.get": {
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/late-submission`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "student.assignment-submission-reconstruction.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission-reconstruction`,
       as: "student",
       method: "GET",
     },

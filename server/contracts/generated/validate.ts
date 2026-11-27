@@ -1393,6 +1393,28 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "mentorship.working-style.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['teacherId'] === 'string') &&
+      local0.test(value['teacherId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "mentorship.working-style.put:body": (() => {
+  const local0 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,1000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "notifications.list.get:query": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1892,6 +1914,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.assignment-submission-reconstruction.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.assignment-template.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -3881,6 +3911,31 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "work.ai-transfer.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.ai-transfer.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['responseId'] === 'string') &&
+      local0.test(value['responseId']) &&
+      (typeof value['text'] === 'string') &&
+      value['text'].length <= 40000 &&
+      value['text'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
   "work.assistant-match-explanation.post:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
