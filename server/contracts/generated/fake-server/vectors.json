@@ -40946,7 +40946,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.170.0",
+        "apiVersion": "1.171.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -40962,7 +40962,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.170.0",
+        "apiVersion": "1.171.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
