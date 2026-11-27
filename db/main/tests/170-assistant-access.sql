@@ -122,8 +122,10 @@ SELECT bag_eq(
   $$ SELECT relname::text FROM pg_class WHERE relnamespace = 'assistant'::regnamespace AND relkind IN ('r', 'p', 'v', 'm', 'f') $$,
   $$ VALUES ('conversation'), ('message'), ('request'), ('cost_ledger'), ('budget_counter'), ('cost_config_version'),
             -- SRV-1207 (ai-tools-v1): the three tables of the tools; 173 tests them.
-            ('assignment_tool_setting'), ('tool_step'), ('tool_loop_reservation') $$,
-  'the schema holds exactly the six tables of ai-request-v1 and the three of ai-tools-v1: no table of provider keys (OA-1, M8)');
+            ('assignment_tool_setting'), ('tool_step'), ('tool_loop_reservation'),
+            -- SRV-1809: the transfer records; 274 tests them.
+            ('ai_transfer') $$,
+  'the schema holds exactly the six tables of ai-request-v1, the three of ai-tools-v1 and the transfer records: no table of provider keys (OA-1, M8)');
 SELECT is_empty(
   $$ SELECT relname FROM pg_class WHERE relnamespace = 'assistant'::regnamespace AND relkind = 'r'
       AND NOT (relrowsecurity AND relforcerowsecurity AND relowner = 'ductus_identity'::regrole) $$,
@@ -147,7 +149,8 @@ SELECT bag_eq(
             ('request request_student_read {ductus_app} SELECT'),
             ('assignment_tool_setting assignment_tool_setting_owner {ductus_identity} ALL'),
             ('tool_step tool_step_owner {ductus_identity} ALL'),
-            ('tool_loop_reservation tool_loop_reservation_owner {ductus_identity} ALL') $$,
+            ('tool_loop_reservation tool_loop_reservation_owner {ductus_identity} ALL'),
+            ('ai_transfer ai_transfer_owner {ductus_identity} ALL') $$,
   'the owner policy on every table and reading for the student on three; no policy for another role');
 -- Every privilege of every runtime role and PUBLIC, table or column level.
 SELECT bag_eq(
@@ -218,8 +221,14 @@ SELECT bag_eq(
             ('requests_today ductus_identity false search_path=""'),
             -- SRV-ASIST-LIMIT-ADMIN: the administrator reads and sets it; 257 tests them.
             ('read_request_limit ductus_identity true search_path=""'),
-            ('set_request_limit ductus_identity true search_path=""') $$,
-  'the schema has four trigger functions and, since SRV-1203, SRV-1205, SRV-1207, SRV-ASIST-BROJAC and SRV-ASIST-LIMIT-ADMIN, the RPCs and their helpers');
+            ('set_request_limit ductus_identity true search_path=""'),
+            -- SRV-1809: the transfer record, its helpers and its RPC; 274 tests them.
+            ('ai_transfer_canonical ductus_identity false search_path=""'),
+            ('refuse_ai_transfer_rewrite ductus_identity false search_path=""'),
+            ('ai_transfer_phase ductus_identity false search_path=""'),
+            ('ai_transfer_max ductus_identity false search_path=""'),
+            ('create_ai_transfer ductus_identity true search_path=""') $$,
+  'the schema has four trigger functions and, since SRV-1203, SRV-1205, SRV-1207, SRV-ASIST-BROJAC, SRV-ASIST-LIMIT-ADMIN and SRV-1809, the RPCs and their helpers');
 SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
@@ -237,8 +246,10 @@ SELECT bag_eq(
             ('ductus_app assistant.publish_cost_config(integer,bigint,bigint,bigint)'),
             -- SRV-ASIST-LIMIT-ADMIN: the administrator's request limit.
             ('ductus_app assistant.read_request_limit()'), ('ductus_app assistant.set_request_limit(integer,integer)'),
+            -- SRV-1809: the student owner records a transfer.
+            ('ductus_app assistant.create_ai_transfer(text,uuid,text)'),
             ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)') $$,
-  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more and, since SRV-ASIST-LIMIT-ADMIN, two more, the worker the sweep and its listing (SRV-1205)');
+  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, since SRV-ASIST-LIMIT-ADMIN, two more and, since SRV-1809, one more, the worker the sweep and its listing (SRV-1205)');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT bag_eq(
@@ -292,7 +303,15 @@ SELECT bag_eq(
     ('tool_step.finished_at timestamp with time zone'),
     ('tool_loop_reservation.request_id uuid not null'), ('tool_loop_reservation.institution_id uuid not null'),
     ('tool_loop_reservation.steps_reserved integer not null'), ('tool_loop_reservation.tools_reserved text[] not null'),
-    ('tool_loop_reservation.reserved_at timestamp with time zone not null') $$,
+    ('tool_loop_reservation.reserved_at timestamp with time zone not null'),
+    ('ai_transfer.transfer_id uuid not null'), ('ai_transfer.institution_id uuid not null'),
+    ('ai_transfer.student_id uuid not null'), ('ai_transfer.document_id text not null'),
+    ('ai_transfer.conversation_id uuid not null'), ('ai_transfer.response_id uuid not null'),
+    ('ai_transfer.provider_id text not null'), ('ai_transfer.model_id text not null'),
+    ('ai_transfer.purpose_catalog_version integer not null'), ('ai_transfer.purpose_id text not null'),
+    ('ai_transfer.phase_id text not null'), ('ai_transfer.text_sha256 text not null'),
+    ('ai_transfer.transferred_at timestamp with time zone not null'), ('ai_transfer.record_text text not null'),
+    ('ai_transfer.record_sha256 text not null') $$,
   'the columns and types of the contract, with institution_id on every table; every amount is bigint micro-euros');
 SELECT is_empty(
   $$ SELECT c.relname || '.' || a.attname FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
@@ -323,7 +342,10 @@ SELECT bag_eq(
     ('assistant.assignment_tool_setting PRIMARY KEY (assignment_id, version_no)'),
     ('assistant.assignment_tool_setting UNIQUE (assignment_id, version_no, institution_id)'),
     ('assistant.tool_step PRIMARY KEY (request_id, step_no)'),
-    ('assistant.tool_loop_reservation PRIMARY KEY (request_id)') $$,
+    ('assistant.tool_loop_reservation PRIMARY KEY (request_id)'),
+    -- SRV-1809: one transfer per id, one record per hash.
+    ('assistant.ai_transfer PRIMARY KEY (transfer_id)'),
+    ('assistant.ai_transfer UNIQUE (record_sha256)') $$,
   'the keys: one seq per conversation, one idempotency key per student, one ledger row per request');
 
 -- 2. Checks. Each refused row writes nothing.
