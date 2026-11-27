@@ -211,6 +211,7 @@ async function commitDeferred(who: (typeof students)[number]) {
     },
     storageRef: `local-test:v2/${context.institutionId}/${context.evidencePackageId}/${segmentHash}.json`,
     snapshot,
+    aiTransferLinks: null,
   };
   const outcome = await committer.commit(token[who], input, "deferred");
   expect(outcome).toEqual({ status: "committed_pending", revision: 1 });

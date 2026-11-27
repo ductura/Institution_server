@@ -49,7 +49,16 @@ export type EvidenceCommitInput = {
   storageRef: string;
   /** Exact JCS bytes of the document after the segment (4.10 t. 2). */
   snapshot: string;
+  /**
+   * SRV-1809: the AI transfer records the segment's `ai-transfer` events name,
+   * in event order: an array (possibly empty) for a v4 segment, null for v2
+   * and v3. The RPC checks each against its record and binds it to the segment.
+   */
+  aiTransferLinks: readonly EvidenceAiTransferLink[] | null;
 };
+
+/** One link of a v4 event to its AI transfer record, as the RPC takes it. */
+export type EvidenceAiTransferLink = { aiTransferId: string; aiTransferSha256: string };
 
 export type EvidenceCommitFault =
   | "commit_failed"
@@ -87,7 +96,7 @@ export type EvidenceCommitter = CommitContextReader & {
 
 const COMMIT_SQL = `SELECT outcome, committed_revision, receipt_payload, receipt_id, signature,
        current_revision, document_hash, head_segment_hash, last_sequence_to
-  FROM app.commit_evidence_segment($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)`;
+  FROM app.commit_evidence_segment($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10::jsonb)`;
 const ATTACH_SQL = "SELECT outcome FROM app.attach_receipt_signature($1::uuid, $2, $3::jsonb)";
 type Row = Record<string, unknown>;
 /** Thrown inside the transaction, so withActor rolls all of it back. */
@@ -276,6 +285,14 @@ async function runCommit(
     input.descriptor.segmentHash,
     input.storageRef,
     input.snapshot,
+    input.aiTransferLinks === null
+      ? null
+      : JSON.stringify(
+          input.aiTransferLinks.map(({ aiTransferId, aiTransferSha256 }) => ({
+            aiTransferId,
+            aiTransferSha256,
+          })),
+        ),
   ]);
   const row = rows.length === 1 ? rows[0] : undefined;
   if (row === undefined) return fault("repository", "commit_rows");

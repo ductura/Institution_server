@@ -69,6 +69,7 @@ const INPUT: EvidenceCommitInput = {
   descriptor: DESCRIPTOR,
   storageRef: "local-demo:v2/x/pkg-1/b.json",
   snapshot: "{}",
+  aiTransferLinks: null,
 };
 const PAYLOAD: EvidenceReceiptPayloadV2 = {
   receiptSchema: "ductus-evidence-receipt-v2",
@@ -721,5 +722,53 @@ describe("statement parameters", () => {
       expect(call.token).toBe(token);
       expect(JSON.stringify(call.values)).not.toContain(token);
     }
+  });
+
+  // SRV-1809: the 10-argument acceptance takes the links as jsonb.
+  describe("AI transfer links", () => {
+    const LINK = {
+      aiTransferId: "00000000-0000-4000-8000-0000000000a2",
+      aiTransferSha256: "2".repeat(64),
+    };
+
+    async function commitValues(input: EvidenceCommitInput) {
+      const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
+      const withActor = (async (_token, fn) =>
+        fn({
+          async query(text, values) {
+            seen.push({ text, values });
+            return { rows: [{ outcome: "invalid" }] as never[], rowCount: 1 };
+          },
+        })) as WithActor;
+      await createEvidenceCommitter(withActor, signer().provider).commit("t", input);
+      return seen.find((call) => call.text.includes("commit_evidence_segment"));
+    }
+
+    it("calls the 10-argument acceptance with null for a v2 or v3 segment", async () => {
+      const call = await commitValues(INPUT);
+      expect(call?.text).toContain("$9, $10::jsonb)");
+      expect(call?.values).toHaveLength(10);
+      expect(call?.values?.[9]).toBeNull();
+    });
+
+    it("sends the links of a v4 segment as a JSON array, in their order", async () => {
+      const other = {
+        aiTransferId: "00000000-0000-4000-8000-0000000000a3",
+        aiTransferSha256: "3".repeat(64),
+      };
+      const call = await commitValues({ ...INPUT, aiTransferLinks: [LINK, other, LINK] });
+      expect(JSON.parse(call?.values?.[9] as string)).toEqual([LINK, other, LINK]);
+    });
+
+    it("sends an empty array for a v4 segment that names no transfer", async () => {
+      const call = await commitValues({ ...INPUT, aiTransferLinks: [] });
+      expect(call?.values?.[9]).toBe("[]");
+    });
+
+    it("sends only the two keys of a link", async () => {
+      const extra = { ...LINK, note: "x" } as typeof LINK;
+      const call = await commitValues({ ...INPUT, aiTransferLinks: [extra] });
+      expect(JSON.parse(call?.values?.[9] as string)).toEqual([LINK]);
+    });
   });
 });
