@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6271);
+SELECT plan(6277);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -80,6 +80,7 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
   FROM (VALUES ('assistant', 'assignment_tool_setting', 'assignment_tool_setting_owner'),
                ('assistant', 'tool_step', 'tool_step_owner'),
                ('assistant', 'tool_loop_reservation', 'tool_loop_reservation_owner'),
+               ('assistant', 'ai_transfer', 'ai_transfer_owner'),
                ('audit', 'assistant_tool_setting_event', 'assistant_tool_setting_event_owner')) t(nsp, rel, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.nsp || '.' || t.rel);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = 'ductus_identity'::regrole
@@ -91,7 +92,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = '
                ('assistant.set_assignment_tools(uuid,integer,text[])'),
                ('assistant.read_assignment_tools(uuid)'),
                ('assistant.begin_tool_step(uuid,integer,text,text,text,boolean,text[])'),
-               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)')) f(signature)
+               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)'),
+               ('assistant.create_ai_transfer(text,uuid,text)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok('search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -102,7 +104,10 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
                ('assistant.intersect_tools(text[],text[])'), ('assistant.latest_tools(uuid)'),
                ('assistant.allowed_tools_now(assistant.request,text[])'),
                ('assistant.guard_tool_step_change()'), ('assistant.guard_tool_setting_version()'),
-               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()')) f(signature)
+               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()'),
+               ('assistant.ai_transfer_canonical(uuid,text,uuid,uuid,text,text,integer,text,text,text,timestamptz)'),
+               ('assistant.refuse_ai_transfer_rewrite()'), ('assistant.ai_transfer_phase(text,uuid)'),
+               ('assistant.ai_transfer_max()')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
@@ -439,6 +444,7 @@ SELECT bag_eq(
         'work_thesis_committee_change: work_thesis_committee_change_append_only 27 O', 'work_thesis_committee_change: work_thesis_committee_change_no_truncate 34 O',
         'work_thesis_committee_member: work_thesis_committee_member_append_only 27 O', 'work_thesis_committee_member: work_thesis_committee_member_no_truncate 34 O',
         'mentorship_opening: mentorship_opening_immutable 27 O', 'mentorship_opening: mentorship_opening_no_truncate 34 O',
+        'consultation_slot: consultation_slot_notify_insert 5 O', 'consultation_slot: consultation_slot_notify_update 17 O',
         'practice_placement: practice_placement_append_only 27 O', 'practice_placement: practice_placement_no_truncate 34 O',
         'practice_entry: practice_entry_append_only 27 O', 'practice_entry: practice_entry_no_truncate 34 O',
         'practice_signoff: practice_signoff_append_only 27 O', 'practice_signoff: practice_signoff_no_truncate 34 O',
@@ -737,6 +743,10 @@ SELECT bag_eq(
     'is_work_interview_note(p_media_type text, p_content bytea)',
     'add_work_interview_note(p_document_id text, p_file_name text, p_media_type text, p_content bytea) definer app',
     'list_mentorship_notifications(p_before uuid) definer app',
+    'list_message_slot_notifications(p_before uuid) definer app',
+    'work_teachers(p_assignment_id uuid, p_student_id uuid, p_except uuid) definer',
+    'notify_work_message() definer',
+    'notify_consultation_slot() definer',
     'insert_consultation_slot(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer)',
     'consultation_slot_details(p_document_id text) definer app',
     'request_consultation_slot_detail(p_document_id text, p_starts_at timestamp with time zone, p_topic text, p_preparation_text text, p_changed_paragraphs integer, p_resolved_comments integer) definer app',
@@ -2196,7 +2206,7 @@ FROM (VALUES
   ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
 ) AS c (actor, result);
 -- F4-NAS-R01: only the teacher of the assignment reads it back; another
--- teacher, a student and anyone else read not_found (20261220310000).
+-- teacher, a student and anyone else read not_found (20261220320000).
 SELECT is(
   split_part(pg_temp.ask(c.actor, 'SELECT outcome FROM app.teacher_assignment_late_submission({z1})'), ':', 1),
   c.result, format('F4-NAS-R01: %s reads late submission of Z1 as teacher: %s', c.actor, c.result))

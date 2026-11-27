@@ -75,6 +75,7 @@ export {
   NotificationId,
   NotificationsPage,
   RevisionNotificationsPage,
+  MessageSlotNotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
   notificationsRoutes,
 } from "./notifications.ts";

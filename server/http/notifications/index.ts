@@ -4,6 +4,7 @@ import { Value } from "@sinclair/typebox/value";
 
 import {
   NotificationId,
+  MessageSlotNotificationsPage,
   NotificationsPage,
   NOTIFICATIONS_PAGE_SIZE,
   RevisionNotificationsPage,
@@ -21,10 +22,17 @@ import {
   type Route,
 } from "../index.ts";
 
-const [LIST, READ, REVISIONS] = notificationsRoutes;
+const [LIST, READ, REVISIONS, MESSAGES_AND_SLOTS] = notificationsRoutes;
 // SRV-1607: its own list (REVISIONS); a new kind in LIST would break clients.
 // SRV-MENTOR-1: mentorship_opened has its own list too (notifications.mentorship-opened.list.get).
-const OWN_LIST_KINDS = new Set(["returned_for_revision", "mentorship_opened"]);
+// F4-MEN-R10-SRV: message_posted, slot_requested and slot_proposed have one too (MESSAGES_AND_SLOTS).
+const OWN_LIST_KINDS = new Set([
+  "returned_for_revision",
+  "mentorship_opened",
+  "message_posted",
+  "slot_requested",
+  "slot_proposed",
+]);
 const MIN_REMINDER_SECONDS = 300;
 const BODY_TIMEOUT_MS = 5_000;
 
@@ -102,6 +110,31 @@ export function createNotificationsRoutesFor(
           return sendJson(response, 200, body);
         } catch (error) {
           return databaseFailure(response, error, REVISIONS.id);
+        }
+      },
+    },
+    {
+      contract: MESSAGES_AND_SLOTS,
+      async handle(request, response) {
+        const token = liveSessionTokenFromCookie(request.headers.cookie);
+        if (token === undefined) return sendProblem(response, 401, "unauthorized");
+        const query = new URLSearchParams((request.url ?? "").split("?").slice(1).join("?"));
+        const before = query.get("before");
+        if (
+          query.size > Number(before !== null) ||
+          (before !== null && !Value.Check(NotificationId, before))
+        )
+          return sendProblem(response, 422, "invalid_input");
+        try {
+          const rows = await notifications.listMessagesAndSlots(token, before);
+          const page = rows.slice(0, NOTIFICATIONS_PAGE_SIZE);
+          const nextBefore = rows.length > page.length ? page.at(-1)?.id : null;
+          const body = { notifications: page, nextBefore };
+          if (!Value.Check(MessageSlotNotificationsPage, body))
+            throw new Error("message and slot inbox response outside its contract");
+          return sendJson(response, 200, body);
+        } catch (error) {
+          return databaseFailure(response, error, MESSAGES_AND_SLOTS.id);
         }
       },
     },

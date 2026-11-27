@@ -18,6 +18,16 @@ type RevisionRow = {
   readAt: Date | null;
 };
 
+type MessageSlotRow = {
+  id: string;
+  kind: string;
+  targetId: string;
+  documentId: string;
+  slotId: string | null;
+  createdAt: Date;
+  readAt: Date | null;
+};
+
 export function createNotifications(withActor: WithActor) {
   return {
     list: (token: string, before: string | null, reminderSeconds: number) =>
@@ -50,6 +60,23 @@ export function createNotifications(withActor: WithActor) {
         return result.rows.map(({ createdAt, readAt, revisionDueAt, ...row }) => ({
           ...row,
           revisionDueAt: revisionDueAt === null ? null : revisionDueAt.toISOString(),
+          createdAt: createdAt.toISOString(),
+          readAt: readAt === null ? null : readAt.toISOString(),
+        }));
+      }),
+    // F4-MEN-R10-SRV: the notifications of a new message and of a slot that waits for an
+    // answer. Identifiers only; institution.list_message_slot_notifications leaves a row out
+    // when the caller no longer has the relation to the work. Up to 51 rows: one more than a page.
+    listMessagesAndSlots: (token: string, before: string | null) =>
+      withActor(token, async (tx) => {
+        const result = await tx.query<MessageSlotRow>(
+          `SELECT id, kind, target_id AS "targetId", document_id AS "documentId", slot_id AS "slotId",
+                  created_at AS "createdAt", read_at AS "readAt"
+             FROM institution.list_message_slot_notifications($1) ORDER BY created_at DESC, id DESC`,
+          [before],
+        );
+        return result.rows.map(({ createdAt, readAt, ...row }) => ({
+          ...row,
           createdAt: createdAt.toISOString(),
           readAt: readAt === null ? null : readAt.toISOString(),
         }));

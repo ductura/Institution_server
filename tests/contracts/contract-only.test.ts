@@ -802,6 +802,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ids: [
       "notifications.list.get",
       "notifications.returned-for-revision.list.get",
+      "notifications.messages-and-slots.list.get",
       "notifications.read.post",
     ],
     routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -1261,6 +1262,7 @@ describe("routes the entry point mounts itself", () => {
       "work.event-disputes.post",
       "notifications.list.get",
       "notifications.returned-for-revision.list.get",
+      "notifications.messages-and-slots.list.get",
       "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",
