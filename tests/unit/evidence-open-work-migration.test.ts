@@ -1,7 +1,14 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { SLIDES_REVISION_ZERO_HASH } from "../../server/database/evidence-work-version.ts";
+import {
+  SLIDES_REVISION_ZERO_JCS,
+  SLIDES_REVISION_ZERO_SHA256,
+  slidesRevisionZeroDocument,
+} from "../../server/domain/slides/revision-zero.ts";
 import { createEditStepsV1Replayer } from "../../server/external/storage/edit-steps-v1-replayer.ts";
 import {
   REVISION_ZERO_JCS,
@@ -31,6 +38,27 @@ describe("open_student_work migration", () => {
     expect(UP).toContain(
       `v_actor.user_id, '${EVIDENCE_PROFILE_ID}', ${MAX_EVIDENCE_SEGMENT_BYTES}`,
     );
+  });
+});
+
+// F4-V13-R01: the slides revision 0 the database writes is the bytes and hash of the slides domain,
+// and the hash the opener names a slides work by is the same one.
+describe("open_student_work slides migration", () => {
+  const SLIDES_MIGRATION = readFileSync(
+    new URL("../../db/main/migrations/20261220560000_open_work_slides.sql", import.meta.url),
+    "utf8",
+  );
+
+  it("stores the revision 0 bytes of server/domain/slides/revision-zero.ts", () => {
+    expect(SLIDES_MIGRATION).toContain(`'${SLIDES_REVISION_ZERO_JCS}'::text`);
+    expect(canonicalizeJcs(slidesRevisionZeroDocument())).toBe(SLIDES_REVISION_ZERO_JCS);
+    expect(createHash("sha256").update(SLIDES_REVISION_ZERO_JCS, "utf8").digest("hex")).toBe(
+      SLIDES_REVISION_ZERO_SHA256,
+    );
+  });
+
+  it("is the hash the opener names a slides work by", () => {
+    expect(SLIDES_REVISION_ZERO_HASH).toBe(SLIDES_REVISION_ZERO_SHA256);
   });
 });
 

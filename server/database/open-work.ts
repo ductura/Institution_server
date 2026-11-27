@@ -12,7 +12,11 @@
 // (review FAIL c.6947022168 on ductura/server#242).
 import { type AppError, isEvidenceDomainId, isSha256Hex, type Result } from "../domain/index.ts";
 
-import { type DocumentSchemaVersion, readWorkVersion } from "./evidence-work-version.ts";
+import {
+  type DocumentSchemaVersion,
+  readWorkVersion,
+  type RevisionZeroKind,
+} from "./evidence-work-version.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 /** A public receipt key of the work's evidence domain, as the contract sends it. */
@@ -50,8 +54,8 @@ export type OpenedWork = {
    */
   lastSignedAt: string | null;
   /**
-   * SRV-V14-KIND-ENUM: the kind of the work when the opener knows it; absent is "text", the
-   * only kind app.open_student_work opens today.
+   * SRV-V14-KIND-ENUM: the kind of the work as the database recorded it when the work started
+   * (evidence.document.document_kind). app.open_student_work opens text and slides (F4-V13-R01).
    */
   workKind?: "text" | "slides" | "spreadsheet";
 };
@@ -101,6 +105,14 @@ export type WorkOpener = {
 const OPEN_SQL = `SELECT outcome, document_id, evidence_profile_id, current_revision, document_hash,
        head_segment_hash, last_sequence_to, snapshot
   FROM app.open_student_work($1::uuid, $2::boolean)`;
+// Under RLS the session sees only its own institution's own documents; the kind is written
+// once, when the work starts, and never updated.
+const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
+// A Map, not an object: a value such as `__proto__` is no kind. A spreadsheet work is not opened.
+const OPENED_KINDS = new Map<unknown, RevisionZeroKind>([
+  ["text", "text"],
+  ["slides", "slides"],
+]);
 // DAN-289 O2: whether the caller's own work for the assignment is submitted.
 const SUBMITTED_SQL = "SELECT app.work_submitted($1::uuid) AS submitted";
 // Under RLS the session sees only its own packages; the first one, as the open RPC picks it.
@@ -230,7 +242,11 @@ async function open(
   if (typeof submitted !== "boolean") return malformed();
   // SRV-7F: the version is the server's record of revision 0; at revision 0
   // the snapshot the work opens with is that revision, so the hashes agree.
-  const version = await readWorkVersion(tx, row.document_id);
+  const kindRows = await tx.query<Row>(KIND_SQL, [row.document_id]);
+  const kind =
+    kindRows.rows.length === 1 ? OPENED_KINDS.get(kindRows.rows[0]?.document_kind) : undefined;
+  if (kind === undefined) return malformed();
+  const version = await readWorkVersion(tx, row.document_id, kind);
   if (version === null) return malformed();
   if (currentRevision === 0 && row.document_hash !== version.revisionZeroHash) return malformed();
   const domain = await tx.query<Row>(DOMAIN_SQL, [row.document_id]);
@@ -261,6 +277,7 @@ async function open(
       receiptKeys: keys,
       submitted,
       lastSignedAt,
+      workKind: kind as "text" | "slides",
     },
   };
 }

@@ -228,26 +228,44 @@ SELECT is(pg_temp.open(p.name, pg_temp.id('z1')), 'unauthenticated|||||||', p.wh
 FROM (VALUES ('anon', 'no session'), ('expired', 'an expired session'), ('closed', 'a closed session')) AS p (name, why);
 SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_after_ana), 'the refused calls wrote nothing');
 
--- SRV-V13-MIG-VRSTA: the kind of the work is the kind of its assignment,
--- fixed when the work starts. Dora acknowledges Z1 now; a slides assignment
--- has no revision 0 here yet, so nothing is made for her; once Z1 is a text
--- assignment again her work starts and carries kind text.
+-- SRV-V13-MIG-VRSTA / F4-V13-R01: the kind of the work is the kind of its
+-- assignment, fixed when the work starts. Dora acknowledges Z1 now. A
+-- spreadsheet assignment has no revision 0 here, so nothing is made for her;
+-- a slides assignment starts a slides work from the slides revision 0; once
+-- Z1 stays a slides assignment for the rest of this file.
 SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('ana', 'z1')), 'text',
   'SRV-V13-MIG-VRSTA: the work of a text assignment carries kind text');
 INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
 VALUES (pg_temp.id('z1'), 2, pg_temp.id('dora'), pg_temp.id('fak_a'));
-UPDATE institution.assignment SET document_kind = 'slides' WHERE id = pg_temp.id('z1');
-CREATE TEMP TABLE print_slides AS SELECT pg_temp.evidence_print() AS v;
+UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = pg_temp.id('z1');
+CREATE TEMP TABLE print_sheet AS SELECT pg_temp.evidence_print() AS v;
 SELECT is(pg_temp.open('dora', pg_temp.id('z1')), 'not_configured|||||||',
-  'SRV-V13-MIG-VRSTA: a slides assignment is not started before its revision 0 exists');
-SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_slides), 'and nothing is written');
+  'F4-V13-R01: a spreadsheet assignment is not started before its revision 0 exists');
+SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_sheet), 'and nothing is written');
+UPDATE institution.assignment SET document_kind = 'slides' WHERE id = pg_temp.id('z1');
+SELECT is(pg_temp.open('dora', pg_temp.id('z1'), false), 'not_started|||||||',
+  'F4-V13-R01: without a request to start, a slides assignment starts nothing');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
   'SRV-V13-MIG-VRSTA: a work that exists opens as before, whatever the assignment says now');
-UPDATE institution.assignment SET document_kind = 'text' WHERE id = pg_temp.id('z1');
 SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
-  'SRV-V13-MIG-VRSTA: a text assignment starts the work');
-SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'text',
-  'SRV-V13-MIG-VRSTA: and writes kind text into the work');
+  'F4-V13-R01: a slides assignment starts the work');
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'slides',
+  'F4-V13-R01: and writes kind slides into the work');
+SELECT is((SELECT c.body FROM evidence.document_checkpoint c WHERE c.document_id = pg_temp.doc('dora', 'z1') AND c.revision = 0),
+  '{"documentKind":"slides","schemaVersion":1,"slides":[{"blocks":[],"id":"00000000-0000-4000-8000-000000000000","layout":"titleContent"}]}',
+  'F4-V13-R01: revision 0 of the work is the slides revision 0, byte for byte');
+SELECT is((SELECT d.current_content_hash FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')),
+  'f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8',
+  'F4-V13-R01: and its hash is the slides revision 0 hash');
+SELECT is((SELECT r.content_hash FROM evidence.document_revision r WHERE r.document_id = pg_temp.doc('dora', 'z1') AND r.revision = 0),
+  'f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8',
+  'F4-V13-R01: the recorded revision 0 carries the same hash');
+SELECT is((SELECT count(*)::int FROM evidence.package k WHERE k.document_id = pg_temp.doc('dora', 'z1')), 1,
+  'F4-V13-R01: the slides work has its one evidence package');
+SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
+  'F4-V13-R01: the text work of Ana is untouched by the slides one');
+SELECT is(pg_temp.open('boris', pg_temp.id('z1')), 'not_found|||||||',
+  'F4-V13-R01: another student still gets not_found for a slides assignment');
 
 
 -- The unique key holds also against the evidence role itself.
