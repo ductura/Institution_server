@@ -29,7 +29,7 @@ Otvara ga samo `DUCTURA_DEPLOYMENT=staging`, točno ta vrijednost i čitana kao 
 | `APP_ORIGIN`                                                         | Obavezno: samo https podrijetlo javnog hosta izvan `ductura.org` i njegovih poddomena.                                                       |
 | `ISSUER`                                                             | Obavezno: samo https podrijetlo javnog hosta izvan `ductura.org` i poddomena (bez putanje, kose crte na kraju, porta, upita i vjerodajnica). |
 | `FAKE_OIDC_CLIENT_SECRET`, `FAKE_OIDC_COOKIE_KEY`                    | Obavezno, iz okoline: najmanje 32 znaka, međusobno različiti, nikad lokalne vrijednosti.                                                     |
-| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI`, `BACKCHANNEL_LOGOUT_URI` | Samo na `APP_ORIGIN`; zadano `/api/v1/auth/callback`, `/app/web/` i `/api/v1/auth/backchannel-logout`.                                       |
+| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI`, `BACKCHANNEL_LOGOUT_URI` | Samo na `APP_ORIGIN`; zadano `/api/v1/auth/callback`, `/` (nakon odjave, kao `SIGNED_OUT_PATH` servera) i `/api/v1/auth/backchannel-logout`. |
 | `PORT`                                                               | Kao lokalno; sluša na `0.0.0.0`.                                                                                                             |
 | `FAKE_OIDC_ACCOUNTS_FILE`                                            | Zabranjeno: prijavljuju se samo izmišljeni `demo-*` računi, bez obrasca za račun bilo koje ustanove.                                         |
 

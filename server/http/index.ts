@@ -67,7 +67,12 @@ export { createWorkRevisionDueRoutesFor } from "./work-revision-due/index.ts";
 export { createTeacherRoleRoutes, createTeacherRoleRoutesFor } from "./teacher-roles/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
-export { ANALYSIS_ENABLED, createAnalysisRoutesFor } from "./analysis/index.ts";
+export {
+  ANALYSIS_ENABLED,
+  ANALYSIS_LOCAL_VARIABLE,
+  analysisEnabledFor,
+  createAnalysisRoutesFor,
+} from "./analysis/index.ts";
 export {
   createProblemReportInboxRoutes,
   createProblemReportInboxRoutesFor,
@@ -113,6 +118,8 @@ export {
   openAiProviderFrom,
   type OpenAiEnv,
 } from "./assistant/index.ts";
+// AI-EU-ADRESA: the OpenAI base address from a closed list, Europe by default.
+export { openAiBaseUrlOf, openAiBaseUrlProblems } from "../external/assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {

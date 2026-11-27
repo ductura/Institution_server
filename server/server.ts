@@ -95,6 +95,7 @@ import {
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  analysisEnabledFor,
   createAnalysisRoutesFor,
   createProblemReportInboxRoutesFor,
   createAdminActionLogRouteFor,
@@ -114,6 +115,8 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  openAiBaseUrlOf,
+  openAiBaseUrlProblems,
   openAiProviderFrom,
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
@@ -239,6 +242,9 @@ const problems = [
   ...deploymentProblems(process.env),
   ...rateLimitConfig.problems,
   ...kmsProblems(process.env),
+  // AI-EU-ADRESA: OPENAI_BASE_URL unset is Europe; a value outside the closed
+  // list refuses the start instead of falling back to the US.
+  ...openAiBaseUrlProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -279,6 +285,8 @@ const layersFor = (databases: ReturnType<typeof createDatabases>) =>
 // staging and is announced at start; staging on a production origin or any
 // other value is a startup problem above.
 const STAGING = isStagingDeployment(process.env);
+// SRV-ANALIZA-LOKALNO: the analysis routes answer only on the local stack (variable plus marker).
+const ANALYSIS_LOCAL = analysisEnabledFor(process.env);
 const SECURITY = { local: isNonProductionBuild(process.env.NODE_ENV), staging: STAGING };
 
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
@@ -316,7 +324,10 @@ async function main(): Promise<void> {
   const databases = createDatabases();
   // F4-PM2-R11 (D-316): OpenAI behind the assistant port; null without a key and
   // prices, so ai_disabled. Only metadata is logged, never text, key or identity.
+  // The address is checked above, so it is never null here; Europe by default.
+  const openAiBaseUrl = openAiBaseUrlOf(process.env);
   const assistantProvider = openAiProviderFrom(process.env, {
+    ...(openAiBaseUrl === null ? {} : { baseUrl: openAiBaseUrl }),
     transport: (request) =>
       fetch(request.url, {
         method: "POST",
@@ -578,7 +589,7 @@ async function main(): Promise<void> {
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
       // SRV-V15-HTTP (val 15): the stateless statistical analysis, behind a switch that is off.
-      ...createAnalysisRoutesFor(databases.main),
+      ...createAnalysisRoutesFor(databases.main, { enabled: ANALYSIS_LOCAL }),
       // SRV-ADMIN-1 (NF-7 OA-7, OA-3): problem reports routed by kind and their
       // state; the administrator's log of administrator and operator actions.
       ...createProblemReportInboxRoutesFor(databases.main),
