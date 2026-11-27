@@ -158,6 +158,7 @@ describe("the simulator's accounts file (SRV-01)", () => {
     const accounts = parseSimulatedAccountsFile(JSON.parse(text));
     expect(accounts.map((a) => [a.user, a.domain, a.role])).toEqual([
       ["demo-admin", "demo.ductus.test", "nastavnik"],
+      ["demo-operater", "demo.ductus.test", "nastavnik"],
       ["demo-bez-uloge", "demo.ductus.test", "nastavnik"],
       ["demo-student-3", "demo.ductus.test", "student"],
       ["demo-student-4", "demo.ductus.test", "student"],
@@ -166,6 +167,7 @@ describe("the simulator's accounts file (SRV-01)", () => {
     // The administrator's subject is the simulator's account id; the account
     // without a role is never made by the seed.
     expect(seed).toContain("'sim:nastavnik:demo-admin@demo.ductus.test'");
+    expect(seed).toContain("'sim:nastavnik:demo-operater@demo.ductus.test'");
     expect(seed).not.toContain("'sim:nastavnik:demo-bez-uloge@demo.ductus.test'");
   });
 });

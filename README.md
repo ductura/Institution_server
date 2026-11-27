@@ -44,6 +44,7 @@ Pregled okoline za produkciju je u [docs/OPERATIONS.md](docs/OPERATIONS.md), pos
 | Račun            | Uloga                                                                                    |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | `demo-admin`     | administrator ustanove (imenovan kroz `appoint_institution_admin`)                       |
+| `demo-operater`  | lokalni operater: drugi administrator ustanove (isti RPC); u modelu nema vlastite uloge  |
 | `demo-teacher`   | nastavnik, nositelj triju kolegija; jednom otvorio rad `demo-student` (dnevnik pristupa) |
 | `demo-teacher-2` | nastavnica, suradnica (vodi grupu B)                                                     |
 | `demo-student`   | upisan u seminar, grupa A, obavijest potvrđena, rad otvoren                              |
@@ -52,7 +53,7 @@ Pregled okoline za produkciju je u [docs/OPERATIONS.md](docs/OPERATIONS.md), pos
 | `demo-student-4` | predaje osvrt o gradskim vrtovima nakon roka kroz istu naredbu                           |
 | `demo-bez-uloge` | djelatnik bez potvrđene uloge                                                            |
 
-`demo-admin`, `demo-bez-uloge`, `demo-student-3` i `demo-student-4` su u `db/main/local/lazni-oidc-racuni.json` (`FAKE_OIDC_ACCOUNTS_FILE`). Vlastita `.local/oidc-racuni.json` tu datoteku zamjenjuje pa za pripremu predaja mora sadržavati oba nova računa. Kolegiji (2026./2027.) su „Izmišljeni seminar iz ekologije grada” (grupe A i B, `UPIS2026DEMO`), „Izmišljeni praktikum iz urbane sociologije” (bez zadatka, `PRAZNI2026DEMO`) i „Izmišljeni seminar iz urbane hidrologije” (zadatak „Kratki osvrt: gradski vrtovi” s isteklim rokom, `HIDRO2026DEMO`). Stari kod seminara `STARI2025KOD` je istekao i zamijenjen je.
+`demo-admin`, `demo-operater`, `demo-bez-uloge`, `demo-student-3` i `demo-student-4` su u `db/main/local/lazni-oidc-racuni.json` (`FAKE_OIDC_ACCOUNTS_FILE`). Vlastita `.local/oidc-racuni.json` tu datoteku zamjenjuje pa za pripremu predaja mora sadržavati oba nova računa. Kolegiji (2026./2027.) su „Izmišljeni seminar iz ekologije grada” (grupe A i B, `UPIS2026DEMO`), „Izmišljeni praktikum iz urbane sociologije” (bez zadatka, `PRAZNI2026DEMO`) i „Izmišljeni seminar iz urbane hidrologije” (zadatak „Kratki osvrt: gradski vrtovi” s isteklim rokom, `HIDRO2026DEMO`). Stari kod seminara `STARI2025KOD` je istekao i zamijenjen je.
 
 Za SRV-17 pokreni `pnpm lokalno`, a u drugom terminalu `pnpm lokalno:predaje`. Ako je stog pokrenut s `--izravno`, dodaj istu zastavicu i naredbi za predaje. Skripta preko `/api/v1` upisuje dva nova računa, potvrđuje obavijesti, zapisuje izmišljeni tekst i provjerava potpisanu potvrdu iste revizije pri ponovnom zahtjevu. Za `demo-student-3` provjeri stanje `submitted` u `GET /api/v1/student/assignment-work`. `demo-student-2` i dalje ima prazan popis kolegija. Ponovi naredbu za predaje i provjeri da se koristi ista potvrda.
 
