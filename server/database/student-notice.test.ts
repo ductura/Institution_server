@@ -197,24 +197,19 @@ describe("student notice", () => {
     expect(seen[1]!.text).toContain("a.ai_summary_only");
   });
 
-  it("reads the course and the mentor through the student's own readers (F4-STU-R08-SRV)", async () => {
+  // Where the names come from (only the student's own readers, an unconfirmed
+  // teacher left out, several teachers sorted and joined) is a behaviour of the
+  // SQL, tested over PostgreSQL in student-notice.pg.integration.test.ts.
+  it("maps the course and the mentor as they come (F4-STU-R08-SRV)", async () => {
     const named = reader(
       [actorRow(USER)],
-      [row(["course_name", null], ["mentor_name", "Izmišljena Mentorica"])],
+      [row(["course_name", null], ["mentor_name", "Izmišljena Mentorica, Izmišljeni Mentor"])],
     );
     const read = await named.port.read(TOKEN, A);
     expect(read.ok && [read.value.courseName, read.value.mentorName]).toEqual([
       null,
-      "Izmišljena Mentorica",
+      "Izmišljena Mentorica, Izmišljeni Mentor",
     ]);
-    const text = named.seen[1]!.text;
-    // Only the existing readers of the caller's own assignments; the student
-    // gate of the row stays the one above.
-    expect(text).toContain("FROM institution.student_assignments() s");
-    expect(text).toContain("FROM institution.student_mentored_assignments() m");
-    expect(text).toContain("WHERE s.assignment_id = a.id");
-    expect(text).toContain("WHERE m.assignment_id = a.id");
-    expect(text).not.toMatch(/person_name|institution\.mentorship\b/u);
   });
 
   it("reads the version below the current one as previousVersion (F4-STU-R11-SRV)", async () => {
