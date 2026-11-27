@@ -97,13 +97,18 @@ const fakeCheck: DailyRootCheck = async (record, key) => {
   return { ok: true, day: parsed.day, root: parsed.root, count: parsed.count, keyId: parsed.keyId };
 };
 
-async function built(source?: PortableRecordSource, dailyRoot = PENDING_DAILY_ROOT) {
+async function built(
+  source?: PortableRecordSource,
+  dailyRoot = PENDING_DAILY_ROOT,
+  confirmationCode: string | null = null,
+) {
   const result = await buildPortableRecord({
     submissionId: SUBMISSION_ID,
     source: source ?? (await sourceOf()),
     dailyRoot,
     origin: ORIGIN,
     labels: LABELS,
+    confirmationCode,
   });
   if (result.status !== "built") throw new Error(`refused: ${result.reason}`);
   return result;
@@ -193,6 +198,7 @@ describe("buildPortableRecord", () => {
         dailyRoot: PENDING_DAILY_ROOT,
         origin: ORIGIN,
         labels: LABELS,
+        confirmationCode: null,
       }),
     ).toEqual({ status: "refused", reason: "text_mismatch" });
   });
@@ -206,6 +212,7 @@ describe("buildPortableRecord", () => {
         dailyRoot: PENDING_DAILY_ROOT,
         origin: ORIGIN,
         labels: LABELS,
+        confirmationCode: null,
       });
     expect(await ask({}, "00000000-0000-4000-8000-000000000001")).toMatchObject({
       reason: "receipt_malformed",
@@ -234,6 +241,7 @@ describe("buildPortableRecord", () => {
         dailyRoot,
         origin: ORIGIN,
         labels: LABELS,
+        confirmationCode: null,
       });
     const without: PortableDailyRootSource = async (entry) => {
       const read = await good(entry);
@@ -427,5 +435,20 @@ describe("the QR of the record's PDF (acceptance 3)", () => {
       }
     }
     expect(submissionLogEntry(receipt).receiptId).toBe(SUBMISSION_ID);
+  });
+
+  it("carries the bound confirmation code as the receipt route's PDF does (Dizajn 1.1)", async () => {
+    const code = "DK7M-4Q9P-X2HT-R8VN";
+    const source = await sourceOf();
+    const record = await built(source, PENDING_DAILY_ROOT, code);
+    const files = unzipStored(record.bytes);
+    const receipt = JSON.parse(new TextDecoder().decode(files.get(FILES.receipt)));
+    // student.receipt-pdf.get: renderReceiptPdf(receipt, origin, receiptPdfHr, code).
+    const routePdf = Buffer.from(await renderReceiptPdf(receipt, ORIGIN, LABELS, code));
+    expect(Buffer.from(files.get(FILES.pdf)!).equals(routePdf)).toBe(true);
+    expect(Buffer.from(record.receiptPdf).equals(routePdf)).toBe(true);
+    expect(routePdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, LABELS)))).toBe(
+      false,
+    );
   });
 });

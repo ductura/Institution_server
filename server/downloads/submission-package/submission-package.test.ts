@@ -82,6 +82,7 @@ async function build(kind: "package" | "referada", text = TEXT) {
     dailyRoot: PENDING_DAILY_ROOT,
     origin: ORIGIN,
     labels: LABELS,
+    confirmationCode: null,
   });
 }
 

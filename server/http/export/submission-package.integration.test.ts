@@ -15,10 +15,15 @@ import {
   TEXT,
   unzipStored,
 } from "../../../test-support/portable-record/index.ts";
-import type { ActorTransaction, WithActor } from "../../database/index.ts";
+import { receiptPdfHr } from "../../../locales/index.ts";
+import type { ActorTransaction, MySubmissionStateReader, WithActor } from "../../database/index.ts";
 import { createPortableRecordReader } from "../../database/index.ts";
-import { verifyPortableRecord } from "../../downloads/index.ts";
+import { renderReceiptPdf, verifyPortableRecord } from "../../downloads/index.ts";
 import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
+import {
+  createSubmissionConfirmationCode,
+  type SubmissionConfirmationCode,
+} from "../submission-confirmation-code.ts";
 
 import {
   createSubmissionPackageRoutes,
@@ -26,6 +31,8 @@ import {
 } from "./submission-package.ts";
 
 const ORIGIN = "https://demo-fakultet.invalid";
+/** An invented confirmation code bound to the receipt (Dizajn 1.1). */
+const CODE = "DK7M-4Q9P-X2HT-R8VN";
 const TOKEN_A = "a".repeat(43);
 const TOKEN_B = "b".repeat(43);
 const cookie = (token: string) => ({ cookie: `__Host-ductus_session=${token}` });
@@ -74,6 +81,30 @@ async function fakeDatabase(text = TEXT): Promise<WithActor> {
   }) as WithActor;
 }
 
+/** student.receipt-pdf.get's two reads for student A: the bound code and the live receipt. */
+async function fakeCode(live = SUBMISSION_ID): Promise<SubmissionConfirmationCode> {
+  const source = await sourceOf({ ...PAYLOAD, submissionId: live });
+  const codes = {
+    read: async (token: string | undefined) =>
+      token === TOKEN_A
+        ? ({ ok: true, value: CODE } as const)
+        : ({ ok: false, error: { code: "MY_SUBMISSION_STATE_NOT_FOUND" } } as never),
+  };
+  const states = {
+    state: async () => ({
+      ok: true,
+      value: {
+        state: "potvrdeno",
+        revision: PAYLOAD.revision,
+        receiptPayload: source.receiptPayload,
+        payloadDigestSha256: source.payloadDigestSha256,
+        signature: source.signature,
+      },
+    }),
+  } as unknown as MySubmissionStateReader;
+  return createSubmissionConfirmationCode(codes, states);
+}
+
 let running: Running | undefined;
 let clock = Date.parse("2026-11-21T10:00:00.000Z");
 
@@ -87,6 +118,7 @@ async function start(over: Partial<SubmissionPackageRouteDeps> = {}): Promise<st
       read: createPortableRecordReader(await fakeDatabase()),
       dailyRoot: async () => ({ status: "pending" }),
       origin: ORIGIN,
+      code: await fakeCode(),
       now: () => clock,
       ...over,
     }),
@@ -176,6 +208,18 @@ describe("student.submission-package-link.post and student.submission-package.ge
     );
     expect(Buffer.from(pdf).subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(Buffer.from(pdf).toString("latin1")).not.toContain("composting");
+    // Dizajn 1.1: the receipt route's PDF, the QR of /provjera#k={code} and the code.
+    const source = await sourceOf();
+    const receipt = {
+      payload: JSON.parse(source.receiptPayload),
+      payloadDigestSha256: source.payloadDigestSha256,
+      signature: source.signature,
+    } as Parameters<typeof renderReceiptPdf>[0];
+    const routePdf = Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr, CODE));
+    expect(Buffer.from(pdf).equals(routePdf)).toBe(true);
+    expect(
+      routePdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr))),
+    ).toBe(false);
   });
 
   it("answers the other student, an unknown and a malformed id with the same 404", async () => {
@@ -275,6 +319,8 @@ describe("student.submission-package-link.post and student.submission-package.ge
         { read: async () => ({ status: "unavailable", reason: "key_malformed" }) },
         { read: async () => Promise.reject(new Error("database down")) },
         { dailyRoot: async () => ({ status: "unavailable" }) },
+        // The live submission of the assignment is another one: no PDF without its code.
+        { code: await fakeCode("00000000-0000-4000-8000-000000000009") },
       ];
       for (const over of cases) {
         const host = await start({ read: createPortableRecordReader(await fakeDatabase()) });

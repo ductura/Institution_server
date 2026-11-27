@@ -29,6 +29,11 @@ import {
   type PortableDailyRootSource,
 } from "../../downloads/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
+import {
+  codeForRecord,
+  createSubmissionConfirmationCodeFor,
+  type SubmissionConfirmationCode,
+} from "../submission-confirmation-code.ts";
 
 import {
   parseJson,
@@ -75,6 +80,8 @@ export type SubmissionPackageRouteDeps = {
   readonly dailyRoot: PortableDailyRootSource;
   /** APP_ORIGIN, for the QR of the receipt PDF; null answers 503. */
   readonly origin: string | null;
+  /** The bound confirmation code of the submission, under the same session (Dizajn 1.1). */
+  readonly code: SubmissionConfirmationCode;
   readonly now?: () => number;
 };
 
@@ -157,12 +164,22 @@ function downloadRoute(deps: SubmissionPackageRouteDeps): Route {
           unavailable(response, read.reason);
           return sendProblem(response, 503, "unavailable");
         }
+        const confirmationCode = await codeForRecord(
+          deps.code,
+          token,
+          submissionId,
+          read.rows.receiptPayload,
+          response,
+          contract.id,
+        );
+        if (confirmationCode === null) return;
         const built = await buildSubmissionPackage(kind, {
           submissionId,
           source: read.rows,
           dailyRoot: deps.dailyRoot,
           origin: deps.origin,
           labels: receiptPdfHr,
+          confirmationCode,
         });
         if (built.status === "refused") {
           unavailable(response, built.reason);
@@ -202,5 +219,6 @@ export function createSubmissionPackageRoutesFor(
     read: createPortableRecordReader(main.withActor),
     dailyRoot: PENDING_DAILY_ROOT,
     origin,
+    code: createSubmissionConfirmationCodeFor(main.withActor),
   });
 }

@@ -14,14 +14,25 @@ import {
   TEXT,
   unzipStored,
 } from "../../../test-support/portable-record/index.ts";
-import type { ActorTransaction, WithActor } from "../../database/index.ts";
+import { receiptPdfHr } from "../../../locales/index.ts";
+import type { ActorTransaction, MySubmissionStateReader, WithActor } from "../../database/index.ts";
 import { createPortableRecordReader } from "../../database/index.ts";
-import { verifyPortableRecord } from "../../downloads/index.ts";
+import {
+  PORTABLE_RECORD_FILES,
+  renderReceiptPdf,
+  verifyPortableRecord,
+} from "../../downloads/index.ts";
 import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
+import {
+  createSubmissionConfirmationCode,
+  type SubmissionConfirmationCode,
+} from "../submission-confirmation-code.ts";
 
 import { createPortableRecordRoute, type PortableRecordRouteDeps } from "./index.ts";
 
 const ORIGIN = "https://demo-fakultet.invalid";
+/** An invented confirmation code bound to the receipt (Dizajn 1.1). */
+const CODE = "DK7M-4Q9P-X2HT-R8VN";
 const TOKEN_A = "a".repeat(43);
 const TOKEN_B = "b".repeat(43);
 const cookie = (token: string) => ({ cookie: `__Host-ductus_session=${token}` });
@@ -70,6 +81,33 @@ async function fakeDatabase(text = TEXT): Promise<WithActor> {
   }) as WithActor;
 }
 
+/**
+ * The two reads of student.receipt-pdf.get as the database answers them for
+ * student A: the bound code, and the state whose receipt is `live`'s.
+ */
+async function fakeCode(live = SUBMISSION_ID): Promise<SubmissionConfirmationCode> {
+  const source = await sourceOf({ ...PAYLOAD, submissionId: live });
+  const codes = {
+    read: async (token: string | undefined) =>
+      token === TOKEN_A
+        ? ({ ok: true, value: CODE } as const)
+        : ({ ok: false, error: { code: "MY_SUBMISSION_STATE_NOT_FOUND" } } as never),
+  };
+  const states = {
+    state: async () => ({
+      ok: true,
+      value: {
+        state: "potvrdeno",
+        revision: PAYLOAD.revision,
+        receiptPayload: source.receiptPayload,
+        payloadDigestSha256: source.payloadDigestSha256,
+        signature: source.signature,
+      },
+    }),
+  } as unknown as MySubmissionStateReader;
+  return createSubmissionConfirmationCode(codes, states);
+}
+
 let running: Running | undefined;
 
 async function start(over: Partial<PortableRecordRouteDeps> = {}): Promise<string> {
@@ -83,6 +121,7 @@ async function start(over: Partial<PortableRecordRouteDeps> = {}): Promise<strin
         read: createPortableRecordReader(await fakeDatabase()),
         dailyRoot: async () => ({ status: "pending" }),
         origin: ORIGIN,
+        code: await fakeCode(),
         ...over,
       }),
     ],
@@ -123,6 +162,52 @@ describe("student.portable-record.get", () => {
       submissionId: SUBMISSION_ID,
       dailyRoot: null,
     });
+  });
+
+  it("carries the bound code: its PDF is the one student.receipt-pdf.get renders (Dizajn 1.1)", async () => {
+    const host = await start();
+    const answer = await fetch(host + PATH(SUBMISSION_ID), { headers: cookie(TOKEN_A) });
+    expect(answer.status).toBe(200);
+    const files = unzipStored(new Uint8Array(await answer.arrayBuffer()));
+    const receipt = JSON.parse(new TextDecoder().decode(files.get(PORTABLE_RECORD_FILES.receipt)));
+    const pdf = Buffer.from(files.get(PORTABLE_RECORD_FILES.pdf)!);
+    expect(
+      pdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr, CODE))),
+    ).toBe(true);
+    expect(pdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, receiptPdfHr)))).toBe(
+      false,
+    );
+  });
+
+  it("is 503, never a PDF without its code, when the code cannot be vouched for", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const unreadable = createSubmissionConfirmationCode(
+        {
+          read: async () =>
+            ({ ok: false, error: { code: "MY_SUBMISSION_STATE_DATABASE_ERROR" } }) as never,
+        },
+        {
+          state: async () => Promise.reject(new Error("not read")),
+        } as unknown as MySubmissionStateReader,
+      );
+      const cases: Partial<PortableRecordRouteDeps>[] = [
+        // The live submission of the assignment is another one (this one withdrawn).
+        { code: await fakeCode("00000000-0000-4000-8000-000000000009") },
+        { code: unreadable },
+      ];
+      for (const over of cases) {
+        const response = await fetch((await start(over)) + PATH(SUBMISSION_ID), {
+          headers: cookie(TOKEN_A),
+        });
+        expect(response.status).toBe(503);
+        expect(response.headers.get("content-type")).not.toBe("application/zip");
+        await running?.close();
+        running = undefined;
+      }
+    } finally {
+      error.mockRestore();
+    }
   });
 
   it("answers the other student, an unknown and a malformed id with the same 404", async () => {

@@ -10,7 +10,8 @@
 //            of each to the access log in its transaction (SRV-11), so every
 //            download is recorded;
 //   receipts app.teacher_submission_state (SRV-30), checked as for the
-//            student, rendered as the same receipt PDF (SRV-9C).
+//            student, rendered as the same receipt PDF (SRV-9C), with the
+//            bound confirmation code teacher.receipt-pdf.get reads (Dizajn 1.1).
 // A cross-site read is 403, no session 401; another's, an unknown and a
 // malformed assignment, a link of another assignment, format or session are
 // the same 404 (C-23); a link past its 24 hours is 410. Reads that disagree,
@@ -25,8 +26,10 @@ import { ROUTES } from "../../contracts/index.ts";
 import {
   createAssignmentSubmissionsReader,
   createDeadlineExtensions,
+  createMySubmissionConfirmationCodeReader,
   createMySubmissionStateReader,
   createSubmittedWorksReader,
+  type MySubmissionConfirmationCodeReader,
   type WithActor,
 } from "../../database/index.ts";
 import {
@@ -73,8 +76,14 @@ export type TeacherSubmissionsBulkDeps = {
     assignmentId: string,
     studentId: string,
   ) => Promise<StudentSubmissionAnswer>;
-  /** The receipt PDF; null without APP_ORIGIN for its QR, which answers 503. */
-  readonly renderReceipt: ((receipt: BulkReceipt) => Promise<Uint8Array>) | null;
+  /**
+   * Dizajn 1.1: the bound confirmation code of one student's submission, the
+   * read of teacher.receipt-pdf.get under the same session; null before it.
+   */
+  readonly code: MySubmissionConfirmationCodeReader["teacherRead"];
+  /** The receipt PDF with its code; null without APP_ORIGIN for its QR, which answers 503. */
+  readonly renderReceipt:
+    ((receipt: BulkReceipt, code: string | null) => Promise<Uint8Array>) | null;
   readonly now?: () => number;
 };
 
@@ -155,11 +164,11 @@ function linkRoute(deps: TeacherSubmissionsBulkDeps): Route {
 /** The receipt PDFs of the submitted students, or the status that ends the download. */
 async function receiptsOf(
   deps: TeacherSubmissionsBulkDeps,
-  render: (receipt: BulkReceipt) => Promise<Uint8Array>,
+  render: (receipt: BulkReceipt, code: string | null) => Promise<Uint8Array>,
   token: string,
   assignmentId: string,
   studentIds: readonly string[],
-): Promise<Map<string, Uint8Array> | 401 | "disagree"> {
+): Promise<Map<string, Uint8Array> | 401 | "disagree" | { readonly codeError: string }> {
   const receipts = new Map<string, Uint8Array>();
   for (const studentId of studentIds) {
     const read = await deps.receipt(token, assignmentId, studentId);
@@ -169,7 +178,11 @@ async function receiptsOf(
     if (read.body.state === "ceka") continue;
     const { receipt } = read.body;
     if (receipt.payload.principalId !== studentId) return "disagree";
-    receipts.set(studentId, await render(receipt));
+    // As teacher.receipt-pdf.get: the code after the receipt, under the same
+    // session; a failed read ends the download, never a PDF without its code.
+    const code = await deps.code(token, assignmentId, studentId);
+    if (!code.ok) return { codeError: code.error.code };
+    receipts.set(studentId, await render(receipt, code.value));
   }
   return receipts;
 }
@@ -210,6 +223,15 @@ function downloadRoute(deps: TeacherSubmissionsBulkDeps): Route {
         const receipts = await receiptsOf(deps, render, token, assignmentId, students);
         if (receipts === 401) return sendProblem(response, 401, "unauthorized");
         if (receipts === "disagree") return unavailable(response, "reads_disagree");
+        if (!(receipts instanceof Map)) {
+          reportServerError(
+            "route",
+            new Error(receipts.codeError),
+            requestIdOf(response),
+            contract.id,
+          );
+          return sendProblem(response, 503, "unavailable");
+        }
         const zip = buildSubmissionsZip(read.roster, format, receipts);
         response.writeHead(200, {
           "content-type": "application/zip",
@@ -252,7 +274,10 @@ export function createTeacherSubmissionsBulkRoutesFor(
     }),
     receipt: (token, assignmentId, studentId) =>
       readTeacherSubmission(states, token, assignmentId, studentId),
+    code: createMySubmissionConfirmationCodeReader(main.withActor).teacherRead,
     renderReceipt:
-      origin === null ? null : (receipt) => renderReceiptPdf(receipt, origin, receiptPdfHr),
+      origin === null
+        ? null
+        : (receipt, code) => renderReceiptPdf(receipt, origin, receiptPdfHr, code),
   });
 }
