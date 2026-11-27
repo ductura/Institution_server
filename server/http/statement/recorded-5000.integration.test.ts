@@ -101,7 +101,7 @@ it.each([
   ["v3 GET", "GET", "declaration-v3", 5001, 503, true],
   ["v3 PUT", "PUT", "declaration-v3", 5001, 503, true],
 ] as const)(
-  "student %s with %i recorded transfers answers %i",
+  "student %s (%s %s) with %i recorded transfers answers %i",
   async (_name, method, path, count, status, recordsError) => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const answer = statementWith(count);
@@ -135,7 +135,7 @@ it.each([
   ["teacher.declaration-third.get", "declaration-v3", 501, 200],
   ["teacher.declaration-third.get", "declaration-v3", 5000, 200],
   ["teacher.declaration-third.get", "declaration-v3", 5001, 503],
-] as const)("%s with %i recorded transfers answers %i", async (id, path, count, status) => {
+] as const)("%s (%s) with %i recorded transfers answers %i", async (id, path, count, status) => {
   const answer = structuredClone({
     ...bound,
     payload: payloadWith(count),
