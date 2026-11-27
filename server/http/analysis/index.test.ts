@@ -274,8 +274,7 @@ describe("analysis local exception", () => {
     DUCTUS_AUTH_PROVIDER: "fake-oidc",
   };
   it("is off without the variable, even on a local stack", () => {
-    const { DUCTUS_ANALYSIS_LOCAL: _unused, ...rest } = LOCAL;
-    expect(analysisEnabledFor({ ...rest })).toBe(false);
+    expect(analysisEnabledFor({ ...LOCAL, [ANALYSIS_LOCAL_VARIABLE]: undefined })).toBe(false);
     expect(analysisEnabledFor({})).toBe(false);
   });
   it("is off with the variable but without the local marker", () => {
