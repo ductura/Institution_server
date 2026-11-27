@@ -83,6 +83,7 @@ function answerOf(opened: OpenWorkResult): EvidenceAnswer | { readonly body: unk
     // SRV-V14-KIND-ENUM: always sent; documentKind is not (kind = workKind ?? documentKind ?? "text").
     workKind: work.workKind ?? "text",
     ...(work.workKind === "spreadsheet" ? { sheetSchemaVersion: 1 } : {}),
+    ...(work.workKind === "slides" ? { slidesSchemaVersion: 1 } : {}),
   };
   return { body };
 }
