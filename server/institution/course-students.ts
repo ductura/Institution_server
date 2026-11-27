@@ -128,7 +128,19 @@ type AssignmentWork = {
   assignmentId: string;
   documentId: string | null;
   workState: "not_started" | "in_progress" | "submitted";
+  title?: string;
+  workType?: string;
 };
+/** The work types of institution.assignment_version, as teacher-courses.ts. */
+const WORK_TYPES = new Set([
+  "short_paper",
+  "essay",
+  "seminar_paper",
+  "bachelor_thesis",
+  "master_thesis",
+  "specialist_thesis",
+  "doctoral_thesis",
+]);
 type RosterStudent = GroupStudent & { assignments: AssignmentWork[] };
 type EvidenceRecord = "continuous" | "with_gaps" | null;
 type OverviewStudent = GroupStudent &
@@ -145,6 +157,10 @@ type OverviewStudent = GroupStudent &
 // Keep each authorized student, including one without a visible assignment.
 // The overview and works readers enforce the work-level boundary separately
 // from the course roster. All of the rows share one database snapshot.
+// The title and work type come from the current version under the ordinary
+// assignment policies (RLS), the same rows institution.list_teacher_courses
+// reads: a course teacher gets them, a seminar group teacher, who may not read
+// the assignment row itself, gets nulls (C-23).
 const ROSTER_SQL = `WITH roster AS MATERIALIZED (
   SELECT * FROM app.teacher_course_students($1::uuid)
 ), works AS (
@@ -155,8 +171,11 @@ const ROSTER_SQL = `WITH roster AS MATERIALIZED (
 )
 SELECT r.student_id::text AS student_id, r.given_name, r.family_name, r.group_name AS "groupName",
        w.assignment_id::text AS "assignmentId", w.document_id AS "documentId",
-       w.evidence_record AS "evidenceRecord"
+       w.evidence_record AS "evidenceRecord", v.title, v.work_type AS "workType"
   FROM roster r LEFT JOIN works w ON w.student_id = r.student_id
+  LEFT JOIN institution.assignment a ON a.id = w.assignment_id
+  LEFT JOIN institution.assignment_version v
+    ON v.assignment_id = a.id AND v.version_no = a.current_version
  ORDER BY r.student_id, w.assignment_id`;
 
 const OVERVIEW_SQL = `SELECT student_id::text AS student_id, given_name, family_name,
@@ -187,7 +206,7 @@ function rosterOf(rows: Row[]): RosterStudent[] | null {
     const student = groupStudentOf(row);
     if (student === null) return null;
     const { studentId, givenName, familyName, groupName } = student;
-    const { assignmentId, documentId, evidenceRecord } = row;
+    const { assignmentId, documentId, evidenceRecord, title, workType } = row;
     let entry = students.get(studentId);
     const previous = entry?.assignments.at(-1);
     if (entry === undefined) {
@@ -202,20 +221,43 @@ function rosterOf(rows: Row[]): RosterStudent[] | null {
       return null;
     }
     if (assignmentId === null) {
-      if (previous !== undefined || documentId !== null || evidenceRecord !== null) return null;
+      if (
+        previous !== undefined ||
+        documentId !== null ||
+        evidenceRecord !== null ||
+        title !== null ||
+        workType !== null
+      )
+        return null;
       continue;
     }
+    const named =
+      typeof title === "string" &&
+      title !== "" &&
+      typeof workType === "string" &&
+      WORK_TYPES.has(workType);
     if (
       typeof assignmentId !== "string" ||
       !UUID.test(assignmentId) ||
       (previous !== undefined && previous.assignmentId >= assignmentId) ||
       (documentId !== null && !isWorkId(documentId)) ||
-      !isEvidenceRecord(evidenceRecord)
+      !isEvidenceRecord(evidenceRecord) ||
+      (!named && (title !== null || workType !== null))
     )
       return null;
     const workState =
       evidenceRecord !== null ? "submitted" : documentId === null ? "not_started" : "in_progress";
-    entry.assignments.push({ assignmentId, documentId, workState });
+    entry.assignments.push(
+      named
+        ? {
+            assignmentId,
+            documentId,
+            workState,
+            title: title as string,
+            workType: workType as string,
+          }
+        : { assignmentId, documentId, workState },
+    );
   }
   return [...students.values()];
 }
