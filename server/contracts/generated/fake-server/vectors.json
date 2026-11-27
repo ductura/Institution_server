@@ -83227,7 +83227,9 @@
               {
                 "assignmentId": "00000000-0000-4000-8000-0000000000a1",
                 "documentId": "izmisljeni-rad-predaje-0001",
-                "workState": "submitted"
+                "workState": "submitted",
+                "title": "Izmišljeni seminar",
+                "workType": "seminar_paper"
               }
             ]
           },

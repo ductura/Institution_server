@@ -49,7 +49,7 @@ Tri hasha:
 Pravila:
 
 - Zatvoren skup ključeva. Nepoznat ključ, uključujući `author`, `lastModifiedBy`, `fileName`, `email` i sam `manifestSha256`, odbija se (M1, M16).
-- `traces` je obvezan uz `docx` (može biti prazan), a uz `pdf` ga nema ni kao `[]` (M8, M9). Najviše tri traga, svaka vrsta jednom, `count` ≥ 1, redom `comment`, `deletion`, `insertion`.
+- `traces` je obvezan uz `docx` (može biti prazan), a uz `pdf` ga nema ni kao `[]` (M8, M9). Najviše tri traga, svaka vrsta jednom, `count` ≥ 1, redom `comment`, `deletion`, `insertion`. Ovo vrijedi za `ductus-import-manifest-v1`. Prijedlog v2 s tragovima uz `pdf` i `odt` je u [`import-manifest-v2.md`](import-manifest-v2.md) i v1 ne mijenja.
 - `savedAt` samo uz `cloud-version`, cijela UTC minuta (D-24, M10). `cloud-version` je samo `docx`.
 - Tekst manifesta mora biti točno JCS pročitane vrijednosti. Drugi razmaci, redoslijed ključeva, dupli ključ ili drugi zapis broja odbijaju se kodom `MANIFEST_NOT_CANONICAL`; nikad se ne prepisuju (B-8, M12). Pozivatelj bajtove prvo dekodira strogim UTF-8 koji čuva BOM (`decodeStrictUtf8` iz `server/domain/forensics`), pa je jednak tekst isto što i jednaki bajtovi. Ugovori ne dekodiraju bajtove i ne hashiraju; to radi servis SRV-1803.
 - B3: poslužitelj iz primljenih bajtova sam izračuna `rawSha256`, `rawByteLength`, `contentSha256` i tragove. Bilo koja razlika odbija cijeli uvoz. Prva razlika, stalnim redom, daje kod: `RAW_SHA256_MISMATCH`, `RAW_BYTE_LENGTH_MISMATCH`, `CONTENT_SHA256_MISMATCH`, `TRACES_MISMATCH` (M14).
