@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { PDFDocument } from "pdf-lib";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { receiptPdfHr } from "../../locales/index.ts";
+import { MY_SUBMISSION_STATE_DATABASE_ERROR } from "../database/index.ts";
+import { renderReceiptPdf } from "../downloads/index.ts";
 import type { StudentSubmissionAnswer } from "../institution/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -28,15 +31,22 @@ const TOKEN = "a".repeat(43);
 const SESSION = { cookie: `__Host-ductus_session=${TOKEN}` };
 
 type Read = Parameters<typeof createReceiptPdfRoutes>[0];
+type ReadCode = Parameters<typeof createReceiptPdfRoutes>[1];
+/** An invented confirmation code (Crockford, uppercase). */
+const CODE = "DK7M-4Q9P-X2HT-R8VN";
 let running: Running | undefined;
 
-async function start(read: Read, origin: string | null = ORIGIN): Promise<string> {
+async function start(
+  read: Read,
+  origin: string | null = ORIGIN,
+  readCode: ReadCode = vi.fn<ReadCode>().mockResolvedValue({ ok: true, value: null }),
+): Promise<string> {
   running = await startServer({
     host: "127.0.0.1",
     port: 0,
     databases: createDatabases(),
     layers: createLayers({ expectedOrigin: ORIGIN }),
-    routes: createReceiptPdfRoutes(read, origin),
+    routes: createReceiptPdfRoutes(read, readCode, origin),
   });
   return `http://127.0.0.1:${running.port}`;
 }
@@ -65,6 +75,39 @@ describe("receipt PDF downloads", () => {
     expect(await teacher.json()).toEqual(pdf);
     expect(pdf.filename).toBe("potvrda-predaje.pdf");
     expect((await PDFDocument.load(Buffer.from(pdf.pdfBase64, "base64"))).getPageCount()).toBe(1);
+  });
+
+  it("puts the bound confirmation code under the QR for both readers, read with the session", async () => {
+    const read = vi.fn<Read>().mockResolvedValue({ status: 200, body: CONFIRMED });
+    const readCode = vi.fn<ReadCode>().mockResolvedValue({ ok: true, value: CODE });
+    const host = await start(read, ORIGIN, readCode);
+    const student = await fetch(host + STUDENT, { headers: SESSION });
+    const teacher = await fetch(host + TEACHER, { headers: SESSION });
+    expect(readCode.mock.calls).toEqual([
+      [TOKEN, assignmentId, undefined],
+      [TOKEN, assignmentId, principalId],
+    ]);
+    const pdf = (await student.json()) as { pdfBase64: string };
+    expect(await teacher.json()).toEqual(pdf);
+    const bytes = Buffer.from(pdf.pdfBase64, "base64");
+    expect(bytes).toEqual(
+      Buffer.from(await renderReceiptPdf(CONFIRMED.receipt, ORIGIN, receiptPdfHr, CODE)),
+    );
+    expect(bytes).not.toEqual(
+      Buffer.from(await renderReceiptPdf(CONFIRMED.receipt, ORIGIN, receiptPdfHr)),
+    );
+  });
+
+  it("answers 503 without PDF data when the code cannot be read", async () => {
+    const read = vi.fn<Read>().mockResolvedValue({ status: 200, body: CONFIRMED });
+    const readCode = vi
+      .fn<ReadCode>()
+      .mockResolvedValue({ ok: false, error: MY_SUBMISSION_STATE_DATABASE_ERROR });
+    const response = await fetch((await start(read, ORIGIN, readCode)) + STUDENT, {
+      headers: SESSION,
+    });
+    expect(response.status).toBe(503);
+    expect(await response.json()).not.toHaveProperty("pdfBase64");
   });
 
   it.each([
