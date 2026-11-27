@@ -2,19 +2,18 @@
 // under PostgreSQL RLS, through the port and the read of the current version.
 // The harness keeps one test transaction, so a refused call rolls back only
 // its own statement; that the whole creation rolls back with it is withActor's
-// one transaction (institution-assignments.test.ts).
+// one transaction (server/database/institution-assignments.test.ts).
 import { readFileSync } from "node:fs";
 
 import { expect, it } from "vitest";
 
-import { createTestDatabase, exclusive } from "../../test-support/database/index.ts";
-import { readAssignmentCurrentVersion } from "../institution/index.ts";
+import { createTestDatabase, exclusive } from "../../../test-support/database/index.ts";
+import { createInstitutionAssignments, type WithActor } from "../../database/index.ts";
 
-import { createInstitutionAssignments } from "./institution-assignments.ts";
-import type { WithActor } from "./with-actor.ts";
+import { readAssignmentCurrentVersion } from "./index.ts";
 
 const FIXTURE = readFileSync(
-  new URL("../../db/main/tests/fixtures/institution.inc", import.meta.url),
+  new URL("../../../db/main/tests/fixtures/institution.inc", import.meta.url),
   "utf8",
 );
 const K1 = "00000000-0000-4000-8000-0000000000c1";
