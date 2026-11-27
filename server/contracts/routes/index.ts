@@ -173,6 +173,7 @@ export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { eventDisputesRoutes } from "./event-disputes.ts";
 export { teacherSourcesRoutes } from "./teacher-sources.ts";
 export { teacherWorkRoutes } from "./teacher-work.ts";
+export { teacherWorkSubmittedVersionRoutes } from "./teacher-submitted-version.ts";
 export { originCompositionRoutes, ORIGIN_KINDS } from "./origin-composition.ts";
 export { assistantMatchRoutes } from "./assistant-match.ts";
 export { aiTransferRoutes, AI_TRANSFER_TEXT_MAX } from "./ai-transfer.ts";

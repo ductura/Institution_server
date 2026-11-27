@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6342);
+SELECT plan(6357);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -54,7 +54,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': definer RPC with an empty path, only for the application')
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)'),
-               ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)')) f(signature)
+               ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
+               ('declaration.list_conversations(uuid)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -63,7 +64,9 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
                ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'),
-               ('declaration.is_fresh(declaration.statement,text,bigint,integer)')) f(signature)
+               ('declaration.is_fresh(declaration.statement,text,bigint,integer)'),
+               -- SRV-1809: ai.recorded of a confirmed declaration (277).
+               ('declaration.recorded_transfers(uuid,uuid,text,bigint)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
 -- loop reservation and the setting trail are reached only by their owner; the
@@ -136,7 +139,9 @@ SELECT bag_eq(
         'declaration.require_pinned_submission()',
         'declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
         'declaration.answer_ref(declaration.question_answer)', 'declaration.bound_answer_of(uuid,uuid,uuid)',
-        'declaration.reject_answer_change()', 'declaration.delete_draft_answer()'],
+        'declaration.reject_answer_change()', 'declaration.delete_draft_answer()',
+        'declaration.list_conversations(uuid)',
+        'declaration.recorded_transfers(uuid,uuid,text,bigint)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -150,6 +155,7 @@ SELECT bag_eq(
         'ductus_app declaration.upload_attachment(uuid,text,bytea)',
         'ductus_app declaration.submission_gate(text,bigint)',
         'ductus_app declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
+        'ductus_app declaration.list_conversations(uuid)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)',
         'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)'],
   'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration and bound-answer helpers'
@@ -826,6 +832,33 @@ FROM (VALUES
   ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
   ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'none'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
 ) AS c (actor, assignment, state);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.my_submission_confirmation_code(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-KOD-POTVRDE: only ductus_app and the owner execute app.my_submission_confirmation_code'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may use ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_confirmation_code_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-KOD-POTVRDE: only its owner and the identity role execute app.submission_confirmation_code_of'
+);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_submission_confirmation_code(%s)', c.assignment)), c.outcome,
+  format('SRV-KOD-POTVRDE: %s reads the own confirmation code on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'found'), ('dora', '{z1}', 'found'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
+  ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'found'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, outcome);
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_assignment_requirements(%s)', c.assignment)), c.outcome,
   format('SRV-20: %s reads the requirements of %s: %s', c.actor, c.assignment, c.outcome)

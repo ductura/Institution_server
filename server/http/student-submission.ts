@@ -17,8 +17,10 @@ import { Value } from "@sinclair/typebox/value";
 import { ROUTES } from "../contracts/index.ts";
 import {
   createMyAssignmentSubmissionsReader,
+  createMySubmissionConfirmationCodeReader,
   createMySubmissionStateReader,
   type MyAssignmentSubmissionsReader,
+  type MySubmissionConfirmationCodeReader,
   type MySubmissionStateReader,
 } from "../database/index.ts";
 import {
@@ -114,6 +116,50 @@ export function createStudentAssignmentSubmissionsRoute(
   };
 }
 
+/** SRV-KOD-POTVRDE: the confirmation code of the own submission, over its own reader. */
+export function createStudentSubmissionConfirmationCodeRoute(
+  reader: MySubmissionConfirmationCodeReader,
+): Route {
+  const id = "student.submission-confirmation-code.get";
+  const { contract, body } = contractOf(id);
+  return {
+    contract,
+    async handle(request, response, params) {
+      const site = request.headersDistinct["sec-fetch-site"];
+      if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        return sendProblem(response, 403, "forbidden");
+      }
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      const sent = params?.assignmentId ?? "";
+      if (!UUID.test(sent)) return sendProblem(response, 404, "not_found");
+      try {
+        const read = await reader.read(token, sent.toLowerCase());
+        if (!read.ok) {
+          const code = read.error.code;
+          if (code === "MY_SUBMISSION_STATE_UNAUTHENTICATED")
+            return sendProblem(response, 401, "unauthorized");
+          if (code === "MY_SUBMISSION_STATE_NOT_FOUND")
+            return sendProblem(response, 404, "not_found");
+          reportServerError("route", new Error(code), requestIdOf(response), id);
+          return sendProblem(response, 503, "unavailable");
+        }
+        const answer = { code: read.value };
+        if (Value.Check(body, answer)) return sendJson(response, 200, answer);
+        reportServerError(
+          "route",
+          new Error("answer outside the contract"),
+          requestIdOf(response),
+          id,
+        );
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), id);
+      }
+      return sendProblem(response, 503, "unavailable");
+    },
+  };
+}
+
 /** The two routes over one reader: the submission state, then the requirements. */
 export function createStudentSubmissionRoutes(reader: MySubmissionStateReader): Route[] {
   return [
@@ -133,5 +179,8 @@ export function createStudentSubmissionRoutesFor(
     ...createStudentSubmissionRoutes(reader),
     createTeacherSubmissionReceiptRoute(reader),
     createStudentAssignmentSubmissionsRoute(createMyAssignmentSubmissionsReader(main.withActor)),
+    createStudentSubmissionConfirmationCodeRoute(
+      createMySubmissionConfirmationCodeReader(main.withActor),
+    ),
   ];
 }

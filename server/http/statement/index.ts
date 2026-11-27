@@ -29,17 +29,31 @@ import {
   type Route,
 } from "../index.ts";
 import { createFormReader } from "./form.ts";
+import { withoutRecorded } from "./v1-view.ts";
 
 export type { StatementPort } from "../../database/index.ts";
+export { withoutRecorded } from "./v1-view.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const READ = "student.declaration.get";
 const SAVE = "student.declaration.put";
 const UPLOAD = "student.declaration-attachments.post";
+const CONVERSATIONS = "student.declaration-conversations.get";
 // F4-PRE-R02-SRV, F4-PRE-R06-SRV: the declaration-v2 routes over the same port.
 const READ_V2 = "student.declaration-second.get";
 const SAVE_V2 = "student.declaration-second.put";
+// AI-RECORDED-5000: the declaration-v3 routes, up to 5000 recorded transfers.
+const READ_V3 = "student.declaration-third.get";
+const SAVE_V3 = "student.declaration-third.put";
+/** The v3 route that reads what a v2 route cannot carry. */
+const WIDER: Readonly<Record<string, string>> = { [READ_V2]: READ_V3, [SAVE_V2]: READ_V3 };
+
+function contractOf(id: string): RouteContract {
+  const contract = ROUTES.find((route) => route.id === id);
+  if (contract === undefined) throw new Error(`Missing contract for ${id}`);
+  return contract;
+}
 
 /** A plain JSON object, so its own questionAnswer key can be set apart. */
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -95,16 +109,20 @@ function sendRefusal(
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
-  return [READ, SAVE, UPLOAD, READ_V2, SAVE_V2].map((id) => {
-    const contract = ROUTES.find((route) => route.id === id);
-    if (contract === undefined) throw new Error(`Missing contract for ${id}`);
-    const isRead = id === READ || id === READ_V2;
-    const isSave = id === SAVE || id === SAVE_V2;
+  return [READ, CONVERSATIONS, SAVE, UPLOAD, READ_V2, SAVE_V2, READ_V3, SAVE_V3].map((id) => {
+    const contract = contractOf(id);
+    const wider = WIDER[id] === undefined ? undefined : contractOf(WIDER[id]);
+    const isRead = id === READ || id === READ_V2 || id === READ_V3;
+    const isSave = id === SAVE || id === SAVE_V2 || id === SAVE_V3;
     return {
       contract,
       async handle(request, response, params) {
         const site = request.headersDistinct["sec-fetch-site"];
-        if (isRead && site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        if (
+          (isRead || id === CONVERSATIONS) &&
+          site !== undefined &&
+          (site.length !== 1 || site[0] !== "same-origin")
+        ) {
           return sendProblem(response, 403, "forbidden");
         }
         const token = liveSessionTokenFromCookie(request.headers.cookie);
@@ -114,8 +132,9 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           if (slug === null) return refuse(response, 401, "unauthorized");
           const assignmentId = params?.assignmentId ?? "";
           if (!UUID.test(assignmentId)) return refuse(response, 404, "not_found");
-          let op: StatementOperation = { type: "read" };
-          if (!isRead) {
+          let op: StatementOperation =
+            id === CONVERSATIONS ? { type: "conversations" } : { type: "read" };
+          if (!isRead && id !== CONVERSATIONS) {
             const format = mediaType(request);
             if (id === UPLOAD && !isExternalFormat(format))
               return refuse(response, 415, "unsupported_media_type");
@@ -159,8 +178,15 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           const outcome = await port.run(token, assignmentId.toLowerCase(), slug, op);
           if (outcome.status !== "ok") return sendRefusal(response, contract, outcome);
           const schema = contract.responses[0]?.body;
-          if (schema !== undefined && Value.Check(schema, outcome.body))
-            return sendJson(response, 200, outcome.body);
+          const body = id === READ || id === SAVE ? withoutRecorded(outcome.body) : outcome.body;
+          if (schema !== undefined && Value.Check(schema, body))
+            return sendJson(response, 200, body);
+          // A declaration with more than 500 recorded transfers is whole; only
+          // the v2 body cannot carry it. Its route answers the documented 503,
+          // and the v3 route reads it.
+          const widerSchema = wider?.responses[0]?.body;
+          if (widerSchema !== undefined && Value.Check(widerSchema, body))
+            return sendProblem(response, 503, "unavailable");
           throw new Error("Declaration response outside its contract");
         } catch {
           // The postgres error can carry submitted text in its detail or context.

@@ -852,6 +852,12 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.declaration.get": {
     request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
   },
+  "student.declaration-conversations.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-conversations`,
+      as: "student",
+    },
+  },
   "student.declaration.put": {
     before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
     request: {
@@ -881,6 +887,31 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
     request: {
       path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v2`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
+  // AI-RECORDED-5000: the declaration-v3 routes, alike.
+  "student.declaration-third.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v3`,
+      as: "student",
+    },
+  },
+  "student.declaration-third.put": {
+    before: [commit("c0000000-0000-4000-8000-0000000005a3", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-v3`,
       as: "student",
       method: "PUT",
       headers: ORIGIN,
@@ -1499,6 +1530,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "student.submission.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
+  },
+  "student.submission-confirmation-code.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/submission/confirmation-code`, as: "student" },
   },
   // SRV-1312: the fake draws the submission id at random; the scenario pins it.
   "student.portable-record.get": {
@@ -2672,6 +2706,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assignmentId: IDS.assignment },
     },
   },
+  "teacher.work.submitted-version.get": {
+    before: [commit("izmisljena-transakcija-1", 0), SUBMIT],
+    request: {
+      path: `/api/v1/teacher/works/${IDS.document}/submitted-versions/1`,
+      as: "nastavnik",
+    },
+  },
   "teacher.work.get": {
     request: { path: `/api/v1/teacher/works/${IDS.document}`, as: "nastavnik" },
   },
@@ -2838,6 +2879,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v2`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.declaration-third.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/declaration-v3`,
       as: "nastavnik",
     },
   },
@@ -3285,6 +3333,21 @@ describe("student submission on the dev fake server", () => {
       state: "potvrdeno",
       receipt: JSON.parse(submitted.body).receipt,
     });
+    expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("gives the confirmation code only after the receipt is bound, and only to its student", async () => {
+    const state = createState();
+    const read = SCENARIOS["student.submission-confirmation-code.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ code: null });
+    const submit = SCENARIOS["submission.submit.post"];
+    for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+    expect((await run(state, submit.request)).status).toBe(200);
+    const answer = await run(state, read);
+    expect(contractProblems("student.submission-confirmation-code.get", answer)).toEqual([]);
+    expect(JSON.parse(answer.body).code).toMatch(
+      /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/,
+    );
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
   });
 

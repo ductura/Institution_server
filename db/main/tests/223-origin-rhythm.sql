@@ -124,8 +124,10 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.input_rhythm_read('do
 SELECT matches(pg_temp.ask('dora', $$ SELECT count(*) FROM app.input_rhythm_read('doc-a') $$), '^ZD403', 'another student does not');
 SELECT matches(pg_temp.ask('vesna', $$ SELECT app.input_rhythm_record('doc-a', ARRAY[5]) $$), '^ZD403', 'a teacher records no rhythm');
 SELECT matches(pg_temp.ask('vesna', $$ SELECT app.input_rhythm_delete('doc-a') $$), '^ZD403', 'a teacher deletes no rhythm');
-SELECT is((SELECT count(*) FROM evidence.input_rhythm WHERE delete_after = recorded_at + interval '12 months'), 2::bigint,
-  'each row carries the date of deletion from the constant of the configuration');
+-- RITAM-ROK-30D (20261220510000, Constitution v1.11 C-14): kept until 30 days
+-- after the submission, so a burst of a work not yet submitted has no date yet.
+SELECT is((SELECT count(*) FROM evidence.input_rhythm WHERE delete_after IS NULL), 2::bigint,
+  'each row of a work not yet submitted waits for the submission for its date of deletion');
 
 -- 8. The switch holds from the moment of switching off. It is the teacher's
 -- (20261213110100, Daniel 22. 11. 2026.); the student no longer switches it.

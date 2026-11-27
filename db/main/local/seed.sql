@@ -386,3 +386,104 @@ BEGIN
   RESET ROLE;
 END
 $coding$;
+
+-- SEED-MEN-POSLANA-VERZIJA (Ductus#2059; F4-MEN R06): a mentored work with a
+-- SENT version, so the mentor's reading of a sent version (revision request
+-- with its text, work.seen.post) can be checked locally. Invented student
+-- `demo-student-6` (the simulator's `sim:student:demo-student-6@demo.ductus.test`,
+-- no real person, no e-mail, no OIB) asks demo-teacher for a bachelor thesis;
+-- demo-teacher approves, the student opens the work, the mentor opens a
+-- revision request with an instruction on an invented passage, the student
+-- opens it (seen mark) and sends the revision ("Pošalji doradu", round 1).
+-- Every row comes from the function the application calls, under the session
+-- of an invented account, as the blocks above. `demo-student-5` (request only,
+-- scripts/lokalno/seed-predaja.ts) and every work without a version stay as
+-- they are (R11). A rerun adds nothing: the block is skipped once the student
+-- has a mentorship. One DO block is one transaction; both sessions it opens
+-- are closed at its end.
+DO $sent$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_student constant text := 'sim:student:demo-student-6@demo.ductus.test';
+  c_work_type constant text := 'bachelor_thesis';
+  c_anchor constant jsonb := jsonb_build_object(
+    'nodeId', 'c5ed0000-0000-4000-8000-0000000000a1', 'quote', 'komposter',
+    'prefix', 'Izmišljeni rad o kućanstvima i ', 'suffix', ' u gradskim četvrtima.',
+    'startHint', 0, 'endHint', 9);
+  v_institution uuid;
+  v_tokens text[] := ARRAY[]::text[];
+  v_ids uuid[] := ARRAY[]::uuid[];
+  v_subjects constant text[] := ARRAY['demo-teacher', c_student];
+  v_request uuid;
+  v_mentorship uuid;
+  v_assignment uuid;
+  v_document text;
+  v_item uuid;
+  v_version integer;
+  i integer;
+BEGIN
+  SELECT id INTO STRICT v_institution FROM identity.institution
+   WHERE slug = 'demo-fakultet' AND aai_home_org = c_home_org;
+  IF EXISTS (SELECT 1 FROM institution.mentorship m
+              JOIN identity.user_account u ON u.id = m.student_id AND u.institution_id = m.institution_id
+             WHERE m.institution_id = v_institution AND u.oidc_subject = c_student) THEN
+    RETURN;
+  END IF;
+
+  SET LOCAL ROLE ductus_auth;
+  FOR i IN 1 .. 2 LOOP
+    v_tokens := v_tokens || rtrim(translate(encode(
+      sha256(uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid())), 'base64'), '+/', '-_'), '=');
+  END LOOP;
+  PERFORM identity.open_session(c_issuer, v_subjects[1], 'demo-teacher@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_tokens[1], 'UTF8')), 'Petar', 'Kranjčec', true);
+  PERFORM identity.open_session(c_issuer, v_subjects[2], 'demo-student-6@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_tokens[2], 'UTF8')), 'Simulirani', 'Student', false);
+  RESET ROLE;
+  FOR i IN 1 .. 2 LOOP
+    v_ids := v_ids || (SELECT u.id FROM identity.user_account u
+                        WHERE u.oidc_issuer = c_issuer AND u.oidc_subject = v_subjects[i]
+                          AND u.institution_id = v_institution);
+  END LOOP;
+
+  SET LOCAL ROLE ductus_app;
+  -- The student asks, the mentor approves (mentorship, assignment, version 1).
+  PERFORM set_config('app.session_token', v_tokens[2], true);
+  v_request := institution.request_mentorship(v_ids[1], c_work_type);
+  PERFORM set_config('app.session_token', v_tokens[1], true);
+  v_mentorship := app.approve_mentorship_request_once(v_request);
+  SELECT a.id INTO STRICT v_assignment FROM institution.assignment a WHERE a.mentorship_id = v_mentorship;
+
+  -- The student confirms the notice (PRODUCT 5 rule 6), then opens the work.
+  PERFORM set_config('app.session_token', v_tokens[2], true);
+  IF NOT institution.has_acknowledged_current(v_assignment) THEN
+    SELECT a.current_version INTO STRICT v_version FROM institution.assignment a WHERE a.id = v_assignment;
+    PERFORM institution.acknowledge_notice(v_assignment, v_version, 1);
+  END IF;
+  SELECT w.document_id INTO v_document FROM app.open_student_work(v_assignment, true) w
+   WHERE w.outcome = 'opened';
+  IF v_document IS NULL THEN
+    RAISE EXCEPTION 'the mentored work of demo-student-6 did not open';
+  END IF;
+
+  -- The mentor asks for a revision, with the instruction text.
+  PERFORM set_config('app.session_token', v_tokens[1], true);
+  SELECT r.request_id INTO STRICT v_item FROM collaboration.create_revision_request(
+    v_document, c_anchor, 'Izmišljena uputa mentora: objasni pojam komposter jednom rečenicom.', 0) r;
+
+  -- The student opens the request (seen mark) and sends the revision.
+  PERFORM set_config('app.session_token', v_tokens[2], true);
+  PERFORM collaboration.mark_work_items_seen(v_document, ARRAY['revision_request'], ARRAY[v_item]);
+  PERFORM collaboration.send_revision(v_document, 'Izmišljena poruka studenta: dorada je poslana.');
+
+  FOR i IN 1 .. 2 LOOP
+    PERFORM set_config('app.session_token', v_tokens[i], true);
+    IF NOT identity.close_current_session() THEN
+      RAISE EXCEPTION 'demo session % did not close', i;
+    END IF;
+  END LOOP;
+  PERFORM set_config('app.session_token', '', true);
+  RESET ROLE;
+END
+$sent$;

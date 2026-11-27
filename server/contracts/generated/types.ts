@@ -1149,6 +1149,13 @@ export type Operations = {
     success: { status: 200; body: { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "unsupported_media_type" | "already_submitted" | "too_many_attachments" | "attachments_too_large";
   };
+  "student.declaration-conversations.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "conversations": ({ "conversationId": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added"; "throughSeq": number; "messagesSha256": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "student.declaration-second.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -1157,6 +1164,20 @@ export type Operations = {
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "student.declaration-second.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; [key: string]: unknown }; "ai": { "use": "used" | "not_used" | null; [key: string]: unknown }; "confirm": boolean; "questionAnswer"?: { "questionId": string; "text": string } | null };
+    success: { status: 200; body: { "state": "none" | "draft" | "confirmed" | "stale" | "bound"; "submitted": boolean; "currentRevision": number | null; "version": number; "formText": string | null; "currentForm": { "formId": string; "formVersion": number; "formSha256": string; "text": string } | null; "draft": { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used" | null; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string })[]; "externalAttachmentIds": (string)[] }; "confirm": boolean } | null; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added" } | { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string } | null; "declarationSha256": string | null; "uploads": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string })[]; "declarationRequired"?: boolean; "teacherQuestion"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "invalid_json" | "unsupported_media_type" | "invalid_attachment" | "already_submitted" | "form_outdated" | "incomplete" | "declaration_conflict" | "stale_revision" | "mandatory_attachment_missing" | "attachment_stale";
+  };
+  "student.declaration-third.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none" | "draft" | "confirmed" | "stale" | "bound"; "submitted": boolean; "currentRevision": number | null; "version": number; "formText": string | null; "currentForm": { "formId": string; "formVersion": number; "formSha256": string; "text": string } | null; "draft": { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used" | null; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string })[]; "externalAttachmentIds": (string)[] }; "confirm": boolean } | null; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added" } | { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string } | null; "declarationSha256": string | null; "uploads": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string })[]; "declarationRequired"?: boolean; "teacherQuestion"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.declaration-third.put": {
     params: { "assignmentId": string };
     query: undefined;
     body: { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; [key: string]: unknown }; "ai": { "use": "used" | "not_used" | null; [key: string]: unknown }; "confirm": boolean; "questionAnswer"?: { "questionId": string; "text": string } | null };
@@ -1386,6 +1407,13 @@ export type Operations = {
     body: { "image": Blob; "page": string; "note"?: string };
     success: { status: 201; body: { "id": string; "page": string; "note": string | null; "imagePath": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_input";
+  };
+  "student.submission-confirmation-code.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "code": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "student.submission-history.get": {
     params: { "assignmentId": string };
@@ -1772,6 +1800,13 @@ export type Operations = {
     success: { status: 200; body: { "state": "none"; "payload": null; "declarationSha256": null; "question"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null } | { "state": "bound"; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added" } | { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string }; "declarationSha256": string; "question"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.declaration-third.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none"; "payload": null; "declarationSha256": null; "question"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null } | { "state": "bound"; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string; "reason": "transferred_deleted" | "transferred" | "pasted_known" | "student_added" } | { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string }; "declarationSha256": string; "question"?: { "questionId": string; "text": string } | null; "questionAnswer"?: { "questionId": string; "questionText": string; "text": string } | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.declaration.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
@@ -2114,6 +2149,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "documentId": string; "studentId": string; "studentName": string | null; "assignmentId": string; "state": "predano" | "nije_predano" | "nakon_roka" | "ceka"; "prevDocumentId": string | null; "nextDocumentId": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.work.submitted-version.get": {
+    params: { "documentId": string; "revision": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "revision": number; "document": string; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "teacher.working-criteria.get": {
     params: { "documentId": string };

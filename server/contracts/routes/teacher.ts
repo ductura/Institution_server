@@ -9,6 +9,7 @@ import {
   teacherDeclarationConversationGet,
   teacherDeclarationGet,
   teacherDeclarationV2Get,
+  teacherDeclarationV3Get,
 } from "./teacher-declaration.ts";
 import { teacherAssignmentFollowUpGet } from "./teacher-follow-up.ts";
 import { teacherSubmissionDetailGet } from "./teacher-submissions.ts";
@@ -544,6 +545,7 @@ export const teacherRoutes = [
   teacherSubmissionDetailGet,
   teacherDeclarationGet,
   teacherDeclarationV2Get,
+  teacherDeclarationV3Get,
   teacherDeclarationConversationGet,
   teacherMentorshipsGet,
   teacherMentorshipGet,
