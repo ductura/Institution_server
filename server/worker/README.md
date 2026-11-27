@@ -11,7 +11,19 @@ Pozadinski proces Ducture (ARCHITECTURE §2: web i radnik dijele module, a svaki
 
 ## Tko ga zove
 
-Ulazna točka procesa radnika (planirana). Web proces ga ne gradi (D-71, D-102).
+Proces radnika (F4-PM2-R01B): `server/worker-main.ts` (izlaz `dist/worker.js`, `pnpm build`) pokreće sastavljač `server/http/worker-composition.ts` (`createWorkerProcess`), koji gradi sva tri radnika nad jednim poolom, jednim potpisnikom i jednom pohranom. Web proces (`server/server.ts`) ne gradi i ne pokreće radnika (D-71, D-102).
+
+## Pokretanje procesa
+
+`node --disallow-code-generation-from-strings dist/worker.js`. Konfiguracija samo iz okoline, bez zadanih vrijednosti i bez tajni u repou:
+
+- `WORKER_DATABASE_URL`: prijava `ductus_worker` (uloga iz migracije `20261003210000_roles.sql`), pool `worker` u `server/database/registry.ts`; nikad prijava web procesa.
+- `WORKER_EVIDENCE_DOMAIN_ID`: UUID dokazne domene koju proces poslužuje (konfiguracija, nikad polje zahtjeva).
+- Potpisnik i pohrana kao u web procesu (`DUCTUS_KMS_*`, `EVIDENCE_STORAGE_DOMAINS`, razvojni potpisnik samo u razvoju i testu; `server/http/evidence-deps.ts`).
+
+Pogrešna konfiguracija: jedan zapis `startup.refused` po varijabli (bez vrijednosti) i izlaz 78 (EX_CONFIG). SIGTERM ili SIGINT: nijedan novi prolaz, svaki radnik čeka prolaz koji je u tijeku, pool se zatvara, izlaz 0; što ostane do `SHUTDOWN_GRACE_MS` izlazi s 1. Produkcijsku tajnu i okruženje postavlja vlasnik pri deployu; ovaj proces nije u `render.yaml`.
+
+Čitanje dokumenta paketa za kontrolne točke: shema dokumenta 1 (ili bez navedene) s koracima izmjene v1, kao predaja; paket druge sheme ostaje netaknut (`unsupported_document`).
 
 ## Koje podatke dira
 
