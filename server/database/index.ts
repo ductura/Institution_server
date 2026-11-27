@@ -572,6 +572,11 @@ export {
   type TeacherWorkState,
 } from "./teacher-work/index.ts";
 export {
+  createTeacherSubmittedVersion,
+  type SubmittedVersionOutcome,
+  type TeacherSubmittedVersion,
+} from "./teacher-submitted-version/index.ts";
+export {
   createOriginKind,
   type OriginCompositionOutcome,
   type OriginExplainOutcome,

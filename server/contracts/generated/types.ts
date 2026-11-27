@@ -2115,6 +2115,13 @@ export type Operations = {
     success: { status: 200; body: { "documentId": string; "studentId": string; "studentName": string | null; "assignmentId": string; "state": "predano" | "nije_predano" | "nakon_roka" | "ceka"; "prevDocumentId": string | null; "nextDocumentId": string | null }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.work.submitted-version.get": {
+    params: { "documentId": string; "revision": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "revision": number; "document": string; "documentKind"?: "text" | "slides"; "workKind"?: "text" | "slides" | "spreadsheet" }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "teacher.working-criteria.get": {
     params: { "documentId": string };
     query: undefined;

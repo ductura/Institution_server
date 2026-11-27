@@ -156,6 +156,7 @@ import {
   createTeacherWorkingCriteriaRoutesFor,
   createWorkRevisionDueRoutesFor,
   createTeacherWorkRoutesFor,
+  createTeacherSubmittedVersionRoutesFor,
   createTeachingTeamRoutesFor,
   createTextCheckConfigRoute,
   createThesisRoutesFor,
@@ -557,6 +558,10 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
   ["createSourceProofRoutesFor", () => createSourceProofRoutesFor(STAND_IN)],
   ["createTextCheckConfigRoute", () => [createTextCheckConfigRoute(STAND_IN)]],
   ["createTeacherWorkRoutesFor", () => createTeacherWorkRoutesFor(STAND_IN)],
+  [
+    "createTeacherSubmittedVersionRoutesFor",
+    () => createTeacherSubmittedVersionRoutesFor(STAND_IN),
+  ],
   ["createOriginCompositionRoutesFor", () => createOriginCompositionRoutesFor(STAND_IN)],
   ["createAssistantMatchRoutesFor", () => createAssistantMatchRoutesFor(STAND_IN)],
   ["createAiTransferRoutesFor", () => createAiTransferRoutesFor(STAND_IN)],

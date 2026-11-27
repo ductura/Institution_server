@@ -54,6 +54,7 @@ export { createFormatRulesRoutesFor } from "./format-rules/index.ts";
 export { createReturnForRevisionRoutesFor } from "./return-for-revision/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkRoutesFor } from "./teacher-work/index.ts";
+export { createTeacherSubmittedVersionRoutesFor } from "./teacher-submitted-version/index.ts";
 export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";
 export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
 export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
