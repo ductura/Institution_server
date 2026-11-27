@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6343);
+SELECT plan(6344);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -54,7 +54,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': definer RPC with an empty path, only for the application')
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)'),
-               ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)')) f(signature)
+               ('declaration.save_statement_answer(uuid,jsonb,text,jsonb)'),
+               ('declaration.list_conversations(uuid)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -139,6 +140,7 @@ SELECT bag_eq(
         'declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
         'declaration.answer_ref(declaration.question_answer)', 'declaration.bound_answer_of(uuid,uuid,uuid)',
         'declaration.reject_answer_change()', 'declaration.delete_draft_answer()',
+        'declaration.list_conversations(uuid)',
         'declaration.recorded_transfers(uuid,uuid,text,bigint)'],
   'the declaration schema holds exactly these functions'
 );
@@ -153,6 +155,7 @@ SELECT bag_eq(
         'ductus_app declaration.upload_attachment(uuid,text,bytea)',
         'ductus_app declaration.submission_gate(text,bigint)',
         'ductus_app declaration.save_statement_answer(uuid,jsonb,text,jsonb)',
+        'ductus_app declaration.list_conversations(uuid)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)',
         'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)'],
   'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration and bound-answer helpers'
