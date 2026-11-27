@@ -66,11 +66,11 @@ export async function readWorkAccommodation(
     const value = await withActor(
       token,
       async (tx) =>
-        // The read runs only beside a live actor: without one the function
-        // refuses (ZD403) before live is known, and the answer would be 404.
+        // app.current_actor() is not a set: without a session it is one row
+        // of nulls, so live is its user_id and the read runs only beside one.
         (
           await tx.query<{ live: unknown; marked: unknown }>(
-            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, $2) FROM app.current_actor()) AS marked",
+            "SELECT (SELECT user_id IS NOT NULL FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, $2) FROM app.current_actor() a WHERE a.user_id IS NOT NULL) AS marked",
             [assignmentId, studentId],
           )
         ).rows[0],
@@ -99,7 +99,7 @@ export async function readOwnWorkAccommodation(
       async (tx) =>
         (
           await tx.query<{ live: unknown; marked: unknown }>(
-            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, a.user_id) FROM app.current_actor() a) AS marked",
+            "SELECT (SELECT user_id IS NOT NULL FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, a.user_id) FROM app.current_actor() a WHERE a.user_id IS NOT NULL) AS marked",
             [assignmentId],
           )
         ).rows[0],

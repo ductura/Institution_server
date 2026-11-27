@@ -37,7 +37,7 @@ describe("work accommodation RPC calls", () => {
       });
       expect(withActor).toHaveBeenCalledWith(TOKEN, expect.any(Function));
       expect(query).toHaveBeenCalledExactlyOnceWith(
-        "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, $2) FROM app.current_actor()) AS marked",
+        "SELECT (SELECT user_id IS NOT NULL FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, $2) FROM app.current_actor() a WHERE a.user_id IS NOT NULL) AS marked",
         [ASSIGNMENT, STUDENT],
       );
     }
@@ -92,7 +92,7 @@ describe("work accommodation RPC calls", () => {
       });
       expect(withActor).toHaveBeenCalledWith(TOKEN, expect.any(Function));
       expect(query).toHaveBeenCalledExactlyOnceWith(
-        "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, a.user_id) FROM app.current_actor() a) AS marked",
+        "SELECT (SELECT user_id IS NOT NULL FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, a.user_id) FROM app.current_actor() a WHERE a.user_id IS NOT NULL) AS marked",
         [ASSIGNMENT],
       );
     }
