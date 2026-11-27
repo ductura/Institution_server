@@ -92,6 +92,7 @@ it.each([
   ["v2 GET", "GET", "declaration-v2", 501, 503, false],
   ["v2 PUT", "PUT", "declaration-v2", 501, 503, false],
   ["v2 GET", "GET", "declaration-v2", 5000, 503, false],
+  ["v2 PUT", "PUT", "declaration-v2", 5000, 503, false],
   ["v3 GET", "GET", "declaration-v3", 500, 200, false],
   ["v3 PUT", "PUT", "declaration-v3", 500, 200, false],
   ["v3 GET", "GET", "declaration-v3", 501, 200, false],
@@ -131,6 +132,7 @@ it.each([
 it.each([
   ["teacher.declaration-second.get", "declaration-v2", 500, 200],
   ["teacher.declaration-second.get", "declaration-v2", 501, 503],
+  ["teacher.declaration-second.get", "declaration-v2", 5000, 503],
   ["teacher.declaration-third.get", "declaration-v3", 500, 200],
   ["teacher.declaration-third.get", "declaration-v3", 501, 200],
   ["teacher.declaration-third.get", "declaration-v3", 5000, 200],

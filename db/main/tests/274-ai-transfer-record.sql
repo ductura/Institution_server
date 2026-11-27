@@ -216,5 +216,29 @@ SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.document_submission_state('
   'the web role cannot read the submission state');
 SELECT is((SELECT count(*)::int FROM assistant.ai_transfer), 5, 'the controls left every record in place');
 
+-- 7. At most assistant.ai_transfer_max() transfers per work (AI-RECORDED-5000): the
+-- 5000th is recorded, the 5001st refused. The fixture fills the work up to 4999 with
+-- copies of one record under new ids, written as the test runner.
+SELECT is(assistant.ai_transfer_max(), 5000, 'a work holds at most 5000 transfers');
+INSERT INTO assistant.ai_transfer
+  (transfer_id, institution_id, student_id, document_id, conversation_id, response_id, provider_id, model_id,
+   purpose_catalog_version, purpose_id, phase_id, text_sha256, transferred_at, record_text, record_sha256)
+SELECT c.id, s.institution_id, s.student_id, s.document_id, s.conversation_id, s.response_id, s.provider_id,
+       s.model_id, s.purpose_catalog_version, s.purpose_id, s.phase_id, s.text_sha256, s.transferred_at,
+       c.record, encode(sha256(convert_to(c.record, 'UTF8')), 'hex')
+  FROM (SELECT * FROM assistant.ai_transfer WHERE document_id = 'doc-a' LIMIT 1) s
+ CROSS JOIN generate_series(1, 4999 - (SELECT count(*)::int FROM assistant.ai_transfer WHERE document_id = 'doc-a')) n
+ CROSS JOIN LATERAL (SELECT ('00000000-0000-4000-9000-' || lpad(to_hex(n), 12, '0'))::uuid AS id) i
+ CROSS JOIN LATERAL (SELECT i.id, assistant.ai_transfer_canonical(i.id, s.document_id, s.conversation_id,
+       s.response_id, s.provider_id, s.model_id, s.purpose_catalog_version, s.purpose_id, s.phase_id,
+       s.text_sha256, s.transferred_at) AS record) c;
+SELECT is((SELECT count(*)::int FROM assistant.ai_transfer WHERE document_id = 'doc-a'), 4999,
+  'fixture: the work holds 4999 transfers');
+SELECT matches(pg_temp.transfer('ana', 'm2', 'Kraj.'),
+  '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', 'the 5000th transfer is recorded');
+SELECT is(pg_temp.transfer('ana', 'm2', 'Kraj.'), 'ZD422: invalid input', 'the 5001st transfer is refused');
+SELECT is((SELECT count(*)::int FROM assistant.ai_transfer WHERE document_id = 'doc-a'), 5000,
+  'the refusal wrote nothing');
+
 SELECT * FROM finish();
 ROLLBACK;
