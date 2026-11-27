@@ -488,13 +488,21 @@ function readBlock(node: DocumentNodeV4, at: string, snapshot: ExportSnapshot, r
       push({ at, formula: node.tex });
       return;
     case "table":
-      if ((node.merges ?? []).length > 0) {
-        reading.problems.push(`${at}: merged cells have no DOCX form written down`);
-        return;
-      }
       push({ at: `${at} caption`, caption: node.title ?? "" });
+      // As written: the left cell of a merged area stands once, wide; the rows it spans
+      // continue it with an empty cell; the cells it covers to the right are not written.
       node.rows.forEach((row, r) =>
-        row.forEach((cell, c) => push({ at: `${at} cell ${r},${c}`, cell })),
+        row.forEach((cell, c) => {
+          const area = (node.merges ?? []).find(
+            (m) =>
+              r >= m.row && r < m.row + m.rowSpan && c >= m.column && c < m.column + m.columnSpan,
+          );
+          if (area !== undefined && c !== area.column) return;
+          push({
+            at: `${at} cell ${r},${c}`,
+            cell: area !== undefined && r !== area.row ? "" : cell,
+          });
+        }),
       );
       push({ at: `${at} source`, source: node.source ? `${LABELS.source} ${node.source}` : "" });
       return;
@@ -921,6 +929,25 @@ describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () =
         `docx: prints ${JSON.stringify(text)}, which the snapshot marks omitted`,
       );
     }
+  });
+
+  it("reads a table with merged cells: the same text in all channels", async () => {
+    const merged = {
+      ...INVENTED_WORK,
+      nodes: INVENTED_WORK.nodes.map((node) =>
+        node.type === "table"
+          ? {
+              ...node,
+              rows: [node.rows[0]!, node.rows[1]!, ["", "Kompostera"]],
+              merges: [{ row: 1, column: 0, rowSpan: 2, columnSpan: 1 }],
+            }
+          : node,
+      ),
+    } as CanonicalDocumentV4;
+    const snapshot = freezeExportSnapshot({ ...SNAPSHOT_INPUT, document: merged });
+    const stored = new TextEncoder().encode(canonicalizeJcs(merged));
+    const input = await channels({ stored, snapshot, docx: docxOf(snapshot) });
+    expect(await compareDisplayChannels(input)).toEqual([]);
   });
 
   it("in the DOCX: a table cell changed or lost", async () => {
