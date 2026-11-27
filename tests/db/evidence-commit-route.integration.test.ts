@@ -94,7 +94,7 @@ const { chain } = JSON.parse(
 ) as {
   chain: {
     segments: { segment: GoldenSegment }[];
-    documentStates: { value: unknown }[];
+    documentStates: { value: Record<string, unknown> }[];
   };
 };
 
@@ -335,7 +335,11 @@ describe("evidence/commit through a real server over real PostgreSQL", () => {
       receiptKeys: EvidenceDomainKey[];
     };
     const template = chain.segments[0]!.segment;
-    const document = canonicalizeJcs(chain.documentStates[1]!.value);
+    const document = canonicalizeJcs({
+      ...chain.documentStates[1]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
     const segment = canonicalizeJcs({
       ...template,
       documentId,
@@ -448,7 +452,11 @@ describe("evidence/commit under protocol 2 through a real server over real Postg
       receiptKeys: EvidenceDomainKey[];
     };
     const template = chain.segments[0]!.segment;
-    const document = canonicalizeJcs(chain.documentStates[1]!.value);
+    const document = canonicalizeJcs({
+      ...chain.documentStates[1]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
     const segment = canonicalizeJcs({
       ...template,
       documentId,
@@ -637,7 +645,11 @@ describe("the entry point mounts evidence/commit over its own environment", () =
       evidenceProfileId: string;
     };
     const template = chain.segments[0]!.segment;
-    const document = canonicalizeJcs(chain.documentStates[1]!.value);
+    const document = canonicalizeJcs({
+      ...chain.documentStates[1]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
     const segment = canonicalizeJcs({
       ...template,
       documentId,

@@ -7,14 +7,14 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createEditStepsV1Replayer } from "../../../server/external/storage/edit-steps-v1-replayer.ts";
+import { createEditStepsV2Replayer } from "../../../server/external/storage/edit-steps-v2-replayer.ts";
 import { InMemoryEvidencePayloadStore } from "../../../server/external/storage/in-memory-evidence-payload-store.ts";
 import { decideSubmission } from "../../../server/evidence/submission-decision.ts";
 import type { InstitutionEvidencePayloadReader } from "../../../server/external/storage/port.ts";
 import {
-  REVISION_ZERO_JCS,
+  REVISION_ZERO_V2_JCS,
   REVISION_ZERO_NODE_ID,
-  REVISION_ZERO_SHA256,
+  REVISION_ZERO_V2_SHA256,
 } from "../../../server/domain/document/revision-zero.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../../../server/domain/forensics/jcs.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
@@ -58,7 +58,7 @@ const [institutionId, teacherId, studentId, classmateId, courseId, assignmentId]
   () => randomUUID(),
 );
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
-const replayer = createEditStepsV1Replayer();
+const replayer = createEditStepsV2Replayer();
 const store = new InMemoryEvidencePayloadStore();
 let appPool: pg.Pool;
 let withActor: WithActor;
@@ -66,10 +66,10 @@ let dir: string;
 let documentId: string;
 let context: EvidenceCommitContext;
 let requestId: string;
-const contentHashes: string[] = [REVISION_ZERO_SHA256];
+const contentHashes: string[] = [REVISION_ZERO_V2_SHA256];
 const chain = {
-  document: replayer.load(JSON.parse(REVISION_ZERO_JCS) as JcsJsonValue),
-  hash: REVISION_ZERO_SHA256,
+  document: replayer.load(JSON.parse(REVISION_ZERO_V2_JCS) as JcsJsonValue),
+  hash: REVISION_ZERO_V2_SHA256,
   head: null as string | null,
   sequence: 0,
 };
@@ -232,7 +232,10 @@ beforeAll(async () => {
       [assignmentId],
     ),
   );
-  expect(opened.rows[0]).toMatchObject({ outcome: "opened", document_hash: REVISION_ZERO_SHA256 });
+  expect(opened.rows[0]).toMatchObject({
+    outcome: "opened",
+    document_hash: REVISION_ZERO_V2_SHA256,
+  });
   documentId = opened.rows[0]!.document_id;
   const resolved = await createEvidenceCommitter(withActor, signer()).readContext(
     token,

@@ -92,7 +92,7 @@ const { chain } = JSON.parse(
 ) as {
   chain: {
     segments: { segment: GoldenSegment }[];
-    documentStates: { value: unknown }[];
+    documentStates: { value: Record<string, unknown> }[];
   };
 };
 
@@ -296,7 +296,11 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
     documentId = body.documentId;
     start = Buffer.from(body.document, "base64").toString("utf8");
     const template = chain.segments[0]!.segment;
-    const document = canonicalizeJcs(chain.documentStates[1]!.value);
+    const document = canonicalizeJcs({
+      ...chain.documentStates[1]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
     segment = canonicalizeJcs({
       ...template,
       documentId,
@@ -405,8 +409,16 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
       segmentCount: number;
     };
     const template = chain.segments[0]!.segment;
-    const before = canonicalizeJcs(chain.documentStates[1]!.value);
-    const after = canonicalizeJcs(chain.documentStates[2]!.value);
+    const before = canonicalizeJcs({
+      ...chain.documentStates[1]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
+    const after = canonicalizeJcs({
+      ...chain.documentStates[2]!.value,
+      schemaVersion: 2,
+      sources: [],
+    });
     const second = canonicalizeJcs({
       ...template,
       documentId,

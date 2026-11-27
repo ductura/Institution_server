@@ -53,7 +53,7 @@ SELECT is(pg_temp.logged(), '-', 'and nothing is logged');
 -- 2. Ana writes, confirms her declaration and submits.
 SELECT is(pg_temp.call('ana', pg_temp.val('pkg_m1'), 'm-request-1',
     pg_temp.descriptor(p_package => pg_temp.val('pkg_m1'), p_document => pg_temp.val('doc_m1'), p_segment => 'segment-m-1'),
-    0, evidence.revision_zero_document(), repeat('d', 64), repeat('b', 64)),
+    0, evidence.revision_zero_document_v2(), repeat('d', 64), repeat('b', 64)),
   'reserved', 'fixture: Ana commits revision 1');
 INSERT INTO ref SELECT 'saved', pg_temp.ask('ana', format('SELECT declaration.save_statement(%L, %L::jsonb, %L)',
   pg_temp.id('zm1'), pg_temp.statement_body(), pg_temp.statement_form()));

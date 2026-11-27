@@ -540,7 +540,7 @@ describe("evidence commit context over real PostgreSQL with RLS", () => {
         // SRV-V14-SHEET-COMMIT: the kind of the work, read from evidence.document.
         documentKind: "text",
         // SRV-7F: a work opened today is v1, read from its revision 0.
-        documentSchemaVersion: 1,
+        documentSchemaVersion: 2,
         state: {
           currentRevision: 0,
           documentHash: mia.documentHash,

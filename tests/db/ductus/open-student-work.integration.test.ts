@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { REVISION_ZERO_SHA256 } from "../../../server/domain/document/revision-zero.ts";
+import { REVISION_ZERO_V2_SHA256 } from "../../../server/domain/document/revision-zero.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 import { createActorReader, createWorkOpener } from "../../../server/database/index.ts";
 import { createEvidenceOpenRoute } from "../../../server/http/index.ts";
@@ -281,7 +281,7 @@ describe("opening a student's work concurrently", () => {
     expect(firstRow).toMatchObject({
       outcome: "opened",
       current_revision: "0",
-      document_hash: REVISION_ZERO_SHA256,
+      document_hash: REVISION_ZERO_V2_SHA256,
     });
     expect(secondRow).toEqual(firstRow);
     const counts = await admin.query<{
