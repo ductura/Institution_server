@@ -2,7 +2,11 @@
 -- F4-V13-R01 (Ductus#2059, order of 27. 11. 2026; WEB docs/nalazi/
 -- pregled-funkcija-f4.md, row V13-R01). app.open_student_work opens a work of
 -- a slides assignment: it answered 'not_configured' for any kind but text, so
--- no student could start a slides work on a real stack.
+-- no student could start a slides work on a real stack. The same function
+-- also opens a spreadsheet work (the aim of the open SRV#942, migration
+-- 20261220580000), so that whichever of the two PRs is merged first, this one
+-- is the last definition and covers all three kinds; the spreadsheet revision
+-- 0 is written here as a literal and needs nothing from that migration.
 --
 --   evidence.slides_revision_zero_document()  the exact JCS bytes of revision
 --                   0 of every slides work (contract section 7): one slide of
@@ -15,8 +19,9 @@
 --                   assignment now starts a work of kind slides from that
 --                   revision 0 (document, revision, checkpoint and package in
 --                   one transaction, as for text); a text assignment is as
---                   before; a spreadsheet assignment is still 'not_configured'
---                   (its revision 0 is a later task). A work that exists opens
+--                   before; a spreadsheet assignment starts a work of kind spreadsheet from the
+--                   revision 0 of server/domain/sheet (one empty sheet List1, 100 rows,
+--                   10 columns; SHEET_REVISION_ZERO_SHA256). A work that exists opens
 --                   as before, whatever the assignment says now.
 --
 -- No new table, no grant change, no API field (the contract already has
@@ -81,16 +86,16 @@ BEGIN
     SELECT pg_catalog.array_agg(d.id) INTO v_domains FROM evidence.domain d
      WHERE d.institution_id = v_actor.institution_id;
     -- The kind of the work is the kind of its assignment, fixed at the start,
-    -- and with it the revision 0 the work begins from. A spreadsheet has none
-    -- here yet.
+    -- and with it the revision 0 the work begins from.
     v_kind := app.assignment_document_kind(p_assignment_id);
-    IF pg_catalog.cardinality(v_domains) IS DISTINCT FROM 1 OR v_kind NOT IN ('text', 'slides') THEN
+    IF pg_catalog.cardinality(v_domains) IS DISTINCT FROM 1 OR v_kind NOT IN ('text', 'slides', 'spreadsheet') THEN
       RETURN QUERY SELECT 'not_configured'::text, NULL::text, NULL::text, NULL::bigint, NULL::text, NULL::text,
         NULL::bigint, NULL::text;
       RETURN;
     END IF;
     v_revision_zero := CASE v_kind
       WHEN 'slides' THEN evidence.slides_revision_zero_document()
+      WHEN 'spreadsheet' THEN '{"kind":"spreadsheet","schemaVersion":1,"sheets":[{"cells":{},"columns":10,"id":"00000000-0000-4000-8000-000000000000","name":"List1","rows":100}]}'::text
       ELSE evidence.revision_zero_document() END;
     v_project_id := pg_catalog.gen_random_uuid()::text;
     INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id)

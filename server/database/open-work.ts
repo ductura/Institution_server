@@ -55,7 +55,7 @@ export type OpenedWork = {
   lastSignedAt: string | null;
   /**
    * SRV-V14-KIND-ENUM: the kind of the work as the database recorded it when the work started
-   * (evidence.document.document_kind). app.open_student_work opens text and slides (F4-V13-R01).
+   * (evidence.document.document_kind). app.open_student_work opens text, slides and spreadsheet.
    */
   workKind?: "text" | "slides" | "spreadsheet";
 };
@@ -108,10 +108,11 @@ const OPEN_SQL = `SELECT outcome, document_id, evidence_profile_id, current_revi
 // Under RLS the session sees only its own institution's own documents; the kind is written
 // once, when the work starts, and never updated.
 const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
-// A Map, not an object: a value such as `__proto__` is no kind. A spreadsheet work is not opened.
+// A Map, not an object: a value such as `__proto__` is no kind.
 const OPENED_KINDS = new Map<unknown, RevisionZeroKind>([
   ["text", "text"],
   ["slides", "slides"],
+  ["spreadsheet", "spreadsheet"],
 ]);
 // DAN-289 O2: whether the caller's own work for the assignment is submitted.
 const SUBMITTED_SQL = "SELECT app.work_submitted($1::uuid) AS submitted";
@@ -277,7 +278,7 @@ async function open(
       receiptKeys: keys,
       submitted,
       lastSignedAt,
-      workKind: kind as "text" | "slides",
+      workKind: kind,
     },
   };
 }

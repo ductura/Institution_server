@@ -15,6 +15,7 @@ import {
   SLIDES_REVISION_ZERO_SHA256,
 } from "../domain/index.ts";
 
+import { SHEET_REVISION_ZERO_SHA256 } from "./evidence-work-version.ts";
 import {
   count,
   createWorkOpener,
@@ -138,6 +139,19 @@ describe("createWorkOpener, slides (F4-V13-R01)", () => {
     expect(result.value.revisionZeroHash).toBe(SLIDES_REVISION_ZERO_SHA256);
   });
 
+  it("opens a spreadsheet work: kind spreadsheet, version 1, the sheet revision 0 hash", async () => {
+    const { open } = opener({
+      open: [{ ...OPENED, document_hash: SHEET_REVISION_ZERO_SHA256 }],
+      kind: [{ [KIND]: "spreadsheet" }],
+      revisionZero: [{ content_hash: SHEET_REVISION_ZERO_SHA256 }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.workKind).toBe("spreadsheet");
+    expect(result.value.schemaVersion).toBe(1);
+  });
+
   it("refuses a slides work whose revision 0 is the text one, and the other way round", async () => {
     const slidesKindTextHash = opener({ kind: [{ [KIND]: "slides" }] });
     expect(await slidesKindTextHash.open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
@@ -148,13 +162,8 @@ describe("createWorkOpener, slides (F4-V13-R01)", () => {
     expect(await textKindSlidesHash.open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
   });
 
-  it("refuses a kind it does not open: spreadsheet, unknown, none, two rows", async () => {
-    for (const kind of [
-      [{ [KIND]: "spreadsheet" }],
-      [{ [KIND]: "__proto__" }],
-      [],
-      [{ [KIND]: "text" }, { [KIND]: "text" }],
-    ]) {
+  it("refuses a kind it does not open: unknown, none, two rows", async () => {
+    for (const kind of [[{ [KIND]: "__proto__" }], [], [{ [KIND]: "text" }, { [KIND]: "text" }]]) {
       const { open } = opener({ kind });
       expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
     }

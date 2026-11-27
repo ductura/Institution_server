@@ -231,19 +231,13 @@ FROM (VALUES ('anon', 'no session'), ('expired', 'an expired session'), ('closed
 SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_after_ana), 'the refused calls wrote nothing');
 
 -- SRV-V13-MIG-VRSTA / F4-V13-R01: the kind of the work is the kind of its
--- assignment, fixed when the work starts. Dora acknowledges Z1 now. A
--- spreadsheet assignment has no revision 0 here, so nothing is made for her;
--- a slides assignment starts a slides work from the slides revision 0; once
--- Z1 stays a slides assignment for the rest of this file.
+-- assignment, fixed when the work starts. Dora acknowledges Z1 now; with Z1
+-- a slides assignment her work starts from the slides revision 0, and Z1
+-- stays a slides assignment for the rest of this file.
 SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('ana', 'z1')), 'text',
   'SRV-V13-MIG-VRSTA: the work of a text assignment carries kind text');
 INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
 VALUES (pg_temp.id('z1'), 2, pg_temp.id('dora'), pg_temp.id('fak_a'));
-UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = pg_temp.id('z1');
-CREATE TEMP TABLE print_sheet AS SELECT pg_temp.evidence_print() AS v;
-SELECT is(pg_temp.open('dora', pg_temp.id('z1')), 'not_configured|||||||',
-  'F4-V13-R01: a spreadsheet assignment is not started before its revision 0 exists');
-SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_sheet), 'and nothing is written');
 UPDATE institution.assignment SET document_kind = 'slides' WHERE id = pg_temp.id('z1');
 SELECT is(pg_temp.open('dora', pg_temp.id('z1'), false), 'not_started|||||||',
   'F4-V13-R01: without a request to start, a slides assignment starts nothing');
@@ -270,6 +264,7 @@ SELECT is(pg_temp.open('boris', pg_temp.id('z1')), 'not_found|||||||',
   'F4-V13-R01: another student still gets not_found for a slides assignment');
 
 
+
 -- The unique key holds also against the evidence role itself.
 SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', format(
   $q$ INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id) VALUES ('second', %L, %L, %L) $q$,
@@ -292,7 +287,17 @@ INSERT INTO evidence.domain (id, institution_id, region) VALUES
 SELECT is(pg_temp.open('tomo', pg_temp.id('z3')), 'not_configured|||||||', 'two domains are not guessed between: not_configured');
 SELECT is(pg_temp.works('tomo'), 0, 'neither writes a work');
 DELETE FROM evidence.domain WHERE id = '00000000-0000-4000-8000-0000000000d3';
+-- F4-V13-R01: the same function opens a spreadsheet work, from the sheet revision 0.
+UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = pg_temp.id('z3');
 SELECT matches(pg_temp.open('tomo', pg_temp.id('z3')), '^opened\|', 'with one domain the student of fak-b opens the work');
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('tomo', 'z3')), 'spreadsheet',
+  'F4-V13-R01: a spreadsheet assignment writes kind spreadsheet into the work');
+SELECT is((SELECT d.current_content_hash FROM evidence.document d WHERE d.id = pg_temp.doc('tomo', 'z3')),
+  '70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4',
+  'F4-V13-R01: and its hash is the spreadsheet revision 0 hash');
+SELECT is((SELECT c.body FROM evidence.document_checkpoint c WHERE c.document_id = pg_temp.doc('tomo', 'z3') AND c.revision = 0),
+  '{"kind":"spreadsheet","schemaVersion":1,"sheets":[{"cells":{},"columns":10,"id":"00000000-0000-4000-8000-000000000000","name":"List1","rows":100}]}',
+  'F4-V13-R01: revision 0 of the work is the spreadsheet revision 0, byte for byte');
 SELECT is((SELECT evidence_domain_id FROM evidence.package WHERE document_id = pg_temp.doc('tomo', 'z3')),
   '00000000-0000-4000-8000-0000000000d2'::uuid, 'his package gets the domain of his own institution');
 

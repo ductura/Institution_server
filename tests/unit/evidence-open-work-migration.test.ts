@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { SLIDES_REVISION_ZERO_HASH } from "../../server/database/evidence-work-version.ts";
+import {
+  SHEET_REVISION_ZERO_SHA256,
+  SLIDES_REVISION_ZERO_HASH,
+} from "../../server/database/evidence-work-version.ts";
+import { sheetRevisionZeroDocument } from "../../server/domain/sheet/index.ts";
 import {
   SLIDES_REVISION_ZERO_JCS,
   SLIDES_REVISION_ZERO_SHA256,
@@ -55,6 +59,12 @@ describe("open_student_work slides migration", () => {
     expect(createHash("sha256").update(SLIDES_REVISION_ZERO_JCS, "utf8").digest("hex")).toBe(
       SLIDES_REVISION_ZERO_SHA256,
     );
+  });
+
+  it("stores the spreadsheet revision 0 bytes of server/domain/sheet, hash SHEET_REVISION_ZERO_SHA256", () => {
+    const jcs = canonicalizeJcs(sheetRevisionZeroDocument());
+    expect(SLIDES_MIGRATION).toContain(`'${jcs}'::text`);
+    expect(createHash("sha256").update(jcs, "utf8").digest("hex")).toBe(SHEET_REVISION_ZERO_SHA256);
   });
 
   it("is the hash the opener names a slides work by", () => {
