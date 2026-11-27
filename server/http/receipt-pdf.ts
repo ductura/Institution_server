@@ -1,7 +1,11 @@
 import { receiptPdfHr } from "../../locales/index.ts";
 import { ROUTES } from "../contracts/index.ts";
 import { renderReceiptPdf } from "../downloads/index.ts";
-import { createMySubmissionStateReader } from "../database/index.ts";
+import {
+  createMySubmissionConfirmationCodeReader,
+  createMySubmissionStateReader,
+  type MySubmissionConfirmationCodeReader,
+} from "../database/index.ts";
 import {
   readStudentSubmission,
   readTeacherSubmission,
@@ -21,10 +25,21 @@ type ReadReceipt = (
   studentId?: string,
 ) => Promise<StudentSubmissionAnswer>;
 
+/** Dizajn 1.1: the bound confirmation code of the same submission, null before it. */
+type ReadCode = (
+  token: string,
+  assignmentId: string,
+  studentId?: string,
+) => ReturnType<MySubmissionConfirmationCodeReader["read"]>;
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROBLEMS = { 401: "unauthorized", 404: "not_found", 503: "unavailable" } as const;
 
-export function createReceiptPdfRoutes(read: ReadReceipt, origin: string | null): Route[] {
+export function createReceiptPdfRoutes(
+  read: ReadReceipt,
+  readCode: ReadCode,
+  origin: string | null,
+): Route[] {
   return (["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const).map((id) => {
     const contract = ROUTES.find((route) => route.id === id);
     if (contract === undefined) throw new Error(`no contract ${id}`);
@@ -56,7 +71,14 @@ export function createReceiptPdfRoutes(read: ReadReceipt, origin: string | null)
           if (studentId !== undefined && receipt.payload.principalId !== studentId) {
             return sendProblem(response, 503, "unavailable");
           }
-          const pdf = await renderReceiptPdf(receipt, origin, receiptPdfHr);
+          // The code is read after the receipt, under the same session; a failed
+          // read is 503, never a PDF quietly without the code it should carry.
+          const code = await readCode(token, assignmentId, studentId);
+          if (!code.ok) {
+            reportServerError("route", new Error(code.error.code), requestIdOf(response), id);
+            return sendProblem(response, 503, "unavailable");
+          }
+          const pdf = await renderReceiptPdf(receipt, origin, receiptPdfHr, code.value);
           return sendJson(response, 200, {
             filename: "potvrda-predaje.pdf",
             pdfBase64: Buffer.from(pdf).toString("base64"),
@@ -73,18 +95,24 @@ export function createReceiptPdfRoutes(read: ReadReceipt, origin: string | null)
 /**
  * The two PDF routes over main's application withActor (INT-31): the student
  * reads their own receipt, the teacher one student's, through the same reader
- * as student.submission.get and teacher.submission-receipt.get.
+ * as student.submission.get and teacher.submission-receipt.get, and the code
+ * through the reader of the two confirmation-code routes.
  */
 export function createReceiptPdfRoutesFor(
   main: Pick<Databases["main"], "withActor">,
   origin: string | null,
 ): Route[] {
   const reader = createMySubmissionStateReader(main.withActor);
+  const codes = createMySubmissionConfirmationCodeReader(main.withActor);
   return createReceiptPdfRoutes(
     (token, assignmentId, studentId) =>
       studentId === undefined
         ? readStudentSubmission(reader, token, assignmentId)
         : readTeacherSubmission(reader, token, assignmentId, studentId),
+    (token, assignmentId, studentId) =>
+      studentId === undefined
+        ? codes.read(token, assignmentId)
+        : codes.teacherRead(token, assignmentId, studentId),
     origin,
   );
 }
