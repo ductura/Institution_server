@@ -3,7 +3,7 @@
 // when their SHA-256 is the one the document carries and they are a PNG or a JPEG
 // (contract v4 §5.2): anything else is printed as unavailable, never other bytes.
 import { createHash } from "node:crypto";
-import { crc32 } from "node:zlib";
+import { crc32 } from "./zip.ts";
 
 export type ExportImageFile = { readonly bytes: Uint8Array };
 /** Attachment id to its stored bytes; the caller supplies only the attachments of this work. */
@@ -16,6 +16,10 @@ export type VerifiedImage = {
   readonly height: number;
 };
 
+/** Chunk names as bytes: "IHDR", "IDAT", "IEND". */
+const IHDR = [0x49, 0x48, 0x44, 0x52];
+const IDAT = [0x49, 0x44, 0x41, 0x54];
+const IEND = [0x49, 0x45, 0x4e, 0x44];
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 /** A PNG is whole when it is IHDR, then chunks with correct CRCs, at least one IDAT, and IEND last. */
@@ -27,12 +31,12 @@ function pngIsWhole(bytes: Uint8Array, view: DataView): boolean {
     const length = view.getUint32(at);
     const end = at + 12 + length;
     if (end > bytes.length) return false;
-    const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
-    if (first && (type !== "IHDR" || length !== 13)) return false;
+    const is = (name: readonly number[]) => name.every((b, i) => bytes[at + 4 + i] === b);
+    if (first && (!is(IHDR) || length !== 13)) return false;
     first = false;
     if (crc32(bytes.subarray(at + 4, end - 4)) !== view.getUint32(end - 4)) return false;
-    if (type === "IDAT") data = true;
-    if (type === "IEND") return data && end === bytes.length;
+    if (is(IDAT)) data = true;
+    if (is(IEND)) return data && end === bytes.length;
     at = end;
   }
   return false;

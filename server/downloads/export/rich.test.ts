@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { crc32 } from "node:zlib";
+import { crc32 } from "./zip.ts";
 import { describe, expect, it } from "vitest";
 import { newNodeId, type CanonicalDocumentV4, type NodeId } from "../../domain/index.ts";
 import { buildExportModel, renderDocx, type ExportCover, type ExportLabels } from "./index.ts";
