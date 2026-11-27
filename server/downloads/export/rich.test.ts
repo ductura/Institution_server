@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { crc32 } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { newNodeId, type CanonicalDocumentV4, type NodeId } from "../../domain/index.ts";
 import { buildExportModel, renderDocx, type ExportCover, type ExportLabels } from "./index.ts";
@@ -30,14 +31,28 @@ const id = (n: number): NodeId =>
   newNodeId(() => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
 const ATT = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 
-/** A PNG header with the given size: enough for the export, which only reads the size. */
+/** A whole PNG of the given size: IHDR, one IDAT and IEND, each with its CRC. */
 function png(width: number, height: number): Uint8Array {
-  const out = new Uint8Array(33);
-  out.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
-  const view = new DataView(out.buffer);
-  view.setUint32(16, width);
-  view.setUint32(20, height);
-  return out;
+  const chunk = (type: string, data: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(12 + data.length);
+    const view = new DataView(out.buffer);
+    view.setUint32(0, data.length);
+    out.set(new TextEncoder().encode(type), 4);
+    out.set(data, 8);
+    view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+    return out;
+  };
+  const header = new Uint8Array(13);
+  new DataView(header.buffer).setUint32(0, width);
+  new DataView(header.buffer).setUint32(4, height);
+  header.set([8, 0, 0, 0, 0], 8);
+  const parts = [
+    Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a),
+    chunk("IHDR", header),
+    chunk("IDAT", Uint8Array.of(0)),
+    chunk("IEND", new Uint8Array(0)),
+  ];
+  return Uint8Array.from(parts.flatMap((p) => [...p]));
 }
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 
@@ -177,6 +192,19 @@ describe("image (contract v4 §5.2)", () => {
       const parts = xmlOf(doc, images);
       expect(parts.get("word/document.xml")).toContain("Slika nije dostupna.");
       expect([...parts.keys()].some((k) => k.startsWith("word/media/"))).toBe(false);
+    }
+  });
+
+  it("prints a cut or damaged image as unavailable even when its hash matches", () => {
+    const whole = png(200, 100);
+    const cut = whole.subarray(0, whole.length - 12);
+    const flipped = Uint8Array.from(whole);
+    flipped[29] = 0xff;
+    for (const damaged of [cut, flipped]) {
+      const damagedNode = { ...node, attachmentSha256: sha(damaged) };
+      const parts = xmlOf(docOf(damagedNode), new Map([[ATT, { bytes: damaged }]]));
+      expect(parts.get("word/document.xml")).toContain("Slika nije dostupna.");
+      expect(parts.has("word/media/image1.png")).toBe(false);
     }
   });
 
