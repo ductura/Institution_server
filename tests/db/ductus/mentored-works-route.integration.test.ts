@@ -180,6 +180,14 @@ beforeAll(async () => {
                 ($1, 'bachelor_thesis', 'prohibited', '{}', 'basic', false)`,
         [faculty],
       );
+      // Version 1 of the operator, which the mentored works name (M2.12-P01b).
+      await client.query(
+        `INSERT INTO institution.faculty_rule_version
+           (institution_id, work_type, version_no, ai_policy, ai_purposes, evidence_profile, import_allowed, origin)
+         SELECT institution_id, work_type, 1, ai_policy, ai_purposes, evidence_profile, import_allowed, 'operator'
+         FROM institution.faculty_work_rule WHERE institution_id = $1`,
+        [faculty],
+      );
     }
     for (const name of names) {
       const { id, token, faculty } = people[name];
@@ -302,6 +310,7 @@ afterAll(async () => {
       "institution.course_member",
       "institution.course",
       "institution.faculty_work_rule",
+      "institution.faculty_rule_version",
       "institution.institution_role",
       "identity.person_name",
       "identity.session",
