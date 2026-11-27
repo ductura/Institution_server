@@ -14,9 +14,7 @@ SET LOCAL lc_messages TO 'C';
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
 \ir fixtures/mentorship.inc
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
--- no_plan as in 209 and 228: every section is rolled back to its savepoint,
--- which would reset the counter a fixed plan is checked against.
-SELECT no_plan();
+SELECT plan(36);
 
 CREATE TEMP TABLE demo_conversation (
   conversation_id uuid PRIMARY KEY,
@@ -145,6 +143,11 @@ FROM unnest(ARRAY[
   'SELECT explanation_text FROM declaration.mismatch_explanation',
   'UPDATE declaration.mismatch_explanation SET explanation_text = ''x'' RETURNING 1']) s;
 ROLLBACK TO SAVEPOINT access;
+
+-- As in 209: pgTAP keeps its test counter in a table, so each ROLLBACK TO
+-- SAVEPOINT above set it back; this last assertion outside a savepoint sets it
+-- right again before finish().
+SELECT is(pg_temp.rows(), 0::bigint, 'every case was rolled back');
 
 SELECT * FROM finish();
 ROLLBACK;
