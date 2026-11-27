@@ -7,11 +7,14 @@
 // and profile from the database's context for the document. Each step runs
 // only after the one before it passed.
 import type {
+  EvidenceAiTransferLink,
   EvidenceCommitOutcome,
   EvidenceCommitSigning,
   EvidenceCommitter,
 } from "../database/index.ts";
 import {
+  EVIDENCE_SEGMENT_SCHEMA_V4,
+  type EvidenceSegment,
   type EvidenceSegmentDescriptorV2,
   evidenceTransactionFormatOfWork,
   exceedsEvidenceSegmentLimit,
@@ -67,6 +70,21 @@ export type EvidenceService = {
 };
 
 const MAX_BASE_REVISION = Number.MAX_SAFE_INTEGER - 1;
+
+/**
+ * SRV-1809: the AI transfer records a segment's events name, in event order,
+ * for the 10-argument acceptance: an array for v4 (empty when it names none),
+ * null for v2 and v3. A record named twice stays twice, so the database, which
+ * checks each against its record, refuses the segment rather than this hiding it.
+ */
+export function aiTransferLinksOf(segment: EvidenceSegment): EvidenceAiTransferLink[] | null {
+  if (segment.evidenceSchema !== EVIDENCE_SEGMENT_SCHEMA_V4) return null;
+  return segment.events.flatMap((event) =>
+    event.source === "ai-transfer"
+      ? [{ aiTransferId: event.aiTransferId, aiTransferSha256: event.aiTransferSha256 }]
+      : [],
+  );
+}
 
 async function prepareAndCommit(
   deps: EvidenceCommitDependencies,
@@ -237,6 +255,7 @@ async function prepareAndCommit(
       descriptor,
       storageRef,
       snapshot: snapshotText,
+      aiTransferLinks: aiTransferLinksOf(s),
     },
     signing,
   );
