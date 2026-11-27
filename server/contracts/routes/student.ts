@@ -399,6 +399,33 @@ export const studentSubmissionGet = defineRoute({
   errors: assignmentReadErrors,
 });
 
+// SRV-KOD-POTVRDE (Ductus#2059, S-08): the "Kod potvrde" the server issued when the
+// receipt of the own submission was bound. A route of its own: a new member of the closed
+// body of student.submission.get would be a major release of @ductura/contracts.
+export const studentSubmissionConfirmationCodeGet = defineRoute({
+  id: "student.submission-confirmation-code.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission/confirmation-code",
+  inventory: "app/api/student/assignments/[assignmentId]/submission/confirmation-code/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The confirmation code of the caller's own submission: 16 characters in 4 groups of 4 from the alphabet without I, L, O and U (for example DK7M-4Q9P-X2HT-R8VN), issued and stored by the server when the signed receipt is bound. code is null when there is no submission, it was withdrawn or it still waits for its receipt (ceka). An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: assignmentParams },
+  responses: [
+    {
+      status: 200,
+      description: "the code, or null before the receipt is bound",
+      body: closed({
+        code: Type.Union([
+          Type.String({ pattern: "^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$" }),
+          Type.Null(),
+        ]),
+      }),
+    },
+  ],
+  errors: assignmentReadErrors,
+});
+
 const WordRange = Type.Union([
   closed({ min: WordCount, max: WordBound }),
   closed({ min: Type.Null(), max: WordCount }),
@@ -523,6 +550,7 @@ export const studentRoutes = [
   studentSubmissionGet,
   studentAssignmentRequirementsGet,
   studentAssignmentSubmissionsGet,
+  studentSubmissionConfirmationCodeGet,
   studentSubmissionNotesGet,
   studentSubmissionNotesPost,
 ] as const;

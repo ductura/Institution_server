@@ -1394,6 +1394,13 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "page": string; "note": string | null; "imagePath": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_input";
   };
+  "student.submission-confirmation-code.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "code": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.submission-history.get": {
     params: { "assignmentId": string };
     query: undefined;

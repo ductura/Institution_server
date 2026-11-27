@@ -2158,6 +2158,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-KOD-POTVRDE: the own code of an assignment the account has no relation to is 404.
+  "student.submission-confirmation-code.get": {
+    method: "GET",
+    path: "/api/v1/student/assignments/00000000-0000-4000-8000-0000000000a1/submission/confirmation-code",
+    body: () => undefined,
+    live: 404,
+  },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
   "settings.values.put": {
