@@ -90,6 +90,20 @@ export function createTeacherSubmittedVersion(withActor: WithActor): TeacherSubm
           ) {
             return UNAVAILABLE;
           }
+          // READ COMMITTED: the submission may have been withdrawn and made again
+          // between the check and the read, so the text could belong to another
+          // revision. Revisions only grow, so the same live revision after the read
+          // means the text read is that revision's.
+          const after = (
+            await tx.query<Record<string, unknown>>(SUBMISSION_SQL, [
+              work.assignment_id,
+              work.student_id,
+            ])
+          ).rows;
+          if (after.length !== 1) return UNAVAILABLE;
+          if (after[0]!.submitted !== true || after[0]!.revision !== String(revision)) {
+            return NOT_FOUND;
+          }
           return { status: "ok", revision, body: text.body, hash: text.content_hash };
         });
       } catch (thrown) {

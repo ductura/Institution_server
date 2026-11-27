@@ -185,3 +185,15 @@ it("answers 422 for a bad revision and 404 for a malformed work id", async () =>
   expect((await get(url("x".repeat(300), "2"))).status).toBe(404);
   expect(spy).not.toHaveBeenCalled();
 });
+
+it("answers 404 when the submission changed while the text was read", async () => {
+  let checks = 0;
+  const { url } = await fixture(async (sql, values) => {
+    if (sql.includes("app.assignment_submissions")) {
+      checks += 1;
+      return [{ submitted: true, revision: checks === 1 ? "2" : "3" }];
+    }
+    return database()(sql, values);
+  });
+  expect((await get(url(DOCUMENT, "2"))).status).toBe(404);
+});
