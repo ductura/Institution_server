@@ -186,6 +186,10 @@ function callThen(
   try {
     apply(then as (...args: unknown[]) => unknown, target, [settle, reject]);
   } catch (error) {
+    // Dropped even when a call back already had its effect: a then that
+    // calls ok() and then throws a rejected promise leaves nothing unhandled
+    // (Review and QA FAIL on #318, 1f1ac12e, finding 1).
+    discard(error);
     reject(error);
   }
 }
@@ -266,14 +270,19 @@ function readValue(value: unknown): Promise<{ readonly value: unknown }> {
     };
     try {
       if (isPromise(value)) {
+        // What a native promise is fulfilled with is final, as with await:
+        // its then is not read again (Review and QA FAIL on #318, finding 2).
         ignoreRejection(
-          apply(promiseThen, value, [(next: unknown) => resolve(readValue(next)), fail]),
+          apply(promiseThen, value, [(next: unknown) => resolve({ value: next }), fail]),
         );
         return;
       }
       const then: unknown = objectLike(value) ? (value as { then?: unknown }).then : undefined;
       if (typeof then !== "function") return resolve({ value });
-      callThen(then, value, resolve as (next: unknown) => void, fail, readValue);
+      // Read now, called one microtask later, as await does: a microtask the
+      // reader queued before returning runs first (Review FAIL on #318,
+      // finding 3).
+      enqueue(() => callThen(then, value, resolve as (next: unknown) => void, fail, readValue));
     } catch (error) {
       fail(error);
     }

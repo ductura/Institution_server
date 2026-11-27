@@ -2550,3 +2550,113 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       expect(reasons).toEqual(["busy"]);
     }));
 });
+
+// The three findings of the review and QA FAIL on #318 (1f1ac12e), restored
+// from the orphan branch (SIROCE-SRV): each row fails on 1f1ac12e.
+describe("backup scheduler: findings on #318", () => {
+  const watch = async (body: () => Promise<void>) => {
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    try {
+      await body();
+      await realTurn();
+      await realTurn();
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off("unhandledRejection", unhandled);
+    }
+  };
+  /** A thenable whose then calls ok(value) and then throws a rejected promise. */
+  const okThenThrow = (value?: unknown) => ({
+    then(ok: (v: unknown) => void) {
+      ok(value);
+      throw Promise.reject(new Error(CANARY));
+    },
+  });
+
+  it("finding 1, run(): a then that calls ok() and then throws a rejected promise ends the job, nothing unhandled", async () => {
+    await watch(async () => {
+      const reasons: string[] = [];
+      const { run, scheduler } = setup(on(1), {
+        onSkip: (reason) => void reasons.push(reason),
+      });
+      run.mockImplementation(() => okThenThrow());
+      await advance(2.5 * H);
+      await scheduler.stop();
+      expect(run).toHaveBeenCalledTimes(2);
+      expect(reasons).toEqual([]);
+    });
+  });
+
+  it("finding 1, onSkip: a then that calls ok() and then throws a rejected promise, nothing unhandled", async () => {
+    await watch(async () => {
+      const onSkip = vi.fn(() => okThenThrow());
+      const { scheduler } = setup([["backup.enabled", false]], { onSkip });
+      await advance(2.5 * H);
+      await scheduler.stop();
+      expect(onSkip).toHaveBeenCalledWith("disabled");
+    });
+  });
+
+  it("finding 1, readSettings: a then that calls ok(settings) and then throws a rejected promise still runs, nothing unhandled", async () => {
+    await watch(async () => {
+      const reasons: string[] = [];
+      const { run, scheduler } = setup([], {
+        readSettings: () => okThenThrow(new Map(on(1))),
+        onSkip: (reason) => void reasons.push(reason),
+      });
+      await advance(1.5 * H);
+      await scheduler.stop();
+      expect(run).toHaveBeenCalledTimes(1);
+      expect(reasons).toEqual([]);
+    });
+  });
+
+  it("finding 2: a reader's thenable resolving with a promise fulfilled with the settings never reads their then again", async () => {
+    const reasons: string[] = [];
+    let reads = 0;
+    const settings = new Map(on(1));
+    Object.defineProperty(settings, "then", {
+      get() {
+        reads += 1;
+        if (reads > 1) throw new Error(CANARY);
+        return undefined;
+      },
+    });
+    const { run, scheduler } = setup([], {
+      readSettings: () => ({
+        then: (ok: (v: unknown) => void) => ok(Promise.resolve(settings)),
+      }),
+      onSkip: (reason) => void reasons.push(reason),
+    });
+    await advance(1.5 * H);
+    await scheduler.stop();
+    expect(reads).toBe(1);
+    expect(reasons).toEqual([]);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("finding 3: a reader's thenable is called a microtask later, as with await, after what the reader queued", async () => {
+    const reasons: string[] = [];
+    const state = { enabled: false };
+    const { run, scheduler } = setup([], {
+      readSettings: () => {
+        queueMicrotask(() => (state.enabled = true));
+        return {
+          then: (ok: (v: unknown) => void) =>
+            ok(
+              new Map<string, unknown>([
+                ["backup.enabled", state.enabled],
+                ["backup.interval_hours", 1],
+              ]),
+            ),
+        };
+      },
+      onSkip: (reason) => void reasons.push(reason),
+    });
+    await advance(1.5 * H);
+    await scheduler.stop();
+    expect(reasons).toEqual([]);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+});
