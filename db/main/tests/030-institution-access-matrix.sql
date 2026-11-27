@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6271);
+SELECT plan(6277);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -80,6 +80,7 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_id
   FROM (VALUES ('assistant', 'assignment_tool_setting', 'assignment_tool_setting_owner'),
                ('assistant', 'tool_step', 'tool_step_owner'),
                ('assistant', 'tool_loop_reservation', 'tool_loop_reservation_owner'),
+               ('assistant', 'ai_transfer', 'ai_transfer_owner'),
                ('audit', 'assistant_tool_setting_event', 'assistant_tool_setting_event_owner')) t(nsp, rel, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.nsp || '.' || t.rel);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = 'ductus_identity'::regrole
@@ -91,7 +92,8 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = '
                ('assistant.set_assignment_tools(uuid,integer,text[])'),
                ('assistant.read_assignment_tools(uuid)'),
                ('assistant.begin_tool_step(uuid,integer,text,text,text,boolean,text[])'),
-               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)')) f(signature)
+               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)'),
+               ('assistant.create_ai_transfer(text,uuid,text)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 SELECT ok('search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -102,7 +104,10 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
                ('assistant.intersect_tools(text[],text[])'), ('assistant.latest_tools(uuid)'),
                ('assistant.allowed_tools_now(assistant.request,text[])'),
                ('assistant.guard_tool_step_change()'), ('assistant.guard_tool_setting_version()'),
-               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()')) f(signature)
+               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()'),
+               ('assistant.ai_transfer_canonical(uuid,text,uuid,uuid,text,text,integer,text,text,text,timestamptz)'),
+               ('assistant.refuse_ai_transfer_rewrite()'), ('assistant.ai_transfer_phase(text,uuid)'),
+               ('assistant.ai_transfer_max()')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
