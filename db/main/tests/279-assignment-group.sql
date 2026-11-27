@@ -119,7 +119,7 @@ SELECT is(pg_temp.ask_as('ductus_identity', 'vesna', $$ UPDATE institution.assig
 
 -- 6. Deleting: a linked assignment or group stays, as for every other
 -- reference to them (NO ACTION, no cascade).
-SELECT is((SELECT string_agg(c.conname || ' ' || c.confdeltype || c.confupdtype, ', ' ORDER BY c.conname)
+SELECT is((SELECT string_agg(c.conname::text || ' ' || c.confdeltype::text || c.confupdtype::text, ', ' ORDER BY c.conname)
              FROM pg_constraint c WHERE c.conrelid = 'institution.assignment_group'::regclass AND c.contype = 'f'),
   'assignment_group_assigned_by_fkey aa, assignment_group_assignment_fkey aa, assignment_group_group_fkey aa',
   'every foreign key of the link is NO ACTION');
