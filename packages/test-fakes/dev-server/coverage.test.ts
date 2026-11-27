@@ -2984,6 +2984,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "GET",
     },
   },
+  "student.assignment-submission-reconstruction.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission-reconstruction`,
+      as: "student",
+      method: "GET",
+    },
+  },
   "teacher.assignment-late-submission.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/late-submission`,

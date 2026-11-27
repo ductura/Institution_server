@@ -245,6 +245,10 @@ export {
   type WorkAccommodationPort,
 } from "./work-accommodation.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
+export {
+  createSubmissionReconstructionRoutes,
+  createSubmissionReconstructionRoutesFor,
+} from "./submission-reconstruction.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
 export { createQualitativeSegmentsRoutesFor } from "./qualitative-segments.ts";

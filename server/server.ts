@@ -160,6 +160,7 @@ import {
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
   createLateSubmissionRoutesFor,
+  createSubmissionReconstructionRoutesFor,
   createCourseAssistantRoutesFor,
   createQuestionnaireResponsesRoutesFor,
   createQuestionnaireExportRoutesFor,
@@ -522,6 +523,7 @@ async function main(): Promise<void> {
       ...createDeclarationQuestionRoutesFor(databases.main),
       // SRV-NF4-KASNA-POLJE: whether a submission after the deadline is allowed.
       ...createLateSubmissionRoutesFor(databases.main),
+      ...createSubmissionReconstructionRoutesFor(databases.main),
       // SRV-ASIST-PREKIDAC: the assistant switch per course and its availability.
       ...createCourseAssistantRoutesFor(databases.main, assistantProvider),
       // SRV-V18-UPITNIK-ISPUNJAVANJE: a student answers an open questionnaire once; a teacher enters a sheet by hand.

@@ -99,3 +99,12 @@ export {
   type WorkerEvidenceChainSource,
   type WorkerReconstructionQuery,
 } from "./reconstruction/index.ts";
+// F4-PM2-R01: the worker's second reconstruction of a recorded submission and
+// the verdict it asks the database to keep.
+export {
+  runSubmissionVerdictPass,
+  type SubmissionVerdictDeps,
+  type SubmissionVerdictPass,
+  type VerdictKeysRead,
+  type VerdictQuery,
+} from "./submission-verdict.ts";

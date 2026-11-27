@@ -33,6 +33,7 @@ describe("server/evidence public interface", () => {
       "isReplayDocumentId",
       "parseClosedJsonObject",
       "readReplayPage",
+      "runSubmissionVerdictPass",
       "signatureRetryDelayMs",
       "submitWork",
       "verifyCanonicalEvidencePayloadV2",
