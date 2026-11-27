@@ -77,6 +77,11 @@ export type PortableRecordInput = {
   /** The configured origin of the institution, for the QR of the PDF. */
   readonly origin: string;
   readonly labels: ReceiptPdfLabels;
+  /**
+   * Dizajn 1.1: the bound confirmation code of the submission, so the PDF is the
+   * bytes student.receipt-pdf.get gives; null only for a receipt without one.
+   */
+  readonly confirmationCode: string | null;
 };
 
 const KEY_FIELDS = [
@@ -192,7 +197,10 @@ export async function buildPortableRecord(
     [FILES.receipt, encoder.encode(canonicalizeJcs(receipt))],
     [FILES.receiptKey, encoder.encode(canonicalizeJcs(key))],
     [FILES.text, text],
-    [FILES.pdf, await renderReceiptPdf(receipt, input.origin, input.labels)],
+    [
+      FILES.pdf,
+      await renderReceiptPdf(receipt, input.origin, input.labels, input.confirmationCode),
+    ],
   ]);
   if (day.status === "included") {
     const proof = await inclusionOf(entry, day.dailyRoot);

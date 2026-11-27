@@ -6,16 +6,16 @@ Prenosivi zapis predaje u području [preuzimanja](../README.md) (SRV-1312; plan 
 
 `buildPortableRecord` gradi deterministički ZIP jedne predaje: isti podaci daju iste bajtove (zapisi bez sažimanja, fiksno vrijeme, fiksan redoslijed). U korijenu ZIP-a su:
 
-| Datoteka                     | Sadržaj                                                                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `manifest.json`              | JCS `{ format, submissionId, dailyRoot, files }`: svaka druga datoteka s veličinom i SHA-256 (manifest s otiscima, D-173) |
-| `potvrda.json`               | JCS potpisane potvrde predaje V2, kakvu je student dobio                                                                  |
-| `kljuc-potvrde.json`         | JCS javnog ključa potvrde s valjanošću (`EvidenceDomainKey`)                                                              |
-| `rad.json`                   | točni bajtovi predanog teksta; njihov SHA-256 je `artifactSha256` potvrde                                                 |
-| `potvrda-predaje.pdf`        | PDF potvrde (`renderReceiptPdf`); QR nosi samo id predaje i otisak, u fragmentu URL-a                                     |
-| `dnevni-korijen.json`        | spremljeni potpisani dnevni korijen dana potvrde (SRV-1311), samo kad postoji                                             |
-| `kljuc-dnevnog-korijena.pem` | javni Ed25519 ključ dnevnog korijena (SPKI PEM), uz korijen                                                               |
-| `merkle-dokaz.json`          | JCS `{ entry, index, treeSize, proof }`: unos potvrde u stablu tog dana, uz korijen                                       |
+| Datoteka                     | Sadržaj                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.json`              | JCS `{ format, submissionId, dailyRoot, files }`: svaka druga datoteka s veličinom i SHA-256 (manifest s otiscima, D-173)                                         |
+| `potvrda.json`               | JCS potpisane potvrde predaje V2, kakvu je student dobio                                                                                                          |
+| `kljuc-potvrde.json`         | JCS javnog ključa potvrde s valjanošću (`EvidenceDomainKey`)                                                                                                      |
+| `rad.json`                   | točni bajtovi predanog teksta; njihov SHA-256 je `artifactSha256` potvrde                                                                                         |
+| `potvrda-predaje.pdf`        | PDF potvrde (`renderReceiptPdf`), isti kao `student.receipt-pdf.get`: uz vezani kod potvrde QR nosi `/provjera#k={kod}` i kod je ispisan ispod njega (Dizajn 1.1) |
+| `dnevni-korijen.json`        | spremljeni potpisani dnevni korijen dana potvrde (SRV-1311), samo kad postoji                                                                                     |
+| `kljuc-dnevnog-korijena.pem` | javni Ed25519 ključ dnevnog korijena (SPKI PEM), uz korijen                                                                                                       |
+| `merkle-dokaz.json`          | JCS `{ entry, index, treeSize, proof }`: unos potvrde u stablu tog dana, uz korijen                                                                               |
 
 Prije pisanja sve se provjerava istim funkcijama kao pri provjeri: potvrda mora biti svoj JCS, imati spremljeni digest i potpis ključem koji baza navodi; tekst mora dati `artifactSha256`; unosi dana moraju dati korijen i sadržavati unos potvrde. Inače je odgovor zatvoreni kod (`PortableRecordRefusal`) bez ikakve vrijednosti zapisa.
 
