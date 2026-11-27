@@ -12,7 +12,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ANALYSIS_IDS, ANALYSIS_LIMITS, ROUTES } from "../../contracts/index.ts";
 import { DATASET_LIMITS, analysisSpecOf, type WithActor } from "../../database/index.ts";
-import { ANALYSIS_ENABLED, analysisEnabledFor, createAnalysisRoutesFor } from "./index.ts";
+import {
+  ANALYSIS_ENABLED,
+  ANALYSIS_LOCAL_VARIABLE,
+  analysisEnabledFor,
+  createAnalysisRoutesFor,
+} from "./index.ts";
 
 const find = (id: string) => ROUTES.find((route) => route.id === id)!;
 const analysisCatalogueGet = find("analysis.catalogue.get");
@@ -264,7 +269,7 @@ describe("analysis HTTP adapter, switch on", () => {
 
 describe("analysis local exception", () => {
   const LOCAL = {
-    DUCTUS_ANALYSIS_LOCAL: "1",
+    [ANALYSIS_LOCAL_VARIABLE]: "1",
     NODE_ENV: "development",
     DUCTUS_AUTH_PROVIDER: "fake-oidc",
   };
@@ -274,18 +279,18 @@ describe("analysis local exception", () => {
     expect(analysisEnabledFor({})).toBe(false);
   });
   it("is off with the variable but without the local marker", () => {
-    expect(analysisEnabledFor({ DUCTUS_ANALYSIS_LOCAL: "1" })).toBe(false);
+    expect(analysisEnabledFor({ [ANALYSIS_LOCAL_VARIABLE]: "1" })).toBe(false);
     expect(analysisEnabledFor({ ...LOCAL, NODE_ENV: "production" })).toBe(false);
     expect(analysisEnabledFor({ ...LOCAL, NODE_ENV: "test" })).toBe(false);
     expect(analysisEnabledFor({ ...LOCAL, DUCTUS_AUTH_PROVIDER: "aai-eduhr" })).toBe(false);
     expect(analysisEnabledFor({ ...LOCAL, DUCTURA_DEPLOYMENT: "staging" })).toBe(false);
-    expect(analysisEnabledFor({ ...LOCAL, DUCTUS_ANALYSIS_LOCAL: "true" })).toBe(false);
+    expect(analysisEnabledFor({ ...LOCAL, [ANALYSIS_LOCAL_VARIABLE]: "true" })).toBe(false);
   });
   it("is on with both", () => {
     expect(analysisEnabledFor(LOCAL)).toBe(true);
   });
   it("makes the mounted routes answer only with both", async () => {
-    const off = await start({ enabled: analysisEnabledFor({ DUCTUS_ANALYSIS_LOCAL: "1" }) });
+    const off = await start({ enabled: analysisEnabledFor({ [ANALYSIS_LOCAL_VARIABLE]: "1" }) });
     expect((await catalogue(off)).status).toBe(404);
     await server!.close();
     const on = await start({ enabled: analysisEnabledFor(LOCAL) });

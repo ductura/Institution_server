@@ -90,11 +90,21 @@ function catalogue() {
   };
 }
 
+/** Only the four names the exception reads, taken as process.<member>. */
+function localEnvironment(): NodeJS.ProcessEnv {
+  return {
+    [ANALYSIS_LOCAL_VARIABLE]: process.env.DUCTUS_ANALYSIS_LOCAL,
+    ["NODE_ENV"]: process.env.NODE_ENV,
+    ["DUCTUS_AUTH_PROVIDER"]: process.env.DUCTUS_AUTH_PROVIDER,
+    ["DUCTURA_DEPLOYMENT"]: process.env.DUCTURA_DEPLOYMENT,
+  };
+}
+
 type Options = { readonly enabled?: boolean };
 
 export function createAnalysisRoutesFor(
   { withActor }: { withActor: WithActor },
-  { enabled = analysisEnabledFor(process.env) }: Options = {},
+  { enabled = analysisEnabledFor(localEnvironment()) }: Options = {},
 ): Route[] {
   const readAccount = createMyAccountReader(withActor);
 
