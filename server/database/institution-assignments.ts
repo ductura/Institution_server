@@ -3,11 +3,12 @@
 // assignment-version-route.ts at 078c780, in the form of
 // institution-courses.ts: an outcome instead of a response, a malformed row
 // thrown inside the transaction, and a port that never throws. One call is
-// one withActor transaction of one statement; the message of a database
+// one withActor transaction (of one statement, or three for a creation with
+// groups); the message of a database
 // error is never read and its SQLSTATE never leaves the port. Inputs come
 // already checked (server/institution/assignment-input.ts, the route).
 import { call, type Refused, single, type Unavailable } from "./institution-courses.ts";
-import type { WithActor } from "./with-actor.ts";
+import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 /** The content of a version as the RPCs take it, in their order. */
 export type AssignmentContent = {
@@ -55,6 +56,7 @@ export type InstitutionAssignments = {
     content: AssignmentContent,
     isPractice?: boolean,
     setup?: AssignmentSetup,
+    groupIds?: readonly string[],
   ): Promise<AssignmentCreateOutcome>;
   publishVersion(
     token: string,
@@ -73,6 +75,10 @@ const PUBLISH_SQL = `SELECT institution.publish_assignment_version(
   $1::uuid, $2::integer, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
   $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer
 ) AS version_no`;
+// F4 wave 2 #5 (1.8): the links to the course's groups, in the creation's
+// transaction (migration 20261220620000), then the links as stored.
+const GROUPS_SQL = "SELECT institution.add_assignment_groups($1::uuid, $2::uuid[]) AS added";
+const LINKED_SQL = "SELECT group_id FROM institution.assignment_groups($1::uuid)";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const CREATE_REFUSED = new Map([
   ["ZD401", "unauthenticated"],
@@ -101,6 +107,28 @@ const contentParams = (c: AssignmentContent): unknown[] => [
   c.wordMax,
 ];
 
+/**
+ * Links the groups (lower case, distinct: the route's) to the assignment just
+ * created or replayed. add_assignment_groups refuses a group of another course
+ * (ZD422), which rolls back the assignment too. A replay of the key with other
+ * groups leaves another set linked: that is the key's conflict (ZD409), and
+ * the extra links roll back with it. A row of the wrong form is false.
+ */
+async function linkGroups(
+  tx: ActorTransaction,
+  id: string,
+  groupIds: readonly string[],
+): Promise<boolean> {
+  await tx.query(GROUPS_SQL, [id, [...groupIds]]);
+  const { rows } = await tx.query(LINKED_SQL, [id]);
+  const linked = rows.map((row) => (Object.hasOwn(row, "group_id") ? row.group_id : undefined));
+  if (!linked.every((g): g is string => typeof g === "string" && UUID.test(g))) return false;
+  const wanted = new Set(groupIds);
+  const same = linked.length === wanted.size && linked.every((g) => wanted.has(g.toLowerCase()));
+  if (!same) throw Object.assign(new Error("conflict"), { code: "ZD409" });
+  return true;
+}
+
 export function createInstitutionAssignments(withActor: WithActor): InstitutionAssignments {
   return {
     async createAssignment(
@@ -110,6 +138,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
       content,
       isPractice = false,
       setup = NO_SETUP,
+      groupIds = [],
     ) {
       const readId = (rows: unknown) => {
         const id = single(rows, "id");
@@ -131,6 +160,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
         readId,
         CREATE_REFUSED,
         "create_assignment_malformed",
+        groupIds.length === 0 ? undefined : (tx, id) => linkGroups(tx, id, groupIds),
       );
       return "value" in outcome ? { status: "created", id: outcome.value } : outcome;
     },

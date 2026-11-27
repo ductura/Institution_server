@@ -93,6 +93,95 @@ describe("createAssignment", () => {
   });
 });
 
+// F4 wave 2 #5 (1.8): the groups in the creation's transaction.
+describe("createAssignment with groups", () => {
+  const GROUP_A = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d01";
+  const GROUP_B = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d02";
+  const SETUP = { externalToolsAllowed: false, aiSummaryOnly: false };
+  /** One answer per statement, in order; a thrown answer is a refusal of that statement. */
+  const scripted = (answers: (unknown[] | Error)[]) => {
+    const texts: { text: string; values: readonly unknown[] }[] = [];
+    let rolledBack = false;
+    const withActor: WithActor = async (_token, fn) => {
+      try {
+        return await fn({
+          query: async (text: string, values: readonly unknown[] = []) => {
+            texts.push({ text, values });
+            const answer = answers[texts.length - 1] ?? [];
+            if (answer instanceof Error) throw answer;
+            return { rows: answer as never[], rowCount: answer.length };
+          },
+        });
+      } catch (thrown) {
+        rolledBack = true;
+        throw thrown;
+      }
+    };
+    return { withActor, texts, rolledBack: () => rolledBack };
+  };
+  const refusal = (code: string) => Object.assign(new Error("refused"), { code });
+
+  it("creates, links and reads the links back in one transaction", async () => {
+    const db = scripted([
+      [{ id: ID }],
+      [{ added: 2 }],
+      [{ group_id: GROUP_B }, { group_id: GROUP_A }],
+    ]);
+    const port = createInstitutionAssignments(db.withActor);
+    expect(
+      await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, SETUP, [GROUP_A, GROUP_B]),
+    ).toEqual({ status: "created", id: ID });
+    expect(db.texts.map((t) => t.text)).toEqual([
+      expect.stringContaining("institution.create_assignment("),
+      "SELECT institution.add_assignment_groups($1::uuid, $2::uuid[]) AS added",
+      "SELECT group_id FROM institution.assignment_groups($1::uuid)",
+    ]);
+    expect(db.texts[1]!.values).toEqual([ID, [GROUP_A, GROUP_B]]);
+    expect(db.texts[2]!.values).toEqual([ID]);
+    expect(db.rolledBack()).toBe(false);
+  });
+
+  it("no groups is the one statement of before", async () => {
+    const db = scripted([[{ id: ID }]]);
+    const port = createInstitutionAssignments(db.withActor);
+    expect(await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, SETUP, [])).toEqual({
+      status: "created",
+      id: ID,
+    });
+    expect(db.texts).toHaveLength(1);
+  });
+
+  it("a group of another course (ZD422) is invalid and rolls the assignment back", async () => {
+    const db = scripted([[{ id: ID }], refusal("ZD422")]);
+    const port = createInstitutionAssignments(db.withActor);
+    expect(
+      await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, SETUP, [GROUP_A]),
+    ).toEqual({ status: "invalid" });
+    expect(db.rolledBack()).toBe(true);
+  });
+
+  it.each([
+    ["a replay with fewer groups", [{ group_id: GROUP_A }, { group_id: GROUP_B }]],
+    ["a replay with other groups", [{ group_id: GROUP_B }]],
+  ])("%s is conflict and rolls back", async (_name, linked) => {
+    const db = scripted([[{ id: ID }], [{ added: 0 }], linked]);
+    const port = createInstitutionAssignments(db.withActor);
+    expect(
+      await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, SETUP, [GROUP_A]),
+    ).toEqual({ status: "conflict" });
+    expect(db.rolledBack()).toBe(true);
+  });
+
+  it("a link row of the wrong form is unavailable and rolls back", async () => {
+    const db = scripted([[{ id: ID }], [{ added: 1 }], [{ group_id: "x" }]]);
+    const port = createInstitutionAssignments(db.withActor);
+    expect(
+      await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, SETUP, [GROUP_A]),
+    ).toEqual({ status: "unavailable", reason: "create_assignment_malformed" });
+    expect(db.rolledBack()).toBe(true);
+  });
+});
+
 describe("publishVersion", () => {
   it("calls publish_assignment_version with the expected version; answers exactly the next", async () => {
     seen.length = 0;
