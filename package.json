@@ -60,6 +60,7 @@
     "test:db:native": "node scripts/db/native-db.ts test",
     "db:sum": "node scripts/db/migrations-ledger.ts --write",
     "db:new": "node scripts/db/new-migration.ts",
+    "db:renumber": "node scripts/db/renumber-migrations.ts",
     "prepare": "lefthook install"
   },
   "devDependencies": {
