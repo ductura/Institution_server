@@ -100,24 +100,29 @@ it("serves group-scoped roster and submission data without opening a work", asyn
       const ana = { studentId: ids.get("ana"), groupName: "Grupa B" };
       const dora = { studentId: ids.get("dora"), groupName: "Grupa A" };
       const late = { ...ana, submitted: true, afterDeadline: true, evidenceRecord: null };
-      const anaRoster = expect.objectContaining({
-        ...ana,
-        assignments: [
-          { assignmentId: ids.get("z1"), documentId: "doc-a", workState: "in_progress" },
-        ],
-      });
+      // The course teacher reads the assignment itself and gets its current
+      // version's title and work type (institution.inc: "Z1", essay); the
+      // seminar group teacher may not read it (C-23) and gets neither.
+      const anaWork = {
+        assignmentId: ids.get("z1"),
+        documentId: "doc-a",
+        workState: "in_progress",
+      };
+      const named = { title: "Z1", workType: "essay" };
       expect(await get(roster, "A")).toEqual({
         students: [
-          anaRoster,
+          expect.objectContaining({ ...ana, assignments: [{ ...anaWork, ...named }] }),
           expect.objectContaining({
             ...dora,
             assignments: [
-              { assignmentId: ids.get("z1"), documentId: null, workState: "not_started" },
+              { assignmentId: ids.get("z1"), documentId: null, workState: "not_started", ...named },
             ],
           }),
         ],
       });
-      expect(await get(roster, "B")).toEqual({ students: [anaRoster] });
+      expect(await get(roster, "B")).toEqual({
+        students: [expect.objectContaining({ ...ana, assignments: [anaWork] })],
+      });
       expect(await get(overview, "A")).toEqual({
         students: [
           expect.objectContaining(late),

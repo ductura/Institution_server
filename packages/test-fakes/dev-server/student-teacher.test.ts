@@ -249,6 +249,34 @@ describe("dev fake server: review findings on #363", () => {
     expect(state.accessLog).toHaveLength(1);
   });
 
+  it("names each roster assignment for the holder only, as the real reader (C-23)", async () => {
+    const state = createState();
+    const course = state.courses.find((c) => c.id === IDS.course)!;
+    course.groups.find((g) => g.id === IDS.groupB)!.studentIds.push(IDS.student);
+    const roster = async (who: string) => {
+      const answer = await send(state, `/api/v1/teacher/courses/${IDS.course}/students`, {
+        headers: await signIn(state, who),
+      });
+      expect(contractProblems("teacher.course-students.get", answer)).toEqual([]);
+      return (answer.json as { students: { assignments: Record<string, unknown>[] }[] }).students;
+    };
+    const held = (await roster("nastavnik")).flatMap((s) => s.assignments);
+    expect(held.length).toBeGreaterThan(0);
+    for (const work of held) {
+      const assignment = state.assignments.find((a) => a.id === work.assignmentId)!;
+      expect(work).toMatchObject({
+        title: assignment.content.title,
+        workType: assignment.content.workType,
+      });
+    }
+    const grouped = (await roster("nastavnik-2")).flatMap((s) => s.assignments);
+    expect(grouped.length).toBeGreaterThan(0);
+    for (const work of grouped) {
+      expect(work).not.toHaveProperty("title");
+      expect(work).not.toHaveProperty("workType");
+    }
+  });
+
   it("refuses a bound at the personal level and a range the key cannot hold", async () => {
     const state = createState();
     const put = (body: Record<string, unknown>, headers: Record<string, string>) =>

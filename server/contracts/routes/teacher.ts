@@ -57,13 +57,16 @@ const literals = <T extends string>(values: readonly T[]) =>
 
 const READ_ERRORS = [error(401, "unauthorized"), error(403, "forbidden")] as const;
 
+const AssignmentTitle = Type.String({ minLength: 1 });
+const WorkType = literals([
+  ...["short_paper", "essay", "seminar_paper", "bachelor_thesis", "master_thesis"],
+  ...["specialist_thesis", "doctoral_thesis"],
+]);
+
 const TeacherAssignment = closed({
   id: Uuid,
-  title: Type.String({ minLength: 1 }),
-  workType: literals([
-    ...["short_paper", "essay", "seminar_paper", "bachelor_thesis", "master_thesis"],
-    ...["specialist_thesis", "doctoral_thesis"],
-  ]),
+  title: AssignmentTitle,
+  workType: WorkType,
   opensAt: Instant,
   dueAt: Instant,
   currentVersion: Count(1),
@@ -357,6 +360,13 @@ const ListedAssignmentWork = closed({
   assignmentId: Uuid,
   documentId: Type.Union([WorkId, Type.Null()]),
   workState: literals(["not_started", "in_progress", "submitted"]),
+  /**
+   * DIZAJN-27-11 1.5: the current version's title and work type, as in
+   * teacher.courses.get. Both or neither: absent when the caller may not read
+   * the assignment row itself (a seminar group teacher, C-23).
+   */
+  title: Type.Optional(AssignmentTitle),
+  workType: Type.Optional(WorkType),
 });
 const CourseStudent = Type.Union(
   STUDENT_NAME_FIELDS.map((names) =>

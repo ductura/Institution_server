@@ -1734,7 +1734,7 @@ export type Operations = {
     params: { "courseId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "students": ({ "studentId": string; "givenName": string; "familyName": string; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted" })[] } | { "studentId": string; "givenName": null; "familyName": null; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted" })[] })[] }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "students": ({ "studentId": string; "givenName": string; "familyName": string; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted"; "title"?: string; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" })[] } | { "studentId": string; "givenName": null; "familyName": null; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted"; "title"?: string; "workType"?: "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" })[] })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "teacher.courses.get": {
