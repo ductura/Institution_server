@@ -66,9 +66,11 @@ export async function readWorkAccommodation(
     const value = await withActor(
       token,
       async (tx) =>
+        // The read runs only beside a live actor: without one the function
+        // refuses (ZD403) before live is known, and the answer would be 404.
         (
           await tx.query<{ live: unknown; marked: unknown }>(
-            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, institution.work_accommodation($1, $2) AS marked",
+            "SELECT EXISTS (SELECT 1 FROM app.current_actor()) AS live, (SELECT institution.work_accommodation($1, $2) FROM app.current_actor()) AS marked",
             [assignmentId, studentId],
           )
         ).rows[0],
