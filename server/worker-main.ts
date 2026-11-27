@@ -11,9 +11,11 @@ import {
   logStartupRefused,
   workerEnvironmentProblems,
 } from "./http/index.ts";
+import { kmsProblems } from "./settings/index.ts";
 
 async function main(): Promise<void> {
-  const problems = workerEnvironmentProblems(process.env);
+  // An unusable KMS setting would leave a refusing signer: refuse the start instead, as the web entry does.
+  const problems = [...workerEnvironmentProblems(process.env), ...kmsProblems(process.env)];
   if (problems.length > 0) {
     // One structured line per problem, naming the variable and never a value, then EX_CONFIG.
     logStartupRefused(problems);

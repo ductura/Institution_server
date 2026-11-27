@@ -53,6 +53,14 @@ describe("server/worker-main.ts", () => {
     expect(output()).not.toContain("worker.started");
   });
 
+  it("an incomplete KMS setting stops the start and names no value", async () => {
+    const { exit, output } = run({ ...GOOD, DUCTUS_KMS_KEY_ID: CANARY });
+    expect(await exit).toBe(EXIT_CONFIGURATION);
+    expect(output()).toContain("startup.refused");
+    expect(output()).not.toContain("worker.started");
+    expect(output()).not.toContain(CANARY);
+  });
+
   it("runs the first pass of all three workers and ends on SIGTERM with exit 0", async () => {
     const { child, exit, output } = run(GOOD);
     await waitUntil(() =>

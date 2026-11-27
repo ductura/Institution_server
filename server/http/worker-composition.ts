@@ -90,8 +90,20 @@ export function createWorkerProcess(
   // One statement on the worker's connection, as the stores of evidence take it.
   const query = (text: string, values: readonly unknown[]) => db.query(text, [...values]);
 
+  // The process has one signer for one domain: the backlog of any other domain is not its own
+  // and must never reach its sweep (a foreign receipt the signer rejects would stop the sweep).
+  const wholeQueue = createPendingReceiptQueue(db);
+  const queue: typeof wholeQueue = {
+    ...wholeQueue,
+    async backlog() {
+      const read = await wholeQueue.backlog();
+      return read.status === "ok"
+        ? { ...read, rows: read.rows.filter((row) => row.evidenceDomainId === evidenceDomainId) }
+        : read;
+    },
+  };
   const signing = createReceiptSigningWorker({
-    queue: createPendingReceiptQueue(db),
+    queue,
     store: createPendingReceiptStore(db),
     objects: createPendingReceiptObjectSource(db),
     locator: payloads,

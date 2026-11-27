@@ -124,6 +124,44 @@ describe("createWorkerProcess", () => {
     });
   });
 
+  it("the signing worker sees only the backlog of its own domain", async () => {
+    const other = "00000000-0000-4000-8000-0000000000d2";
+    const { database, statements } = fakeDatabase();
+    const base = database.query.getMockImplementation()!;
+    database.query.mockImplementation(async (text: string, values?: unknown[]) => {
+      const answer = await base(text, values);
+      if (!text.includes("worker_pending_backlog")) return answer;
+      return {
+        rows: [
+          ...answer.rows,
+          columns(
+            ["evidence_domain_id", other],
+            ["pending_count", "3"],
+            ["oldest_created_at", "2026-11-27T09:00:00.000Z"],
+          ),
+        ],
+      };
+    });
+    const lines: { event: string; fields: Record<string, unknown> | undefined }[] = [];
+    const process = createWorkerProcess(ENV, "/nonexistent", {
+      database: database as never,
+      evidence: {
+        signer: { sign: vi.fn() } as never,
+        payloads: Object.assign(new InMemoryEvidencePayloadStore(), {
+          headImmutable: async () => ({ status: "unavailable", reason: "test" }) as const,
+        }) as never,
+      },
+      log: (_level, event, fields) => lines.push({ event, fields }),
+      closeDatabase: async () => undefined,
+    });
+    await process.signing.runPass();
+    const pending = statements.filter((s) => s.text.includes("worker_pending_receipts"));
+    expect(pending.map((s) => s.values[0])).toEqual([DOMAIN]);
+    expect(lines.find((l) => l.event === "worker.receipt_signing.pass")?.fields).toMatchObject({
+      pendingReceipts: 1,
+    });
+  });
+
   it("start runs a pass of every worker at once and stop ends them and closes the database once", async () => {
     const closeDatabase = vi.fn(async () => undefined);
     const { process, lines } = build({ closeDatabase });
