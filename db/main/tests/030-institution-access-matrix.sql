@@ -2209,7 +2209,7 @@ FROM (VALUES
   ('iva', 'not_found'), ('tomo', 'not_found'), ('petra', 'not_found')
 ) AS c (actor, result);
 -- F4-NAS-R01: only the teacher of the assignment reads it back; another
--- teacher, a student and anyone else read not_found (20261220470000).
+-- teacher, a student and anyone else read not_found (20261220320000).
 SELECT is(
   split_part(pg_temp.ask(c.actor, 'SELECT outcome FROM app.teacher_assignment_late_submission({z1})'), ':', 1),
   c.result, format('F4-NAS-R01: %s reads late submission of Z1 as teacher: %s', c.actor, c.result))
