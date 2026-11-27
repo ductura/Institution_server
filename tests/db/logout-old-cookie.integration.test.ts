@@ -151,6 +151,7 @@ import {
   createTeacherWorkRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
+  createAiTransferRoutesFor,
   createInputRhythmRoutesFor,
   createDeclarationRequiredRoutesFor,
   createDeclarationQuestionRoutesFor,
@@ -1732,6 +1733,16 @@ const SESSION_ROUTES = {
     }),
     live: 404,
   },
+  // SRV-1809: a live session that does not own the work gets 404 on the AI transfer.
+  "work.ai-transfer.post": {
+    method: "POST",
+    path: "/api/v1/works/izmisljeni-rad-0001/ai-transfers",
+    body: () => ({
+      responseId: "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c41",
+      text: "Izmišljeni odlomak.",
+    }),
+    live: 404,
+  },
   // PIL-P1-RITAM-SRV: a live session that has no such work or assignment gets 404 on each rhythm route.
   "work.input-rhythm.post": {
     method: "POST",
@@ -2861,6 +2872,7 @@ const FACTORIES = [
   "createTeacherWorkRoutesFor",
   "createOriginCompositionRoutesFor",
   "createAssistantMatchRoutesFor",
+  "createAiTransferRoutesFor",
   "createInputRhythmRoutesFor",
   "createRevisionRestoreRouteFor",
   "createFacultyThresholdRoutesFor",
@@ -3028,6 +3040,7 @@ const MOUNTED = [
   ...createTeacherWorkRoutesFor(databases.main),
   ...createOriginCompositionRoutesFor(databases.main),
   ...createAssistantMatchRoutesFor(databases.main),
+  ...createAiTransferRoutesFor(databases.main),
   ...createInputRhythmRoutesFor(databases.main),
   ...createFacultyThresholdRoutesFor(databases.main),
   ...createTeacherSourceRoutesFor(databases.main),

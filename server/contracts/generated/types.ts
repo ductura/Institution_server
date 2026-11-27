@@ -2136,6 +2136,13 @@ export type Operations = {
     success: { status: 200; body: { "days": ({ "date": string; "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "declaration" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[] })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "work.ai-transfer.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "responseId": string; "text": string };
+    success: { status: 201; body: { "aiTransferId": string; "aiTransferSha256": string; "record": { "transferSchema": "ductus-ai-transfer-v1"; "transferId": string; "documentId": string; "conversationId": string; "responseId": string; "providerId": string; "modelId": string; "purposeCatalogVersion": number; "purposeId": string; "phaseId": string; "textSha256": string; "transferredAt": string } }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "work.assistant-match-explanation.post": {
     params: { "documentId": string };
     query: undefined;

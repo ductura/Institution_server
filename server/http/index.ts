@@ -58,6 +58,7 @@ export { createTeacherSourceRoutesFor } from "./teacher-sources/index.ts";
 export { createFacultyThresholdRoutesFor } from "./faculty-thresholds/index.ts";
 export { createOriginCompositionRoutesFor } from "./origin-composition/index.ts";
 export { createAssistantMatchRoutesFor } from "./assistant-match/index.ts";
+export { createAiTransferRoutesFor } from "./ai-transfer/index.ts";
 export { createInputRhythmRoutesFor } from "./input-rhythm/index.ts";
 export { createRevisionRestoreRouteFor } from "./revision-restore/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
