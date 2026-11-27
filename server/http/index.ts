@@ -113,6 +113,8 @@ export {
   openAiProviderFrom,
   type OpenAiEnv,
 } from "./assistant/index.ts";
+// AI-EU-ADRESA: the OpenAI base address from a closed list, Europe by default.
+export { openAiBaseUrlOf, openAiBaseUrlProblems } from "../external/assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
