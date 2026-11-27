@@ -36,6 +36,19 @@ const AdditionText = Type.String({
   pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,2000}${END}`,
 });
 const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$" });
+/**
+ * F4 wave 2 #2 (1.3): the time the meeting was held, an optional field of the
+ * body besides the four the summary names (the summary text stays as it is,
+ * since a changed summary reads as a break). An ISO UTC instant to the minute,
+ * second or millisecond, stored and read back as a whole minute; null or
+ * absent for none. More than 5 minutes ahead, or more than a day from heldOn,
+ * is the server's 422.
+ */
+const HeldAtInput = Type.String({
+  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,3})?)?Z$",
+  description:
+    "The time the meeting was held, ISO UTC; kept as a whole minute. More than 5 minutes ahead or more than a day from heldOn is 422.",
+});
 
 const Addition = closed({ id: RecordId, text: AdditionText, createdAt: Minute });
 const ConsultationRecord = closed({
@@ -45,6 +58,8 @@ const ConsultationRecord = closed({
   topic: Topic,
   agreement: Agreement,
   additions: Type.Array(Addition, { maxItems: 10_000 }),
+  /** F4 wave 2 #2: the minute the meeting was held; null when none was given. */
+  heldAt: Type.Optional(Type.Union([Minute, Type.Null()])),
 });
 
 const WRITE_ERRORS = [
@@ -88,7 +103,13 @@ export const consultationRecordsPost = defineRoute({
     params: closed({ documentId: WorkId }),
     contentType: "application/json",
     maxBodyBytes: 8 * 1024,
-    body: closed({ heldOn: HeldOn, revision: Revision, topic: Topic, agreement: Agreement }),
+    body: closed({
+      heldOn: HeldOn,
+      revision: Revision,
+      topic: Topic,
+      agreement: Agreement,
+      heldAt: Type.Optional(Type.Union([HeldAtInput, Type.Null()])),
+    }),
   },
   responses: [{ status: 201, description: "the new record", body: ConsultationRecord }],
   errors: WRITE_ERRORS,

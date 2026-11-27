@@ -103,6 +103,8 @@ SELECT bag_eq(
             ('collaboration.create_general_comment(text,text)'),
             ('collaboration.list_consultation_records(text)'),
             ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
+            -- F4 wave 2 #2 (163): the consultation record with the time it was held.
+            ('collaboration.create_consultation_record_v2(text,date,bigint,text,text,timestamp with time zone)'),
             ('collaboration.add_consultation_addition(text,uuid,text)'),
             ('collaboration.publish_live_state(text,uuid,text)'),
             ('collaboration.read_live_state(text,text)'),

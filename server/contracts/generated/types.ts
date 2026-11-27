@@ -2301,14 +2301,14 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "records": ({ "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[] })[] }; headers: {  } };
+    success: { status: 200; body: { "records": ({ "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[]; "heldAt"?: string | null })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.consultation-records.post": {
     params: { "documentId": string };
     query: undefined;
-    body: { "heldOn": string; "revision": number; "topic": string; "agreement": string };
-    success: { status: 201; body: { "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[] }; headers: {  } };
+    body: { "heldOn": string; "revision": number; "topic": string; "agreement": string; "heldAt"?: string | null };
+    success: { status: 201; body: { "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[]; "heldAt"?: string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "work.consultation-slot-close.post": {
