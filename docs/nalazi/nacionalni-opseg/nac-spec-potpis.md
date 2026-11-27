@@ -43,10 +43,10 @@ Server ne potpisuje svaku potvrdu, nego **korijen stabla svih potvrda jednog pro
 
 Nova shema potvrde (radni naziv `ductus-evidence-receipt-v3`; ime i polja treba uskladiti s rezervacijom formata, `format-reservation.test.ts`) nosi isti `payload` kao v2 plus:
 
-| Polje             | Sadržaj                                                              |
-| ----------------- | -------------------------------------------------------------------- |
-| `inclusion`       | `{ index, treeSize, proof: [32-bajtni hashevi, base64url] }`         |
-| `windowRoot`      | zapis korijena iz 3.3 i njegov `signature` (omotnica kao danas)      |
+| Polje        | Sadržaj                                                         |
+| ------------ | --------------------------------------------------------------- |
+| `inclusion`  | `{ index, treeSize, proof: [32-bajtni hashevi, base64url] }`    |
+| `windowRoot` | zapis korijena iz 3.3 i njegov `signature` (omotnica kao danas) |
 
 Veličina dokaza je `ceil(log2(n)) * 32` bajtova: 4 hasha (128 B) za 10 listova, 10 (320 B) za 1 000, 14 (448 B) za 16 384. Uz base64url oko 4/3 toga. To je uz potvrdu od nekoliko stotina bajtova zanemarivo; ne raste linearno s brojem pisaca.
 
