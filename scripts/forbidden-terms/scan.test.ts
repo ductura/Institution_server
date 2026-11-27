@@ -82,7 +82,7 @@ describe("scanLocales on locales/", () => {
       "hr.json": 142,
       "receipt-pdf.ts": 13,
       "interview-pdf.ts": 21,
-      "merlin.ts": 19,
+      "merlin.ts": 23,
       "work-export.ts": 1,
     });
   });
@@ -112,7 +112,7 @@ describe("invariant 1: every leaf is read", () => {
       "hr.json": 142,
       "receipt-pdf.ts": 13,
       "interview-pdf.ts": 21,
-      "merlin.ts": 19,
+      "merlin.ts": 23,
       "work-export.ts": 1,
     });
   });
