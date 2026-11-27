@@ -45,7 +45,7 @@ describe("open_student_work migration", () => {
 // and the hash the opener names a slides work by is the same one.
 describe("open_student_work slides migration", () => {
   const SLIDES_MIGRATION = readFileSync(
-    new URL("../../db/main/migrations/20261220580000_open_work_slides.sql", import.meta.url),
+    new URL("../../db/main/migrations/20261220590000_open_work_slides.sql", import.meta.url),
     "utf8",
   );
 
