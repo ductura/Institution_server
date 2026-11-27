@@ -67,7 +67,12 @@ export { createWorkRevisionDueRoutesFor } from "./work-revision-due/index.ts";
 export { createTeacherRoleRoutes, createTeacherRoleRoutesFor } from "./teacher-roles/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
-export { ANALYSIS_ENABLED, createAnalysisRoutesFor } from "./analysis/index.ts";
+export {
+  ANALYSIS_ENABLED,
+  ANALYSIS_LOCAL_VARIABLE,
+  analysisEnabledFor,
+  createAnalysisRoutesFor,
+} from "./analysis/index.ts";
 export {
   createProblemReportInboxRoutes,
   createProblemReportInboxRoutesFor,
@@ -113,6 +118,8 @@ export {
   openAiProviderFrom,
   type OpenAiEnv,
 } from "./assistant/index.ts";
+// AI-EU-ADRESA: the OpenAI base address from a closed list, Europe by default.
+export { openAiBaseUrlOf, openAiBaseUrlProblems } from "../external/assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
@@ -325,6 +332,13 @@ export {
   type ReadinessDependencies,
 } from "./ready-capabilities.ts";
 export { logStartupFailed, logStartupRefused } from "./startup-log.ts";
+// The worker process's composition (F4-PM2-R01B); only server/worker-main.ts uses it.
+export {
+  createWorkerProcess,
+  WORKER_EVIDENCE_DOMAIN_VARIABLE,
+  workerEnvironmentProblems,
+  type WorkerProcess,
+} from "./worker-composition.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";

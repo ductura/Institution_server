@@ -154,7 +154,7 @@ jobs:
         if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile -t ductura-web:ci .
-          [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js /app/dist/worker.js " ]
           [ "$(docker run --rm --entrypoint id ductura-web:ci -u)" != 0 ]
           docker image inspect ductura-web:ci \
             | jq -e '[.[0].Config.Env[] | split("=")[0]] - ["PATH", "NODE_VERSION", "YARN_VERSION", "HOST", "PORT"] == []'
@@ -175,7 +175,7 @@ jobs:
         if: matrix.leg == 'provjere'
         run: |
           docker build -f infra/web/Dockerfile --target test-server -t ductura-test-server:ci .
-          [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/pdf-import-worker.js /app/dist/server.js /app/dist/worker.js " ]
           [ "$(docker run --rm --entrypoint id ductura-test-server:ci -u)" != 0 ]
           docker image inspect ductura-test-server:ci \
             | jq -e '[.[0].Config.Env[] | select(test("^(PATH|NODE_VERSION|YARN_VERSION)=") | not)] | sort

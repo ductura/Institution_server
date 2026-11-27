@@ -18,6 +18,7 @@ import { createEvidenceCommitter } from "../database/index.ts";
 import { createEvidenceService } from "../evidence/index.ts";
 import {
   type EvidencePayloadLocator,
+  type EvidencePayloadPresence,
   type EvidencePayloadStore,
   type InstitutionEvidencePayloadReader,
   InstitutionRoutedPayloadStore,
@@ -39,7 +40,10 @@ import type { Route } from "./router.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
 /** The storage of every institution: written by commit, read by replay (DAN-818). */
-type Payloads = EvidencePayloadStore & EvidencePayloadLocator & InstitutionEvidencePayloadReader;
+type Payloads = EvidencePayloadStore &
+  EvidencePayloadLocator &
+  InstitutionEvidencePayloadReader &
+  EvidencePayloadPresence;
 
 export type EvidenceIngestDependencies = {
   readonly signer: Pick<SigningKeyProvider, "sign">;
@@ -57,6 +61,7 @@ export const STORAGE_NOT_CONFIGURED: Payloads = Object.freeze({
   putImmutable: async () => notConfigured,
   storageRefFor: async () => notConfigured,
   readImmutable: async () => notConfigured,
+  headImmutable: async () => notConfigured,
 });
 
 /**

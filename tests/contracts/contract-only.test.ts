@@ -515,7 +515,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionConfigRoutesFor(NO_ACTOR).map((r) => r.contract.id),
   },
   {
-    call: "...createAnalysisRoutesFor(databases.main)",
+    call: "...createAnalysisRoutesFor(databases.main, { enabled: ANALYSIS_LOCAL })",
     ids: ["analysis.catalogue.get", "analysis.runs.post"],
     routes: () => createAnalysisRoutesFor(NO_ACTOR).map((r) => r.contract.id),
   },
@@ -960,6 +960,7 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       // SRV-NF1-PREDANO: the same states for every own assignment at once.
       "student.assignment-submissions.get",
       "student.submission-confirmation-code.get",
+      "teacher.submission-confirmation-code.get",
     ],
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
@@ -1327,6 +1328,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-receipt.get",
       "student.assignment-submissions.get",
       "student.submission-confirmation-code.get",
+      "teacher.submission-confirmation-code.get",
       "student.receipt-pdf.get",
       "teacher.receipt-pdf.get",
       "student.notice.get",

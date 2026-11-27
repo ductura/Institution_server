@@ -1,4 +1,4 @@
-// Bundles the server and its static PDF import worker into adjacent files.
+// Bundles the server, its static PDF import worker and the worker process into adjacent files.
 // pg-native stays out because pg loads it only on request.
 import { realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -8,6 +8,9 @@ import { build, type BuildOptions, type Plugin } from "esbuild";
 
 export const ENTRY = "server/server.ts";
 export const OUTFILE = "dist/server.js";
+/** The worker process (F4-PM2-R01B, D-71, D-102): its own entry point and file next to the server's. */
+export const WORKER_ENTRY = "server/worker-main.ts";
+export const WORKER_OUTFILE = "worker.js";
 const PDF_WORKER_ENTRY = "server/import/pdf/worker.ts";
 export const PDF_WORKER_OUTFILE = "pdf-import-worker.js";
 
@@ -37,9 +40,11 @@ export async function buildServer(
     logLevel: "warning",
   };
   const workerOutfile = resolve(root, dirname(outfile), PDF_WORKER_OUTFILE);
+  const processOutfile = resolve(root, dirname(outfile), WORKER_OUTFILE);
   await Promise.all([
     build({ ...options, entryPoints: [ENTRY], outfile, plugins: [...plugins] }),
     build({ ...options, entryPoints: [PDF_WORKER_ENTRY], outfile: workerOutfile }),
+    build({ ...options, entryPoints: [WORKER_ENTRY], outfile: processOutfile }),
   ]);
 }
 

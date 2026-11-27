@@ -347,6 +347,13 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2059:issuecomment-7214951129",
   },
+  // Dizajn 27. 11., 1.1 (Ductus#2059 c.7217617528): the confirmation code of a student's
+  // submission for its reader; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/confirmation-code/route.ts":
+    {
+      methods: ["GET"],
+      source: "danielrisavi77-create/Ductus#2059:issuecomment-7217617528",
+    },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],

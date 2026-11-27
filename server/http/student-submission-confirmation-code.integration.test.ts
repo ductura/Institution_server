@@ -27,7 +27,12 @@ async function start(read: MySubmissionConfirmationCodeReader["read"]): Promise<
     port: 0,
     databases: createDatabases(),
     layers: createLayers({ expectedOrigin: "https://ductura.example.invalid" }),
-    routes: [createStudentSubmissionConfirmationCodeRoute({ read })],
+    routes: [
+      createStudentSubmissionConfirmationCodeRoute({
+        read,
+        teacherRead: async () => ({ ok: true, value: null }),
+      }),
+    ],
   });
   return `http://127.0.0.1:${running.port}/api/v1/student/assignments`;
 }

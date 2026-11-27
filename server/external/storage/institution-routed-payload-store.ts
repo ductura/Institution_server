@@ -1,5 +1,10 @@
 import { evidenceObjectKey, evidenceStorageRef, isInstitutionId } from "../../domain/index.ts";
-import type { EvidencePayloadReadResult, InstitutionEvidencePayloadReader } from "./port.ts";
+import type {
+  EvidencePayloadPresence,
+  EvidencePayloadPresenceResult,
+  EvidencePayloadReadResult,
+  InstitutionEvidencePayloadReader,
+} from "./port.ts";
 import type {
   EvidencePayloadLocator,
   EvidencePayloadPutResult,
@@ -20,7 +25,8 @@ import { sha256Hex } from "./s3-signature.ts";
 
 /** What the router needs from one domain's store. */
 export type DomainPayloadStore = EvidencePayloadStore &
-  InstitutionEvidencePayloadReader & {
+  InstitutionEvidencePayloadReader &
+  Partial<EvidencePayloadPresence> & {
     verifyIdentity(expected: { institutionId: string }): Promise<StorageIdentityResult>;
   };
 
@@ -60,7 +66,11 @@ type Warn = (message: string, fields: Record<string, string>) => void;
  * Reads (`readImmutable`) pass the same two gates.
  */
 export class InstitutionRoutedPayloadStore
-  implements EvidencePayloadStore, EvidencePayloadLocator, InstitutionEvidencePayloadReader
+  implements
+    EvidencePayloadStore,
+    EvidencePayloadLocator,
+    InstitutionEvidencePayloadReader,
+    EvidencePayloadPresence
 {
   private readonly domains = new Map<string, Domain>();
   private readonly warn: Warn;
@@ -232,6 +242,41 @@ export class InstitutionRoutedPayloadStore
       storageDomain: domain.label,
       reason: result.reason,
     });
+    return UNAVAILABLE;
+  }
+
+  /**
+   * Whether the object of this key is there, as the institution's own domain
+   * says (the signing worker asks before it signs a receipt). It passes the
+   * same two gates as a read (P2, P3); a domain whose store cannot answer is
+   * `unavailable`, never `present`.
+   */
+  async headImmutable(given: {
+    institutionId: string;
+    evidencePackageId: string;
+    segmentHash: string;
+    payloadBytes: number;
+  }): Promise<EvidencePayloadPresenceResult> {
+    const { institutionId, evidencePackageId, segmentHash, payloadBytes } = given;
+    if (!isInstitutionId(institutionId)) {
+      this.log("evidence storage request is not valid", { reason: "storage_request_invalid" });
+      return UNAVAILABLE;
+    }
+    const domain = await this.ready(institutionId);
+    if (domain === null || domain.store.headImmutable === undefined) return UNAVAILABLE;
+    let answer: unknown;
+    try {
+      answer = await domain.store.headImmutable({
+        institutionId,
+        evidencePackageId,
+        segmentHash,
+        payloadBytes,
+      });
+    } catch {
+      return UNAVAILABLE;
+    }
+    const status = (answer as { status?: unknown } | null)?.status;
+    if (status === "present" || status === "absent" || status === "mismatch") return { status };
     return UNAVAILABLE;
   }
 

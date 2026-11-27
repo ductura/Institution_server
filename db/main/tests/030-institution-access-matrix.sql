@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6359);
+SELECT plan(6374);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -881,6 +881,27 @@ SELECT is(
   coalesce(substr(pg_temp.ask(c.actor, format('SELECT state FROM app.teacher_submission_state(%s, %s)', c.assignment, c.student)),
                   1, 5), 'NULL'), c.state,
   format('SRV-20: %s reads the state of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),
+  ('ana', '{z1}', '{ana}', 'ZD403'), ('dora', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('iva', '{z1}', '{ana}', 'ZD403'), ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'),
+  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403'),
+  ('vesna', '{z1}', '{boris}', 'ZD403'), ('vesna', '{z1}', '{tomo}', 'ZD403')
+) AS c (actor, assignment, student, state);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.teacher_submission_confirmation_code(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'teacher code: only ductus_app and the owner execute app.teacher_submission_confirmation_code'
+);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT coalesce(app.teacher_submission_confirmation_code(%s, %s), ''none'')',
+                                              c.assignment, c.student)), 1, 5), 'NULL'), c.state,
+  format('teacher code: %s reads the code of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
 )
 FROM (VALUES
   ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),

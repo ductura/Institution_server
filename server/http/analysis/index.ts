@@ -7,6 +7,7 @@
 // an error. The only database call is the read of the session. The switch is
 // off by default and is changed only by the owner's PR (the constant below);
 // while it is off both routes answer 404 not_found as if they did not exist.
+// Local exception: analysisEnabledFor (variable plus local stack marker only).
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../../contracts/index.ts";
@@ -33,6 +34,26 @@ import {
 
 /** The switch of the function (OC-style): off for the pilot, changed only by the owner's PR. */
 export const ANALYSIS_ENABLED = false;
+
+/** The variable that asks for the local exception (never a default, never set in a deployment). */
+export const ANALYSIS_LOCAL_VARIABLE = "DUCTUS_ANALYSIS_LOCAL";
+
+/**
+ * The local exception (SRV-ANALIZA-LOKALNO, the owner's option b): the routes
+ * answer only when the variable is exactly "1" AND the process carries the
+ * local stack marker, the same one the other local-only fakes use: NODE_ENV
+ * exactly "development", the fake OIDC provider, and no DUCTURA_DEPLOYMENT at
+ * all (so never staging, never production). The constant above stays false.
+ */
+export function analysisEnabledFor(env: NodeJS.ProcessEnv): boolean {
+  if (ANALYSIS_ENABLED) return true;
+  return (
+    env[ANALYSIS_LOCAL_VARIABLE] === "1" &&
+    env.NODE_ENV === "development" &&
+    env.DUCTUS_AUTH_PROVIDER === "fake-oidc" &&
+    env.DUCTURA_DEPLOYMENT === undefined
+  );
+}
 
 const find = (id: string) => {
   const found = ROUTES.find((route) => route.id === id);

@@ -71,6 +71,8 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     "external/isvu",
     "identity",
     "import",
+    // The composition of the worker process (F4-PM2-R01B, D-71, D-102); the web process builds no worker.
+    "worker",
   ],
   "test-server": ["http", "settings"],
   tests: ["domain", "downloads"],

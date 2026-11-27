@@ -2038,6 +2038,13 @@ export type Operations = {
     success: { status: 200; body: { "marked": boolean }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.submission-confirmation-code.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "code": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable" | "not_found";
+  };
   "teacher.submission-detail.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
