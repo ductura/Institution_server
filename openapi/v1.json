@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.181.0",
+    "version": "1.184.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -78217,6 +78217,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -78534,6 +78547,19 @@
                             "type": "string"
                           }
                         }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mismatchExplanation": {
+                    "anyOf": [
+                      {
+                        "minLength": 1,
+                        "maxLength": 4000,
+                        "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -79351,6 +79377,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -81094,6 +81133,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -81411,6 +81463,19 @@
                             "type": "string"
                           }
                         }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mismatchExplanation": {
+                    "anyOf": [
+                      {
+                        "minLength": 1,
+                        "maxLength": 4000,
+                        "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                        "type": "string"
                       },
                       {
                         "type": "null"
@@ -82228,6 +82293,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -83922,6 +84000,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -85007,6 +85098,19 @@
                               "type": "string"
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mismatchExplanation": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "maxLength": 4000,
+                          "description": "Up to 2000 Unicode code points, NFC, no leading or trailing space, no control character but the line feed.",
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -88137,6 +88241,29 @@
                               ]
                             }
                           }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "courseName": {
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mentorName": {
+                      "description": "A display string only: one mentor, or several teachers joined by \", \". Clients show it as is and never split or parse it.",
+                      "anyOf": [
+                        {
+                          "minLength": 1,
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -120683,6 +120810,42 @@
                                           "type": "string"
                                         }
                                       ]
+                                    },
+                                    "title": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "workType": {
+                                      "anyOf": [
+                                        {
+                                          "const": "short_paper",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "essay",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "seminar_paper",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "bachelor_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "master_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "specialist_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "doctoral_thesis",
+                                          "type": "string"
+                                        }
+                                      ]
                                     }
                                   }
                                 }
@@ -120759,6 +120922,42 @@
                                         },
                                         {
                                           "const": "submitted",
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "title": {
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "workType": {
+                                      "anyOf": [
+                                        {
+                                          "const": "short_paper",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "essay",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "seminar_paper",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "bachelor_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "master_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "specialist_thesis",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "const": "doctoral_thesis",
                                           "type": "string"
                                         }
                                       ]
