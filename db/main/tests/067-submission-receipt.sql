@@ -154,6 +154,8 @@ SELECT is(pg_temp.mine('ana'),
   (SELECT concat_ws('|','ceka',revision,requested_at) FROM evidence.submission WHERE id=pg_temp.id('submission')),
   'recorded, no receipt bound yet: ceka with the revision and the request time');
 SELECT is(pg_temp.mine('dora'),'none','a student of the course without a submission: none');
+SELECT is(pg_temp.ask('ana', $$ SELECT coalesce(code, 'none') FROM app.my_submission_confirmation_code({z1}::uuid) $$), 'none',
+  'SRV-KOD-POTVRDE: a submission still waiting for its signature (ceka) has no code');
 SELECT is(pg_temp.theirs('vesna'),pg_temp.mine('ana'),'the teacher of the course reads the same ceka as the student');
 SELECT is(pg_temp.theirs('vesna','{dora}'),'none','the teacher reads none for a student without a submission');
 SELECT is(substr(pg_temp.theirs('vesna',u),1,5),'ZD403','not a student of the assignment: the same refusal as no reader ('||u||')')
@@ -239,6 +241,12 @@ SELECT is(substr(pg_temp.theirs('marko'),1,5),'ZD403','SRV-20: a teacher of anot
 INSERT INTO institution.course_member (course_id, institution_id, user_id, role)
   VALUES (pg_temp.id('k1'), pg_temp.id('fak_a'), pg_temp.id('marko'), 'teacher');
 SELECT is(pg_temp.theirs('marko'),pg_temp.mine('ana'),'SRV-20: a collaborator of the course reads the same potvrdeno');
+SELECT matches(pg_temp.ask('ana', $$ SELECT outcome || '|' || coalesce(code, '') FROM app.my_submission_confirmation_code({z1}::uuid) $$),
+  '^found\|[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$', 'SRV-KOD-POTVRDE: the student reads the own code');
+SELECT is(pg_temp.ask('vesna', $$ SELECT outcome FROM app.my_submission_confirmation_code({z1}::uuid) $$), 'not_found',
+  'SRV-KOD-POTVRDE: a teacher of the course has no code to read');
+SELECT is(pg_temp.ask('dora', $$ SELECT coalesce(code, 'none') FROM app.my_submission_confirmation_code({z1}::uuid) $$), 'none',
+  'SRV-KOD-POTVRDE: another student of the course never sees the code of Ana');
 SELECT is((SELECT count(*) FROM audit.access_log),0::bigint,
   'SRV-20: neither the student''s nor the readers'' reads log anything (no content is read)');
 SELECT is(pg_temp.read(a),'not_found','read: '||a) FROM unnest(ARRAY['boris','vesna','tomo']) a;
@@ -297,5 +305,25 @@ SELECT is(pg_temp.mine('ana'),'not_found','SRV-20: a removed student has no stat
 SELECT is(pg_temp.needs('ana'),'not_found','SRV-20: nor its requirements');
 SELECT is(split_part(pg_temp.theirs('vesna'),'|',1),'potvrdeno',
   'SRV-20: the teacher still reads the receipt of a removed student, as every read of the work through actor_role');
+-- SRV-KOD-POTVRDE: a code is issued when a receipt is bound, and only then.
+SELECT has_table('evidence', 'submission_confirmation_code', 'SRV-KOD-POTVRDE: the codes have their own table');
+SELECT is_empty(
+  $$ SELECT r.submission_id FROM evidence.submission_receipt r
+      LEFT JOIN evidence.submission_confirmation_code c USING (submission_id)
+     WHERE c.submission_id IS NULL $$,
+  'SRV-KOD-POTVRDE: every bound receipt has a code');
+SELECT is_empty(
+  $$ SELECT c.submission_id FROM evidence.submission_confirmation_code c
+      LEFT JOIN evidence.submission_receipt r USING (submission_id)
+     WHERE r.submission_id IS NULL OR r.institution_id <> c.institution_id OR r.principal_id <> c.principal_id $$,
+  'SRV-KOD-POTVRDE: no code without its receipt, of the same student and institution');
+SELECT is_empty(
+  $$ SELECT code FROM evidence.submission_confirmation_code
+      WHERE code !~ '^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$' $$,
+  'SRV-KOD-POTVRDE: 4 groups of 4 from the alphabet without I, L, O and U');
+SELECT throws_ok($$ UPDATE evidence.submission_confirmation_code SET code = code $$, 'ZD403', NULL,
+  'SRV-KOD-POTVRDE: a stored code is never changed');
+SELECT throws_ok($$ DELETE FROM evidence.submission_confirmation_code $$, 'ZD403', NULL,
+  'SRV-KOD-POTVRDE: a stored code is never deleted');
 SELECT * FROM finish();
 ROLLBACK;
