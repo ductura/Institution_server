@@ -29,8 +29,10 @@ import {
   type Route,
 } from "../index.ts";
 import { createFormReader } from "./form.ts";
+import { withoutRecorded } from "./v1-view.ts";
 
 export type { StatementPort } from "../../database/index.ts";
+export { withoutRecorded } from "./v1-view.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
@@ -165,8 +167,9 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           const outcome = await port.run(token, assignmentId.toLowerCase(), slug, op);
           if (outcome.status !== "ok") return sendRefusal(response, contract, outcome);
           const schema = contract.responses[0]?.body;
-          if (schema !== undefined && Value.Check(schema, outcome.body))
-            return sendJson(response, 200, outcome.body);
+          const body = id === READ || id === SAVE ? withoutRecorded(outcome.body) : outcome.body;
+          if (schema !== undefined && Value.Check(schema, body))
+            return sendJson(response, 200, body);
           throw new Error("Declaration response outside its contract");
         } catch {
           // The postgres error can carry submitted text in its detail or context.
