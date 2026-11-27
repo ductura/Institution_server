@@ -222,6 +222,7 @@ it("passes the answer to the port beside the declaration body", async () => {
     type: "save",
     body: BODY,
     answer,
+    explanation: null,
   });
 });
 
@@ -234,6 +235,7 @@ it.each([
     type: "save",
     body: BODY,
     answer: null,
+    explanation: null,
   });
 });
 

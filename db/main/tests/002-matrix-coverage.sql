@@ -136,6 +136,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('collaboration', 'work_self_note', '237-mentorship-self-note-overview.sql'),
     ('declaration', 'conversation_attachment', '030-institution-access-matrix.sql'),
     ('declaration', 'external_attachment', '030-institution-access-matrix.sql'),
+    ('declaration', 'mismatch_explanation', '030-institution-access-matrix.sql'),
     ('declaration', 'question_answer', '030-institution-access-matrix.sql'),
     ('declaration', 'statement', '030-institution-access-matrix.sql'),
     ('evidence', 'assistant_match_attachment', '225-assistant-match.sql'),

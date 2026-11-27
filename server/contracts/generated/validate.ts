@@ -2068,7 +2068,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((((nestedAi['use'] === 'used')) || ((nestedAi['use'] === 'not_used')))) || ((nestedAi['use'] === null))) &&
       (typeof value['confirm'] === 'boolean') &&
       (value['questionAnswer'] !== undefined ? ((((typeof value['questionAnswer'] === 'object' && value['questionAnswer'] !== null && !Array.isArray(value['questionAnswer'])) && (typeof nestedQuestionAnswer['questionId'] === 'string') && local2.test(nestedQuestionAnswer['questionId']) && (typeof nestedQuestionAnswer['text'] === 'string') && nestedQuestionAnswer['text'].length <= 4000 && nestedQuestionAnswer['text'].length >= 1 && Object.getOwnPropertyNames(value['questionAnswer']).length === 2) || ((value['questionAnswer'] === null)))) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['baseVersion', 'revision', 'form', 'ownWork', 'humanHelp', 'ai', 'confirm', 'questionAnswer'].includes(key))
+      (value['mismatchExplanation'] !== undefined ? ((((typeof value['mismatchExplanation'] === 'string') && value['mismatchExplanation'].length <= 4000 && value['mismatchExplanation'].length >= 1) || ((value['mismatchExplanation'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['baseVersion', 'revision', 'form', 'ownWork', 'humanHelp', 'ai', 'confirm', 'questionAnswer', 'mismatchExplanation'].includes(key))
     )
   }
   })(),
@@ -2124,7 +2125,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((((nestedAi['use'] === 'used')) || ((nestedAi['use'] === 'not_used')))) || ((nestedAi['use'] === null))) &&
       (typeof value['confirm'] === 'boolean') &&
       (value['questionAnswer'] !== undefined ? ((((typeof value['questionAnswer'] === 'object' && value['questionAnswer'] !== null && !Array.isArray(value['questionAnswer'])) && (typeof nestedQuestionAnswer['questionId'] === 'string') && local2.test(nestedQuestionAnswer['questionId']) && (typeof nestedQuestionAnswer['text'] === 'string') && nestedQuestionAnswer['text'].length <= 4000 && nestedQuestionAnswer['text'].length >= 1 && Object.getOwnPropertyNames(value['questionAnswer']).length === 2) || ((value['questionAnswer'] === null)))) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['baseVersion', 'revision', 'form', 'ownWork', 'humanHelp', 'ai', 'confirm', 'questionAnswer'].includes(key))
+      (value['mismatchExplanation'] !== undefined ? ((((typeof value['mismatchExplanation'] === 'string') && value['mismatchExplanation'].length <= 4000 && value['mismatchExplanation'].length >= 1) || ((value['mismatchExplanation'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['baseVersion', 'revision', 'form', 'ownWork', 'humanHelp', 'ai', 'confirm', 'questionAnswer', 'mismatchExplanation'].includes(key))
     )
   }
   })(),
