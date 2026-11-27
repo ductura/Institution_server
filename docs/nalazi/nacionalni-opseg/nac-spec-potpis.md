@@ -71,7 +71,7 @@ Vrijeme do SYNCED se mijenja: danas je to (pohrana + jedan KMS poziv); prema pri
 
 ## 5. Kvote
 
-Formula za izgradnju (ne brojka): `pozivi/s = Σ po aktivnim domenama (prozora u sekundi) = D_aktivnih / W` (gornja granica; stvarno manje jer prozor bez potvrda ne šalje poziv). Uz ostalo opterećenje računa (svi pozivi istog računa i regije dijele kvotu) potreban je prostor od najmanje 2x (rezerva iz cilja).
+Formula za izgradnju (ne brojka): `pozivi/s ≤ Σ po aktivnim domenama d: max(1 / W, r_d / L_max)`, gdje je `r_d` broj potvrda domene `d` u sekundi. Prvi član vrijedi dok prozor zatvara istek `W`, drugi kad ga zatvara `L_max` (primjer: 30 000 potvrda jedne domene u sekundi daje najmanje 2 prozora, dakle 2 poziva/s, a ne 1). Bez prevelikih naleta to je `D_aktivnih / W`; prozor bez potvrda ne šalje poziv. Naleti su stvarni: nakon prekida veze red se prazni bez stanke ([sat-pisanja.md](sat-pisanja.md)). Uz ostalo opterećenje računa (svi pozivi istog računa i regije dijele kvotu) potreban je prostor od najmanje 2x (rezerva iz cilja).
 
 - Dnevni korijen već troši jedan poziv po domeni na dan; zanemariv u odnosu na ovo.
 - Ograničenje broja istodobnih KMS poziva po radniku mora postojati (inače oporavak nakon ispada, 6, može sam probiti kvotu): `maxInFlight` kao parametar radnika, uz iste granice kakve danas ima `MAX_RECEIPT_SIGN_TIMEOUT_MS` (60 000 ms) i `MAX_SIGNATURE_RETRY_ATTEMPTS` (10).
@@ -81,7 +81,7 @@ Formula za izgradnju (ne brojka): `pozivi/s = Σ po aktivnim domenama (prozora u
 
 Danas: potvrde ostaju u `pending_signature`, radnik ih pokušava do 10 puta s razmakom do 300 s, zatim ih preuzima `reconcile-pending-receipts`. Klijenti čekaju bez SYNCED-a (B-6). Prijedlog zadržava to ponašanje i sužava posao:
 
-- **Povrat je jeftiniji:** zatvoreni prozori čekaju svoj potpis; oporavak nakon ispada od jednog sata je najviše (3 600 / `W`) × `D_aktivnih` poziva umjesto oko 4,1 milijuna za 15 000 pisaca. Poziva se redom, uz `maxInFlight` iz 5.
+- **Povrat je jeftiniji:** zatvoreni prozori čekaju svoj potpis; oporavak nakon ispada od `T` sekundi je najviše `Σ po domenama (T / W + n_d / L_max)` poziva, gdje je `n_d` broj potvrda domene u ispadu (primjer: sat vremena, 1 domena, 4,1 milijuna potvrda, `W = 1 s`, `L_max = 16 384`: 3 600 + 251 = oko 3 850 poziva), umjesto oko 4,1 milijuna za 15 000 pisaca. Poziva se redom, uz `maxInFlight` iz 5.
 - **Zapis prozora je nepromjenjiv:** nepotpisan zatvoren prozor ima fiksan popis listova i fiksan korijen, pa kasniji potpis daje isti zapis; ne smije se dodavati potvrde u već zatvoren prozor da bi se „nadoknadilo” (vidi 3.2).
 - **Prozori u ispadu** se ne spajaju automatski: spajanje bi promijenilo korijen već odabranog prozora. Ako Daniel želi manji broj poziva pri oporavku, moguće je zatvarati nove prozore dulje dok ispad traje (do `L_max` ili gornje granice trajanja); to je izbor, ne zadano (odluka 4).
 - **Što se ne smije:** potpisivati drugim, lokalnim ključem dok je KMS nedostupan, i označiti SYNCED bez potpisanog korijena. Oba bi slomila D-71 i B-6.
@@ -92,11 +92,12 @@ Danas: potvrde ostaju u `pending_signature`, radnik ih pokušava do 10 puta s ra
 Zadatak je kritičan (`server/external/keys` i `server/domain/forensics` imaju floor `critical`), pa prije koda treba attack plan ([ductus-attack-plan]) kao zaseban issue. Početni popis napada koji moraju postati testovi:
 
 1. **Potvrda izvan prozora:** dokaz za list koji nije u korijenu mora pasti (`root_mismatch`); prazan dokaz s `treeSize > 1`, dokaz predug/prekratak za `treeSize`, `index >= treeSize`, i dokaz s hashem koji nije 32 bajta.
-2. **Zamjena razina stabla:** unutarnji čvor predstavljen kao list (i obrnuto) ne smije proći; zato prefiksi `0x00`/`0x01` iz `evidence-log-merkle.ts` i test s dokazom koji tretira unutarnji čvor kao list.
+2. **Zamjena veličine stabla:** `inclusion.treeSize` nije potpisan sam za sebe, a dokaz lista 1 iz stabla veličine 5 prolazi i s veličinama 6, 7 i 8 (`evidence-log-merkle.test.ts`, „does not bind a size…”). Verifikator zato **mora zahtijevati `treeSize === windowRoot.count`** (potpisana vrijednost) i tu potpisanu vrijednost predati `verifyEvidenceLogInclusion`; test mijenja `treeSize` u dokazu i očekuje odbijanje.
+   2a. **Zamjena razina stabla:** unutarnji čvor predstavljen kao list (i obrnuto) ne smije proći; zato prefiksi `0x00`/`0x01` iz `evidence-log-merkle.ts` i test s dokazom koji tretira unutarnji čvor kao list.
 3. **Zamjena vrste potpisa:** potpis potvrde v2 se ne smije prihvatiti kao potpis korijena i obrnuto; potpis dnevnog korijena isto (različite oznake formata).
 4. **Dvije verzije istog prozora:** dva različita korijena za isti (`domain`, `windowStart`) = sukob koji se otkriva i prijavljuje, ništa se ne prepisuje.
 5. **Izostavljena potvrda:** server može propustiti potvrdu iz prozora; klijent tada nema dokaz i ostaje bez SYNCED-a (sigurno), a rekonciliator je mora naći. Test: potvrda spremljena, a nikad ušla u prozor, završi potpisana ili vidljivo zaglavljena.
-6. **Vrijeme:** `acceptedAt` potvrde mora biti u `[windowStart, windowEnd)` zapisa; verifikator to provjerava.
+6. **Vrijeme:** `acceptedAt` u potvrdi je početak UTC minute (`evidence-receipt.ts`), pa se ne može uspoređivati sa sekundnim prozorom. Pripadnost prozoru dokazuje korijen (list je u potpisanom stablu), a ne vrijeme. Verifikator provjerava samo da je `acceptedAt` ≤ `windowEnd` zapisa i da je `windowEnd` u minuti ne ranijoj od `acceptedAt`; točan trenutak prihvata ostaje u zapisu servera. Payload potvrde se ne mijenja.
 7. **Preuzimanje tuđeg dokaza:** čitanje potvrde ostaje isto što i danas (vlasnik rada; tuđe je nepostojeće, 404). Dokaz pripadnosti ne otkriva druge listove: sadrži samo hasheve susjeda, a ne njihove potvrde.
 8. **Opis potpisa:** `keyId`/`keyVersion` su nepovjerljiv ulaz (kao u `aws-kms-ed25519-signer.ts`): vrijedi samo ključ s popisa povjerenja domene.
 9. **Ponavljanje nakon pada:** isti prozor potpisan dvaput daje iste bajtove, pa je ishod „već potpisano”, ne druga potvrda.
