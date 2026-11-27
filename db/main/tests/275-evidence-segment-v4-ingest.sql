@@ -11,7 +11,7 @@
 BEGIN;
 SET LOCAL lc_messages TO 'C';
 \ir fixtures/evidence-acceptance.inc
-SELECT no_plan();
+SELECT plan(48);
 
 CREATE FUNCTION pg_temp.u(p_name text) RETURNS uuid LANGUAGE sql IMMUTABLE AS $$
   SELECT ('00000000-0000-4000-8000-' || substr(md5('srv1809-' || p_name), 1, 12))::uuid
@@ -81,7 +81,11 @@ INSERT INTO ref
    WHERE r.name IN ('t1', 't2', 't3');
 SELECT is((SELECT count(*)::int FROM ref WHERE name ~ '^t[123](_sha)?$'), 6, 'fixture: three transfers and their hashes');
 
--- 0. Catalogue.
+-- 0. Catalogue. The link limit in the acceptance is the literal of
+-- assistant.ai_transfer_max(), which the evidence owner may not call; this ties the two.
+SELECT ok(position(format('jsonb_array_length(p_ai_transfer_links) > %s', assistant.ai_transfer_max()) IN p.prosrc) > 0,
+  'the acceptance allows as many links as assistant.ai_transfer_max() transfers')
+  FROM pg_proc p WHERE p.oid = 'app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text,jsonb)'::regprocedure;
 SELECT is((SELECT format('%s|%s|%s', proowner::regrole, prosecdef, 'search_path=""' = ANY (proconfig))
     FROM pg_proc WHERE oid = 'app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text,jsonb)'::regprocedure),
   'ductus_evidence|t|t', 'the 10-argument acceptance: evidence owner, SECURITY DEFINER, empty search_path');
