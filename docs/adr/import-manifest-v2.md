@@ -41,6 +41,8 @@ Element traga je isti kao u v1: `{traceKind, count}`, `count ≥ 1`, najviše tr
 | ODT    | `office:annotation` u `content.xml` (bez `office:annotation-end`)                             | `text:changed-region` s `text:deletion` | `text:changed-region` s `text:insertion` |
 | PDF    | anotacije `/Annot` podtipa `Text` i `FreeText` (`Popup` se ne broji jer pripada roditeljskoj) | nikad                                   | nikad                                    |
 
+U ODT-u se `text:changed-region` s `text:format-change` (promjena oblikovanja) ne broji jer nije ni brisanje ni umetanje.
+
 PDF nema praćene promjene, pa `deletion` i `insertion` u PDF-u ne postoje. Čitač ih ne pogađa iz izgleda stranice.
 
 Odgovori na komentare u PDF-u (anotacija s ključem `/IRT`) ne broje se zasebno: jedna nit je jedan `comment`, jer se broji samo anotacija bez `/IRT`. `FreeText` se broji kao `comment` neovisno o tome kako izgleda na stranici. Tekst anotacije nikad ne ulazi u tekst dokumenta (vidi „Tekst i `contentSha256`” niže). Pravilo za odgovore je pod „Otvoreno za review”, t. 4.
