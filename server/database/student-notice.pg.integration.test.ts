@@ -114,6 +114,39 @@ describe("student.notice.get over PostgreSQL", () => {
       expect(await reader.read(TOKEN.tomo, ZM1)).toEqual(notFound);
     }));
 
+  it("names the course and the mentor, null where there is none (F4-STU-R08-SRV)", () =>
+    withFixtures(async (db) => {
+      const reader = createStudentNoticeReader(actorOver(db));
+      // Ana in K1 has no seminar group, so no mentor of the course.
+      expect(await reader.read(TOKEN.ana, Z1)).toMatchObject({
+        ok: true,
+        value: { courseName: "K1", mentorName: null },
+      });
+      // A mentored work has no course; Marko has no recorded name yet.
+      expect(await reader.read(TOKEN.ana, ZM1)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: null },
+      });
+      // Written as the owner would; the name is invented.
+      await db.query(
+        `INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+         SELECT u.id, u.institution_id, 'Izmišljeni', 'Mentor'
+           FROM identity.user_account u JOIN person p ON p.id = u.id WHERE p.name = 'marko'`,
+      );
+      expect(await reader.read(TOKEN.ana, ZM1)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: "Izmišljeni Mentor" },
+      });
+      // Nina's teacher role is not confirmed: Boris reads zm3 without a mentor.
+      expect(await reader.read(TOKEN.boris, ZM3)).toMatchObject({
+        ok: true,
+        value: { courseName: null, mentorName: null },
+      });
+      // A student of neither keeps the same 404, names or not (C-23).
+      expect(await reader.read(TOKEN.dora, ZM1)).toEqual(notFound);
+      expect(await reader.read(TOKEN.tomo, Z1)).toEqual(notFound);
+    }));
+
   it("readAt of a mentorship's notice is the caller's own", () =>
     withFixtures(async (db) => {
       const reader = createStudentNoticeReader(actorOver(db));

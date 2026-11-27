@@ -45,7 +45,9 @@
             "evidenceProfile": "basic",
             "wordMin": 1500,
             "wordMax": 2500
-          }
+          },
+          "courseName": "Izmišljeni kolegij: Urbana ekologija",
+          "mentorName": "Izmišljena Mentorica"
         }
       }
     },
@@ -81,7 +83,9 @@
           "acknowledgedAt": "2026-11-03T09:20:00.000Z",
           "purposeCatalogVersion": 1,
           "aiSummaryOnly": true,
-          "previousVersion": null
+          "previousVersion": null,
+          "courseName": null,
+          "mentorName": null
         }
       }
     },
