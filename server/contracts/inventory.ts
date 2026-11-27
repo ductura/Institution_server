@@ -465,6 +465,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7079306579",
   },
+  // SRV-1809 (Ductus#2059 c.7208831876, evidence-segment-v4 step 3): the record of a transfer from an answer of the assistant; Ductus has no such route.
+  "app/api/works/[documentId]/ai-transfers/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7208831876",
+  },
   // PIL-P1-PODUDARANJE-OBJASNJENJE-SRV (Ductus#2052 c.7092390512, P-1, rule 13): the student's explanation of a finding; Ductus has no such route.
   // SRV-V19-DNEVNIK-UGOVOR (Ductus#2055 c.7146962118, val 19): the practice journal beside a mentorship; Ductus has no such route.
   "app/api/practice/placements/route.ts": {
