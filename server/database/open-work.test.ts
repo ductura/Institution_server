@@ -14,6 +14,7 @@ import {
   REVISION_ZERO_V3_SHA256,
 } from "../domain/index.ts";
 
+import { SHEET_REVISION_ZERO_SHA256 } from "./evidence-work-version.ts";
 import {
   count,
   createWorkOpener,
@@ -28,6 +29,8 @@ import {
 } from "./open-work.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
+// The column of the work's kind (a computed key: the lint takes no snake_case key).
+const KIND_COLUMN = "document_kind";
 const TOKEN = "izmisljeni-token-evidencije-000000000000001";
 const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
 const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
@@ -62,6 +65,7 @@ type Rows = {
   domain?: Record<string, unknown>[];
   keys?: Record<string, unknown>[];
   revisionZero?: Record<string, unknown>[];
+  kind?: Record<string, unknown>[];
 };
 
 function opener(rows: Rows) {
@@ -72,13 +76,15 @@ function opener(rows: Rows) {
         seen.push({ text, values, token });
         const pick = text.includes("open_student_work")
           ? (rows.open ?? [OPENED])
-          : text.includes("work_submitted")
-            ? (rows.submitted ?? [{ submitted: false }])
-            : text.includes("evidence.document_revision")
-              ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
-              : text.includes("evidence.package")
-                ? (rows.domain ?? [{ evidence_domain_id: DOMAIN, last_signed_at: null }])
-                : (rows.keys ?? [KEY]);
+          : text.includes("document_kind")
+            ? (rows.kind ?? [{ [KIND_COLUMN]: "text" }])
+            : text.includes("work_submitted")
+              ? (rows.submitted ?? [{ submitted: false }])
+              : text.includes("evidence.document_revision")
+                ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
+                : text.includes("evidence.package")
+                  ? (rows.domain ?? [{ evidence_domain_id: DOMAIN, last_signed_at: null }])
+                  : (rows.keys ?? [KEY]);
         return { rows: pick as never[], rowCount: pick.length };
       },
     };
@@ -152,6 +158,7 @@ describe("createWorkOpener", () => {
     expect(seen.map((s) => s.values)).toEqual([
       [ASSIGNMENT, true],
       [ASSIGNMENT],
+      ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       [DOMAIN],
@@ -257,6 +264,51 @@ describe("createWorkOpener", () => {
   it("SRV-7F: at revision 0 a current hash other than revision 0's is a malformed row", async () => {
     // A v1 document hash on a work whose revision 0 is v3: the two records disagree.
     const { open } = opener({ revisionZero: [{ content_hash: REVISION_ZERO_V3_SHA256 }] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
+  });
+
+  it("F4-V14-R01: a spreadsheet work opens with the spreadsheet revision 0 and its kind", async () => {
+    const { open } = opener({
+      open: [{ ...OPENED, document_hash: SHEET_REVISION_ZERO_SHA256 }],
+      kind: [{ [KIND_COLUMN]: "spreadsheet" }],
+      revisionZero: [{ content_hash: SHEET_REVISION_ZERO_SHA256 }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(
+      result.ok && [
+        result.value.workKind,
+        result.value.schemaVersion,
+        result.value.revisionZeroHash,
+      ],
+    ).toEqual(["spreadsheet", 1, SHEET_REVISION_ZERO_SHA256]);
+  });
+
+  it("F4-V14-R01: a text work carries no workKind (absent is text)", async () => {
+    const { open } = opener({});
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok && "workKind" in result.value).toBe(false);
+  });
+
+  it.each([
+    ["slides, which have no revision 0 here", [{ [KIND_COLUMN]: "slides" }]],
+    ["an inherited name", [{ [KIND_COLUMN]: "__proto__" }]],
+    ["no kind", [{ [KIND_COLUMN]: null }]],
+    ["no row", []],
+  ])("F4-V14-R01: the kind %s is a malformed row", async (_name, kind) => {
+    const { open } = opener({ kind });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
+  });
+
+  it.each([
+    ["a text revision 0 on a spreadsheet work", REVISION_ZERO_SHA256],
+    ["the spreadsheet revision 0 on a text work", SHEET_REVISION_ZERO_SHA256],
+  ])("F4-V14-R01: %s is a malformed row", async (name, hash) => {
+    const spreadsheet = name.startsWith("a text");
+    const { open } = opener({
+      open: [{ ...OPENED, document_hash: hash }],
+      kind: [{ [KIND_COLUMN]: spreadsheet ? "spreadsheet" : "text" }],
+      revisionZero: [{ content_hash: hash }],
+    });
     expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
   });
 

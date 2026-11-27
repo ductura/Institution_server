@@ -12,7 +12,11 @@
 // (review FAIL c.6947022168 on ductura/server#242).
 import { type AppError, isEvidenceDomainId, isSha256Hex, type Result } from "../domain/index.ts";
 
-import { type DocumentSchemaVersion, readWorkVersion } from "./evidence-work-version.ts";
+import {
+  type DocumentSchemaVersion,
+  readWorkVersion,
+  type RevisionZeroKind,
+} from "./evidence-work-version.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 /** A public receipt key of the work's evidence domain, as the contract sends it. */
@@ -50,8 +54,8 @@ export type OpenedWork = {
    */
   lastSignedAt: string | null;
   /**
-   * SRV-V14-KIND-ENUM: the kind of the work when the opener knows it; absent is "text", the
-   * only kind app.open_student_work opens today.
+   * SRV-V14-KIND-ENUM: the kind of the work when it is not text; absent is "text".
+   * F4-V14-R01: app.open_student_work opens text and spreadsheet works.
    */
   workKind?: "text" | "slides" | "spreadsheet";
 };
@@ -122,6 +126,14 @@ const SIGNED_MINUTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/;
 // ISO 8601 in UTC with milliseconds, formatted by the database, never by a driver's time zone.
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const iso = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', ${ISO})`;
+// Under RLS the session sees only its own documents; the kind is written once, when the work
+// starts, and never updated.
+const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
+// A Map, not an object: a value such as `__proto__` is no kind. Slides have no revision 0 yet.
+const KINDS = new Map<unknown, RevisionZeroKind>([
+  ["text", "text"],
+  ["spreadsheet", "spreadsheet"],
+]);
 const KEYS_SQL = `
 SELECT key_id, key_version, evidence_domain_id::text, purpose, algorithm, key_base64url,
        ${iso("valid_from")} AS valid_from, ${iso("valid_to")} AS valid_to, ${iso("revoked_at")} AS revoked_at
@@ -230,7 +242,11 @@ async function open(
   if (typeof submitted !== "boolean") return malformed();
   // SRV-7F: the version is the server's record of revision 0; at revision 0
   // the snapshot the work opens with is that revision, so the hashes agree.
-  const version = await readWorkVersion(tx, row.document_id);
+  // The kind of the work is the server's record, written when the work started (F4-V14-R01).
+  const kindRows = await tx.query<Row>(KIND_SQL, [row.document_id]);
+  const kind = kindRows.rows.length === 1 ? KINDS.get(kindRows.rows[0]?.document_kind) : undefined;
+  if (kind === undefined) return malformed();
+  const version = await readWorkVersion(tx, row.document_id, kind);
   if (version === null) return malformed();
   if (currentRevision === 0 && row.document_hash !== version.revisionZeroHash) return malformed();
   const domain = await tx.query<Row>(DOMAIN_SQL, [row.document_id]);
@@ -261,6 +277,7 @@ async function open(
       receiptKeys: keys,
       submitted,
       lastSignedAt,
+      ...(kind === "spreadsheet" ? { workKind: kind } : {}),
     },
   };
 }

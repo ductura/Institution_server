@@ -243,6 +243,30 @@ SELECT is(pg_temp.open('dora', pg_temp.id('z1')), 'not_configured|||||||',
 SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_slides), 'and nothing is written');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
   'SRV-V13-MIG-VRSTA: a work that exists opens as before, whatever the assignment says now');
+-- F4-V14-R01: a spreadsheet assignment starts a work with the spreadsheet
+-- revision 0 (the bytes and hash of server/domain/sheet, fixed in
+-- tests/unit/open-work-spreadsheet-migration.test.ts). Done in a savepoint, so
+-- Dora's work below still starts as a text work.
+SAVEPOINT spreadsheet_start;
+UPDATE institution.assignment SET document_kind = 'spreadsheet' WHERE id = pg_temp.id('z1');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
+  'F4-V14-R01: a spreadsheet assignment starts the work');
+SELECT is((SELECT d.document_kind FROM evidence.document d WHERE d.id = pg_temp.doc('dora', 'z1')), 'spreadsheet',
+  'F4-V14-R01: and writes kind spreadsheet into the work');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 5),
+  '70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4',
+  'F4-V14-R01: the work opens with the hash of the spreadsheet revision 0');
+SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 8),
+  '{"kind":"spreadsheet","schemaVersion":1,"sheets":[{"cells":{},"columns":10,"id":"00000000-0000-4000-8000-000000000000","name":"List1","rows":100}]}',
+  'F4-V14-R01: and with the spreadsheet revision 0 as its snapshot');
+SELECT is((SELECT c.body FROM evidence.document_checkpoint c WHERE c.document_id = pg_temp.doc('dora', 'z1') AND c.revision = 0),
+  split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 8),
+  'F4-V14-R01: the checkpoint of revision 0 holds the same bytes');
+SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'),
+  'F4-V14-R01: the text work of another student opens as before');
+SELECT is(pg_temp.open('lea', pg_temp.id('z1')), 'not_found|||||||',
+  'F4-V14-R01: another institution reads no spreadsheet work of this one');
+ROLLBACK TO SAVEPOINT spreadsheet_start;
 UPDATE institution.assignment SET document_kind = 'text' WHERE id = pg_temp.id('z1');
 SELECT is(split_part(pg_temp.open('dora', pg_temp.id('z1')), '|', 1), 'opened',
   'SRV-V13-MIG-VRSTA: a text assignment starts the work');
