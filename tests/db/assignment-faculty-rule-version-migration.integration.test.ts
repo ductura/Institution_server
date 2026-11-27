@@ -20,7 +20,7 @@ const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
 requireLoopbackDatabaseUrl(ADMIN_URL, "The migration test runs only against a loopback database.");
 const MIGRATIONS = fileURLToPath(new URL("../../db/main/migrations/", import.meta.url));
-const TARGET = "20261220620000_assignment_faculty_rule_version.sql";
+const TARGET = "20261220630000_assignment_faculty_rule_version.sql";
 
 function section(file: string, which: "up" | "down") {
   const text = readFileSync(`${MIGRATIONS}${file}`, "utf8");
