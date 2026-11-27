@@ -77,6 +77,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",
   },
+  "app/api/notifications/messages-and-slots/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2058:issuecomment-7196660869",
+  },
   "app/api/notifications/mentorship-opened/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7116183714",

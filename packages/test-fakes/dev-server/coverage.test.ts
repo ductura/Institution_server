@@ -2402,6 +2402,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "notifications.returned-for-revision.list.get": {
     request: { path: "/api/v1/notifications/returned-for-revision", as: "student" },
   },
+  "notifications.messages-and-slots.list.get": {
+    request: { path: "/api/v1/notifications/messages-and-slots", as: "student" },
+  },
   "notifications.read.post": {
     request: {
       method: "POST",

@@ -1,5 +1,5 @@
 // The student's read of the verdict the worker keeps for a recorded submission
-// (F4-PM2-R01, 20261220400000): app.my_submission_reconstruction. Who asks comes
+// (F4-PM2-R01, 20261220460000): app.my_submission_reconstruction. Who asks comes
 // only from the session token; another person's submission, an unknown
 // assignment and one without a submission are all not_found, and an id that is
 // not a lowercase uuid is never sent. A row the port cannot vouch for throws, so
