@@ -12,8 +12,10 @@ import {
   REVISION_ZERO_SHA256,
   REVISION_ZERO_V2_SHA256,
   REVISION_ZERO_V3_SHA256,
+  SLIDES_REVISION_ZERO_SHA256,
 } from "../domain/index.ts";
 
+import { SHEET_REVISION_ZERO_SHA256 } from "./evidence-work-version.ts";
 import {
   count,
   createWorkOpener,
@@ -33,6 +35,8 @@ const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
 const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
 // At revision 0 the current document is revision 0 (SRV-7F).
 const HASH = REVISION_ZERO_SHA256;
+// A column name of the database, kept as a string so the row keys stay camelCase for the linter.
+const KIND = "document_kind";
 const LATER_HASH = "a".repeat(64);
 const OPENED = {
   outcome: "opened",
@@ -62,6 +66,7 @@ type Rows = {
   domain?: Record<string, unknown>[];
   keys?: Record<string, unknown>[];
   revisionZero?: Record<string, unknown>[];
+  kind?: Record<string, unknown>[];
 };
 
 function opener(rows: Rows) {
@@ -74,11 +79,13 @@ function opener(rows: Rows) {
           ? (rows.open ?? [OPENED])
           : text.includes("work_submitted")
             ? (rows.submitted ?? [{ submitted: false }])
-            : text.includes("evidence.document_revision")
-              ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
-              : text.includes("evidence.package")
-                ? (rows.domain ?? [{ evidence_domain_id: DOMAIN, last_signed_at: null }])
-                : (rows.keys ?? [KEY]);
+            : text.includes("document_kind")
+              ? (rows.kind ?? [{ [KIND]: "text" }])
+              : text.includes("evidence.document_revision")
+                ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
+                : text.includes("evidence.package")
+                  ? (rows.domain ?? [{ evidence_domain_id: DOMAIN, last_signed_at: null }])
+                  : (rows.keys ?? [KEY]);
         return { rows: pick as never[], rowCount: pick.length };
       },
     };
@@ -115,6 +122,54 @@ describe("open work errors (docs/CODE_STYLE.md §8)", () => {
   });
 });
 
+describe("createWorkOpener, slides (F4-V13-R01)", () => {
+  const SLIDES_OPENED = { ...OPENED, document_hash: SLIDES_REVISION_ZERO_SHA256 };
+
+  it("opens a slides work: kind slides, version 1, the slides revision 0 hash", async () => {
+    const { open } = opener({
+      open: [SLIDES_OPENED],
+      kind: [{ [KIND]: "slides" }],
+      revisionZero: [{ content_hash: SLIDES_REVISION_ZERO_SHA256 }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.workKind).toBe("slides");
+    expect(result.value.schemaVersion).toBe(1);
+    expect(result.value.revisionZeroHash).toBe(SLIDES_REVISION_ZERO_SHA256);
+  });
+
+  it("opens a spreadsheet work: kind spreadsheet, version 1, the sheet revision 0 hash", async () => {
+    const { open } = opener({
+      open: [{ ...OPENED, document_hash: SHEET_REVISION_ZERO_SHA256 }],
+      kind: [{ [KIND]: "spreadsheet" }],
+      revisionZero: [{ content_hash: SHEET_REVISION_ZERO_SHA256 }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.workKind).toBe("spreadsheet");
+    expect(result.value.schemaVersion).toBe(1);
+  });
+
+  it("refuses a slides work whose revision 0 is the text one, and the other way round", async () => {
+    const slidesKindTextHash = opener({ kind: [{ [KIND]: "slides" }] });
+    expect(await slidesKindTextHash.open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
+    const textKindSlidesHash = opener({
+      open: [SLIDES_OPENED],
+      revisionZero: [{ content_hash: SLIDES_REVISION_ZERO_SHA256 }],
+    });
+    expect(await textKindSlidesHash.open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
+  });
+
+  it("refuses a kind it does not open: unknown, none, two rows", async () => {
+    for (const kind of [[{ [KIND]: "__proto__" }], [], [{ [KIND]: "text" }, { [KIND]: "text" }]]) {
+      const { open } = opener({ kind });
+      expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
+    }
+  });
+});
+
 describe("createWorkOpener", () => {
   it("opens the work in one transaction with the token presented, never a parameter", async () => {
     const { open, seen } = opener({});
@@ -130,6 +185,7 @@ describe("createWorkOpener", () => {
         lastSequenceTo: 0,
         schemaVersion: 1,
         revisionZeroHash: REVISION_ZERO_SHA256,
+        workKind: "text",
         snapshot: OPENED.snapshot,
         receiptKeys: [
           {
@@ -152,6 +208,7 @@ describe("createWorkOpener", () => {
     expect(seen.map((s) => s.values)).toEqual([
       [ASSIGNMENT, true],
       [ASSIGNMENT],
+      ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       [DOMAIN],

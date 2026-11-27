@@ -15,6 +15,8 @@
 //
 // DAN-1907: two migrations of one database with the same version fail every
 // mode, --write included (it writes no ledger while a duplicate exists).
+// SRV-MIGRACIJE-BROJEVI: with --base, a migration added since the base must
+// have a version above every version of the base (pnpm db:renumber fixes it).
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -112,6 +114,42 @@ export function checkBase(base: Map<string, Buffer>, migrations: Map<string, Buf
   return errors;
 }
 
+/** The 14-digit dbmate version of a migration file name, if it has one. */
+export const versionOf = (name: string): string | undefined => /^(\d{14})_/.exec(name)?.[1];
+
+/** The greatest version among `names` (14 digits compare as strings). */
+export function maxVersion(names: Iterable<string>): string | undefined {
+  let max: string | undefined;
+  for (const name of names) {
+    const version = versionOf(name);
+    if (version !== undefined && (max === undefined || version > max)) max = version;
+  }
+  return max;
+}
+
+/**
+ * SRV-MIGRACIJE-BROJEVI: every migration added relative to the base must have a
+ * version above the greatest version of the base; dbmate --strict refuses a
+ * pending migration older than an applied one, and two branches cut from one
+ * base must not both pick "the next" number. The base's own history is never
+ * judged, only the additions.
+ */
+export function checkOrder(
+  base: Map<string, Buffer>,
+  migrations: Map<string, Buffer>,
+  dir: string = DIR,
+): string[] {
+  const max = maxVersion(base.keys());
+  if (max === undefined) return [];
+  return [...migrations.keys()]
+    .sort()
+    .filter((name) => !base.has(name) && (versionOf(name) ?? "") <= max)
+    .map(
+      (name) =>
+        `${dir}/${name} is not above ${max}, the greatest version at the base; run pnpm db:renumber`,
+    );
+}
+
 /** The migrations of a commit, read from git objects, never from the checkout. */
 export function readBase(sha: string, dir: string = DIR): Map<string, Buffer> {
   if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error(`--base needs a full commit SHA, got "${sha}"`);
@@ -174,7 +212,8 @@ function main(argv: string[]): number {
     }
     errors.push(...duplicates, ...checkLedger(migrations, readLedger(ledger), ledger));
     if (argv[0] === "--base") {
-      errors.push(...checkBase(readBase(argv[1] as string, migrationsDir), migrations));
+      const base = readBase(argv[1] as string, migrationsDir);
+      errors.push(...checkBase(base, migrations), ...checkOrder(base, migrations, migrationsDir));
     }
     summaries.push(`${ledger}: ${migrations.size} migrations match`);
   }
