@@ -366,6 +366,25 @@ export const studentNoticeGet = defineRoute({
             Type.Null(),
           ]),
         ),
+        /**
+         * F4-STU-R08-SRV: the name of the assignment's course; null for a
+         * mentored work, which has no course. Not a member of the notice
+         * fingerprint; the server always sends it.
+         */
+        courseName: Type.Optional(Type.Union([Type.String({ minLength: 1 }), Type.Null()])),
+        /**
+         * F4-STU-R08-SRV: "given family" of the mentor: of the open mentorship
+         * for a mentored work, else of the teachers of the caller's own seminar
+         * groups in the course, in name order joined by ", ". Null when there is
+         * none or no name is recorded. Not a member of the notice fingerprint;
+         * the server always sends it.
+         */
+        mentorName: Type.Optional(
+          Type.Union([Type.String({ minLength: 1 }), Type.Null()], {
+            description:
+              'A display string only: one mentor, or several teachers joined by ", ". Clients show it as is and never split or parse it.',
+          }),
+        ),
       }),
     },
   ],
