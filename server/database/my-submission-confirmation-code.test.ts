@@ -15,6 +15,7 @@ import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-koda-potvrde-".padEnd(43, "0");
 const A = "00000000-0000-4000-8000-0000000000a1";
+const S = "00000000-0000-4000-8000-0000000000b1";
 const CODE = "DK7M-4Q9P-X2HT-R8VN";
 
 function reader(answer: unknown) {
@@ -87,6 +88,65 @@ describe("createMySubmissionConfirmationCodeReader", () => {
     expect(await reader(rows).port.read(TOKEN, A)).toEqual({
       ok: false,
       error: MY_SUBMISSION_STATE_ROW_MALFORMED,
+    });
+  });
+
+  describe("teacherRead", () => {
+    it("refuses a missing token and a malformed id of either kind without a query", async () => {
+      const { port, calls } = reader(found(CODE));
+      expect(await port.teacherRead(undefined, A, S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_UNAUTHENTICATED,
+      });
+      expect(await port.teacherRead(TOKEN, "nije-uuid", S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_NOT_FOUND,
+      });
+      expect(await port.teacherRead(TOKEN, A, "nije-uuid")).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_NOT_FOUND,
+      });
+      expect(calls()).toBe(0);
+    });
+
+    it("maps every refusal of the reader's check (ZD403) to not_found", async () => {
+      const refused = Object.assign(new Error("x"), { code: "ZD403" });
+      expect(await reader(refused).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_NOT_FOUND,
+      });
+      const denied = Object.assign(new Error("x"), { code: "ZD401" });
+      expect(await reader(denied).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_UNAUTHENTICATED,
+      });
+      expect(await reader(new Error("x")).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_DATABASE_ERROR,
+      });
+    });
+
+    it("gives the code or null, and a code outside the alphabet is ROW_MALFORMED", async () => {
+      expect(await reader(found(CODE)).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: true,
+        value: CODE,
+      });
+      expect(await reader(found(null)).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: true,
+        value: null,
+      });
+      expect(await reader(found("IK7M-4Q9P-X2HT-R8VN")).port.teacherRead(TOKEN, A, S)).toEqual({
+        ok: false,
+        error: MY_SUBMISSION_STATE_ROW_MALFORMED,
+      });
+    });
+  });
+
+  it("keeps ZD403 of the student's own read a database error (it answers not_found itself)", async () => {
+    const refused = Object.assign(new Error("x"), { code: "ZD403" });
+    expect(await reader(refused).port.read(TOKEN, A)).toEqual({
+      ok: false,
+      error: MY_SUBMISSION_STATE_DATABASE_ERROR,
     });
   });
 });

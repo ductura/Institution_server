@@ -16,6 +16,7 @@ SELECT has_function('app', 'submission_state_of', ARRAY['uuid','uuid'], 'SRV-20:
 SELECT has_function('app', 'my_submission_state', ARRAY['uuid'], 'SRV-20: the student''s state RPC exists');
 SELECT has_function('app', 'my_assignment_requirements', ARRAY['uuid'], 'SRV-20: the requirements RPC exists');
 SELECT has_function('app', 'teacher_submission_state', ARRAY['uuid','uuid'], 'SRV-20: the reader''s state RPC exists');
+SELECT has_function('app', 'teacher_submission_confirmation_code', ARRAY['uuid','uuid'], 'the reader''s code RPC exists');
 
 SELECT is(pg_temp.call('ana','pkg-a','request-1',pg_temp.descriptor(),0,repeat('a',64),repeat('d',64),repeat('b',64)),
   'reserved', 'fixture: revision one exists');
@@ -156,6 +157,8 @@ SELECT is(pg_temp.mine('ana'),
 SELECT is(pg_temp.mine('dora'),'none','a student of the course without a submission: none');
 SELECT is(pg_temp.ask('ana', $$ SELECT coalesce(code, 'none') FROM app.my_submission_confirmation_code({z1}::uuid) $$), 'none',
   'SRV-KOD-POTVRDE: a submission still waiting for its signature (ceka) has no code');
+SELECT is(pg_temp.ask('vesna', $$ SELECT coalesce(app.teacher_submission_confirmation_code({z1}::uuid, {ana}::uuid), 'none') $$), 'none',
+  'teacher code: the teacher reads no code while the submission waits for its signature');
 SELECT is(pg_temp.theirs('vesna'),pg_temp.mine('ana'),'the teacher of the course reads the same ceka as the student');
 SELECT is(pg_temp.theirs('vesna','{dora}'),'none','the teacher reads none for a student without a submission');
 SELECT is(substr(pg_temp.theirs('vesna',u),1,5),'ZD403','not a student of the assignment: the same refusal as no reader ('||u||')')
@@ -247,6 +250,18 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT outcome FROM app.my_submission_confirma
   'SRV-KOD-POTVRDE: a teacher of the course has no code to read');
 SELECT is(pg_temp.ask('dora', $$ SELECT coalesce(code, 'none') FROM app.my_submission_confirmation_code({z1}::uuid) $$), 'none',
   'SRV-KOD-POTVRDE: another student of the course never sees the code of Ana');
+SELECT is(pg_temp.ask('vesna', $$ SELECT app.teacher_submission_confirmation_code({z1}::uuid, {ana}::uuid) $$),
+  pg_temp.ask('ana', $$ SELECT code FROM app.my_submission_confirmation_code({z1}::uuid) $$),
+  'teacher code: the teacher of the course reads the same code as the student');
+SELECT is(pg_temp.ask('marko', $$ SELECT app.teacher_submission_confirmation_code({z1}::uuid, {ana}::uuid) $$),
+  pg_temp.ask('ana', $$ SELECT code FROM app.my_submission_confirmation_code({z1}::uuid) $$),
+  'teacher code: a collaborator of the course reads the same code');
+SELECT is(coalesce(pg_temp.ask('vesna', $$ SELECT app.teacher_submission_confirmation_code({z1}::uuid, {dora}::uuid) $$), 'none'),
+  'none', 'teacher code: a student without a submission has no code');
+SELECT is(substr(pg_temp.ask(c.actor, format('SELECT app.teacher_submission_confirmation_code(%s::uuid, %s::uuid)', c.assignment, c.student)), 1, 5),
+  'ZD403', format('teacher code: %s reads no code of %s on %s', c.actor, c.student, c.assignment))
+FROM (VALUES ('ana', '{z1}', '{ana}'), ('dora', '{z1}', '{ana}'), ('boris', '{z1}', '{ana}'),
+             ('tomo', '{z1}', '{ana}'), ('vesna', '{z1}', '{boris}'), ('vesna', '{nobody}', '{ana}')) AS c (actor, assignment, student);
 SELECT is((SELECT count(*) FROM audit.access_log),0::bigint,
   'SRV-20: neither the student''s nor the readers'' reads log anything (no content is read)');
 SELECT is(pg_temp.read(a),'not_found','read: '||a) FROM unnest(ARRAY['boris','vesna','tomo']) a;
