@@ -144,7 +144,7 @@ async function grantedResponse(
     policy: FAKE_TSA_POLICY,
     messageImprint: new pkijs.MessageImprint({
       hashAlgorithm: new pkijs.AlgorithmIdentifier({ algorithmId: OID_SHA256 }),
-      hashedMessage: new asn1js.OctetString({ valueHex: options.imprint.slice().buffer }),
+      hashedMessage: new asn1js.OctetString({ valueHex: new Uint8Array(options.imprint).buffer }),
     }),
     serialNumber: new asn1js.Integer({
       valueHex: crypto.getRandomValues(new Uint8Array(8)).buffer,
@@ -206,7 +206,7 @@ function abortReason(signal: AbortSignal): unknown {
 }
 
 function reply(body: Uint8Array): Response {
-  return new Response(body.slice().buffer, {
+  return new Response(new Uint8Array(body).buffer, {
     status: 200,
     headers: { "content-type": TIME_STAMP_REPLY },
   });

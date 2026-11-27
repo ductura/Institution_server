@@ -127,6 +127,15 @@ describe("arbitrary input", () => {
     );
   });
 
+  it("returns its own copy of exactly the response bytes, also for a pooled Buffer", async () => {
+    const pooled = Buffer.from(Buffer.from(der).toString("hex"), "hex");
+    expect(pooled.buffer.byteLength).toBeGreaterThan(der.byteLength);
+    const result = await verifyTimeStampResponse(pooled, expectation, trust);
+    if (!result.ok) throw new Error(result.error.code);
+    expect(result.value.der.buffer.byteLength).toBe(der.byteLength);
+    expect(Buffer.from(result.value.der)).toEqual(Buffer.from(der));
+  });
+
   it("trailing bytes after the DER are refused", async () => {
     const extended = new Uint8Array([...der, 0x00]);
     const result = await verifyTimeStampResponse(extended, expectation, trust);

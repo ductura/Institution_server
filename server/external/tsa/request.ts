@@ -6,7 +6,9 @@ import { OID_SHA256 } from "./oids.ts";
 
 // TimeStampReq (RFC 3161 §2.4.1) for ISTR-2 step 1. The TSA receives only the
 // SHA-256 digest the caller computed (docs/plan/ISTR-2-TSA.md §5): no content,
-// identifier or name ever reaches this module.
+// identifier or name ever reaches this module. Inputs are copied with
+// `new Uint8Array(x)` before `.buffer` is read: a Node Buffer (and its
+// `slice()`) is a view into a shared pool, whose `.buffer` holds other data.
 
 export const DIGEST_BYTES = 32;
 /** 16 bytes, of which 126 bits are random: well above the plan's 64-bit floor. */
@@ -47,9 +49,9 @@ export function buildTimeStampRequest(
         algorithmId: OID_SHA256,
         algorithmParams: new asn1js.Null(),
       }),
-      hashedMessage: new asn1js.OctetString({ valueHex: digest.slice().buffer }),
+      hashedMessage: new asn1js.OctetString({ valueHex: new Uint8Array(digest).buffer }),
     }),
-    nonce: new asn1js.Integer({ valueHex: nonce.slice().buffer }),
+    nonce: new asn1js.Integer({ valueHex: new Uint8Array(nonce).buffer }),
     certReq: true,
   });
   return { ok: true, value: new Uint8Array(request.toSchema().toBER(false)) };

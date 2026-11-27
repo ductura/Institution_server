@@ -179,7 +179,7 @@ async function essCertIdMatches(
   }
   const hashName = ESS_HASHES[hashOid];
   if (hashName === undefined || !(certHash instanceof asn1js.OctetString)) return false;
-  const actual = new Uint8Array(await crypto.subtle.digest(hashName, signerDer.slice()));
+  const actual = new Uint8Array(await crypto.subtle.digest(hashName, new Uint8Array(signerDer)));
   return equalBytes(actual, bytesOf(certHash.valueBlock.valueHexView));
 }
 
@@ -227,7 +227,7 @@ async function signatureValid(
   const hashName = ESS_HASHES[signerInfo.digestAlgorithm.algorithmId];
   const eContent = signedData.encapContentInfo.eContent;
   if (hashName === undefined || !eContent || !signerInfo.signedAttrs) return false;
-  const content = bytesOf(eContent.getValue()).slice();
+  const content = new Uint8Array(bytesOf(eContent.getValue()));
   const actual = new Uint8Array(await crypto.subtle.digest(hashName, content));
   if (!equalBytes(actual, bytesOf(messageDigest.valueBlock.valueHexView))) return false;
   const signed = signerInfo.signedAttrs.encodedValue;
@@ -365,7 +365,8 @@ async function verifyChecked(
   return {
     ok: true,
     value: {
-      der: der.slice(),
+      // A copy that owns exactly these bytes, also when `der` is a pooled Buffer.
+      der: new Uint8Array(der),
       genTime,
       serialNumber: toHex(integerMagnitude(bytesOf(tstInfo.serialNumber.valueBlock.valueHexView))),
       policy: tstInfo.policy,

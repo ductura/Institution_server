@@ -65,4 +65,20 @@ describe("buildTimeStampRequest", () => {
     expect(() => buildTimeStampRequest(DIGEST, new Uint8Array(16).fill(0x80))).toThrow();
     expect(() => buildTimeStampRequest(DIGEST, new Uint8Array(16))).toThrow();
   });
+
+  it("encodes only the 32 bytes of a pooled Buffer digest and nonce, never the pool behind them", () => {
+    // Buffer.from(…) of a short value is a view into Node's shared 8 KiB pool,
+    // and Buffer#slice is a view too (Codex review on #912).
+    const digest = Buffer.from(Buffer.from(DIGEST).toString("hex"), "hex");
+    const nonce = Buffer.from(Buffer.from(newNonce()).toString("hex"), "hex");
+    expect(digest.buffer.byteLength).toBeGreaterThan(DIGEST_BYTES);
+    const result = buildTimeStampRequest(digest, nonce);
+    if (!result.ok) throw new Error(result.error.code);
+    expect(result.value.byteLength).toBeLessThan(100);
+    const request = parse(result.value);
+    expect(Buffer.from(request.messageImprint.hashedMessage.valueBlock.valueHexView)).toEqual(
+      digest,
+    );
+    expect(Buffer.from(request.nonce?.valueBlock.valueHexView ?? [])).toEqual(nonce);
+  });
 });
