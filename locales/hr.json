@@ -164,5 +164,25 @@
     "label_invalid_color": "Boja labele nije ispravna: šest heksadecimalnih znamenki bez znaka #.",
     "label_no_description": "Labela nema opis: opis mora biti tekst koji nije prazan.",
     "label_duplicate_name": "Labela s tim imenom već postoji u zapisu."
+  },
+  "tsa": {
+    "digest_invalid": "Otisak za žig vremena mora imati točno 32 bajta (SHA-256).",
+    "config_invalid": "Popis pružatelja žiga vremena nije ispravan.",
+    "anchors_invalid": "Korijenski certifikati pružatelja žiga vremena nisu ispravni ili nedostaju.",
+    "timeout": "Pružatelj žiga vremena nije odgovorio na vrijeme.",
+    "unavailable": "Pružatelj žiga vremena trenutačno nije dostupan.",
+    "http_status": "Pružatelj žiga vremena vratio je neočekivan HTTP status.",
+    "malformed": "Odgovor pružatelja žiga vremena nije ispravan DER zapis žiga.",
+    "rejected": "Pružatelj žiga vremena odbio je zahtjev.",
+    "imprint_algorithm": "Žig vremena nije izdan nad otiskom SHA-256.",
+    "imprint_mismatch": "Žig vremena izdan je nad drugim otiskom.",
+    "nonce_mismatch": "Žig vremena ne nosi jednokratni broj ovog zahtjeva.",
+    "gen_time": "Vrijeme u žigu nije unutar dopuštenog razmaka od vremena zahtjeva.",
+    "signer_certificate_missing": "Odgovor ne sadrži certifikat koji je potpisao žig.",
+    "ess_cert_id": "Potpisani atribut ESSCertIDv2 ne odgovara certifikatu koji je potpisao žig.",
+    "certificate_expired": "Certifikat koji je potpisao žig nije vrijedio u trenutku žiga.",
+    "eku": "Certifikat koji je potpisao žig nije namijenjen samo za žigove vremena.",
+    "signature": "Potpis žiga vremena nije ispravan.",
+    "chain": "Certifikat koji je potpisao žig ne vodi do pouzdanog korijenskog certifikata u trenutku žiga."
   }
 }

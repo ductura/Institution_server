@@ -30,6 +30,8 @@ const REQUIRED_AREAS = [
   "external/assistant-tools",
   // SRV-V22-ISVU-PORT (val 22): the ISVU source port and its synthetic adapter.
   "external/isvu",
+  // ISTR-2 steps 1-2 (M3.9a, D-72, D-209): the RFC 3161 time-stamp port.
+  "external/tsa",
   "database",
   "log",
   "metrics",
