@@ -109,7 +109,7 @@ function recordFromRow(
     segments === null ||
     segments.length !== segmentCount ||
     !segments.every((segment) => segment !== null) ||
-    (kind !== "text" && kind !== "spreadsheet")
+    (kind !== "text" && kind !== "slides" && kind !== "spreadsheet")
   ) {
     return null;
   }
