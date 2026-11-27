@@ -5,7 +5,11 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import { SignedSubmissionReceipt } from "./evidence.ts";
 import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
 import { MUTATION_GUARD } from "./shared.ts";
-import { teacherDeclarationConversationGet, teacherDeclarationGet } from "./teacher-declaration.ts";
+import {
+  teacherDeclarationConversationGet,
+  teacherDeclarationGet,
+  teacherDeclarationV2Get,
+} from "./teacher-declaration.ts";
 import { teacherAssignmentFollowUpGet } from "./teacher-follow-up.ts";
 import { teacherSubmissionDetailGet } from "./teacher-submissions.ts";
 
@@ -539,6 +543,7 @@ export const teacherRoutes = [
   teacherSubmissionsGet,
   teacherSubmissionDetailGet,
   teacherDeclarationGet,
+  teacherDeclarationV2Get,
   teacherDeclarationConversationGet,
   teacherMentorshipsGet,
   teacherMentorshipGet,

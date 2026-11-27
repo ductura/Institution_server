@@ -34,6 +34,34 @@ const BASE: readonly (readonly [string, unknown])[] = [
   ["acknowledged_at", new Date("2026-11-03T09:20:00.000Z")],
   ["purpose_catalog_version", 1],
   ["ai_summary_only", false],
+  // A first version: no previous one, every prev_* column null.
+  ...[
+    "version_no",
+    "title",
+    "instructions",
+    "work_type",
+    "opens_at",
+    "due_at",
+    "ai_policy",
+    "ai_purposes",
+    "evidence_profile",
+    "word_min",
+    "word_max",
+  ].map((key) => [`prev_${key}`, null] as const),
+];
+// F4-STU-R11-SRV: version 1 below the current version 2.
+const PREVIOUS: readonly (readonly [string, unknown])[] = [
+  ["prev_version_no", 1],
+  ["prev_title", "Seminarski rad"],
+  ["prev_instructions", "Izmišljena prva uputa."],
+  ["prev_work_type", "essay"],
+  ["prev_opens_at", new Date("2026-11-01T08:00:00.000Z")],
+  ["prev_due_at", new Date("2026-12-08T22:59:00.000Z")],
+  ["prev_ai_policy", "partially_allowed"],
+  ["prev_ai_purposes", ["proofreading"]],
+  ["prev_evidence_profile", "basic"],
+  ["prev_word_min", 1000],
+  ["prev_word_max", null],
 ];
 const row = (...over: (readonly [string, unknown])[]): object =>
   Object.fromEntries([...BASE, ...over]);
@@ -80,6 +108,7 @@ describe("student notice", () => {
         acknowledgedAt: "2026-11-03T09:20:00.000Z",
         purposeCatalogVersion: 1,
         aiSummaryOnly: false,
+        previousVersion: null,
       },
     });
     expect(seen[1]!.values).toEqual([A]);
@@ -157,5 +186,45 @@ describe("student notice", () => {
     const read = await port.read(TOKEN, A);
     expect(read.ok && read.value.aiSummaryOnly).toBe(true);
     expect(seen[1]!.text).toContain("a.ai_summary_only");
+  });
+
+  it("reads the version below the current one as previousVersion (F4-STU-R11-SRV)", async () => {
+    const { port, seen } = reader([actorRow(USER)], [row(...PREVIOUS)]);
+    const read = await port.read(TOKEN, A);
+    expect(read.ok && read.value.previousVersion).toEqual({
+      versionNo: 1,
+      title: "Seminarski rad",
+      instructions: "Izmišljena prva uputa.",
+      workType: "essay",
+      opensAt: "2026-11-01T08:00:00.000Z",
+      dueAt: "2026-12-08T22:59:00.000Z",
+      aiPolicy: "partially_allowed",
+      aiPurposes: ["proofreading"],
+      evidenceProfile: "basic",
+      wordMin: 1000,
+      wordMax: null,
+    });
+    // The highest earlier version of the same assignment, under the same read policy.
+    expect(seen[1]!.text).toContain("q.version_no < a.current_version");
+    expect(seen[1]!.text).toContain("LEFT JOIN institution.assignment_version p");
+  });
+
+  it("a previous version it cannot vouch for is row_malformed", async () => {
+    const bads: readonly (readonly [string, unknown])[] = [
+      ["prev_version_no", 2],
+      ["prev_version_no", 3],
+      ["prev_title", null],
+      ["prev_opens_at", "2026-11-01"],
+      ["prev_ai_purposes", [1]],
+      ["prev_word_max", 0],
+    ];
+    for (const bad of bads) {
+      expect(await reader([actorRow(USER)], [row(...PREVIOUS, bad)]).port.read(TOKEN, A)).toEqual(
+        fail(STUDENT_NOTICE_ROW_MALFORMED),
+      );
+    }
+    // A row without the prev_* columns is not a first version.
+    const bare = Object.fromEntries(BASE.filter(([key]) => !key.startsWith("prev_")));
+    expect(noticeOf([bare])).toBeNull();
   });
 });

@@ -95,6 +95,7 @@ export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/ind
 export {
   createTeacherDeclarationConversationRouteFor,
   createTeacherDeclarationRouteFor,
+  createTeacherDeclarationV2RouteFor,
 } from "./teacher-declaration/index.ts";
 export { createTeacherSubmissionNotesRouteFor } from "./teacher-submission-notes/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
@@ -237,6 +238,11 @@ export {
   createDeclarationRequiredRoutes,
   createDeclarationRequiredRoutesFor,
 } from "./declaration-required.ts";
+export {
+  createWorkAccommodationRoutes,
+  createWorkAccommodationRoutesFor,
+  type WorkAccommodationPort,
+} from "./work-accommodation.ts";
 export { createLateSubmissionRoutes, createLateSubmissionRoutesFor } from "./late-submission.ts";
 export { createCourseAssistantRoutes, createCourseAssistantRoutesFor } from "./course-assistant.ts";
 export { createQualitativeMaterialsRoutesFor } from "./qualitative-materials.ts";
@@ -468,6 +474,7 @@ export {
 export { createSuggestionRoutesFor } from "./suggestions/index.ts";
 export {
   createImportConfirmRoute,
+  createImportListRoute,
   createImportPostRoute,
   createImportRoutesFor,
 } from "./import/index.ts";

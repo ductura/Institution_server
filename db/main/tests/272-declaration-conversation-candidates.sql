@@ -1,4 +1,4 @@
--- SRV-F4-EDI-R07 (20261220350000): the conversations a student can attach to
+-- SRV-F4-EDI-R07 (20261220410000): the conversations a student can attach to
 -- the declaration. Only the owner of the assignment lists her own
 -- conversations (C-23); another student, a teacher, another faculty and a
 -- session-less caller get nothing. Messages are read as hashes only. People

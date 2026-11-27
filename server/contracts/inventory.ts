@@ -675,6 +675,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7090494988",
   },
+  // F4-PM2-R08-SRV (M2.9, D-50): the student reads and sets the accommodation
+  // mark of their own work; the holder of the work reads it.
+  "app/api/student/assignments/[assignmentId]/accommodation/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7205801182",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/accommodation/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7205801182",
+  },
   // SRV-NF4-KASNA-POLJE (Ductus#2055, orchestrator decision A): the teacher sets whether a
   // submission after the deadline is allowed, a student of the course reads it.
   "app/api/institution/assignments/[assignmentId]/late-submission/route.ts": {
@@ -980,8 +990,9 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
   // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  // SRV-F4-PM2-R14-SRV (Ductus#2059 c.7202802486): GET, the list of the imports of a work.
   "app/api/works/[documentId]/imports/route.ts": {
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
   },
   "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
@@ -1289,6 +1300,16 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/declaration-conversations/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2058:issuecomment-7196164922",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration-v2/route.ts": {
+    methods: ["GET", "PUT"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v2/route.ts": {
+    methods: ["GET"],
+    source:
+      "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
   },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],

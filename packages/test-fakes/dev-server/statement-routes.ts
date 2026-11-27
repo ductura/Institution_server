@@ -86,7 +86,7 @@ export function declarationConfirmedFor(
   return saved?.state === "confirmed" && saved.payload?.revision === work.revision;
 }
 
-export const STATEMENT_HANDLERS: Handlers = {
+const DECLARATION_V1 = {
   // SRV-1213. P-5: the access-log surface stays closed, so the fake records no opening.
   "teacher.declaration.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -265,4 +265,17 @@ export const STATEMENT_HANDLERS: Handlers = {
     byWork.set(work.documentId, [...files, upload]);
     return { status: 200, body: upload };
   },
+} satisfies Handlers;
+
+// F4-PRE-R02-SRV, F4-PRE-R06-SRV: the declaration-v2 routes answer as the v1
+// ones over the same store. The dev fake stores no assistant conversation
+// (assistant-routes.ts), so every conversation a v2 body attaches is unknown
+// and refused with invalid_input, as the save RPC refuses an unknown one; no
+// bound declaration here carries a conversation or a recorded transfer.
+export const STATEMENT_HANDLERS: Handlers = {
+  ...DECLARATION_V1,
+  // A spread context compares by shape: the two ids carry the same params and body.
+  "teacher.declaration-second.get": (ctx) => DECLARATION_V1["teacher.declaration.get"]({ ...ctx }),
+  "student.declaration-second.get": (ctx) => DECLARATION_V1["student.declaration.get"]({ ...ctx }),
+  "student.declaration-second.put": (ctx) => DECLARATION_V1["student.declaration.put"]({ ...ctx }),
 };

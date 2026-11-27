@@ -28,6 +28,7 @@ const LOGIN_GAP_MS = 4_100;
 // preparation and stays idle until the run, so preparation has to finish well
 // within that: 1000 sign-ins take about 68 minutes.
 const MAX_USERS = 1_000;
+const MAX_SIZE = 2_000;
 const TEXT = "Kućno kompostiranje smanjuje količinu otpada u izmišljenoj četvrti.";
 
 export type PreparedStudent = {
@@ -37,7 +38,7 @@ export type PreparedStudent = {
   commits: CommitBody[];
 };
 
-type Flags = { users: number; saves: number; run: string; out: string };
+type Flags = { users: number; saves: number; run: string; size: number; out: string };
 
 export function parseLoadFlags(argv: readonly string[]): Flags {
   const value = (name: string): string | undefined =>
@@ -45,12 +46,16 @@ export function parseLoadFlags(argv: readonly string[]): Flags {
   const users = Number(value("korisnika") ?? "10");
   const saves = Number(value("spremanja") ?? "5");
   const run = value("pokret") ?? "";
+  // Characters of every save after the first: larger documents for SRV-OPT-1000.
+  const size = Number(value("velicina") ?? "0");
+  if (!Number.isSafeInteger(size) || size < 0 || size > MAX_SIZE)
+    throw new Error(`--velicina must be 0 to ${MAX_SIZE}`);
   if (!Number.isSafeInteger(users) || users < 1 || users > MAX_USERS)
     throw new Error(`--korisnika must be 1 to ${MAX_USERS}`);
   if (!Number.isSafeInteger(saves) || saves < 1 || saves > 200)
     throw new Error("--spremanja must be 1 to 200");
   if (!/^[a-z0-9]{1,12}$/u.test(run)) throw new Error("--pokret must be 1 to 12 of a-z, 0-9");
-  return { users, saves, run, out: join(LOCAL_DIR, "load", `${run}.json`) };
+  return { users, saves, run, size, out: join(LOCAL_DIR, "load", `${run}.json`) };
 }
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -59,6 +64,7 @@ async function prepareStudent(
   account: string,
   saves: number,
   run: string,
+  size: number,
 ): Promise<PreparedStudent> {
   const { api, session } = await signInSession(DIRECT_ORIGIN, ISSUER, account);
   const call = async <T>(path: string, body?: object): Promise<T> => {
@@ -91,7 +97,9 @@ async function prepareStudent(
   if (work.status !== "opened" || work.currentRevision !== 0)
     throw new Error("the work of a fresh student is not at revision zero");
   const minute = new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString();
-  const texts = Array.from({ length: saves }, (_, i) => (i === 0 ? TEXT : ` Dopuna ${i}.`));
+  const texts = Array.from({ length: saves }, (_, i) =>
+    i === 0 ? TEXT : size === 0 ? ` Dopuna ${i}.` : ` Dopuna ${i}. `.padEnd(size, "x"),
+  );
   return {
     cookie: session,
     assignmentId: assignment.id,
@@ -111,6 +119,7 @@ async function main(): Promise<void> {
         `sim:student:load-${flags.run}-${i}@demo.ductus.test`,
         flags.saves,
         flags.run,
+        flags.size,
       ),
     );
     if ((i + 1) % 10 === 0) console.log(`pripremljeno ${i + 1}/${flags.users}`);

@@ -57,7 +57,28 @@ export type StoredNotice = {
   purposeCatalogVersion: number;
   /** The assistant only summarises (SRV-EDI-R08); not in the fingerprint. */
   aiSummaryOnly: boolean;
+  /**
+   * F4-STU-R11-SRV: the content of the version before the current one, for
+   * "what changed" (P-16); null when the current version is the first.
+   */
+  previousVersion: PreviousNoticeVersion | null;
 };
+
+/** The fingerprint content of one earlier version of the notice. */
+export type PreviousNoticeVersion = Pick<
+  StoredNotice,
+  | "versionNo"
+  | "title"
+  | "instructions"
+  | "workType"
+  | "opensAt"
+  | "dueAt"
+  | "aiPolicy"
+  | "aiPurposes"
+  | "evidenceProfile"
+  | "wordMin"
+  | "wordMax"
+>;
 
 export type StudentNoticeReader = {
   read(token: string | undefined, assignmentId: string): Promise<Result<StoredNotice>>;
@@ -71,10 +92,17 @@ const ACTOR_SQL = "SELECT app.current_user_id() AS user_id";
 // student membership) or of its open mentorship (SRV-MENTOR-NOTICE). It is
 // asked explicitly through actor_assignment_ids('{student}'), the same helper
 // the read policies use: RLS alone would also show the assignment to its
-// teacher or mentor.
+// teacher or mentor. F4-STU-R11-SRV: the highest version below the current
+// one comes along as prev_* (all null for a first version); the same read
+// policy of assignment_version already shows every version to the student.
 const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instructions, v.work_type,
     v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.word_min, v.word_max,
     v.purpose_catalog_version, a.ai_summary_only,
+    p.version_no AS prev_version_no, p.title AS prev_title, p.instructions AS prev_instructions,
+    p.work_type AS prev_work_type, p.opens_at AS prev_opens_at, p.due_at AS prev_due_at,
+    p.ai_policy AS prev_ai_policy, p.ai_purposes AS prev_ai_purposes,
+    p.evidence_profile AS prev_evidence_profile, p.word_min AS prev_word_min,
+    p.word_max AS prev_word_max,
     (SELECT r.read_at FROM institution.notice_read r
       WHERE r.assignment_id = a.id AND r.student_id = (SELECT app.current_user_id())) AS read_at,
     (SELECT k.acknowledged_at FROM institution.notice_acknowledgment k
@@ -82,6 +110,9 @@ const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instr
         AND k.student_id = (SELECT app.current_user_id())) AS acknowledged_at
   FROM institution.assignment a
   JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
+  LEFT JOIN institution.assignment_version p ON p.assignment_id = a.id
+    AND p.version_no = (SELECT max(q.version_no) FROM institution.assignment_version q
+      WHERE q.assignment_id = a.id AND q.version_no < a.current_version)
   WHERE a.id = $1::uuid
     AND a.id = ANY ((SELECT institution.actor_assignment_ids('{student}'))::uuid[])`;
 
@@ -112,22 +143,10 @@ const bound = (value: unknown): number | null | undefined =>
       ? (value as number)
       : undefined;
 
-/** The one row as a notice, or null when any part does not check. */
-export function noticeOf(rows: unknown): StoredNotice | null {
-  if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0] !== "object" || rows[0] === null)
-    return null;
-  const row = rows[0] as object;
-  const [
-    assignmentId,
-    versionNo,
-    title,
-    instructions,
-    workType,
-    aiPolicy,
-    aiPurposes,
-    evidenceProfile,
-  ] = [
-    "assignment_id",
+/** The version content under the column prefix, or null when any part does not check. */
+function versionOf(row: object, prefix: string): PreviousNoticeVersion | null {
+  const at = (key: string): unknown => own(row, prefix + key);
+  const [versionNo, title, instructions, workType, aiPolicy, aiPurposes, evidenceProfile] = [
     "version_no",
     "title",
     "instructions",
@@ -135,21 +154,13 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     "ai_policy",
     "ai_purposes",
     "evidence_profile",
-  ].map((key) => own(row, key));
-  const [opensAt, dueAt, readAt, acknowledgedAt] = [
-    "opens_at",
-    "due_at",
-    "read_at",
-    "acknowledged_at",
-  ].map((key) => instant(own(row, key)));
-  const [wordMin, wordMax] = [bound(own(row, "word_min")), bound(own(row, "word_max"))];
-  const catalog = own(row, "purpose_catalog_version");
-  const summaryOnly = own(row, "ai_summary_only");
+  ].map(at);
+  const [opensAt, dueAt] = [instant(at("opens_at")), instant(at("due_at"))];
+  const [wordMin, wordMax] = [bound(at("word_min")), bound(at("word_max"))];
   if (
-    typeof assignmentId !== "string" ||
-    !UUID.test(assignmentId) ||
     !Number.isInteger(versionNo) ||
     (versionNo as number) < 1 ||
+    (versionNo as number) > 2_147_483_647 ||
     typeof title !== "string" ||
     title === "" ||
     typeof instructions !== "string" ||
@@ -160,19 +171,12 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     !aiPurposes.every((p) => typeof p === "string") ||
     typeof opensAt !== "string" ||
     typeof dueAt !== "string" ||
-    readAt === undefined ||
-    acknowledgedAt === undefined ||
     wordMin === undefined ||
-    wordMax === undefined ||
-    typeof summaryOnly !== "boolean" ||
-    !Number.isInteger(catalog) ||
-    (catalog as number) < 1 ||
-    (catalog as number) > 2_147_483_647
+    wordMax === undefined
   ) {
     return null;
   }
   return {
-    assignmentId,
     versionNo: versionNo as number,
     title,
     instructions,
@@ -184,10 +188,60 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     evidenceProfile,
     wordMin,
     wordMax,
+  };
+}
+
+const PREVIOUS_COLUMNS = [
+  "version_no",
+  "title",
+  "instructions",
+  "work_type",
+  "opens_at",
+  "due_at",
+  "ai_policy",
+  "ai_purposes",
+  "evidence_profile",
+  "word_min",
+  "word_max",
+].map((key) => `prev_${key}`);
+
+/** The one row as a notice, or null when any part does not check. */
+export function noticeOf(rows: unknown): StoredNotice | null {
+  if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0] !== "object" || rows[0] === null)
+    return null;
+  const row = rows[0] as object;
+  const current = versionOf(row, "");
+  const assignmentId = own(row, "assignment_id");
+  const readAt = instant(own(row, "read_at"));
+  const acknowledgedAt = instant(own(row, "acknowledged_at"));
+  const catalog = own(row, "purpose_catalog_version");
+  const summaryOnly = own(row, "ai_summary_only");
+  // A first version has no previous one: every prev_* column is null. Any
+  // other mix, or an absent column, is a row the read cannot vouch for.
+  const first = PREVIOUS_COLUMNS.every((key) => own(row, key) === null);
+  const previous = first ? null : versionOf(row, "prev_");
+  if (
+    current === null ||
+    typeof assignmentId !== "string" ||
+    !UUID.test(assignmentId) ||
+    readAt === undefined ||
+    acknowledgedAt === undefined ||
+    typeof summaryOnly !== "boolean" ||
+    !Number.isInteger(catalog) ||
+    (catalog as number) < 1 ||
+    (catalog as number) > 2_147_483_647 ||
+    (!first && (previous === null || previous.versionNo >= current.versionNo))
+  ) {
+    return null;
+  }
+  return {
+    assignmentId,
+    ...current,
     readAt,
     acknowledgedAt,
     purposeCatalogVersion: catalog as number,
     aiSummaryOnly: summaryOnly,
+    previousVersion: previous,
   };
 }
 
