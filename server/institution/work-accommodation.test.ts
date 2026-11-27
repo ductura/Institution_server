@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
-import { readWorkAccommodation, setWorkAccommodation } from "./work-accommodation.ts";
+import {
+  readOwnWorkAccommodation,
+  readWorkAccommodation,
+  setWorkAccommodation,
+} from "./work-accommodation.ts";
 
 const ASSIGNMENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const STUDENT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -56,6 +60,40 @@ describe("work accommodation RPC calls", () => {
       kind: "notFound",
     });
     expect(await readWorkAccommodation(TOKEN, withActor, ASSIGNMENT, "not-a-uuid")).toEqual({
+      kind: "notFound",
+    });
+    expect(withActor).not.toHaveBeenCalled();
+  });
+
+  it("reads the caller's own mark with the caller taken from the session in the same statement", async () => {
+    for (const marked of [true, false]) {
+      const { query, withActor } = port(rows({ marked }));
+      expect(await readOwnWorkAccommodation(TOKEN, withActor, ASSIGNMENT)).toEqual({
+        kind: "ok",
+        marked,
+      });
+      expect(withActor).toHaveBeenCalledWith(TOKEN, expect.any(Function));
+      expect(query).toHaveBeenCalledExactlyOnceWith(
+        "SELECT institution.work_accommodation($1, a.user_id) AS marked FROM app.current_actor() a",
+        [ASSIGNMENT],
+      );
+    }
+  });
+
+  it("reads an own mark outside the caller's courses as missing, and a broken answer as unavailable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    for (const result of [rows(null), rows({ marked: null }), fails("ZD401"), fails("ZD403")]) {
+      expect(await readOwnWorkAccommodation(TOKEN, port(result).withActor, ASSIGNMENT)).toEqual({
+        kind: "notFound",
+      });
+    }
+    for (const result of [rows({ marked: "t" }), fails("57014")]) {
+      expect(await readOwnWorkAccommodation(TOKEN, port(result).withActor, ASSIGNMENT)).toEqual({
+        kind: "unavailable",
+      });
+    }
+    const { withActor } = port(rows({ marked: true }));
+    expect(await readOwnWorkAccommodation(TOKEN, withActor, "not-a-uuid")).toEqual({
       kind: "notFound",
     });
     expect(withActor).not.toHaveBeenCalled();

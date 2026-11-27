@@ -62,6 +62,38 @@ export async function readWorkAccommodation(
   }
 }
 
+/**
+ * F4-PM2-R08-SRV: whether the caller's own work is marked. The student is the
+ * session's person, read in the same statement, so no id comes from outside;
+ * a closed session reads no row and is notFound like any other refusal.
+ */
+export async function readOwnWorkAccommodation(
+  token: string | null,
+  withActor: WithActor,
+  assignmentId: string,
+): Promise<WorkAccommodationRead> {
+  if (!UUID.test(assignmentId)) return { kind: "notFound" };
+  try {
+    const value = await withActor(
+      token,
+      async (tx) =>
+        (
+          await tx.query<{ marked: unknown }>(
+            "SELECT institution.work_accommodation($1, a.user_id) AS marked FROM app.current_actor() a",
+            [assignmentId],
+          )
+        ).rows[0]?.marked,
+    );
+    if (value === null || value === undefined) return { kind: "notFound" };
+    if (typeof value !== "boolean") throw new Error("invalid work accommodation");
+    return { kind: "ok", marked: value };
+  } catch (error) {
+    return refusalOf(error, "read").kind === "unavailable"
+      ? { kind: "unavailable" }
+      : { kind: "notFound" };
+  }
+}
+
 /** The caller marks or unmarks their own work; answers whether it is marked afterwards. */
 export async function setWorkAccommodation(
   token: string | null,
