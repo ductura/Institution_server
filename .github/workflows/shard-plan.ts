@@ -14,7 +14,7 @@ function main() {
   const [project, leg, ...rest] = process.argv.slice(2);
   const match = /^([1-9]\d*)\/([1-9]\d*)$/.exec(leg ?? "");
   if (!PROJECTS.includes(project) || !match || Number(match[1]) > Number(match[2])) {
-    throw new Error("usage: node shard-plan.mjs <unit|integration> <i/n> [--reserve 3,4]");
+    throw new Error("usage: node shard-plan.ts <unit|integration> <i/n> [--reserve 3,4]");
   }
   const reserveAt = rest.indexOf("--reserve");
   const reserved =
@@ -33,6 +33,12 @@ function main() {
       }),
     );
     if (listed.length === 0) throw new Error(`no test files in project ${name}`);
+    // vitest takes a path as a substring filter: a path inside another would run that file twice.
+    const paths = listed.map((entry) => relative(root, entry.file).split("\\").join("/"));
+    for (const path of paths) {
+      const inside = paths.find((other) => other !== path && other.includes(path));
+      if (inside) throw new Error(`${path} is a substring of ${inside}; vitest would run both`);
+    }
     for (const entry of listed) {
       const key = `${name}:${relative(root, entry.file).split("\\").join("/")}`;
       files.push(key);

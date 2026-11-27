@@ -352,7 +352,7 @@ jobs:
       # tests in pnpm test:database (tests/db/ductus/*payload*, *storage*), as
       # Ductus runs it: RustFS 1.0.0 on 127.0.0.1:9100 with the public
       # local-only keys of Ductus compose.yaml (no secret). Natively, as Ductus
-      # scripts/local/native/up.ts starts it, so S-0.14 holds. The archive is
+      # scripts/local/native/up.mjs starts it, so S-0.14 holds. The archive is
       # checked against the published SHA-256 before it is unpacked or run.
       - name: Lokalni S3 (RustFS 1.0.0, nativno)
         env:
