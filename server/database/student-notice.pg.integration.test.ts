@@ -83,15 +83,22 @@ describe("student.notice.get over PostgreSQL", () => {
         },
       });
       expect(mentored.ok && typeof mentored.value.acknowledgedAt).toBe("string");
+      // F4-STU-R11-SRV: a first version has no previous one.
+      expect(mentored.ok && mentored.value.previousVersion).toBeNull();
       // Boris, student of ms3: zm3, not acknowledged.
       expect(await reader.read(TOKEN.boris, ZM3)).toMatchObject({
         ok: true,
         value: { assignmentId: ZM3, acknowledgedAt: null },
       });
       // The course path is unchanged: Ana reads z1 of K1 at its current version 2.
+      // F4-STU-R11-SRV: the student also reads version 1 as previousVersion.
       expect(await reader.read(TOKEN.ana, Z1)).toMatchObject({
         ok: true,
-        value: { assignmentId: Z1, versionNo: 2 },
+        value: {
+          assignmentId: Z1,
+          versionNo: 2,
+          previousVersion: { versionNo: 1, aiPurposes: ["formatting", "proofreading"] },
+        },
       });
 
       // Dora: student of K1, but not of ms1; her own mentorship ms2 has ended.

@@ -80647,6 +80647,164 @@
                     },
                     "aiSummaryOnly": {
                       "type": "boolean"
+                    },
+                    "previousVersion": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "versionNo",
+                            "title",
+                            "instructions",
+                            "workType",
+                            "opensAt",
+                            "dueAt",
+                            "aiPolicy",
+                            "aiPurposes",
+                            "evidenceProfile",
+                            "wordMin",
+                            "wordMax"
+                          ],
+                          "properties": {
+                            "versionNo": {
+                              "minimum": 1,
+                              "maximum": 2147483647,
+                              "type": "integer"
+                            },
+                            "title": {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            },
+                            "workType": {
+                              "anyOf": [
+                                {
+                                  "const": "short_paper",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "essay",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "seminar_paper",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "bachelor_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "master_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "specialist_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "doctoral_thesis",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "opensAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                              "type": "string"
+                            },
+                            "dueAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                              "type": "string"
+                            },
+                            "aiPolicy": {
+                              "anyOf": [
+                                {
+                                  "const": "prohibited",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "partially_allowed",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "encouraged",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "aiPurposes": {
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "const": "formatting",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "proofreading",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "literature_search",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "transcription",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "translation",
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "evidenceProfile": {
+                              "anyOf": [
+                                {
+                                  "const": "basic",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "extended",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "wordMin": {
+                              "anyOf": [
+                                {
+                                  "minimum": 1,
+                                  "maximum": 1000000,
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "wordMax": {
+                              "anyOf": [
+                                {
+                                  "minimum": 1,
+                                  "maximum": 1000000,
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
