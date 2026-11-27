@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DATABASES } from "../db/index.ts";
@@ -348,5 +348,56 @@ describe("ci.yml", () => {
       `/ 10000, ${POSTGRES_MAJOR}, 'PostgreSQL major version matches production'`,
     );
     expect(SMOKE).toMatch(/SELECT plan\(2\);/);
+  });
+});
+
+// CI-RED-SBOM: the SBOM and the production build without source maps run in
+// the static leg of checks, not in a workflow of their own (one runner less on
+// every pull request push).
+describe("SBOM in the static leg", () => {
+  it("has no separate SBOM workflow", () => {
+    expect(existsSync(resolve(ROOT, ".github/workflows/sbom.yml"))).toBe(false);
+  });
+
+  it("builds the SBOM from the locked production dependencies and keeps it", () => {
+    const checks = job("checks");
+    const sbom = checks.indexOf("      - name: SBOM iz zaključanih produkcijskih ovisnosti\n");
+    expect(sbom).toBeGreaterThan(checks.indexOf("      - run: pnpm install --frozen-lockfile\n"));
+    const steps = checks.slice(sbom);
+    expect(steps).toContain(
+      "npm exec --yes --package=pnpm@11.28.13 -- pnpm --pm-on-fail=ignore sbom",
+    );
+    expect(steps).toContain("--sbom-format cyclonedx --sbom-type application");
+    expect(steps).toContain("--prod --lockfile-only --out sbom-out/sbom.cdx.json");
+    expect(steps).toMatch(
+      /name: institution-server-sbom\n {10}path: sbom-out\/sbom\.cdx\.json\n {10}if-no-files-found: error\n/,
+    );
+  });
+
+  it("fails when the production build accepts a source map", () => {
+    const checks = job("checks");
+    const build = checks.slice(
+      checks.indexOf("      - name: Produkcijski build bez source mapa\n"),
+    );
+    expect(build).toMatch(
+      /^ {6}- name: Produkcijski build bez source mapa\n {8}if: matrix\.leg == 'provjere'\n/,
+    );
+    expect(build).toContain('touch "$probe"');
+    expect(build).toMatch(
+      /if pnpm build > "\$RUNNER_TEMP\/build-with-map\.log" 2>&1; then\n.*\n {12}exit 1\n/,
+    );
+    expect(build).toContain(
+      "grep -F 'Production build contains source maps: source-map-check/probe.js.map'",
+    );
+  });
+
+  it("runs every SBOM step only in the static leg", () => {
+    const checks = job("checks");
+    const tail = checks.slice(
+      checks.indexOf("      - name: SBOM iz zaključanih produkcijskih ovisnosti\n"),
+    );
+    const steps = tail.split(/\n(?= {6}- )/);
+    expect(steps).toHaveLength(3);
+    for (const step of steps) expect(step).toContain("if: matrix.leg == 'provjere'");
   });
 });
