@@ -101,6 +101,7 @@ it.each([
         type: "save",
         body: BODY,
         answer: null,
+        explanation: null,
       });
     expect(answer.payload.ai.recorded).toEqual([LINK]);
   },
