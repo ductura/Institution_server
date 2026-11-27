@@ -2,7 +2,7 @@
 
 F4-PM2-R18 (M8.10), `Risk: critical`.
 
-**Status: PRIJEDLOG.** Dok ovaj dokument ne potvrde review i Ductusova strana ugovora odsječka v4, ne gradi se ništa od navedenoga. `ductus-import-manifest-v1` i [`import-contract.md`](import-contract.md) vrijede bez promjene.
+**Status: PRIHVAĆENO** (vlasnik, 27. 11. 2026.). Ductusova strana ugovora odsječka v4 (golden vektori bajt po bajt isti u oba repoa) zaseban je zadatak u Ductus repou, a ovaj repo je ne dira. `ductus-import-manifest-v1` i [`import-contract.md`](import-contract.md) vrijede bez promjene.
 
 ## Kontekst
 
@@ -13,7 +13,7 @@ F4-PM2-R18 (M8.10), `Risk: critical`.
 
 Odluka vlasnika od 27. 11. 2026. je preporuka A: novi ugovor manifesta, pa migracija, pa čitač ODT-a, pa tragovi u PDF-u. Svaki korak je zaseban zadatak.
 
-## Odluka (prijedlog)
+## Odluka
 
 ### 1. Nova shema `ductus-import-manifest-v2`
 
