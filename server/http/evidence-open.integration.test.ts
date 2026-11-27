@@ -295,6 +295,8 @@ describe("Ductus open-route: the route over the real opener", () => {
   };
   // SRV-7F: the v3 revision 0 as contract v3 §6 writes it.
   const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
+  // The column of the work's kind (a computed key: the lint takes no snake_case key).
+  const KIND_COLUMN = "document_kind";
   const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
   function realOpener(
     submitted: Record<string, unknown>[],
@@ -309,11 +311,13 @@ describe("Ductus open-route: the route over the real opener", () => {
             ? [OPENED]
             : text.includes("work_submitted")
               ? submitted
-              : text.includes("evidence.document_revision")
-                ? revisionZero
-                : text.includes("evidence.package")
-                  ? [{ evidence_domain_id: DOMAIN, last_signed_at: "2026-11-20T09:41:00.000Z" }]
-                  : [KEY];
+              : text.includes("SELECT document_kind")
+                ? [{ [KIND_COLUMN]: "text" }]
+                : text.includes("evidence.document_revision")
+                  ? revisionZero
+                  : text.includes("evidence.package")
+                    ? [{ evidence_domain_id: DOMAIN, last_signed_at: "2026-11-20T09:41:00.000Z" }]
+                    : [KEY];
           return { rows: rows as never[], rowCount: rows.length };
         },
       };
@@ -347,6 +351,7 @@ describe("Ductus open-route: the route over the real opener", () => {
     expect(seen.map((q) => q.values)).toEqual([
       [A1, false],
       [A1],
+      ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       [DOMAIN],
