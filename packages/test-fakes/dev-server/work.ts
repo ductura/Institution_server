@@ -1,6 +1,8 @@
 // The invented record of a work as teachers and the student see it: text
 // blocks and the process summary (ductus-process-summary-v1). The fake keeps
 // no evidence, so every work shows the same small, clearly invented record.
+import { createHash } from "node:crypto";
+
 import type { Work } from "./state.ts";
 
 export function processSummary(work: Work) {
@@ -29,4 +31,16 @@ export function textBlocks() {
     { kind: "heading" as const, text: "Izmišljeni naslov rada" },
     { kind: "paragraph" as const, text: "Izmišljeni odlomak teksta za lokalni razvoj." },
   ];
+}
+
+/** The code the fake shows for a bound receipt: derived from its payload, the same for every reader. */
+export function fakeConfirmationCode(receipt: { payload: unknown }): string {
+  const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  const digest = createHash("sha256").update(JSON.stringify(receipt.payload)).digest();
+  let code = "";
+  for (let index = 0; index < 16; index += 1) {
+    if (index > 0 && index % 4 === 0) code += "-";
+    code += alphabet[digest[index]! & 31];
+  }
+  return code;
 }

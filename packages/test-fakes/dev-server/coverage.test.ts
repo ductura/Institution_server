@@ -2782,6 +2782,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  "teacher.submission-confirmation-code.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission/confirmation-code`,
+      as: "nastavnik",
+    },
+  },
   "institution.legal-holds.get": {
     request: { path: "/api/v1/institution/legal-holds", as: "administrator" },
   },
@@ -3349,6 +3356,18 @@ describe("student submission on the dev fake server", () => {
       /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/,
     );
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("gives the teacher the same confirmation code as the student", async () => {
+    const state = createState();
+    const teacher = SCENARIOS["teacher.submission-confirmation-code.get"];
+    expect(JSON.parse((await run(state, teacher.request)).body)).toEqual({ code: null });
+    for (const step of teacher.before ?? []) expect((await run(state, step)).status).toBe(200);
+    const answer = await run(state, teacher.request);
+    expect(contractProblems("teacher.submission-confirmation-code.get", answer)).toEqual([]);
+    const student = SCENARIOS["student.submission-confirmation-code.get"].request;
+    expect(JSON.parse(answer.body).code).toBe(JSON.parse((await run(state, student)).body).code);
+    expect(JSON.parse(answer.body).code).not.toBeNull();
   });
 
   it("lists the receipt's time only to its own student", async () => {

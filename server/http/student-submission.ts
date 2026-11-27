@@ -35,7 +35,10 @@ import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { type Route, sendJson } from "./router.ts";
-import { createTeacherSubmissionReceiptRoute } from "./teacher-submission-receipt.ts";
+import {
+  createTeacherSubmissionConfirmationCodeRoute,
+  createTeacherSubmissionReceiptRoute,
+} from "./teacher-submission-receipt.ts";
 
 type Answer = { status: 200; body: unknown } | { status: 401 | 404 | 503 };
 type Read = (reader: MySubmissionStateReader, token: string, id: string) => Promise<Answer>;
@@ -173,14 +176,15 @@ export function createStudentSubmissionRoutesFor(
   main: Pick<Databases["main"], "withActor">,
 ): Route[] {
   const reader = createMySubmissionStateReader(main.withActor);
+  const codes = createMySubmissionConfirmationCodeReader(main.withActor);
   // SRV-30: the teacher's read of one student's state shares the reader.
   // SRV-NF1-PREDANO: the list of the same states, over its own one statement.
   return [
     ...createStudentSubmissionRoutes(reader),
     createTeacherSubmissionReceiptRoute(reader),
     createStudentAssignmentSubmissionsRoute(createMyAssignmentSubmissionsReader(main.withActor)),
-    createStudentSubmissionConfirmationCodeRoute(
-      createMySubmissionConfirmationCodeReader(main.withActor),
-    ),
+    createStudentSubmissionConfirmationCodeRoute(codes),
+    // Dizajn 27. 11., 1.1: the reader's code shares the code reader.
+    createTeacherSubmissionConfirmationCodeRoute(codes),
   ];
 }

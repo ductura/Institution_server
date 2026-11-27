@@ -10,7 +10,10 @@
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../contracts/index.ts";
-import type { MySubmissionStateReader } from "../database/index.ts";
+import type {
+  MySubmissionConfirmationCodeReader,
+  MySubmissionStateReader,
+} from "../database/index.ts";
 import { readTeacherSubmission } from "../institution/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
 
@@ -59,6 +62,64 @@ export function createTeacherSubmissionReceiptRoute(reader: MySubmissionStateRea
         );
       } catch (error) {
         reportServerError("route", error, requestIdOf(response), ID);
+      }
+      return sendProblem(response, 503, "unavailable");
+    },
+  };
+}
+
+/**
+ * GET .../students/{studentId}/submission/confirmation-code
+ * (teacher.submission-confirmation-code.get), dizajn 27. 11., 1.1: the same edge as the
+ * receipt above; the answer is the code of app.teacher_submission_confirmation_code, whose
+ * every refusal is the same 404.
+ */
+export function createTeacherSubmissionConfirmationCodeRoute(
+  reader: MySubmissionConfirmationCodeReader,
+): Route {
+  const id = "teacher.submission-confirmation-code.get";
+  const contract = ROUTES.find((route) => route.id === id);
+  const body = contract?.responses.find((response) => response.status === 200)?.body;
+  if (contract === undefined || body === undefined) throw new Error(`no contract ${id}`);
+  return {
+    contract,
+    async handle(request, response, params) {
+      const site = request.headersDistinct["sec-fetch-site"];
+      if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        return sendProblem(response, 403, "forbidden");
+      }
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      const assignmentId = params?.assignmentId ?? "";
+      const studentId = params?.studentId ?? "";
+      if (!UUID.test(assignmentId) || !UUID.test(studentId)) {
+        return sendProblem(response, 404, "not_found");
+      }
+      try {
+        const read = await reader.teacherRead(
+          token,
+          assignmentId.toLowerCase(),
+          studentId.toLowerCase(),
+        );
+        if (!read.ok) {
+          const code = read.error.code;
+          if (code === "MY_SUBMISSION_STATE_UNAUTHENTICATED")
+            return sendProblem(response, 401, "unauthorized");
+          if (code === "MY_SUBMISSION_STATE_NOT_FOUND")
+            return sendProblem(response, 404, "not_found");
+          reportServerError("route", new Error(code), requestIdOf(response), id);
+          return sendProblem(response, 503, "unavailable");
+        }
+        const answer = { code: read.value };
+        if (Value.Check(body, answer)) return sendJson(response, 200, answer);
+        reportServerError(
+          "route",
+          new Error("answer outside the contract"),
+          requestIdOf(response),
+          id,
+        );
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), id);
       }
       return sendProblem(response, 503, "unavailable");
     },
