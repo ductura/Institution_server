@@ -86,14 +86,19 @@ async function fakeDatabase(text = TEXT): Promise<WithActor> {
 
 /** student.receipt-pdf.get's two reads for student A: the bound code and the live receipt. */
 async function fakeCode(live = SUBMISSION_ID): Promise<SubmissionConfirmationCode> {
-  const source = await sourceOf({ ...PAYLOAD, submissionId: live });
   const codes = {
     read: async (token: string | undefined) =>
       token === TOKEN_A
         ? ({ ok: true, value: CODE } as const)
         : ({ ok: false, error: { code: "MY_SUBMISSION_STATE_NOT_FOUND" } } as never),
   };
-  const states = {
+  return createSubmissionConfirmationCode(codes, await liveStates(live));
+}
+
+/** app.my_submission_state with the bound receipt of `live`. */
+async function liveStates(live = SUBMISSION_ID): Promise<MySubmissionStateReader> {
+  const source = await sourceOf({ ...PAYLOAD, submissionId: live });
+  return {
     state: async () => ({
       ok: true,
       value: {
@@ -105,7 +110,6 @@ async function fakeCode(live = SUBMISSION_ID): Promise<SubmissionConfirmationCod
       },
     }),
   } as unknown as MySubmissionStateReader;
-  return createSubmissionConfirmationCode(codes, states);
 }
 
 let running: Running | undefined;
@@ -350,9 +354,8 @@ describe("student.submission-package-link.post and student.submission-package.ge
               read: async () =>
                 ({ ok: false, error: { code: "MY_SUBMISSION_STATE_DATABASE_ERROR" } }) as never,
             },
-            {
-              state: async () => Promise.reject(new Error("not read")),
-            } as unknown as MySubmissionStateReader,
+            // The submission is live and bound: the 503 is the code read's.
+            await liveStates(),
           ),
         },
       ];
