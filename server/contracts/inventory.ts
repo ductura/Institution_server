@@ -425,6 +425,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7024185874",
   },
+  // F4-NAS-R20-SRV (Ductus#2059 c.7213112541, owner decision 27. 11. 2026): the course teacher's read of the submitted revision of a work; work.version.get stays owner_or_mentor.
+  "app/api/teacher/works/[documentId]/submitted-versions/[revision]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7213112541",
+  },
   // SRV-1605 (Ductus#2052 c.7081590679, WEB-2133): the guidance of a teacher on sources (recommendations, required literature, proof requests, the literature mark, the proofs); Ductus has no such route.
   "app/api/teacher/works/[documentId]/source-guidance/route.ts": {
     methods: ["GET"],

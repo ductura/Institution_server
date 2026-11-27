@@ -132,6 +132,7 @@ describe("route inventory", () => {
       "student.course-literature.get: app/api/student/courses/[courseId]/required-literature/route.ts is not in the inventory",
       "student.source-proof-requests.get: app/api/student/assignments/[assignmentId]/source-proof-requests/route.ts is not in the inventory",
       "teacher.work.get: app/api/teacher/works/[documentId]/route.ts is not in the inventory",
+      "teacher.work.submitted-version.get: app/api/teacher/works/[documentId]/submitted-versions/[revision]/route.ts is not in the inventory",
       "work.origin-composition.get: app/api/works/[documentId]/origin-composition/route.ts is not in the inventory",
       "work.origin-segments.get: app/api/works/[documentId]/origin-segments/route.ts is not in the inventory",
       "work.origin-segments.post: app/api/works/[documentId]/origin-segments/route.ts is not in the inventory",

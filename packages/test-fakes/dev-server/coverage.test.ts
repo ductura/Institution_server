@@ -2706,6 +2706,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { assignmentId: IDS.assignment },
     },
   },
+  "teacher.work.submitted-version.get": {
+    before: [commit("izmisljena-transakcija-1", 0), SUBMIT],
+    request: {
+      path: `/api/v1/teacher/works/${IDS.document}/submitted-versions/1`,
+      as: "nastavnik",
+    },
+  },
   "teacher.work.get": {
     request: { path: `/api/v1/teacher/works/${IDS.document}`, as: "nastavnik" },
   },

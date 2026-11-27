@@ -150,6 +150,7 @@ import {
   createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkRoutesFor,
+  createTeacherSubmittedVersionRoutesFor,
   createOriginCompositionRoutesFor,
   createAssistantMatchRoutesFor,
   createAiTransferRoutesFor,
@@ -1559,6 +1560,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // F4-NAS-R20-SRV: a live session that teaches no such work gets 404 on the submitted revision.
+  "teacher.work.submitted-version.get": {
+    method: "GET",
+    path: "/api/v1/teacher/works/izmisljeni-rad-0001/submitted-versions/1",
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-0910: a live session that has no such work gets 404 on the composition by origin.
   // SRV-1111: the thresholds of a faculty; not an administrator, so 403; the comparison of a work that is not the caller's, so 404.
   "institution.origin-thresholds.get": {
@@ -2903,6 +2911,7 @@ const FACTORIES = [
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createTeacherWorkRoutesFor",
+  "createTeacherSubmittedVersionRoutesFor",
   "createOriginCompositionRoutesFor",
   "createAssistantMatchRoutesFor",
   "createAiTransferRoutesFor",
@@ -3072,6 +3081,7 @@ const MOUNTED = [
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkRoutesFor(databases.main),
+  ...createTeacherSubmittedVersionRoutesFor(databases.main),
   ...createOriginCompositionRoutesFor(databases.main),
   ...createAssistantMatchRoutesFor(databases.main),
   ...createAiTransferRoutesFor(databases.main),
