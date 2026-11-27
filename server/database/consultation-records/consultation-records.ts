@@ -21,12 +21,16 @@ export type ConsultationRecord = {
   readonly topic: string;
   readonly agreement: string;
   readonly additions: readonly Addition[];
+  /** F4 wave 2 #2: the whole UTC minute the meeting was held (D-24); null when none was given. */
+  readonly heldAt: string | null;
 };
 export type RecordInput = {
   readonly heldOn: string;
   readonly revision: number;
   readonly topic: string;
   readonly agreement: string;
+  /** An ISO instant; the database keeps its whole minute. Absent or null: no time. */
+  readonly heldAt?: string | null;
 };
 type Refusal = { readonly status: "unauthenticated" | "not_found" | "invalid_input" };
 export type ListAnswer =
@@ -57,10 +61,13 @@ type Row = Record<string, unknown>;
 
 const LIST = `SELECT record_id AS "recordId", to_char(held_on, 'YYYY-MM-DD') AS "heldOn",
     revision::text AS revision, topic, agreement, addition_id AS "additionId",
-    addition_body AS "additionBody", addition_minute AS "additionMinute"
+    addition_body AS "additionBody", addition_minute AS "additionMinute",
+    held_at AS "heldAt"
   FROM collaboration.list_consultation_records($1)`;
+// F4 wave 2 #2: the second version takes the time of the meeting (null for
+// none) and refuses a time ahead of now or far from the day with ZD422.
 const CREATE =
-  "SELECT collaboration.create_consultation_record($1, $2::date, $3::bigint, $4, $5) AS id";
+  "SELECT collaboration.create_consultation_record_v2($1, $2::date, $3::bigint, $4, $5, $6::timestamptz) AS id";
 const ADD = `SELECT addition_id AS id, addition_minute AS "createdAt"
   FROM collaboration.add_consultation_addition($1, $2::uuid, $3)`;
 
@@ -103,6 +110,25 @@ export function isCalendarDate(value: unknown): value is string {
   );
 }
 
+/** An ISO UTC instant to the minute, second or millisecond (the contract's heldAt). */
+const INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?Z$/u;
+
+/**
+ * The whole UTC minute of an ISO instant, as the database keeps it
+ * (date_trunc('minute', ..., 'UTC')): null for no time, undefined for a value
+ * that is not a real instant (a 13th month, a 61st second).
+ */
+export function heldAtMinute(value: string | null | undefined): string | null | undefined {
+  if (value === null || value === undefined) return null;
+  const match = INSTANT.exec(value);
+  if (match === null || !isCalendarDate(value.slice(0, 10))) return undefined;
+  const [hour, minute, second] = [Number(match[4]), Number(match[5]), Number(match[6] ?? 0)];
+  if (hour > 23 || minute > 59 || second > 59) return undefined;
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return undefined;
+  return new Date(Math.floor(time / 60_000) * 60_000).toISOString();
+}
+
 function minuteOf(value: unknown): string | null {
   if (!(value instanceof Date) || !Number.isFinite(value.getTime())) return null;
   return value.getTime() % 60_000 === 0 ? value.toISOString() : null;
@@ -114,6 +140,7 @@ export function recordsOf(rows: readonly Row[]): ConsultationRecord[] | null {
   const additions = new Map<string, Addition[]>();
   for (const row of rows) {
     const { recordId, heldOn, revision, topic, agreement } = row;
+    const heldAt = row.heldAt === null || row.heldAt === undefined ? null : minuteOf(row.heldAt);
     if (
       typeof recordId !== "string" ||
       !UUID.test(recordId) ||
@@ -122,7 +149,8 @@ export function recordsOf(rows: readonly Row[]): ConsultationRecord[] | null {
       !REVISION.test(revision) ||
       !Number.isSafeInteger(Number(revision)) ||
       typeof topic !== "string" ||
-      typeof agreement !== "string"
+      typeof agreement !== "string" ||
+      (heldAt === null && row.heldAt !== null && row.heldAt !== undefined)
     ) {
       return null;
     }
@@ -137,6 +165,7 @@ export function recordsOf(rows: readonly Row[]): ConsultationRecord[] | null {
         topic,
         agreement,
         additions: list,
+        heldAt,
       });
     }
     if (row.additionId !== null) {
@@ -176,6 +205,8 @@ export function createConsultationRecords(withActor: WithActor): ConsultationRec
       ) {
         return { status: "invalid_input" };
       }
+      const heldAt = heldAtMinute(input.heldAt);
+      if (heldAt === undefined) return { status: "invalid_input" };
       try {
         const { rows } = await withActor(token, (tx) =>
           tx.query<Row>(CREATE, [
@@ -184,11 +215,16 @@ export function createConsultationRecords(withActor: WithActor): ConsultationRec
             input.revision,
             input.topic,
             input.agreement,
+            input.heldAt ?? null,
           ]),
         );
         const id = rows.length === 1 ? rows[0]?.id : undefined;
         if (typeof id !== "string" || !UUID.test(id)) return { status: "unavailable" };
-        return { status: "ok", record: { id, ...input, additions: [] } };
+        const { heldOn, revision, topic, agreement } = input;
+        return {
+          status: "ok",
+          record: { id, heldOn, revision, topic, agreement, additions: [], heldAt },
+        };
       } catch (error) {
         const refusal = refusalOf(error);
         if (refusal === null) throw error;

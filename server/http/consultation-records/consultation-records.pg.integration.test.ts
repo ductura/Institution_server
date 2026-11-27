@@ -89,6 +89,23 @@ it("stores one shared record under ductus_app that the student and the teacher b
     expect(
       again.status === "ok" && again.records.map((r) => r.additions.map((a) => a.text)),
     ).toEqual([["Rok je pomaknut."]]);
+    expect(again.status === "ok" && again.records[0]?.heldAt).toBeNull();
+
+    // F4 wave 2 #2: the time it was held, kept as its whole minute; ahead of now is 422.
+    const past = new Date(Date.now() - 3_600_000).toISOString();
+    const timed = { ...input, heldOn: past.slice(0, 10), heldAt: past };
+    const withTime = await port.create(TEACHER, DOCUMENT, timed);
+    expect(withTime.status).toBe("ok");
+    if (withTime.status !== "ok") return;
+    expect(withTime.record.heldAt).toBe(`${past.slice(0, 16)}:00.000Z`);
+    const ahead = new Date(Date.now() + 86_400_000).toISOString();
+    expect(
+      await port.create(TEACHER, DOCUMENT, { ...input, heldOn: ahead.slice(0, 10), heldAt: ahead }),
+    ).toEqual({ status: "invalid_input" });
+    const read = await port.list(STUDENT, DOCUMENT);
+    expect(
+      read.status === "ok" && read.records.find((r) => r.id === withTime.record.id)?.heldAt,
+    ).toBe(withTime.record.heldAt);
 
     // Another student, another institution and an unknown work read a missing one.
     for (const token of [OTHER_STUDENT, OTHER_TENANT]) {
