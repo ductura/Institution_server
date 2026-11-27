@@ -43,6 +43,14 @@ Element traga je isti kao u v1: `{traceKind, count}`, `count ≥ 1`, najviše tr
 
 PDF nema praćene promjene, pa `deletion` i `insertion` u PDF-u ne postoje. Čitač ih ne pogađa iz izgleda stranice.
 
+Odgovori na komentare u PDF-u (anotacija s ključem `/IRT`) ne broje se zasebno: jedna nit je jedan `comment`, jer se broji samo anotacija bez `/IRT`. `FreeText` se broji kao `comment` neovisno o tome kako izgleda na stranici. Tekst anotacije nikad ne ulazi u tekst dokumenta (vidi „Tekst i `contentSha256`” niže). Pravilo za odgovore je pod „Otvoreno za review”, t. 4.
+
+### 2a. Tekst i `contentSha256`
+
+- **PDF**: tekst i `contentSha256` računaju se kao u v1. Anotacije ne ulaze u tekst, pa isti PDF ima isti `contentSha256` u v1 i v2.
+- **ODT**: tekst je tijelo `office:text` iz `content.xml`. U tekst ne ulaze sadržaj `office:annotation`, `text:tracked-changes` (dakle ni obrisani tekst) ni zaglavlja i podnožja. Umetnuti tekst ulazi kao dio dokumenta. `contentSha256` se računa nad tim tekstom istom normalizacijom kao za DOCX.
+- Točnu normalizaciju (razmaci, prijelomi odlomaka, Unicode) za oba formata ugovaraju Ductus i SRV u koraku 1, zajedno s golden vektorima. Bez njih ugovor odsječka v4 nije potpun i korak 1 se ne spaja.
+
 Ne čita se ništa od ovoga: autor (`dc:creator`, `/T`), datum (`dc:date`, `/M`, `/CreationDate`), sadržaj komentara (`/Contents`, tekst unutar `office:annotation`) ni naziv datoteke. Pravila M1, M15 i K8 vrijede i za nove formate.
 
 ### 3. B3 i kodovi odbijanja
@@ -52,8 +60,8 @@ Poslužitelj tragove računa sam iz primljenih bajtova. Razlika prema klijentovo
 ### 4. Redoslijed (svaki je zaseban zadatak i PR)
 
 1. **Ugovor**: Ductus i SRV objavljuju shemu v2 u ugovoru odsječka v4, zajedno s golden vektorima za `odt` i za `pdf` s tragovima. U SRV-u: `server/contracts/import/manifest.ts` dobiva `ImportManifestV2`, a čitač vraća uniju v1 i v2. Testovi M7–M9 dobivaju v2 parove: v1 i dalje odbija `traces` uz `pdf`, a v2 ga traži.
-2. **Migracija** (val 2, ODOBRENO): `CHECK (file_format IN ('docx','pdf','odt'))` na `collaboration.import_event`, uz retke u pgTAP matrici. Postojeća migracija se ne mijenja; nova zamjenjuje ograničenje.
-3. **Čitač ODT-a** (`server/import/odt/`): ZIP i `content.xml`, uz iste granice čitanja kao DOCX (B-8, broj unosa, raspakirana veličina i dubina XML-a). Daje tekst i tragove.
+2. **Migracija** (val 2; počinje tek uz vlasnikovo ODOBRENO za val 2, prema planu valova F4, `ductura/.github` PR #126, `docs/plan/valovi-f4-srv.md`): `CHECK (file_format IN ('docx','pdf','odt'))` na `collaboration.import_event`, uz retke u pgTAP matrici. Postojeća migracija se ne mijenja; nova zamjenjuje ograničenje.
+3. **Čitač ODT-a** (`server/import/odt/`): ZIP i `content.xml`, uz iste granice čitanja kao DOCX (B-8, broj unosa, raspakirana veličina i dubina XML-a). Daje tekst i tragove. Šifrirani ODT (`manifest:encryption-data` u `META-INF/manifest.xml`) i aktivni sadržaj (makroi `Basic/`, `office:scripts`, `office:event-listeners`, ugrađeni objekti `Object */`) nisu u opsegu ovog ADR-a. Kako ih čitač odbija, odlučuje se prije koraka 3 (vidi „Otvoreno za review”, t. 5), i to bez novih kodova u manifestu.
 4. **Tragovi u PDF čitaču** (`server/import/pdf/`): broji `/Annot` podtipa `Text` i `FreeText`, uz granicu broja anotacija po stranici i ukupno.
 
 Koraci 2–4 ne počinju prije koraka 1.
@@ -69,3 +77,5 @@ Koraci 2–4 ne počinju prije koraka 1.
 1. Treba li v2 uz `pdf` dopustiti i `cloud-version`? Prijedlog: ne, jer za PDF nema verzija u oblaku.
 2. Treba li uz PDF brojati i označavanja (`Highlight`, `StrikeOut`, `Underline`)? Prijedlog: ne, jer nisu komentar ni praćena promjena. Ostaje za kasniju verziju.
 3. Treba li za ODT podržati i `.fodt` (ravni XML)? Prijedlog: ne, jer sučelje nudi samo `.odt`.
+4. Broje li se odgovori na PDF komentare (`/IRT`) zasebno? Prijedlog: ne, kao u §2, jer se tako ne može naslutiti tko je s kim razgovarao.
+5. Kako se odbija šifrirani ODT i ODT s aktivnim sadržajem? Prijedlog: odbiti, kao kod PDF-a (`PDF_ENCRYPTED`, `PDF_ACTIVE_CONTENT` u [`import-contract.md`](import-contract.md) D2 i D3). Hoće li se dodati opći kodovi za čitače ili posebni kodovi za ODT, odlučuje se prije koraka 3. Na manifest to ne utječe.
