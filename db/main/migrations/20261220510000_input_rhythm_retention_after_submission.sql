@@ -67,6 +67,22 @@ AS $$
 $$;
 REVOKE ALL ON FUNCTION evidence.input_rhythm_due(uuid, uuid, uuid) FROM PUBLIC;
 
+-- The transaction lock of the rhythm of one work. A burst and a submission of
+-- the same work take it before they read or set the date, so they never pass
+-- each other unseen: the server's transactions are READ COMMITTED
+-- (server/database/with-actor.ts), and the statement after the lock reads what
+-- the other one committed. Without it a burst could read "no submission" while
+-- the submission's trigger could not yet see the burst, and the burst would
+-- keep no date for good.
+CREATE FUNCTION evidence.input_rhythm_lock(p_institution_id uuid, p_assignment_id uuid, p_student_id uuid)
+RETURNS void
+LANGUAGE sql VOLATILE SET search_path = ''
+AS $$
+  SELECT pg_advisory_xact_lock(hashtextextended(
+    'evidence.input_rhythm:' || p_institution_id::text || ':' || p_assignment_id::text || ':' || p_student_id::text, 0))
+$$;
+REVOKE ALL ON FUNCTION evidence.input_rhythm_lock(uuid, uuid, uuid) FROM PUBLIC;
+
 -- 3. A submission sets the date of the bursts of its work; only shorter.
 -- Runs as the inserting role (app.record_submission belongs to the evidence
 -- role), as evidence.close_submitted_packages does.
@@ -76,6 +92,7 @@ AS $$
 DECLARE
   v_due timestamptz := NEW.requested_at + make_interval(days => app.input_rhythm_retention_days());
 BEGIN
+  PERFORM evidence.input_rhythm_lock(NEW.institution_id, NEW.assignment_id, NEW.principal_id);
   UPDATE evidence.input_rhythm r SET delete_after = v_due
    WHERE r.institution_id = NEW.institution_id AND r.assignment_id = NEW.assignment_id
      AND r.student_id = NEW.principal_id AND (r.delete_after IS NULL OR r.delete_after > v_due);
@@ -102,6 +119,7 @@ BEGIN
   IF NOT app.input_rhythm_assignment_on(p_assignment_id) THEN
     RETURN false;
   END IF;
+  PERFORM evidence.input_rhythm_lock(v_institution, p_assignment_id, p_student_id);
   v_due := evidence.input_rhythm_due(v_institution, p_assignment_id, p_student_id);
   -- More than 30 days after the live submission: it would be due at once.
   IF v_due IS NOT NULL AND v_due <= now() THEN
@@ -190,6 +208,7 @@ $$;
 DROP TRIGGER evidence_submission_sets_rhythm_due ON evidence.submission;
 DROP FUNCTION evidence.input_rhythm_due_on_submission();
 DROP FUNCTION evidence.input_rhythm_shorten_due();
+DROP FUNCTION evidence.input_rhythm_lock(uuid, uuid, uuid);
 DROP FUNCTION evidence.input_rhythm_due(uuid, uuid, uuid);
 UPDATE evidence.input_rhythm
    SET delete_after = greatest(recorded_at, now()) + make_interval(months => app.input_rhythm_retention_months())

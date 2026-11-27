@@ -90,6 +90,7 @@ SELECT is_empty(
       WHERE p.oid IN ('evidence.input_rhythm_due(uuid,uuid,uuid)'::regprocedure,
                       'evidence.input_rhythm_due_on_submission()'::regprocedure,
                       'evidence.input_rhythm_shorten_due()'::regprocedure,
+                      'evidence.input_rhythm_lock(uuid,uuid,uuid)'::regprocedure,
                       'app.input_rhythm_retention_days()'::regprocedure)
         AND (p.proowner <> 'ductus_evidence'::regrole OR p.prosecdef OR NOT 'search_path=""' = ANY (p.proconfig)) $$,
   'the helpers belong to the evidence role, are not SECURITY DEFINER and pin an empty search_path');
@@ -97,7 +98,8 @@ SELECT is_empty(
   $$ SELECT r || ' ' || f FROM unnest(ARRAY['public', 'ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth',
                                             'ductus_identity']) AS r
       CROSS JOIN unnest(ARRAY['evidence.input_rhythm_due(uuid,uuid,uuid)', 'evidence.input_rhythm_due_on_submission()',
-                              'evidence.input_rhythm_shorten_due()', 'app.input_rhythm_retention_days()']) AS f
+                              'evidence.input_rhythm_shorten_due()', 'evidence.input_rhythm_lock(uuid,uuid,uuid)',
+                              'app.input_rhythm_retention_days()']) AS f
       WHERE has_function_privilege(r, f, 'EXECUTE') $$,
   'no runtime role executes the helpers');
 SELECT is(
@@ -107,6 +109,32 @@ SELECT is(
 SELECT ok(NOT has_schema_privilege('ductus_evidence', 'app', 'CREATE')
           AND NOT has_schema_privilege('ductus_evidence', 'evidence', 'CREATE'),
   'after the migration the evidence role keeps no CREATE on the schemas');
+
+-- 1a. A burst and a submission of the same work take one transaction lock of
+-- that work before they read or set the date (Codex review on #909): with READ
+-- COMMITTED neither would otherwise see the other's uncommitted row, and the
+-- burst would keep no date for good. Each path is seen holding the lock inside
+-- a savepoint; rolling it back releases the lock again.
+CREATE FUNCTION pg_temp.rhythm_lock_held() RETURNS boolean LANGUAGE sql AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM pg_locks l,
+      LATERAL (SELECT hashtextextended('evidence.input_rhythm:' || pg_temp.id('fak_a') || ':' || pg_temp.id('z1')
+                                       || ':' || pg_temp.id('ana'), 0) AS k) h
+     WHERE l.locktype = 'advisory' AND l.pid = pg_backend_pid() AND l.granted AND l.objsubid = 1
+       AND l.classid::bigint = (h.k >> 32) & 4294967295 AND l.objid::bigint = h.k & 4294967295)
+$$;
+SELECT ok(NOT pg_temp.rhythm_lock_held(), 'no lock of Ana''s rhythm is held before anything');
+SAVEPOINT lock_burst;
+SELECT is(pg_temp.ask('ana', $$ SELECT app.input_rhythm_record('doc-a', ARRAY[1]) $$), 'true', 'a burst is recorded');
+SELECT ok(pg_temp.rhythm_lock_held(), 'recording a burst holds the lock of the work');
+ROLLBACK TO SAVEPOINT lock_burst;
+SELECT ok(NOT pg_temp.rhythm_lock_held(), 'released with the savepoint');
+SAVEPOINT lock_submission;
+DO $$ BEGIN PERFORM pg_temp.submit(1, now()); END $$;
+SELECT ok(pg_temp.rhythm_lock_held(), 'recording a submission holds the same lock');
+ROLLBACK TO SAVEPOINT lock_submission;
+SELECT ok(NOT pg_temp.rhythm_lock_held() AND NOT EXISTS (SELECT 1 FROM evidence.submission),
+  'released with the savepoint, and no submission is left');
 
 -- 2. Before the submission: no date, and the job keeps the burst.
 SELECT is(pg_temp.ask('ana', $$ SELECT app.input_rhythm_record('doc-a', ARRAY[120, 80]) $$), 'true', 'a burst is recorded');
