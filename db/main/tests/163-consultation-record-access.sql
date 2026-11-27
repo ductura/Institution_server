@@ -157,7 +157,7 @@ SELECT throws_ok($$ INSERT INTO collaboration.consultation_addition (record_id, 
   '23503', NULL, 'an addition cannot name another institution than its record');
 -- The web role cannot touch the tables directly.
 
--- F4 wave 2 #2 (1.3, 20261220630000): the time of the meeting. Times are
+-- F4 wave 2 #2 (1.3, 20261220640000): the time of the meeting. Times are
 -- relative to now(), which is fixed for this one transaction.
 CREATE TEMP TABLE held (name text PRIMARY KEY, held_on date, held_at timestamptz);
 INSERT INTO held SELECT 'past', ((now() - interval '1 hour 30 seconds') AT TIME ZONE 'UTC')::date, now() - interval '1 hour 30 seconds';
