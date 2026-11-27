@@ -22,7 +22,7 @@ import {
   createWorkPdfRouteFor,
   createProblemReportRouteFor,
   createProblemReportsRouteFor,
-  createPublicVerificationRouteFor,
+  createPublicVerificationRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createEnrollmentCodeStateRouteFor,
@@ -983,10 +983,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createStaffAffiliationRouteFor(NO_ACTOR).contract.id],
   },
   {
-    // SRV-9B: the public check of a receipt over the main database.
-    call: "createPublicVerificationRouteFor(databases.main)",
-    ids: ["public.verification.post"],
-    routes: () => [createPublicVerificationRouteFor(NO_ACTOR).contract.id],
+    // SRV-9B and design 1.1: the public check of a receipt, by pair and by
+    // code, over the main database and one limiter.
+    call: "createPublicVerificationRoutesFor(databases.main)",
+    ids: ["public.verification.post", "public.verification-code.post"],
+    routes: () => createPublicVerificationRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -1334,6 +1335,7 @@ describe("routes the entry point mounts itself", () => {
       "student.notice.get",
       "profile.staff-affiliation.get",
       "public.verification.post",
+      "public.verification-code.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
