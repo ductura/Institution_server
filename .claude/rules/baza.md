@@ -13,3 +13,4 @@ Podsjetnik, ne pravilo. Pravila su u Ductus [CLAUDE.md](https://github.com/danie
 - Pristup nastaje samo iz odnosa, ne iz uloge (Ustav C-23; Ductus [docs/PRODUCT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/PRODUCT.md) §3).
 - RLS, pgTAP matrica, sve migracije (`db/migrations/`) i `server/database/` (u Ductusu `src/server/db/`) su najmanje `Risk: critical` (Ductus [docs/ENGINEERING_SYSTEM.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM.md) §5).
 - Migracije se nikad ne primjenjuju na produkciju iz agenta.
+- Nova migracija nastaje samo kroz `pnpm db:new <ime> [--db main|logs|legal]`; kad CI javi da verzija nije iznad baze, daj joj novu verziju iznad baze (vlasnikov nalog SRV-MIGRACIJE-BROJEVI, [scripts/db/README.md](../../scripts/db/README.md)).
