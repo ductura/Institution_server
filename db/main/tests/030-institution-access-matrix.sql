@@ -64,7 +64,7 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
                ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'),
                ('declaration.is_fresh(declaration.statement,text,bigint,integer)'),
-               -- SRV-1809: ai.recorded of a confirmed declaration (276).
+               -- SRV-1809: ai.recorded of a confirmed declaration (277).
                ('declaration.recorded_transfers(uuid,uuid,text,bigint)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
