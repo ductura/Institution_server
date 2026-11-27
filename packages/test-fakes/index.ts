@@ -2,6 +2,7 @@
 // Importing it with NODE_ENV outside unset, development and test throws.
 import "./guard/index.ts";
 
+export * from "./assistant/index.ts";
 export * from "./clock/index.ts";
 export * from "./dev-server/index.ts";
 export * from "./fake-server/index.ts";

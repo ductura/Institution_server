@@ -1531,6 +1531,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.submission.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
   },
+  "student.submission-confirmation-code.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/submission/confirmation-code`, as: "student" },
+  },
   // SRV-1312: the fake draws the submission id at random; the scenario pins it.
   "student.portable-record.get": {
     before: SUBMIT_STEPS,
@@ -3323,6 +3326,21 @@ describe("student submission on the dev fake server", () => {
       state: "potvrdeno",
       receipt: JSON.parse(submitted.body).receipt,
     });
+    expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("gives the confirmation code only after the receipt is bound, and only to its student", async () => {
+    const state = createState();
+    const read = SCENARIOS["student.submission-confirmation-code.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ code: null });
+    const submit = SCENARIOS["submission.submit.post"];
+    for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+    expect((await run(state, submit.request)).status).toBe(200);
+    const answer = await run(state, read);
+    expect(contractProblems("student.submission-confirmation-code.get", answer)).toEqual([]);
+    expect(JSON.parse(answer.body).code).toMatch(
+      /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/,
+    );
     expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
   });
 
