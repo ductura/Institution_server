@@ -20,11 +20,23 @@ import type { ActorTransaction } from "./with-actor.ts";
 export type DocumentSchemaVersion = 1 | 2 | 3;
 
 /**
- * The kinds of work whose revision 0 this file knows (SRV-V14-SHEET-COMMIT):
- * text, and spreadsheet, whose one revision 0 is `sheetRevisionZeroDocument`
- * of the sheet domain. A slides work has no revision 0 here yet.
+ * The kinds of work whose revision 0 this file knows: text; spreadsheet
+ * (SRV-V14-SHEET-COMMIT), whose one revision 0 is `sheetRevisionZeroDocument`
+ * of the sheet domain; and slides (F4-V13-R01), whose one revision 0 is
+ * `slidesRevisionZeroDocument` of the slides domain.
  */
-export type RevisionZeroKind = "text" | "spreadsheet";
+export type RevisionZeroKind = "text" | "spreadsheet" | "slides";
+
+/**
+ * SHA-256 of the JCS bytes of the slides revision 0, lowercase hex (the
+ * slides domain's `SLIDES_REVISION_ZERO_SHA256`, written out here for the same
+ * reason as the others; a test checks it against the domain).
+ */
+export const SLIDES_REVISION_ZERO_HASH =
+  "f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8";
+
+/** The version of the slides model of that revision 0 (`slidesSchemaVersion` of evidence.open.post). */
+const SLIDES_REVISION_ZERO_VERSION = 1;
 
 /**
  * SHA-256 of the JCS bytes of the spreadsheet revision 0, lowercase hex
@@ -66,6 +78,9 @@ export function schemaVersionOfRevisionZero(hash: unknown): DocumentSchemaVersio
  * spreadsheet hash on a text work, names no version.
  */
 function versionOfKind(kind: RevisionZeroKind, hash: string): DocumentSchemaVersion | null {
+  if (kind === "slides") {
+    return hash === SLIDES_REVISION_ZERO_HASH ? SLIDES_REVISION_ZERO_VERSION : null;
+  }
   if (kind === "spreadsheet") {
     return hash === SHEET_REVISION_ZERO_SHA256 ? SHEET_REVISION_ZERO_VERSION : null;
   }

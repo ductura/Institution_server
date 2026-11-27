@@ -14,6 +14,7 @@ import { test } from "vitest";
 import {
   checkBase,
   checkLedger,
+  checkOrder,
   checkVersions,
   DATABASES,
   DIR,
@@ -280,6 +281,57 @@ test("CLI: the logs ledger is checked too, and a migrations directory off the li
     rmSync(r.dir, { recursive: true, force: true });
   }
 });
+
+// SRV-MIGRACIJE-BROJEVI: an added migration must sort after the whole base.
+test("an added migration below or at the base maximum fails, above it passes, base history is not judged", () => {
+  const base = files({ [A]: "a", [B]: "b" });
+  const below = "20261001500000_late.sql";
+  const errors = checkOrder(base, files({ [A]: "a", [B]: "b", [below]: "x" }));
+  assert.equal(errors.length, 1);
+  assert.match(
+    errors[0] as string,
+    new RegExp(`${below} is not above 20261002000000.*pnpm db:renumber`),
+  );
+  const equal = "20261002000000_same.sql";
+  assert.equal(checkOrder(base, files({ [A]: "a", [B]: "b", [equal]: "x" })).length, 1);
+  assert.deepEqual(
+    checkOrder(base, files({ [A]: "a", [B]: "b", "20261003000000_c.sql": "c" })),
+    [],
+  );
+  // The base itself may hold any order; only additions are judged.
+  assert.deepEqual(checkOrder(files({ [B]: "b", [A]: "a" }), files({ [A]: "a", [B]: "b" })), []);
+  assert.deepEqual(checkOrder(new Map(), files({ [A]: "a" })), []);
+});
+
+test("CLI: --base fails an added migration below the base maximum, per database", () => {
+  const r = repo();
+  const logs = (name: string, text: string): void =>
+    writeFileSync(path.join(r.dir, "db", "logs", "migrations", name), text);
+  try {
+    r.put(B, "b\n");
+    logs(A, "logs a\n");
+    assert.equal(r.cli("--write").status, 0);
+    const base = r.commit();
+    // Below main's maximum but above logs': only main fails.
+    r.put("20261001500000_late.sql", "late\n");
+    logs("20261001500000_late.sql", "logs late\n");
+    r.cli("--write");
+    const result = r.cli("--base", base);
+    assert.equal(result.status, 1);
+    const stderr = String(result.stderr);
+    assert.match(
+      stderr,
+      /db\/main\/migrations\/20261001500000_late\.sql is not above 20261002000000/,
+    );
+    assert.doesNotMatch(stderr, /db\/logs/);
+    assert.match(stderr, /pnpm db:renumber/);
+    rmSync(path.join(r.dir, "db", "main", "migrations", "20261001500000_late.sql"));
+    r.cli("--write");
+    assert.equal(r.cli("--base", base).status, 0);
+  } finally {
+    rmSync(r.dir, { recursive: true, force: true });
+  }
+}, 60_000);
 
 test("every committed ledger matches its directory and stays LF", () => {
   for (const { migrationsDir, ledger } of DATABASES) {
