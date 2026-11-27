@@ -46,7 +46,15 @@ export function renderWorkDocx(input: WorkDocxInput): WorkDocx {
     kind: "saved",
     pageSetup: A4_PAGE,
     // No name, institution or mentor is read for the cover yet (open item in the PR).
-    cover: { institution: "", unit: "", workType: "", student: "", mentor: "" },
+    // Study, place and date are what the student wrote in the document (contract v4 §7).
+    cover: {
+      institution: "",
+      unit: "",
+      workType: "",
+      student: "",
+      mentor: "",
+      ...(checked.doc as CanonicalDocumentV4).cover,
+    },
     expiresAt: new Date(Date.parse(input.savedAt) + SNAPSHOT_TTL_MS).toISOString(),
   });
   const model = buildExportModel(snapshot.document as CanonicalDocumentV4, input.labels);
