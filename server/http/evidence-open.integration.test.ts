@@ -295,12 +295,13 @@ describe("Ductus open-route: the route over the real opener", () => {
   };
   // SRV-7F: the v3 revision 0 as contract v3 §6 writes it.
   const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
-  // The column of the work's kind (a computed key: the lint takes no snake_case key).
-  const KIND_COLUMN = "document_kind";
+  const SLIDES_REVISION_ZERO_SHA256 =
+    "f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8";
   const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
   function realOpener(
     submitted: Record<string, unknown>[],
     revisionZero: Record<string, unknown>[] = [{ content_hash: V3_ZERO }],
+    kind = "text",
   ) {
     seen.length = 0;
     const withActor = (async (_token, fn) => {
@@ -311,8 +312,8 @@ describe("Ductus open-route: the route over the real opener", () => {
             ? [OPENED]
             : text.includes("work_submitted")
               ? submitted
-              : text.includes("SELECT document_kind")
-                ? [{ [KIND_COLUMN]: "text" }]
+              : text.includes("document_kind")
+                ? [{ ["document_kind"]: kind }]
                 : text.includes("evidence.document_revision")
                   ? revisionZero
                   : text.includes("evidence.package")
@@ -358,6 +359,18 @@ describe("Ductus open-route: the route over the real opener", () => {
     ]);
     expect(seen[0]?.text).toMatch(/app\.open_student_work\(\$1::uuid, \$2::boolean\)/);
     expect(seen[1]?.text).toMatch(/app\.work_submitted\(\$1::uuid\)/);
+  });
+
+  // F4-V13-R01: a slides work opens with its kind and the version of the slides model.
+  it("opens a slides work with workKind slides and slidesSchemaVersion 1", async () => {
+    realOpener([{ submitted: false }], [{ content_hash: SLIDES_REVISION_ZERO_SHA256 }], "slides");
+    const answer = await post(`{"assignmentId":"${A1}","start":true}`);
+    expect(answer.status).toBe(200);
+    const body = JSON.parse(answer.body);
+    expect(body.workKind).toBe("slides");
+    expect(body.slidesSchemaVersion).toBe(1);
+    expect(body.schemaVersion).toBe(1);
+    expect(body.revisionZeroHash).toBe(SLIDES_REVISION_ZERO_SHA256);
   });
 
   it.each([true, false])(

@@ -54,8 +54,8 @@ export type OpenedWork = {
    */
   lastSignedAt: string | null;
   /**
-   * SRV-V14-KIND-ENUM: the kind of the work when it is not text; absent is "text".
-   * F4-V14-R01: app.open_student_work opens text and spreadsheet works.
+   * SRV-V14-KIND-ENUM: the kind of the work as the database recorded it when the work started
+   * (evidence.document.document_kind). app.open_student_work opens text, slides and spreadsheet.
    */
   workKind?: "text" | "slides" | "spreadsheet";
 };
@@ -105,6 +105,15 @@ export type WorkOpener = {
 const OPEN_SQL = `SELECT outcome, document_id, evidence_profile_id, current_revision, document_hash,
        head_segment_hash, last_sequence_to, snapshot
   FROM app.open_student_work($1::uuid, $2::boolean)`;
+// Under RLS the session sees only its own institution's own documents; the kind is written
+// once, when the work starts, and never updated.
+const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
+// A Map, not an object: a value such as `__proto__` is no kind.
+const OPENED_KINDS = new Map<unknown, RevisionZeroKind>([
+  ["text", "text"],
+  ["slides", "slides"],
+  ["spreadsheet", "spreadsheet"],
+]);
 // DAN-289 O2: whether the caller's own work for the assignment is submitted.
 const SUBMITTED_SQL = "SELECT app.work_submitted($1::uuid) AS submitted";
 // Under RLS the session sees only its own packages; the first one, as the open RPC picks it.
@@ -126,14 +135,6 @@ const SIGNED_MINUTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/;
 // ISO 8601 in UTC with milliseconds, formatted by the database, never by a driver's time zone.
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 const iso = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', ${ISO})`;
-// Under RLS the session sees only its own documents; the kind is written once, when the work
-// starts, and never updated.
-const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
-// A Map, not an object: a value such as `__proto__` is no kind. Slides have no revision 0 yet.
-const KINDS = new Map<unknown, RevisionZeroKind>([
-  ["text", "text"],
-  ["spreadsheet", "spreadsheet"],
-]);
 const KEYS_SQL = `
 SELECT key_id, key_version, evidence_domain_id::text, purpose, algorithm, key_base64url,
        ${iso("valid_from")} AS valid_from, ${iso("valid_to")} AS valid_to, ${iso("revoked_at")} AS revoked_at
@@ -242,9 +243,9 @@ async function open(
   if (typeof submitted !== "boolean") return malformed();
   // SRV-7F: the version is the server's record of revision 0; at revision 0
   // the snapshot the work opens with is that revision, so the hashes agree.
-  // The kind of the work is the server's record, written when the work started (F4-V14-R01).
   const kindRows = await tx.query<Row>(KIND_SQL, [row.document_id]);
-  const kind = kindRows.rows.length === 1 ? KINDS.get(kindRows.rows[0]?.document_kind) : undefined;
+  const kind =
+    kindRows.rows.length === 1 ? OPENED_KINDS.get(kindRows.rows[0]?.document_kind) : undefined;
   if (kind === undefined) return malformed();
   const version = await readWorkVersion(tx, row.document_id, kind);
   if (version === null) return malformed();
@@ -277,7 +278,7 @@ async function open(
       receiptKeys: keys,
       submitted,
       lastSignedAt,
-      ...(kind === "spreadsheet" ? { workKind: kind } : {}),
+      workKind: kind,
     },
   };
 }
