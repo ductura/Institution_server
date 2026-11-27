@@ -1,9 +1,17 @@
+import { createHash, generateKeyPairSync, sign as nodeSign } from "node:crypto";
+
 import { describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
 
-import { sheetRevisionZeroDocument } from "../domain/index.ts";
+import {
+  canonicalizeJcs,
+  digestEvidenceReceiptPayloadV2,
+  REVISION_ZERO_NODE_ID,
+  REVISION_ZERO_V2_SHA256,
+  sheetRevisionZeroDocument,
+} from "../domain/index.ts";
 
 // SRV-V14-SHEET-SUBMIT: a test may replace the sheet reconstruction once; by default the real one runs.
 const sheetOverride = vi.hoisted(() => ({ next: null as null | (() => unknown) }));
@@ -238,6 +246,149 @@ describe("submission record read (B-12 step 4b1)", () => {
       const log = vi.fn();
       expect(await sheetRun(log)).toMatchObject({ outcome: { status: "no_evidence" } });
       expect(log).not.toHaveBeenCalled();
+    });
+  });
+});
+
+// SRV-33C: a work of document v2 records ductus-edit-steps-v1 (v4 §9 t. 9).
+// One invented segment ("Odlomak A") over revision 0 of v2, its receipt signed
+// by a key made for this test only, read through the route's own record path.
+describe("submission record of a work of document v2 recorded in ductus-edit-steps-v1 (SRV-33C)", () => {
+  const pair = generateKeyPairSync("ed25519");
+  const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
+  const AFTER_V2 = canonicalizeJcs({
+    nodes: [
+      {
+        children: [{ marks: [], text: "Odlomak A", type: "text" }],
+        id: REVISION_ZERO_NODE_ID,
+        type: "paragraph",
+      },
+    ],
+    schemaVersion: 2,
+    sources: [],
+  });
+
+  async function recordOf(transactionFormat: string) {
+    const after = sha256(AFTER_V2);
+    const segment = canonicalizeJcs({
+      evidenceSchema: "ductus-evidence-segment-v2",
+      canonicalization: "RFC8785-JCS",
+      hashAlgorithm: "sha256",
+      documentId: ROW.document_id,
+      sessionId: "session-1",
+      segmentId: "segment-1",
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      observedStartedAt: "2026-11-27T06:00:00.000Z",
+      observedEndedAt: "2026-11-27T06:00:00.000Z",
+      initialDocumentHash: REVISION_ZERO_V2_SHA256,
+      finalDocumentHash: after,
+      predecessorSegmentHash: null,
+      events: [
+        {
+          sequence: 1,
+          source: "editor",
+          steps: [
+            {
+              stepType: "replace",
+              from: 1,
+              to: 1,
+              slice: { content: [{ type: "text", text: "Odlomak A" }] },
+            },
+          ],
+          touchedNodeIds: [REVISION_ZERO_NODE_ID],
+          beforeDocumentHash: REVISION_ZERO_V2_SHA256,
+          afterDocumentHash: after,
+        },
+      ],
+      captureContext: { editorModel: "prosemirror", transactionFormat },
+      evidenceProfileId: "standard-v1",
+    });
+    const segmentHash = sha256(segment);
+    const payload = {
+      receiptSchema: "ductus-evidence-receipt-v2",
+      receiptId: "00000000-0000-4000-8000-000000000001",
+      evidenceDomainId: ROW.evidence_domain_id,
+      evidencePackageId: ROW.evidence_package_id,
+      documentId: ROW.document_id,
+      revision: 1,
+      clientTransactionId: "tx-1",
+      principalId: ROW.principal_id,
+      sessionId: "session-1",
+      segmentId: "segment-1",
+      segmentHash,
+      predecessorSegmentHash: null,
+      previousReceiptId: null,
+      evidenceSchema: "ductus-evidence-segment-v2",
+      evidenceProfileId: "standard-v1",
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      eventCount: 1,
+      payloadBytes: new TextEncoder().encode(segment).length,
+      acceptedAt: "2026-11-27T06:00:00.000Z",
+    } as const;
+    const digest = await digestEvidenceReceiptPayloadV2(payload);
+    const signature = {
+      algorithm: "Ed25519",
+      keyId: "test-key-1",
+      keyVersion: "1",
+      signatureEncoding: "raw",
+      signatureBase64Url: nodeSign(
+        null,
+        Buffer.from(digest.signingInput),
+        pair.privateKey,
+      ).toString("base64url"),
+    };
+    const store = new InMemoryEvidencePayloadStore();
+    await store.putImmutable({
+      institutionId: ROW.institution_id,
+      evidencePackageId: ROW.evidence_package_id,
+      segmentHash,
+      canonicalPayload: segment,
+    });
+    const row = {
+      ...ROW,
+      revision: "1",
+      content_hash: after,
+      head_segment_hash: segmentHash,
+      segment_count: 1,
+      segments: [{ segmentHash, receiptPayload: canonicalizeJcs(payload), signature }],
+    };
+    const keys = [
+      {
+        key_id: "test-key-1",
+        key_version: "1",
+        evidence_domain_id: ROW.evidence_domain_id,
+        purpose: "receipt",
+        algorithm: "Ed25519",
+        key_base64url: pair.publicKey.export({ type: "spki", format: "der" }).toString("base64url"),
+        valid_from: "2026-11-01T00:00:00.000Z",
+        valid_to: null,
+        revoked_at: null,
+      },
+    ];
+    const db = database([row], { keys });
+    return reconstructSubmissionRecord(
+      { withActor: db.withActor, payloads: store },
+      "t",
+      REQUEST,
+    ).then((result) => ({ result, after }));
+  }
+
+  it("reconstructs it from revision 0 of v2: a match, not a discontinuity", async () => {
+    const { result, after } = await recordOf("ductus-edit-steps-v1");
+    expect(result).toMatchObject({
+      status: "reconstructed",
+      documentKind: "text",
+      outcome: { status: "match", documentSha256: after },
+    });
+  });
+
+  it("refuses the same work recorded in a format it does not take", async () => {
+    const { result } = await recordOf("ductus-edit-steps-v3");
+    expect(result).toMatchObject({
+      status: "reconstructed",
+      outcome: { status: "mismatch", reason: "unsupported_format", index: 0 },
     });
   });
 });
