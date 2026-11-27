@@ -34,6 +34,8 @@ const BASE: readonly (readonly [string, unknown])[] = [
   ["acknowledged_at", new Date("2026-11-03T09:20:00.000Z")],
   ["purpose_catalog_version", 1],
   ["ai_summary_only", false],
+  ["course_name", "Izmišljeni kolegij"],
+  ["mentor_name", null],
   // A first version: no previous one, every prev_* column null.
   ...[
     "version_no",
@@ -109,6 +111,8 @@ describe("student notice", () => {
         purposeCatalogVersion: 1,
         aiSummaryOnly: false,
         previousVersion: null,
+        courseName: "Izmišljeni kolegij",
+        mentorName: null,
       },
     });
     expect(seen[1]!.values).toEqual([A]);
@@ -165,6 +169,11 @@ describe("student notice", () => {
       ["purpose_catalog_version", null],
       ["ai_summary_only", null],
       ["ai_summary_only", "false"],
+      ["course_name", ""],
+      ["course_name", 1],
+      ["course_name", undefined],
+      ["mentor_name", ""],
+      ["mentor_name", ["Izmišljena Mentorica"]],
     ];
     for (const bad of bads) {
       expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
@@ -186,6 +195,21 @@ describe("student notice", () => {
     const read = await port.read(TOKEN, A);
     expect(read.ok && read.value.aiSummaryOnly).toBe(true);
     expect(seen[1]!.text).toContain("a.ai_summary_only");
+  });
+
+  // Where the names come from (only the student's own readers, an unconfirmed
+  // teacher left out, several teachers sorted and joined) is a behaviour of the
+  // SQL, tested over PostgreSQL in student-notice.pg.integration.test.ts.
+  it("maps the course and the mentor as they come (F4-STU-R08-SRV)", async () => {
+    const named = reader(
+      [actorRow(USER)],
+      [row(["course_name", null], ["mentor_name", "Izmišljena Mentorica, Izmišljeni Mentor"])],
+    );
+    const read = await named.port.read(TOKEN, A);
+    expect(read.ok && [read.value.courseName, read.value.mentorName]).toEqual([
+      null,
+      "Izmišljena Mentorica, Izmišljeni Mentor",
+    ]);
   });
 
   it("reads the version below the current one as previousVersion (F4-STU-R11-SRV)", async () => {

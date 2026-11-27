@@ -62,6 +62,10 @@ export type StoredNotice = {
    * "what changed" (P-16); null when the current version is the first.
    */
   previousVersion: PreviousNoticeVersion | null;
+  /** F4-STU-R08-SRV: the course of the assignment; null for a mentored work. */
+  courseName: string | null;
+  /** F4-STU-R08-SRV: the mentor's name; null when there is none or no name is recorded. */
+  mentorName: string | null;
 };
 
 /** The fingerprint content of one earlier version of the notice. */
@@ -95,6 +99,13 @@ const ACTOR_SQL = "SELECT app.current_user_id() AS user_id";
 // teacher or mentor. F4-STU-R11-SRV: the highest version below the current
 // one comes along as prev_* (all null for a first version); the same read
 // policy of assignment_version already shows every version to the student.
+// F4-STU-R08-SRV: the course name and the mentor's name come only through the
+// two existing readers of the student's own assignments, which ask the same
+// relation from the session: institution.student_assignments() (the course and
+// the teachers of the caller's own seminar groups) and
+// institution.student_mentored_assignments() (the mentor of an open mentorship
+// with a confirmed teacher role). Several group teachers are named in name
+// order, joined by ", "; no recorded name is null.
 const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instructions, v.work_type,
     v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.word_min, v.word_max,
     v.purpose_catalog_version, a.ai_summary_only,
@@ -107,12 +118,21 @@ const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instr
       WHERE r.assignment_id = a.id AND r.student_id = (SELECT app.current_user_id())) AS read_at,
     (SELECT k.acknowledged_at FROM institution.notice_acknowledgment k
       WHERE k.assignment_id = a.id AND k.version_no = v.version_no
-        AND k.student_id = (SELECT app.current_user_id())) AS acknowledged_at
+        AND k.student_id = (SELECT app.current_user_id())) AS acknowledged_at,
+    sa.course_name,
+    coalesce(
+      (SELECT nullif(concat_ws(' ', m.mentor_given_name, m.mentor_family_name), '')
+        FROM institution.student_mentored_assignments() m WHERE m.assignment_id = a.id),
+      (SELECT string_agg(g.value ->> 'name', ', ' ORDER BY g.value ->> 'name')
+        FROM jsonb_array_elements(sa.mentors) g WHERE g.value ->> 'name' IS NOT NULL)
+    ) AS mentor_name
   FROM institution.assignment a
   JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
   LEFT JOIN institution.assignment_version p ON p.assignment_id = a.id
     AND p.version_no = (SELECT max(q.version_no) FROM institution.assignment_version q
       WHERE q.assignment_id = a.id AND q.version_no < a.current_version)
+  LEFT JOIN LATERAL (SELECT s.course_name, s.mentors FROM institution.student_assignments() s
+    WHERE s.assignment_id = a.id) sa ON true
   WHERE a.id = $1::uuid
     AND a.id = ANY ((SELECT institution.actor_assignment_ids('{student}'))::uuid[])`;
 
@@ -216,6 +236,8 @@ export function noticeOf(rows: unknown): StoredNotice | null {
   const acknowledgedAt = instant(own(row, "acknowledged_at"));
   const catalog = own(row, "purpose_catalog_version");
   const summaryOnly = own(row, "ai_summary_only");
+  const courseName = own(row, "course_name");
+  const mentorName = own(row, "mentor_name");
   // A first version has no previous one: every prev_* column is null. Any
   // other mix, or an absent column, is a row the read cannot vouch for.
   const first = PREVIOUS_COLUMNS.every((key) => own(row, key) === null);
@@ -227,6 +249,8 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     readAt === undefined ||
     acknowledgedAt === undefined ||
     typeof summaryOnly !== "boolean" ||
+    !(courseName === null || (typeof courseName === "string" && courseName !== "")) ||
+    !(mentorName === null || (typeof mentorName === "string" && mentorName !== "")) ||
     !Number.isInteger(catalog) ||
     (catalog as number) < 1 ||
     (catalog as number) > 2_147_483_647 ||
@@ -242,6 +266,8 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     purposeCatalogVersion: catalog as number,
     aiSummaryOnly: summaryOnly,
     previousVersion: previous,
+    courseName: courseName as string | null,
+    mentorName: mentorName as string | null,
   };
 }
 
