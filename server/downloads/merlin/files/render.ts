@@ -67,6 +67,14 @@ function blockText(block: ExportBlock): { size: number; lines: string[]; indent:
       return { size: BODY_SIZE, lines: [`${block.tex} (${block.number})`], indent: 24 };
     case "pageBreak":
       return { size: BODY_SIZE, lines: [], indent: 0 };
+    case "table":
+      return {
+        size: BODY_SIZE,
+        lines: [block.caption, ...block.rows.map((row) => row.join(" | "))],
+        indent: 0,
+      };
+    case "image":
+      return { size: BODY_SIZE, lines: [block.caption], indent: 0 };
   }
 }
 

@@ -1,6 +1,11 @@
 // DOCX writer for an export model: cover page, then the blocks of the work.
 import type { ExportBlock, ExportModel, ExportRun } from "./model.ts";
-import { writeZip } from "./zip.ts";
+import { writeZip, type ZipEntry } from "./zip.ts";
+import { imageXml, tableXml, type ImagePart } from "./docx-table.ts";
+import type { ExportImages } from "./image.ts";
+import { xmlEscape } from "./xml.ts";
+
+export { xmlEscape };
 
 /** Facts of the cover page; derived by the caller from the work, task and rules profile (§7). */
 export type ExportCover = {
@@ -23,32 +28,8 @@ export type PageSetup = {
 export const A4_PAGE: PageSetup = { widthTwips: 11906, heightTwips: 16838, marginTwips: 1418 };
 
 const NS =
-  'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
 const REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-
-/** Characters outside XML 1.0's allowed set are printed as U+FFFD, never dropped silently. */
-function xmlSafe(text: string): string {
-  let out = "";
-  for (const ch of text) {
-    const c = ch.codePointAt(0) ?? 0;
-    const ok =
-      c === 9 ||
-      c === 10 ||
-      c === 13 ||
-      (c >= 0x20 && c <= 0xd7ff) ||
-      (c >= 0xe000 && c <= 0xfffd) ||
-      c >= 0x10000;
-    out += ok ? ch : "�";
-  }
-  return out;
-}
-
-export function xmlEscape(text: string): string {
-  return xmlSafe(text).replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
-  );
-}
 
 type Links = string[];
 
@@ -123,10 +104,14 @@ function block(b: ExportBlock, links: Links): string {
       return plain(`${b.tex}\t(${b.number})`, undefined, "center");
     case "pageBreak":
       return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    case "table":
+    case "image":
+      // Written by renderDocx, which knows the text width and the attachments.
+      return "";
   }
 }
 
-function coverXml(cover: ExportCover, title: string): string {
+function coverXml(cover: ExportCover, title: string, endsWithSection: boolean): string {
   const lines = [
     cover.institution,
     cover.unit,
@@ -142,29 +127,74 @@ function coverXml(cover: ExportCover, title: string): string {
   ];
   return (
     lines.map((l, i) => plain(l, i === 4 ? "Title" : undefined, "center")).join("") +
-    '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+    // A landscape first block starts with a section break, which already starts a page.
+    (endsWithSection ? "" : '<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
   );
 }
 
+const sectionOf = (page: PageSetup, landscape: boolean): string => {
+  const [w, h] = landscape
+    ? [page.heightTwips, page.widthTwips]
+    : [page.widthTwips, page.heightTwips];
+  const m = page.marginTwips;
+  return `<w:sectPr><w:pgSz w:w="${w}" w:h="${h}"${landscape ? ' w:orient="landscape"' : ""}/><w:pgMar w:top="${m}" w:right="${m}" w:bottom="${m}" w:left="${m}" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>`;
+};
+
+const isLandscape = (b: ExportBlock): boolean =>
+  (b.kind === "table" || b.kind === "image") && b.landscape;
+
+/**
+ * `images` holds the stored bytes of the attachments of this work. An image is printed only
+ * when its bytes match the hash in the document; otherwise its place says it is unavailable.
+ */
 export function renderDocx(
   model: ExportModel,
   cover: ExportCover,
   page: PageSetup = A4_PAGE,
+  images?: ExportImages,
 ): Uint8Array {
   const links: Links = [];
-  const body = coverXml(cover, model.title) + model.blocks.map((b) => block(b, links)).join("");
-  const sect = `<w:sectPr><w:pgSz w:w="${page.widthTwips}" w:h="${page.heightTwips}"/><w:pgMar w:top="${page.marginTwips}" w:right="${page.marginTwips}" w:bottom="${page.marginTwips}" w:left="${page.marginTwips}" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>`;
+  const parts: ImagePart[] = [];
+  // A landscape table or image stands in its own section: the properties of a section sit in
+  // the last paragraph of that section, so each change of orientation closes the section before.
+  let landscape = false;
+  const body: string[] = [];
+  for (const b of model.blocks) {
+    if (isLandscape(b) !== landscape) {
+      body.push(`<w:p><w:pPr>${sectionOf(page, landscape)}</w:pPr></w:p>`);
+      landscape = !landscape;
+    }
+    const width = (landscape ? page.heightTwips : page.widthTwips) - 2 * page.marginTwips;
+    body.push(
+      b.kind === "table"
+        ? tableXml(b, width)
+        : b.kind === "image"
+          ? imageXml(b, images, width, parts)
+          : block(b, links),
+    );
+  }
+  const first = model.blocks[0];
+  const cover0 = coverXml(cover, model.title, first !== undefined && isLandscape(first));
+  const sect = sectionOf(page, landscape);
+  const mainBody = cover0 + body.join("");
   const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const styles = (id: string, name: string, props: string) =>
     `<w:style w:type="paragraph" w:styleId="${id}"><w:name w:val="${name}"/>${props}</w:style>`;
   const stylesXml = `${head}<w:styles ${NS}>${styles("Title", "Title", '<w:rPr><w:b/><w:sz w:val="40"/></w:rPr>')}${[1, 2, 3].map((n) => styles(`Heading${n}`, `heading ${n}`, `<w:pPr><w:keepNext/></w:pPr><w:rPr><w:b/><w:sz w:val="${36 - n * 4}"/></w:rPr>`)).join("")}${styles("Caption", "caption", '<w:rPr><w:i/><w:sz w:val="20"/></w:rPr>')}</w:styles>`;
-  const docRels = `${head}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdS" Type="${REL}/styles" Target="styles.xml"/>${links.map((href, i) => `<Relationship Id="rIdL${i + 1}" Type="${REL}/hyperlink" Target="${xmlEscape(href)}" TargetMode="External"/>`).join("")}</Relationships>`;
+  const docRels = `${head}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdS" Type="${REL}/styles" Target="styles.xml"/>${links.map((href, i) => `<Relationship Id="rIdL${i + 1}" Type="${REL}/hyperlink" Target="${xmlEscape(href)}" TargetMode="External"/>`).join("")}${parts.map((p, i) => `<Relationship Id="rIdI${i + 1}" Type="${REL}/image" Target="media/${p.name}"/>`).join("")}</Relationships>`;
+  const mediaTypes =
+    (parts.some((p) => p.type === "png")
+      ? '<Default Extension="png" ContentType="image/png"/>'
+      : "") +
+    (parts.some((p) => p.type === "jpeg")
+      ? '<Default Extension="jpg" ContentType="image/jpeg"/>'
+      : "");
   const enc = new TextEncoder();
   return writeZip(
     [
       [
         "[Content_Types].xml",
-        `${head}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`,
+        `${head}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${mediaTypes}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`,
       ],
       [
         "_rels/.rels",
@@ -174,8 +204,10 @@ export function renderDocx(
       ["word/styles.xml", stylesXml],
       [
         "word/document.xml",
-        `${head}<w:document ${NS}><w:body>${body}${sect}</w:body></w:document>`,
+        `${head}<w:document ${NS}><w:body>${mainBody}${sect}</w:body></w:document>`,
       ],
-    ].map(([name, xml]) => ({ name: name!, data: enc.encode(xml) })),
+    ]
+      .map(([name, xml]): ZipEntry => ({ name: name!, data: enc.encode(xml) }))
+      .concat(parts.map((p): ZipEntry => ({ name: `word/media/${p.name}`, data: p.bytes }))),
   );
 }

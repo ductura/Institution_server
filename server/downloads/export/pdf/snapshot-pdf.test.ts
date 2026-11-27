@@ -8,6 +8,10 @@ import { createSnapshotPdf } from "./index.ts";
 
 const LABELS: ExportLabels = {
   listing: "Listing",
+  table: "Table",
+  image: "Figure",
+  source: "Source:",
+  imageUnavailable: "Image unavailable.",
   boxes: {
     definition: "",
     theorem: "",
