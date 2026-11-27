@@ -37,6 +37,7 @@ import {
   profileRoutes,
   staffAffiliationRoutes,
   projectionRoutes,
+  publicVerificationCodePost,
   publicVerificationPost,
   publicVerificationRoutes,
   receiptPdfRoutes,
@@ -305,7 +306,7 @@ export {
   problemReportsGet,
   RoutedProblemReport,
 } from "./routes/index.ts";
-export { publicVerificationPost, sourceLookupPost };
+export { publicVerificationCodePost, publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
   CLIENT_APP_VERSION_PATTERN,

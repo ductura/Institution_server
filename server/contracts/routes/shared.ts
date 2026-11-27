@@ -39,3 +39,12 @@ export const WorkKind = Type.Union([
   Type.Literal("slides"),
   Type.Literal("spreadsheet"),
 ]);
+
+/**
+ * The confirmation code of a bound submission receipt (20261220530000): 16
+ * characters of Crockford base32 without I, L, O and U, in 4 groups of 4,
+ * upper case, as the database's CHECK and the receipt print it.
+ */
+export const ConfirmationCode = Type.String({
+  pattern: "^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$",
+});

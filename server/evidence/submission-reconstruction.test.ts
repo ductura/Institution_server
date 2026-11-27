@@ -7,9 +7,11 @@ import {
   removedRangeSha256,
 } from "../external/storage/edit-steps-v1-replayer.ts";
 import {
+  createEditStepsV1OnV2Replayer,
   createEditStepsV2Replayer,
   createEditStepsV3Replayer,
 } from "../external/storage/edit-steps-v2-replayer.ts";
+import type { EditStepsV2Document } from "../external/storage/edit-steps-v2-rules.ts";
 import type { EvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
 import {
   REVISION_ZERO_JCS,
@@ -28,6 +30,7 @@ import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
 import { decideSubmission } from "./submission-decision.ts";
 import {
   reconstructSubmission,
+  reconstructTextSubmission,
   type StoredEvidenceReceiptV2,
   type SubmissionRecord,
 } from "./submission-reconstruction.ts";
@@ -588,4 +591,203 @@ describe("reconstruction by document schema version (DAN-619, contract §9.2)", 
       expect(decideSubmission(outcome)).toEqual({ decision: "retry", stage: "verification" });
     },
   );
+});
+
+// SRV-33C: a work of document v2 records its steps in ductus-edit-steps-v1
+// (v4 §9 t. 9, FORMAT_OF_WORK). The reconstruction takes the version from the
+// revision 0 the record starts at and reads the recorded v1 steps over
+// document v2. Invented text only ("Odlomak A", "Odlomak B").
+const replayerV1OnV2 = createEditStepsV1OnV2Replayer();
+const V1_ON_V2: Engine = {
+  replayer: replayerV1OnV2 as EvidenceStepReplayerV2<unknown>,
+  zero: REVISION_ZERO_V2_JCS,
+  format: "ductus-edit-steps-v1",
+};
+const EDITS_V1_ON_V2: Edit[] = [
+  EDITS[0]!,
+  (state) => [
+    {
+      stepType: "replace",
+      from: 9,
+      to: 10,
+      removedSha256: removedRangeSha256((state as unknown as EditStepsV2Document).doc, 9, 10),
+      slice: { content: [{ type: "text", text: "B" }] },
+    },
+  ],
+];
+const buildV1OnV2 = (engine: Partial<Engine> = {}) =>
+  build({ engine: { ...V1_ON_V2, ...engine }, edits: EDITS_V1_ON_V2 });
+const textReplayers = { v1: replayer, v2: replayerV1OnV2, v3: replayerV3 };
+const runText = (built: Built, keys: EvidenceDomainKey[] = [key()]) =>
+  reconstructTextSubmission(
+    { payloads: built.payloads, replayers: textReplayers, keys },
+    built.record,
+  );
+
+describe("reconstruction of a work of document v2 recorded in ductus-edit-steps-v1 (SRV-33C)", () => {
+  it("matches the requested revision from v2 revision 0, a removed range with its hash included", async () => {
+    const built = await buildV1OnV2();
+    const outcome = await runText(built);
+    expect(outcome).toEqual({
+      status: "match",
+      head: built.record.head,
+      documentSha256: built.record.contentHash,
+    });
+    expect(decideSubmission(outcome)).toMatchObject({ decision: "submit" });
+  });
+
+  it("was a discontinuity under the version assumed for every work, and is refused by the v2 step reader", async () => {
+    // What the route did before SRV-33C: version 1, so revision 0 of v1.
+    expect(await runAt(await buildV1OnV2(), 1)).toMatchObject({
+      status: "discontinuity",
+      discontinuity: { index: 0, documentHashBreak: true },
+    });
+    // And by the document version alone: the v2 reader takes no v1 segment.
+    const byVersion = await reconstructSubmission(
+      {
+        payloads: (await buildV1OnV2()).payloads,
+        replayers: { v1: replayer, v2: replayerV2, v3: replayerV3 },
+        keys: [key()],
+      },
+      (await buildV1OnV2()).record,
+      2,
+    );
+    expect(byVersion).toEqual({ status: "mismatch", reason: "unsupported_format", index: 0 });
+  });
+
+  it("reads the version from the record under version 2 as well (reconstructSubmission)", async () => {
+    const built = await buildV1OnV2();
+    expect(
+      await reconstructSubmission(
+        { payloads: built.payloads, replayers: textReplayers, keys: [key()] },
+        built.record,
+        2,
+      ),
+    ).toMatchObject({ status: "match", documentSha256: built.record.contentHash });
+  });
+
+  it.each<[string, string, string]>([
+    // A format a segment may name, but not the one a v2 work takes: the replay refuses it.
+    ["ductus-edit-steps-v3", "ductus-edit-steps-v3", "unsupported_format"],
+    // Formats whose steps the segment validator already refuses here.
+    ["ductus-edit-steps-v4", "ductus-edit-steps-v4", "invalid_segment"],
+    ["ductus-edit-steps-v2", "ductus-edit-steps-v2", "invalid_segment"],
+    ["an unknown format", "ductus-edit-steps-v9", "invalid_segment"],
+  ])(
+    "never matches a work of document v2 recorded in %s: a format the work does not take",
+    async (_name, format, reason) => {
+      const outcome = await runText(await buildV1OnV2({ format }));
+      expect(outcome).toEqual({ status: "mismatch", reason, index: 0 });
+      expect(decideSubmission(outcome)).toMatchObject({ decision: "blocked" });
+    },
+  );
+
+  it("refuses a source step recorded in ductus-edit-steps-v1 over document v2", async () => {
+    const built = await build({
+      engine: V1_ON_V2,
+      edits: EDITS_V1_ON_V2,
+      record: (steps) =>
+        (steps as { from?: number }[])[0]?.from === 1
+          ? [
+              {
+                stepType: "sourceSet",
+                source: { id: "00000000-0000-4000-8000-0000000000f1", type: "book" },
+              },
+            ]
+          : steps,
+    });
+    const outcome = await runText(built);
+    expect(outcome).toEqual({ status: "mismatch", reason: "invalid_segment", index: 0 });
+    expect(decideSubmission(outcome)).toMatchObject({ decision: "blocked" });
+  });
+
+  it("keeps a v1 work on revision 0 of v1 and the v1 reader, as before", async () => {
+    const built = await build();
+    expect(await runText(built)).toEqual({
+      status: "match",
+      head: built.record.head,
+      documentSha256: built.record.contentHash,
+    });
+  });
+
+  it("keeps a v3 work on revision 0 of v3 and the v3 reader", async () => {
+    const built = await build({
+      engine: {
+        replayer: replayerV3 as never,
+        zero: REVISION_ZERO_V3_JCS,
+        format: "ductus-edit-steps-v3",
+      },
+      edits: [EDITS[0]!],
+    });
+    expect(await runText(built)).toMatchObject({
+      status: "match",
+      documentSha256: built.record.contentHash,
+    });
+  });
+
+  it("keeps the v1 path for a first segment that does not verify, and refuses the record", async () => {
+    const built = await buildV1OnV2();
+    built.bytes.set(built.record.segments[0]!.segmentHash, new TextEncoder().encode("{}"));
+    const outcome = await runText(built);
+    expect(outcome.status).toBe("mismatch");
+    expect(decideSubmission(outcome).decision).toBe("blocked");
+  });
+
+  it("reads the first segment once and reports an outage of it as a retry, never a verdict", async () => {
+    const built = await buildV1OnV2();
+    const first = built.record.segments[0]!.segmentHash;
+    let reads = 0;
+    const inner = built.payloads;
+    built.payloads = {
+      readImmutable: async (input) => {
+        if (input.segmentHash !== first) return inner.readImmutable(input);
+        reads += 1;
+        return { status: "unavailable", reason: "timeout" };
+      },
+    };
+    const outcome = await runText(built);
+    expect(outcome).toEqual({ status: "unavailable", stage: "storage", reason: "timeout" });
+    expect(reads).toBe(1);
+    expect(decideSubmission(outcome)).toMatchObject({ decision: "retry" });
+
+    reads = 0;
+    built.payloads = {
+      readImmutable: async (input) => {
+        if (input.segmentHash !== first) return inner.readImmutable(input);
+        reads += 1;
+        throw new Error("storage down");
+      },
+    };
+    expect(await runText(built)).toMatchObject({ status: "unavailable", stage: "storage" });
+    expect(reads).toBe(1);
+  });
+
+  it("reconstructs a v2 work whose first read succeeds from exactly the bytes read once", async () => {
+    const built = await buildV1OnV2();
+    const counts = new Map<string, number>();
+    const inner = built.payloads;
+    built.payloads = {
+      readImmutable: async (input) => {
+        counts.set(input.segmentHash, (counts.get(input.segmentHash) ?? 0) + 1);
+        return inner.readImmutable(input);
+      },
+    };
+    expect(await runText(built)).toMatchObject({ status: "match" });
+    expect([...counts.values()].every((n) => n === 1)).toBe(true);
+  });
+
+  it("has no segment to read for an empty record", async () => {
+    const built = await buildV1OnV2();
+    let reads = 0;
+    built.payloads = {
+      readImmutable: async () => {
+        reads += 1;
+        return { status: "not_found" };
+      },
+    };
+    built.record.segments = [];
+    const outcome = await runText(built);
+    expect(outcome.status).not.toBe("match");
+    expect(reads).toBe(0);
+  });
 });

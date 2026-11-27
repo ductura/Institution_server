@@ -883,6 +883,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041664094",
   },
+  // DIZAJN-27-11 1.1 (3, Ductus#2059 c.7217617528): the same check by the confirmation code; Ductus has no such route.
+  "app/api/public/verification/code/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7217617528",
+  },
   // SRV-9A (Ductus#2028 c.7041078855, wave 9): the versions of a work; Ductus has no such route.
   "app/api/works/[documentId]/versions/route.ts": {
     methods: ["GET"],
@@ -1398,7 +1403,7 @@ export const SERVER_SOURCES: Readonly<
  * fake server. This list may only shrink: an id leaves it when its handler is
  * mounted (tests/contracts/contract-only.test.ts).
  */
-export const CONTRACT_ONLY: readonly string[] = ["institution.enrollments.post", "ops.events.get"];
+export const CONTRACT_ONLY: readonly string[] = ["ops.events.get"];
 
 /**
  * Inventory files whose contracts follow in the next PR (DAN-736, part 2). This

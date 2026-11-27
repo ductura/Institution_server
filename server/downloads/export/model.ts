@@ -5,14 +5,23 @@ import type {
   CanonicalDocumentV4,
   CodeLanguage,
   HeadingLevel,
+  ImageCrop,
   InlineNodeV4,
   MarkV4,
+  TableCellFill,
+  TableMerge,
 } from "../../domain/index.ts";
 
 /** Words printed by the export; the caller takes them from the message catalogue. */
 export type ExportLabels = {
   readonly listing: string;
   readonly boxes: Readonly<Record<BoxKind, string>>;
+  readonly table: string;
+  readonly image: string;
+  /** Printed before the source line under a table or an image. */
+  readonly source: string;
+  /** Printed in place of an image whose attachment is missing or does not match its hash. */
+  readonly imageUnavailable: string;
 };
 
 export type ExportRun = {
@@ -47,6 +56,30 @@ export type ExportBlock =
       readonly paragraphs: readonly (readonly ExportRun[])[];
     }
   | { readonly kind: "formula"; readonly tex: string; readonly number: number }
+  | {
+      readonly kind: "table";
+      readonly caption: string;
+      readonly rows: readonly (readonly string[])[];
+      readonly header: boolean;
+      readonly stripes: boolean;
+      readonly landscape: boolean;
+      readonly headerFill?: string;
+      readonly cellFills: readonly TableCellFill[];
+      readonly merges: readonly TableMerge[];
+      readonly source?: string;
+    }
+  | {
+      readonly kind: "image";
+      readonly caption: string;
+      readonly attachmentId?: string;
+      readonly attachmentSha256?: string;
+      readonly crop?: ImageCrop;
+      readonly widthPercent: number;
+      readonly align: "left" | "center" | "right";
+      readonly landscape: boolean;
+      readonly unavailable: string;
+      readonly source?: string;
+    }
   | { readonly kind: "pageBreak" };
 
 export type ExportModel = {
@@ -85,11 +118,17 @@ function runsOf(children: readonly InlineNodeV4[]): ExportRun[] {
   return runs;
 }
 
+/** "Tablica 2. Naslov": the number is derived by order of appearance, per kind (§8). */
+const captionOf = (label: string, n: number, title: string | undefined): string =>
+  `${label} ${n}.${title ? ` ${title}` : ""}`;
+
 export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels): ExportModel {
   const counters = [0, 0, 0];
   const boxCounts = new Map<BoxKind, number>();
   let formulas = 0;
   let listings = 0;
+  let tables = 0;
+  let images = 0;
   // Position in the current run of consecutive numbered-list items (v4 §2).
   let orderedRun = 0;
   let title = "";
@@ -158,6 +197,38 @@ export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels)
         formulas += 1;
         blocks.push({ kind: "formula", tex: node.tex, number: formulas });
         break;
+      case "table": {
+        tables += 1;
+        blocks.push({
+          kind: "table",
+          caption: captionOf(labels.table, tables, node.title),
+          rows: node.rows,
+          header: node.header,
+          stripes: node.stripes,
+          landscape: node.landscape,
+          ...(node.headerFill ? { headerFill: node.headerFill } : {}),
+          cellFills: node.cellFills ?? [],
+          merges: node.merges ?? [],
+          ...(node.source ? { source: `${labels.source} ${node.source}` } : {}),
+        });
+        break;
+      }
+      case "image": {
+        images += 1;
+        blocks.push({
+          kind: "image",
+          caption: captionOf(labels.image, images, node.title),
+          ...(node.attachmentId ? { attachmentId: node.attachmentId } : {}),
+          ...(node.attachmentSha256 ? { attachmentSha256: node.attachmentSha256 } : {}),
+          ...(node.crop ? { crop: node.crop } : {}),
+          widthPercent: node.widthPercent,
+          align: node.align,
+          landscape: node.landscape,
+          unavailable: labels.imageUnavailable,
+          ...(node.source ? { source: `${labels.source} ${node.source}` } : {}),
+        });
+        break;
+      }
       case "pageBreak":
         blocks.push({ kind: "pageBreak" });
         break;

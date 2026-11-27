@@ -121,7 +121,7 @@ export {
 // AI-EU-ADRESA: the OpenAI base address from a closed list, Europe by default.
 export { openAiBaseUrlOf, openAiBaseUrlProblems } from "../external/assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
-export { createPublicVerificationRouteFor } from "./public-verification.ts";
+export { createPublicVerificationRoutesFor } from "./public-verification.ts";
 export {
   CLIENT_CONTEXT_MAX_BYTES,
   createClientContextRoute,

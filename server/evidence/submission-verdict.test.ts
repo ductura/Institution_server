@@ -99,6 +99,12 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
     expect(calls[2]!.values).toEqual([DOMAIN, SUB1, "a".repeat(64)]);
   });
 
+  it("a slides work is read and reconstructed, not left unavailable (F4-V13-R02)", async () => {
+    const { run } = setup({ record: [{ ...RECORD, documentKind: "slides" }] });
+    // No stored bytes: the real slides reconstruction ends in mismatch, not unavailable.
+    expect((await run()).pass).toEqual({ listed: 1, verified: 0, mismatch: 1, unavailable: 0 });
+  });
+
   it("a verdict that already exists changes no count", async () => {
     const { run } = setup({ keep: [{ outcome: "exists" }] });
     expect((await run()).pass).toEqual({ listed: 1, verified: 0, mismatch: 0, unavailable: 0 });
@@ -150,7 +156,7 @@ describe("the worker's second reconstruction of a recorded submission (F4-PM2-R0
     ["no record row", { record: [] }],
     ["a record that is not found", { record: [{ ...RECORD, outcome: "unavailable" }] }],
     ["a record of another form", { record: [{ ...RECORD, revision: "0" }] }],
-    ["an unknown kind of work", { record: [{ ...RECORD, documentKind: "slides" }] }],
+    ["an unknown kind of work", { record: [{ ...RECORD, documentKind: "video" }] }],
     ["a record that fails to read", { failOn: "record" }],
     ["a verdict the database refuses", { keep: [{ outcome: "not_found" }] }],
     ["a verdict write that fails", { failOn: "keep" }],

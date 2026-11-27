@@ -17,6 +17,10 @@ export const merlinHr = {
   no: "ne",
   exportLabels: {
     listing: "Ispis",
+    table: "Tablica",
+    image: "Slika",
+    source: "Izvor:",
+    imageUnavailable: "Slika nije dostupna.",
     boxes: {
       definition: "Definicija",
       theorem: "Teorem",

@@ -6,8 +6,11 @@ import {
 } from "../domain/document/schema.ts";
 import {
   REVISION_ZERO_JCS,
+  REVISION_ZERO_SHA256,
   REVISION_ZERO_V2_JCS,
+  REVISION_ZERO_V2_SHA256,
   REVISION_ZERO_V3_JCS,
+  REVISION_ZERO_V3_SHA256,
 } from "../domain/document/revision-zero.ts";
 import {
   digestEvidenceReceiptPayloadV2,
@@ -21,10 +24,16 @@ import {
   type EvidenceDomainKey,
 } from "../domain/forensics/evidence-receipt-verifier.ts";
 import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
+import { verifyCanonicalEvidencePayloadV2 } from "../domain/forensics/evidence-chain-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
-import { sheetRevisionZeroDocument, type SheetDocument } from "../domain/index.ts";
+import {
+  sheetRevisionZeroDocument,
+  slidesRevisionZeroDocument,
+  type SheetDocument,
+} from "../domain/index.ts";
 
 import { capturingSheetReplayer } from "./sheet/index.ts";
+import { slidesStepReplayer } from "./slides/index.ts";
 import {
   reconstructAndCompareEvidence,
   type EvidenceReceiptCheck,
@@ -152,6 +161,13 @@ export function submissionReceiptCheck(
  * §9.2; v3 from document-schema-v3 §8). Any other value, of any type, is `unavailable` with a closed code
  * before a payload is read: the check could not be made, never a verdict. A
  * segment of the other format is refused by the replay as a mismatch.
+ *
+ * Each replayer reads the one step format a work of its version records
+ * (`evidenceTransactionFormatOfWork`, v4 §9 t. 9): `v1` and `v2` read
+ * `ductus-edit-steps-v1`, `v2` over document v2
+ * (`createEditStepsV1OnV2Replayer`, SRV-33C), and `v3` reads `-v3`. Every
+ * segment's recorded format is compared with the replayer's, so a segment of
+ * any other format is refused, never read by a reader it was not written for.
  */
 export function reconstructSubmission<TV1, TV2, TV3>(
   dependencies: {
@@ -182,6 +198,63 @@ export function reconstructSubmission<TV1, TV2, TV3>(
     stage: "verification",
     reason: "document_version_unknown",
   });
+}
+
+/** The document version each revision 0 the server writes names (document v2 §7 t. 3). */
+const VERSION_OF_REVISION_ZERO: ReadonlyMap<string, number> = new Map([
+  [REVISION_ZERO_SHA256, DOCUMENT_SCHEMA_VERSION],
+  [REVISION_ZERO_V2_SHA256, DOCUMENT_SCHEMA_VERSION_V2],
+  [REVISION_ZERO_V3_SHA256, DOCUMENT_SCHEMA_VERSION_V3],
+]);
+
+/**
+ * SRV-33C: the reconstruction of a text work's submission, by what its record
+ * holds rather than by a version assumed for every work. The record's first
+ * segment names the document it starts from (`initialDocumentHash`, which the
+ * acceptance tied to the work's revision 0 in the database) and the step
+ * format it was recorded in (`captureContext.transactionFormat`). The revision
+ * 0 it names gives the version, and so the revision 0 and the reader of that
+ * version's one step format (`reconstructSubmission`); the replay then refuses
+ * every segment recorded in another format. Nothing here is a verdict: the
+ * reconstruction checks the same segment again, chain, receipts and all.
+ *
+ * The first segment is read once: the reconstruction gets the same result
+ * (bytes, absence, outage or error), so the version is chosen from exactly the
+ * bytes that are then verified. A record with no segment, a first segment that
+ * cannot be read or verified, or one that starts at no revision 0 keeps the
+ * v1 path as before, where the reconstruction reports what is wrong with it.
+ */
+export async function reconstructTextSubmission<TV1, TV2, TV3>(
+  dependencies: Parameters<typeof reconstructSubmission<TV1, TV2, TV3>>[0],
+  record: SubmissionRecord,
+): Promise<EvidenceReconstructionOutcome> {
+  const firstHash = record.segments[0]?.segmentHash;
+  if (firstHash === undefined) {
+    return reconstructSubmission(dependencies, record, DOCUMENT_SCHEMA_VERSION);
+  }
+  const first = dependencies.payloads.readImmutable({
+    evidencePackageId: record.evidencePackageId,
+    segmentHash: firstHash,
+  });
+  // Handled here and again by the reconstruction, which reports a failure.
+  first.catch(() => undefined);
+  const payloads: EvidencePayloadReader = {
+    readImmutable: (input) =>
+      input.evidencePackageId === record.evidencePackageId && input.segmentHash === firstHash
+        ? first.then((read) =>
+            read.status === "found" ? { status: "found", bytes: new Uint8Array(read.bytes) } : read,
+          )
+        : dependencies.payloads.readImmutable(input),
+  };
+  let version: number = DOCUMENT_SCHEMA_VERSION;
+  const read = await first.catch(() => null);
+  if (read?.status === "found") {
+    const verified = await verifyCanonicalEvidencePayloadV2(new Uint8Array(read.bytes));
+    if (verified.ok) {
+      version = VERSION_OF_REVISION_ZERO.get(verified.segment.initialDocumentHash) ?? version;
+    }
+  }
+  return reconstructSubmission({ ...dependencies, payloads }, record, version);
 }
 
 function reconstructWith<TDocument>(
@@ -226,4 +299,22 @@ export async function reconstructSheetSubmission(
     record,
   );
   return { outcome, document: captured.last() };
+}
+
+/**
+ * SRV-F4-V13-R02: the same reconstruction for a work of kind `slides`:
+ * revision 0 is the deck's, the steps are replayed with the slide step format
+ * (a step of another format is a mismatch). As for text, nothing but the
+ * outcome is returned: the replay itself checks each event's hash.
+ */
+export function reconstructSlidesSubmission(
+  dependencies: { payloads: EvidencePayloadReader; keys: readonly EvidenceDomainKey[] },
+  record: SubmissionRecord,
+): Promise<EvidenceReconstructionOutcome> {
+  return reconstructWith(
+    slidesStepReplayer,
+    canonicalizeJcs(slidesRevisionZeroDocument() as unknown as JcsJsonValue),
+    dependencies,
+    record,
+  );
 }

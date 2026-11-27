@@ -313,6 +313,7 @@ describe("route inventory", () => {
       "work.export-pdf.get: app/api/assignments/[assignmentId]/works/[documentId]/export/pdf/route.ts is not in the inventory",
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
+      "public.verification-code.post: app/api/public/verification/code/route.ts is not in the inventory",
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
       "work.restore.post: app/api/works/[documentId]/restores/route.ts is not in the inventory",
       "work.export.get: app/api/works/[documentId]/export/route.ts is not in the inventory",

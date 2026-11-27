@@ -4,7 +4,7 @@ Generator potvrde predaje u području [preuzimanja](../README.md).
 
 ## Što radi
 
-Iz pohranjene potpisane potvrde V2 izrađuje jednu A4 stranicu. Ispisuje podatke iz potvrde i cijeli SHA-256 otisak predanog rada. QR otvara javnu stranicu ustanove `/provjera` s identifikatorom potvrde i otiskom u fragmentu URL-a.
+Iz pohranjene potpisane potvrde V2 izrađuje jednu A4 stranicu. Ispisuje podatke iz potvrde i cijeli SHA-256 otisak predanog rada. QR otvara javnu stranicu ustanove `/provjera`. Ima li predaja vezan kod potvrde, QR vodi na `/provjera#k={kod}`, a kod je ispisan ispod QR-a (dizajn 1.1, koraci 4 do 6). Potvrda bez koda (starija) ostaje ista kao prije: QR nosi identifikator potvrde i otisak, a kod se ne ispisuje. U oba slučaja vrijednosti su samo u fragmentu URL-a, pa ne stižu u zapise poslužitelja.
 
 ## Tko ga zove
 

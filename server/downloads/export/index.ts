@@ -15,6 +15,7 @@ export {
   type SheetXlsx,
   type SheetXlsxInput,
 } from "./sheet-xlsx.ts";
+export { type ExportImageFile, type ExportImages } from "./image.ts";
 export { writeZip, type ZipEntry } from "./zip.ts";
 export { plainDecimal, renderSheetCsv, renderSheetCsvOfText, type SheetCsv } from "./sheet-csv.ts";
 export {

@@ -7,6 +7,10 @@ import { buildExportModel, renderDocx, type ExportCover, type ExportLabels } fro
 
 const LABELS: ExportLabels = {
   listing: "Listing",
+  table: "Table",
+  image: "Figure",
+  source: "Source:",
+  imageUnavailable: "Image unavailable.",
   boxes: {
     definition: "Def",
     theorem: "Thm",
