@@ -18,6 +18,7 @@ import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { type Route, sendJson } from "./router.ts";
+import { showsReceiptOf } from "./submission-confirmation-code.ts";
 
 type ReadReceipt = (
   token: string,
@@ -76,6 +77,15 @@ export function createReceiptPdfRoutes(
           const code = await readCode(token, assignmentId, studentId);
           if (!code.ok) {
             reportServerError("route", new Error(code.error.code), requestIdOf(response), id);
+            return sendProblem(response, 503, "unavailable");
+          }
+          // The code is of the submission live at its read, not of this
+          // receipt's: only a receipt read again after it as the same
+          // submission's vouches for it. A withdrawal or a new submission in
+          // between is a passing race, 503, never this PDF with another's code.
+          const again = await read(token, assignmentId, studentId);
+          if (!showsReceiptOf(again, receipt.payload.submissionId)) {
+            reportServerError("route", new Error("receipt_changed"), requestIdOf(response), id);
             return sendProblem(response, 503, "unavailable");
           }
           const pdf = await renderReceiptPdf(receipt, origin, receiptPdfHr, code.value);

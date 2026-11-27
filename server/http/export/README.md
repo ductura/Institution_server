@@ -4,7 +4,7 @@
 
 `GET /api/v1/assignments/{assignmentId}/works/{documentId}/export/pdf` iz predane ili zadnje objavljene revizije sastavlja privatni izvoz, s otiskom PDF-a. Obični PDF uključuje pripadni DOCX i ključ hrvatske obavijesti o formatu.
 
-`POST /api/v1/student/submissions/{submissionId}/package-link` i `GET .../package/{kind}` (`submission-package.ts`, SRV-1807): vlasnik predaje traži poveznicu od 24 sata na izvozni paket (`package`) ili na potvrdu za referadu (`referada`, PDF bez teksta rada) i preuzima kroz nju. Poveznica je vezana uz sesiju koja ju je tražila; tuđa predaja, nepoznata, kriva vrsta ili kriva poveznica daju isti 404, istekla 410.
+`POST /api/v1/student/submissions/{submissionId}/package-link` i `GET .../package/{kind}` (`submission-package.ts`, SRV-1807): vlasnik predaje traži poveznicu od 24 sata na izvozni paket (`package`) ili na potvrdu za referadu (`referada`, PDF bez teksta rada) i preuzima kroz nju. Poveznica je vezana uz sesiju koja ju je tražila; tuđa predaja, nepoznata, kriva vrsta ili kriva poveznica daju isti 404, istekla 410. PDF potvrde nosi vezani kod potvrde, pročitan pod istom sesijom kao u `student.receipt-pdf.get` i samo dok je ta predaja živa predaja zadatka. Povučena predaja i predaja studenta koji više nije u kolegiju dobivaju PDF bez koda, kao prije Dizajna 1.1. Neuspjelo čitanje daje 503 (`server/http/submission-confirmation-code.ts`).
 
 ## Tko ga zove
 

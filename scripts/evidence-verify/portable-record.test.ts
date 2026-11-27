@@ -95,6 +95,7 @@ async function unpacked(name: string, dailyRoot: PortableDailyRootSource): Promi
     dailyRoot,
     origin: ORIGIN,
     labels: LABELS,
+    confirmationCode: null,
   });
   if (built.status !== "built") throw new Error(built.reason);
   const dir = join(base, name);

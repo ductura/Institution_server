@@ -9,7 +9,8 @@
 // submissions of that assignment. Every person, token, id and text is invented.
 import { createHash } from "node:crypto";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { getDocumentProxy } from "unpdf";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   LABELS,
@@ -33,8 +34,17 @@ import {
   BULK_FINGERPRINTS,
   BULK_LINK_TTL_MS,
   createTeacherSubmissionsBulkRoutes,
+  type BulkReceipt,
   type TeacherSubmissionsBulkDeps,
 } from "./index.ts";
+
+/** The strings the PDF's page shows. */
+async function shownText(pdf: Uint8Array): Promise<string[]> {
+  const page = await (await getDocumentProxy(Uint8Array.from(pdf))).getPage(1);
+  return (await page.getTextContent()).items.flatMap((item) =>
+    "str" in item && item.str !== "" ? [item.str] : [],
+  );
+}
 
 const ORIGIN = "https://demo-fakultet.invalid";
 const ASSIGNMENT = PAYLOAD.assignmentId;
@@ -43,6 +53,8 @@ const TEACHER = "t".repeat(43);
 const OTHER_TEACHER = "o".repeat(43);
 /** A third invented student who has not submitted. */
 const STUDENT_C = "9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f";
+/** An invented confirmation code bound to A's receipt (Dizajn 1.1). */
+const CODE = "DK7M-4Q9P-X2HT-R8VN";
 const cookie = (token: string) => `__Host-ductus_session=${token}`;
 
 const document = (text: string) =>
@@ -163,9 +175,14 @@ async function fakePorts(over: { principalOfA?: string } = {}) {
     roster,
     receipt: (token, assignmentId, studentId) =>
       readTeacherSubmission(reader, token, assignmentId, studentId),
-    renderReceipt: (receipt) => renderReceiptPdf(receipt, ORIGIN, LABELS),
+    // app.teacher_submission_confirmation_code: A's bound code, none for the others.
+    code: async (token, assignmentId, studentId) =>
+      token !== undefined && teaches(token, assignmentId)
+        ? { ok: true, value: studentId === STUDENT_A.id ? CODE : null }
+        : { ok: false, error: { code: "MY_SUBMISSION_STATE_NOT_FOUND" } as never },
+    renderReceipt: (receipt, code) => renderReceiptPdf(receipt, ORIGIN, LABELS, code),
   };
-  return { deps, log };
+  return { deps, log, receiptA };
 }
 
 let running: Running | undefined;
@@ -213,7 +230,7 @@ const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest(
 
 describe("teacher.submissions-bulk-link.post and teacher.submissions-bulk.get", () => {
   it("hands the teacher a ZIP of only this assignment's submitted works with their receipts (4)", async () => {
-    const { deps } = await fakePorts();
+    const { deps, receiptA } = await fakePorts();
     const host = await start(deps);
     const link = await linkFor(host, "pdf");
     expect(link.format).toBe("pdf");
@@ -247,12 +264,85 @@ describe("teacher.submissions-bulk-link.post and teacher.submissions-bulk.get", 
         .map((name) => `${sha256(files.get(name)!)}  ${name}\n`)
         .join(""),
     );
-    // The receipt is the same PDF the receipt route renders for this student.
+    // The receipt is the same PDF teacher.receipt-pdf.get renders for this
+    // student: the QR of /provjera#k={code} with the bound code printed under it.
     const receipt = files.get(`${a}-potvrda.pdf`)!;
-    const signed = await sourceOf();
-    expect(receipt.byteLength).toBeGreaterThan(0);
-    expect(JSON.parse(signed.receiptPayload).principalId).toBe(STUDENT_A.id);
+    const signed = {
+      payload: JSON.parse(receiptA.receiptPayload) as BulkReceipt["payload"],
+      payloadDigestSha256: receiptA.payloadDigestSha256,
+      signature: receiptA.signature as BulkReceipt["signature"],
+    };
+    expect(signed.payload.principalId).toBe(STUDENT_A.id);
+    expect(Buffer.from(receipt)).toEqual(
+      Buffer.from(await renderReceiptPdf(signed, ORIGIN, LABELS, CODE)),
+    );
+    expect(Buffer.from(receipt)).not.toEqual(
+      Buffer.from(await renderReceiptPdf(signed, ORIGIN, LABELS)),
+    );
+    expect(await shownText(receipt)).toContain(CODE);
   });
+
+  it("answers 503 and no ZIP when a bound code cannot be read", async () => {
+    const { deps } = await fakePorts();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const host = await start({
+        ...deps,
+        code: async () => ({
+          ok: false,
+          error: { code: "MY_SUBMISSION_STATE_DATABASE_ERROR" } as never,
+        }),
+      });
+      const link = await linkFor(host, "pdf");
+      const answer = await get(host, link.downloadPath, TEACHER);
+      expect(answer.status).toBe(503);
+      expect(answer.headers.get("content-type")).not.toBe("application/zip");
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it.each([["withdrawn", { state: "none" } as const], ["submitted again", "other"] as const])(
+    "answers 503 and no ZIP, never A's receipt with another's code, when A's submission is %s as the code is read",
+    async (_case, change) => {
+      const { deps } = await fakePorts();
+      let codeRead = false;
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const host = await start({
+          ...deps,
+          // app.teacher_submission_confirmation_code picks the live submission:
+          // the code read after the change, A's receipt read before it.
+          code: async (...args) => ((codeRead = true), deps.code(...args)),
+          receipt: async (token, assignmentId, studentId) => {
+            const read = await deps.receipt(token, assignmentId, studentId);
+            if (!codeRead || studentId !== STUDENT_A.id || read.status !== 200) return read;
+            if (read.body.state !== "potvrdeno") return read;
+            const body =
+              change === "other"
+                ? {
+                    ...read.body,
+                    receipt: {
+                      ...read.body.receipt,
+                      payload: {
+                        ...read.body.receipt.payload,
+                        submissionId: "00000000-0000-4000-8000-000000000009",
+                      },
+                    },
+                  }
+                : change;
+            return { status: 200, body } as typeof read;
+          },
+        });
+        const link = await linkFor(host, "pdf");
+        const answer = await get(host, link.downloadPath, TEACHER);
+        expect(answer.status).toBe(503);
+        expect(answer.headers.get("content-type")).not.toBe("application/zip");
+      } finally {
+        error.mockRestore();
+      }
+    },
+  );
 
   it("hands out DOCX for format docx, the same receipts, and the same bytes again", async () => {
     const { deps } = await fakePorts();
