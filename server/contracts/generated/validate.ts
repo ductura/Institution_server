@@ -1788,6 +1788,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.accommodation.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.accommodation.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.accommodation.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['marked'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.assignment-assistant-requests.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -3490,6 +3516,20 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['undated'] !== undefined ? ((typeof value['undated'] === 'boolean')) : true) &&
       (((value['requirement'] === 'recommended')) || ((value['requirement'] === 'required'))) &&
       Object.getOwnPropertyNames(value).every(key => ['record', 'doi', 'isbn', 'undated', 'requirement'].includes(key))
+    )
+  }
+  })(),
+  "teacher.student-accommodation.get:params": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (typeof value['studentId'] === 'string') &&
+      local1.test(value['studentId']) &&
+      Object.getOwnPropertyNames(value).length === 2
     )
   }
   })(),

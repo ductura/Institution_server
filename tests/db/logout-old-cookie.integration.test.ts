@@ -167,6 +167,7 @@ import {
   type Running,
   routesOf,
   startServer,
+  createWorkAccommodationRoutesFor,
 } from "../../server/http/index.ts";
 import { issuePackageLink } from "../../server/downloads/index.ts";
 import { newSessionToken } from "../../server/session/index.ts";
@@ -241,6 +242,27 @@ function rubricCriterion() {
 }
 
 const SESSION_ROUTES = {
+  // F4-PM2-R08-SRV: a live session that is no student or holder of the work gets 404.
+  "teacher.student-accommodation.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/accommodation`,
+    body: () => undefined,
+    live: 404,
+  },
+  // F4-PM2-R08-SRV: a live session marking a work that is not its own gets 403.
+  "student.accommodation.put": {
+    method: "PUT",
+    path: `/api/v1/student/assignments/${randomUUID()}/accommodation`,
+    body: () => ({ marked: true }),
+    live: 403,
+  },
+  // F4-PM2-R08-SRV: a live session that is no student or holder of the work gets 404.
+  "student.accommodation.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/accommodation`,
+    body: () => undefined,
+    live: 404,
+  },
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
     body: () => ({ assignmentId: randomUUID() }),
@@ -2926,6 +2948,7 @@ const FACTORIES = [
   "createStudentConversationsRouteFor",
   "createStatementRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
+  "createWorkAccommodationRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -3089,6 +3112,7 @@ const MOUNTED = [
   createStudentConversationsRouteFor(databases.main),
   ...createStatementRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
+  ...createWorkAccommodationRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),

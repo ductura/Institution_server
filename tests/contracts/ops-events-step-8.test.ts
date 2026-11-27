@@ -180,6 +180,7 @@ import {
   type Route,
   routesOf,
   type SecondFactor,
+  createWorkAccommodationRoutesFor,
 } from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
 import { newSessionToken, sessionTokenFromCookie } from "../../server/session/index.ts";
@@ -721,6 +722,7 @@ const ENTRY_ROUTES: readonly (readonly [string, () => readonly Route[]])[] = [
     "createTeacherMentorshipRequestRoutesFor",
     () => createTeacherMentorshipRequestRoutesFor(STAND_IN),
   ],
+  ["createWorkAccommodationRoutesFor", () => createWorkAccommodationRoutesFor(STAND_IN)],
   ["createInternalInstitutionRoutes", () => createInternalInstitutionRoutes({ env: {} })],
   ["createAuthRoutes", () => createAuthRoutes({})],
   ["routesOf", () => routesOf(AREA_NAMES)],
