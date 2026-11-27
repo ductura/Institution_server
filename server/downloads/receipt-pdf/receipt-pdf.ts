@@ -27,19 +27,34 @@ const GRAPHITE = rgb(0.12, 0.12, 0.12);
 const SECONDARY = rgb(0.3, 0.3, 0.3);
 const BLACK = rgb(0, 0, 0);
 const FONT_BYTES = Buffer.from(RECEIPT_FONT_BASE64, "base64");
+/** The confirmation code: Crockford base32 without I, L, O and U, 4 groups of 4, uppercase. */
+const CONFIRMATION_CODE = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/;
+
+function httpOrigin(origin: string): URL {
+  const base = new URL(origin);
+  if (base.origin !== origin || (base.protocol !== "https:" && base.protocol !== "http:")) {
+    throw new Error("receipt PDF requires a configured HTTP origin");
+  }
+  return base;
+}
 
 /** C-6: private receipt lookup values stay in the fragment. */
 export function verificationUrl(
   origin: string,
   payload: Pick<SubmissionReceiptPayloadV2, "submissionId" | "artifactSha256">,
 ): string {
-  const base = new URL(origin);
-  if (base.origin !== origin || (base.protocol !== "https:" && base.protocol !== "http:")) {
-    throw new Error("receipt PDF requires a configured HTTP origin");
-  }
-  const url = new URL("/provjera", base);
+  const url = new URL("/provjera", httpOrigin(origin));
   url.hash = new URLSearchParams({ r: payload.submissionId, o: payload.artifactSha256 }).toString();
   return url.href;
+}
+
+/**
+ * Dizajn 1.1, korak 4: the public check by the confirmation code. The code stays
+ * in the fragment, so it never reaches a request line or a server log.
+ */
+export function confirmationCodeUrl(origin: string, code: string): string {
+  if (!CONFIRMATION_CODE.test(code)) throw new Error("receipt PDF requires a confirmation code");
+  return `${new URL("/provjera", httpOrigin(origin)).href}#k=${code}`;
 }
 
 function drawQr(page: PDFPage, url: string, x: number, y: number): void {
@@ -59,14 +74,23 @@ function drawQr(page: PDFPage, url: string, x: number, y: number): void {
   );
 }
 
-/** Render the same bytes for the same stored receipt, origin and labels. */
+/**
+ * Render the same bytes for the same stored receipt, origin, labels and code.
+ * With the bound confirmation code the QR opens the check by that code and the
+ * code is printed under it (Dizajn 1.1, koraci 4 do 6); without one (a receipt
+ * from before the codes) the page is exactly as before.
+ */
 export async function renderReceiptPdf(
   receipt: SignedSubmissionReceiptV2,
   origin: string,
   labels: ReceiptPdfLabels,
+  confirmationCode: string | null = null,
 ): Promise<Uint8Array> {
   const { payload } = receipt;
-  const url = verificationUrl(origin, payload);
+  const url =
+    confirmationCode === null
+      ? verificationUrl(origin, payload)
+      : confirmationCodeUrl(origin, confirmationCode);
   const pdf = await PDFDocument.create({ updateMetadata: false });
   pdf.registerFontkit(fontkit);
   pdf.setTitle(labels.title);
@@ -97,6 +121,7 @@ export async function renderReceiptPdf(
   text(labels.verification, 310, 15);
   text(labels.scan, 287, 11);
   drawQr(page, url, MARGIN - 9, 117);
+  if (confirmationCode !== null) text(confirmationCode, 100, 14);
 
   return pdf.save();
 }
