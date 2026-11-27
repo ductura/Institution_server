@@ -41637,7 +41637,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.177.0",
+        "apiVersion": "1.178.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41653,7 +41653,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.177.0",
+        "apiVersion": "1.178.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -98701,6 +98701,123 @@
     "request": {
       "params": {
         "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002012"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.submitted-version.get",
+    "name": "submitted-revision",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "revision": 2,
+        "document": "{\"nodes\":[],\"schemaVersion\":1}"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.submitted-version.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "revision": "2"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002010"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.submitted-version.get",
+    "name": "invalid-revision",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "revision": "0"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002012"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.submitted-version.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002011"
+      }
+    }
+  },
+  {
+    "route": "teacher.work.submitted-version.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "revision": "2"
       },
       "headers": {
         "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001"

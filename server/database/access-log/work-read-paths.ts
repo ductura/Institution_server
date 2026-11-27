@@ -49,6 +49,7 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
       "server/collaboration/live-route.ts",
       "server/database/live-state.ts",
       "server/database/suggestions/suggestions.ts",
+      "server/database/teacher-submitted-version/index.ts",
       "server/http/collaboration-comments/store.ts",
       "server/http/export/read-source.ts",
       "server/http/time-machine/store.ts",

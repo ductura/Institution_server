@@ -313,6 +313,22 @@ export const TEACHER_HANDLERS: Handlers = {
         .map((m) => mentorshipWork(state, m)),
     },
   }),
+  // F4-NAS-R20-SRV: the submitted revision of a work, for a teacher who may read the work; any other revision or an unsubmitted work is 404.
+  "teacher.work.submitted-version.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const revision = Number(params.revision);
+    if (!Number.isSafeInteger(revision) || revision < 1) return { error: "invalid_input" };
+    if (!taughtWork(state, account, params.documentId)) return { error: "not_found" };
+    const work = state.works.find((w) => w.documentId === params.documentId)!;
+    if (
+      work.submittedAt === null ||
+      work.submittedDocument === null ||
+      revision !== work.revision
+    ) {
+      return { error: "not_found" };
+    }
+    return { status: 200, body: { revision, document: work.submittedDocument } };
+  },
   // SRV-2003: one work by its document id and its neighbours in the assignment, among the works the caller may read.
   "teacher.work.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
