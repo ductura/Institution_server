@@ -58,8 +58,10 @@ jobs:
       # SRV-CI-UBRZANJE: leg "provjere" runs every static check (types,
       # ledger, lint, format, equality, the release dry run, the contract
       # check and both images) in parallel with the tests, and four legs
-      # split the vitest unit and integration projects by file (vitest
-      # --shard, leg i/4). The property tests run on legs 3/4 and 4/4 (twice per
+      # split the vitest unit and integration projects by measured time
+      # (.github/workflows/shard-plan.ts, timings in shard-timings.json;
+      # every file on exactly one leg, one the table does not know costs the
+      # median), leg i/4. The property tests run on legs 3/4 and 4/4 (twice per
       # run, as before). All legs are one job, so ci-ok, which knows exactly
       # scope, checks and database, sees one result for them, failed when any
       # leg failed. Every check still runs on every run.
@@ -109,7 +111,10 @@ jobs:
         if: matrix.leg != 'provjere'
         env:
           SHARD: ${{ matrix.leg }}
-        run: pnpm test:unit --shard="$SHARD"
+        run: |
+          mapfile -t FILES < <(node .github/workflows/shard-plan.ts unit "$SHARD" --reserve 3,4)
+          [ "${#FILES[@]}" -gt 0 ]
+          pnpm test:unit "${FILES[@]}"
       # SRV-1512 (plan M7.9, R-07): the text of an invented work in the API, the
       # export snapshot and the DOCX must be the same; a difference fails the build.
       # Its own step, so the check is visible and stays required through ci-ok.
@@ -123,7 +128,10 @@ jobs:
         if: matrix.leg != 'provjere'
         env:
           SHARD: ${{ matrix.leg }}
-        run: pnpm test:integration --shard="$SHARD"
+        run: |
+          mapfile -t FILES < <(node .github/workflows/shard-plan.ts integration "$SHARD" --reserve 3,4)
+          [ "${#FILES[@]}" -gt 0 ]
+          pnpm test:integration "${FILES[@]}"
       # U10-b (DAN-742): the whole path of publish.yml except the upload, with
       # no token: stage and check, pack, check the unpacked tarball, and a dry
       # run of `npm publish` of each tarball.
@@ -344,7 +352,7 @@ jobs:
       # tests in pnpm test:database (tests/db/ductus/*payload*, *storage*), as
       # Ductus runs it: RustFS 1.0.0 on 127.0.0.1:9100 with the public
       # local-only keys of Ductus compose.yaml (no secret). Natively, as Ductus
-      # scripts/local/native/up.mjs starts it, so S-0.14 holds. The archive is
+      # scripts/local/native/up.ts starts it, so S-0.14 holds. The archive is
       # checked against the published SHA-256 before it is unpacked or run.
       - name: Lokalni S3 (RustFS 1.0.0, nativno)
         env:
