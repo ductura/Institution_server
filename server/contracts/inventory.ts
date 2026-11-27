@@ -341,6 +341,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2055:issuecomment-7145546227",
   },
+  // SRV-KOD-POTVRDE (Ductus#2059 c.7214951129, S-08): the confirmation code of the own
+  // submission; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/submission/confirmation-code/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214951129",
+  },
   // DAN-931: Ductus has no download route; the place is D-306 t. 1.
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],
@@ -1340,6 +1346,14 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source:
       "danielrisavi77-create/Ductus#2059:issuecomment-7205790506 (F4-PRE-R02-SRV, F4-PRE-R06-SRV)",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration-v3/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214299921 (AI-RECORDED-5000)",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2059:issuecomment-7214299921 (AI-RECORDED-5000)",
   },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],

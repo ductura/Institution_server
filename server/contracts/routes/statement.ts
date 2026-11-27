@@ -231,6 +231,25 @@ const StatementV2 = closed({
   draft: Type.Union([PutV2, Type.Null()]),
   payload: Type.Union([PayloadV2, Type.Null()]),
 });
+// AI-RECORDED-5000: a work holds up to 5000 transfers
+// (assistant.ai_transfer_max()), so ai.recorded can list as many. The v2
+// bodies stay at 500, since raising them would break their clients; the
+// declaration-v3 routes carry the same body with recorded up to 5000. A v2
+// route whose declaration lists more answers 503 unavailable.
+export const MAX_RECORDED_TRANSFERS = 5000;
+const PayloadV3 = closed({
+  ...PayloadV2.properties,
+  ai: closed({
+    ...PayloadV2.properties.ai.properties,
+    recorded: Type.Array(closed({ aiTransferId: ID, aiTransferSha256: SHA256 }), {
+      maxItems: MAX_RECORDED_TRANSFERS,
+    }),
+  }),
+});
+const StatementV3 = closed({
+  ...StatementV2.properties,
+  payload: Type.Union([PayloadV3, Type.Null()]),
+});
 const Params = closed({ assignmentId: Type.String({ minLength: 1 }) });
 const READ_ERRORS = [
   error(401, "unauthorized"),
@@ -397,6 +416,42 @@ export const studentDeclarationV2Put = defineRoute({
   responses: studentDeclarationV2Get.responses,
   errors: SAVE_ERRORS,
 });
+export const studentDeclarationV3Get = defineRoute({
+  id: "student.declaration-third.get",
+  method: "GET",
+  path: `${URL}/declaration-v3`,
+  inventory: `${INVENTORY}/declaration-v3/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "Read the student's declaration as student.declaration-second.get does, with up to 5000 recorded transfers; student.declaration-second.get answers 503 unavailable for a declaration that records more than 500.",
+  request: { params: Params },
+  responses: [
+    {
+      status: 200,
+      body: StatementV3,
+      description: "Declaration state",
+      headers: ["cache-control"],
+    },
+  ],
+  errors: READ_ERRORS,
+});
+export const studentDeclarationV3Put = defineRoute({
+  id: "student.declaration-third.put",
+  method: "PUT",
+  path: `${URL}/declaration-v3`,
+  inventory: `${INVENTORY}/declaration-v3/route.ts`,
+  access: "student_enrolled",
+  summary:
+    "Save a draft or confirm a declaration as student.declaration-second.put does, answering with up to 5000 recorded transfers; student.declaration-second.put saves such a declaration but answers 503 unavailable.",
+  request: {
+    params: Params,
+    contentType: "application/json",
+    maxBodyBytes: STATEMENT_V2_MAX_BODY_BYTES,
+    body: PutRequestV2,
+  },
+  responses: studentDeclarationV3Get.responses,
+  errors: SAVE_ERRORS,
+});
 export const statementRoutes = [
   studentDeclarationGet,
   studentDeclarationConversationsGet,
@@ -404,11 +459,13 @@ export const statementRoutes = [
   studentDeclarationAttachmentsPost,
   studentDeclarationV2Get,
   studentDeclarationV2Put,
+  studentDeclarationV3Get,
+  studentDeclarationV3Put,
 ] as const;
 
 // The confirmed declaration payload, shared with the teacher's read (SRV-1213).
 export { Payload as DeclarationPayload, SHA256 as DeclarationSha256 };
-export { PayloadV2 as DeclarationPayloadV2 };
+export { PayloadV2 as DeclarationPayloadV2, PayloadV3 as DeclarationPayloadV3 };
 export {
   QuestionAnswer as DeclarationQuestionAnswer,
   TeacherQuestion as DeclarationTeacherQuestion,

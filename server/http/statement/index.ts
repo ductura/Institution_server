@@ -43,6 +43,17 @@ const CONVERSATIONS = "student.declaration-conversations.get";
 // F4-PRE-R02-SRV, F4-PRE-R06-SRV: the declaration-v2 routes over the same port.
 const READ_V2 = "student.declaration-second.get";
 const SAVE_V2 = "student.declaration-second.put";
+// AI-RECORDED-5000: the declaration-v3 routes, up to 5000 recorded transfers.
+const READ_V3 = "student.declaration-third.get";
+const SAVE_V3 = "student.declaration-third.put";
+/** The v3 route that reads what a v2 route cannot carry. */
+const WIDER: Readonly<Record<string, string>> = { [READ_V2]: READ_V3, [SAVE_V2]: READ_V3 };
+
+function contractOf(id: string): RouteContract {
+  const contract = ROUTES.find((route) => route.id === id);
+  if (contract === undefined) throw new Error(`Missing contract for ${id}`);
+  return contract;
+}
 
 /** A plain JSON object, so its own questionAnswer key can be set apart. */
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -98,11 +109,11 @@ function sendRefusal(
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
-  return [READ, CONVERSATIONS, SAVE, UPLOAD, READ_V2, SAVE_V2].map((id) => {
-    const contract = ROUTES.find((route) => route.id === id);
-    if (contract === undefined) throw new Error(`Missing contract for ${id}`);
-    const isRead = id === READ || id === READ_V2;
-    const isSave = id === SAVE || id === SAVE_V2;
+  return [READ, CONVERSATIONS, SAVE, UPLOAD, READ_V2, SAVE_V2, READ_V3, SAVE_V3].map((id) => {
+    const contract = contractOf(id);
+    const wider = WIDER[id] === undefined ? undefined : contractOf(WIDER[id]);
+    const isRead = id === READ || id === READ_V2 || id === READ_V3;
+    const isSave = id === SAVE || id === SAVE_V2 || id === SAVE_V3;
     return {
       contract,
       async handle(request, response, params) {
@@ -170,6 +181,12 @@ export function createStatementRoutes(port: StatementPort): Route[] {
           const body = id === READ || id === SAVE ? withoutRecorded(outcome.body) : outcome.body;
           if (schema !== undefined && Value.Check(schema, body))
             return sendJson(response, 200, body);
+          // A declaration with more than 500 recorded transfers is whole; only
+          // the v2 body cannot carry it. Its route answers the documented 503,
+          // and the v3 route reads it.
+          const widerSchema = wider?.responses[0]?.body;
+          if (widerSchema !== undefined && Value.Check(widerSchema, body))
+            return sendProblem(response, 503, "unavailable");
           throw new Error("Declaration response outside its contract");
         } catch {
           // The postgres error can carry submitted text in its detail or context.

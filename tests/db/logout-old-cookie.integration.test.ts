@@ -118,6 +118,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createTeacherDeclarationRouteFor,
   createTeacherDeclarationV2RouteFor,
+  createTeacherDeclarationV3RouteFor,
   createTeacherDeclarationConversationRouteFor,
   createTeacherSubmissionNotesRouteFor,
   createCourseAggregateRouteFor,
@@ -2125,6 +2126,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // AI-RECORDED-5000: the same for its declaration-v3 read.
+  "teacher.declaration-third.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/declaration-v3`,
+    body: () => undefined,
+    live: 404,
+  },
   // F4-NAS-R04-SRV: the same for a conversation of that declaration.
   "teacher.declaration-conversation.get": {
     method: "GET",
@@ -2165,6 +2173,13 @@ const SESSION_ROUTES = {
     path: "/api/v1/student/assignment-submissions",
     body: () => undefined,
     live: 200,
+  },
+  // SRV-KOD-POTVRDE: the own code of an assignment the account has no relation to is 404.
+  "student.submission-confirmation-code.get": {
+    method: "GET",
+    path: "/api/v1/student/assignments/00000000-0000-4000-8000-0000000000a1/submission/confirmation-code",
+    body: () => undefined,
+    live: 404,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
@@ -2606,6 +2621,18 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 422,
   },
+  "student.declaration-third.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-v3`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.declaration-third.put": {
+    method: "PUT",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-v3`,
+    body: () => ({}),
+    live: 422,
+  },
   "student.declaration-attachments.post": {
     path: `/api/v1/student/assignments/${randomUUID()}/declaration-attachments`,
     body: () => ({}),
@@ -2998,6 +3025,7 @@ const FACTORIES = [
   "createTeacherSubmissionDetailRouteFor",
   "createTeacherDeclarationRouteFor",
   "createTeacherDeclarationV2RouteFor",
+  "createTeacherDeclarationV3RouteFor",
   "createTeacherDeclarationConversationRouteFor",
   "createTeacherSubmissionNotesRouteFor",
   "createCourseAggregateRouteFor",
@@ -3167,6 +3195,7 @@ const MOUNTED = [
   createTeacherSubmissionDetailRouteFor(databases.main),
   createTeacherDeclarationRouteFor(databases.main),
   createTeacherDeclarationV2RouteFor(databases.main),
+  createTeacherDeclarationV3RouteFor(databases.main),
   createTeacherDeclarationConversationRouteFor(databases.main),
   createTeacherSubmissionNotesRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
