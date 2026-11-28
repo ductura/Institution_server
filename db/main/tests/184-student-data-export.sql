@@ -67,6 +67,8 @@ SELECT is(
   || 'app.worker_expire_student_data_exports() ductus_identity true true, '
   || 'app.worker_mark_student_data_export_ready(uuid,bytea) ductus_identity true true, '
   || 'app.worker_student_data_export_access_log(uuid) ductus_identity true true, '
+  -- F4-1.1-4-6-SRV: the codes of the package (287-student-data-export-confirmation-codes.sql).
+  || 'app.worker_student_data_export_confirmation_codes(uuid) ductus_evidence true true, '
   || 'app.worker_student_data_export_notes(uuid) ductus_evidence true true, '
   || 'app.worker_student_data_export_submissions(uuid) ductus_evidence true true, '
   || 'app.worker_student_data_exports_to_prepare() ductus_identity true true',
@@ -92,7 +94,10 @@ SELECT bag_eq(
         'ductus_worker app.worker_student_data_export_access_log(uuid)',
         'ductus_evidence app.student_data_export_subject(uuid)',
         'ductus_evidence app.worker_student_data_export_submissions(uuid)',
-        'ductus_evidence app.worker_student_data_export_notes(uuid)'],
+        'ductus_evidence app.worker_student_data_export_notes(uuid)',
+        -- F4-1.1-4-6-SRV: the codes of the package, the worker's and its owner's alone.
+        'ductus_worker app.worker_student_data_export_confirmation_codes(uuid)',
+        'ductus_evidence app.worker_student_data_export_confirmation_codes(uuid)'],
   'the web role runs the four RPCs, the worker its three steps, nobody else anything');
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
     AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
