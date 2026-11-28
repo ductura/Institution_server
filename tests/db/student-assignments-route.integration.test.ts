@@ -126,9 +126,38 @@ describe("SRV-09: the student's assignments from the seed", () => {
           noticeFirst: false,
           workType: "seminar_paper",
           extendedDueAt: null,
+          // F4-V13-R04-SRV2: the seed's assignment is a text one.
+          documentKind: "text",
+          workKind: "text",
         },
       ],
     });
+  });
+
+  // F4-V13-R04-SRV2 (WEB#1146, R04): a slides assignment is named as one, so the
+  // client opens the slides editor. The kind is set on the seed's assignment for
+  // this test only and set back after it.
+  it("names a slides assignment as slides, from the stored kind", async () => {
+    const kind = (to: string) =>
+      admin.query(
+        `UPDATE institution.assignment a SET document_kind = $1
+           FROM institution.assignment_version v
+          WHERE v.assignment_id = a.id AND v.version_no = a.current_version
+            AND v.title = 'Seminarski rad: kućno kompostiranje'`,
+        [to],
+      );
+    expect((await kind("slides")).rowCount).toBe(1);
+    try {
+      const got = await get(tokens.student);
+      expect(got.status).toBe(200);
+      expect(Value.Check(SCHEMA as never, got.body)).toBe(true);
+      const assignments = (got.body.courses as { assignments: Record<string, unknown>[] }[])
+        .flatMap((c) => c.assignments)
+        .filter((a) => a.title === "Seminarski rad: kućno kompostiranje");
+      expect(assignments.map((a) => [a.documentKind, a.workKind])).toEqual([["slides", "slides"]]);
+    } finally {
+      await kind("text");
+    }
   });
 
   it("an account with no course gets an empty list", async () => {

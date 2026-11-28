@@ -8,6 +8,8 @@
 // Only the columns the route can answer exactly are read; the groups, mentors
 // and teachers of the function do not yet have the contract's shape (group ids,
 // given and family names apart; Ductus#2028 c.7009610321).
+// F4-V13-R04-SRV2 (20261220890000): the kind of document the assignment asks
+// for is read too; a kind the column cannot hold makes the read unavailable.
 import type { WithActor } from "./with-actor.ts";
 
 export type StudentAssignmentRow = {
@@ -22,7 +24,17 @@ export type StudentAssignmentRow = {
   readonly acknowledged: boolean;
   /** A practice assignment (F4-STU-R02, 20261220210000). */
   readonly isPractice: boolean;
+  /** The kind of document the assignment asks for (institution.assignment.document_kind). */
+  readonly documentKind: StudentAssignmentKind;
 };
+
+/** The kinds institution.assignment.document_kind holds (20261220120000). */
+export type StudentAssignmentKind = "text" | "slides" | "spreadsheet";
+const KINDS: ReadonlySet<unknown> = new Set<StudentAssignmentKind>([
+  "text",
+  "slides",
+  "spreadsheet",
+]);
 
 export type StudentAssignmentsRead =
   | { readonly status: "ok"; readonly rows: readonly StudentAssignmentRow[] }
@@ -32,7 +44,8 @@ export type StudentAssignmentsReader = (token: string) => Promise<StudentAssignm
 
 const SQL = `SELECT assignment_id AS "assignmentId", course_id AS "courseId", course_name AS "courseName",
   academic_year AS "academicYear", title, work_type AS "workType", due_at AS "dueAt",
-  extended_due_at AS "extendedDueAt", acknowledged, is_practice AS "isPractice"
+  extended_due_at AS "extendedDueAt", acknowledged, is_practice AS "isPractice",
+  document_kind AS "documentKind"
   FROM institution.student_assignments()
   ORDER BY course_name COLLATE "hr-x-icu", course_id, due_at, assignment_id`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -58,7 +71,8 @@ function rowOf(row: Record<string, unknown>): StudentAssignmentRow | null {
     dueAt === null ||
     (row.extendedDueAt !== null && extendedDueAt === null) ||
     typeof row.acknowledged !== "boolean" ||
-    typeof row.isPractice !== "boolean"
+    typeof row.isPractice !== "boolean" ||
+    !KINDS.has(row.documentKind)
   ) {
     return null;
   }
@@ -67,6 +81,7 @@ function rowOf(row: Record<string, unknown>): StudentAssignmentRow | null {
     extendedDueAt,
     acknowledged: row.acknowledged,
     isPractice: row.isPractice,
+    documentKind: row.documentKind as StudentAssignmentKind,
   };
 }
 
