@@ -115,6 +115,8 @@ const ENV_NAMES = [
   "WORKER_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
   "DUCTUS_ANALYSIS_LOCAL",
+  // The local PDF renderer origin (Gotenberg on loopback), passed by pnpm lokalno (LOK-SRV-PDF-ORIGIN).
+  "DUCTURA_PDF_RENDERER_ORIGIN",
   // The engine of the test databases, set per vitest project (S-1F-e, test-support/database).
   "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).
