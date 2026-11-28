@@ -151,7 +151,8 @@ const ROUTES: ReadonlyMap<Rpc, Case> = new Map<Rpc, Case>([
     {
       path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
       body: JSON.stringify({ expectedVersion: 1, ...CONTENT }),
-      values: [ASSIGNMENT, 1, ...Object.values(CONTENT)],
+      // SRV-V13-VRSTA-PISAC: the kind is the last argument; none is null (no check).
+      values: [ASSIGNMENT, 1, ...Object.values(CONTENT), null],
     },
   ],
   [
