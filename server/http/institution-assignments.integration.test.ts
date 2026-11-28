@@ -111,6 +111,12 @@ const contentWithoutSetup = (body: Record<string, unknown>) =>
     ),
   );
 const NO_SETUP = { externalToolsAllowed: false, aiSummaryOnly: false };
+const GROUP_A = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d01";
+const GROUP_B = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d02";
+const TWENTY_ONE_GROUPS = Array.from(
+  { length: 21 },
+  (_, i) => `5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7e${String(i).padStart(2, "0")}`,
+);
 const tokenOf = (v: Vector) => v.request.headers.cookie!.slice("__Host-ductus_session=".length);
 
 describe.each([
@@ -178,7 +184,9 @@ describe("the arguments of the port", () => {
     const course = v.request.params.courseId!;
     const path = `/api/v1/institution/courses/${course.toUpperCase()}/assignments`;
     expect((await send(path, upper)).status).toBe(201);
-    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content, false, NO_SETUP]]);
+    expect(calls).toEqual([
+      ["create", tokenOf(v), course, requestKey, content, false, NO_SETUP, []],
+    ]);
   });
 
   it.each([
@@ -226,7 +234,7 @@ describe("the arguments of the port", () => {
     const setupKeys = new Set(["requestKey", "externalToolsAllowed", "aiSummaryOnly", "groupIds"]);
     const content = Object.fromEntries(Object.entries(body).filter(([k]) => !setupKeys.has(k)));
     expect(calls).toEqual([
-      ["create", tokenOf(v), v.request.params.courseId, body.requestKey, content, false, setup],
+      ["create", tokenOf(v), v.request.params.courseId, body.requestKey, content, false, setup, []],
     ]);
   });
 
@@ -240,14 +248,56 @@ describe("the arguments of the port", () => {
       { aiSummaryOnly: true, aiPolicy: "partially_allowed", aiPurposes: ["proofreading"] },
       undefined,
     ],
-    ["a group, not stored yet", { groupIds: ["00000000-0000-4000-8000-00000000a601"] }, undefined],
     ["groupIds that is not an array", { groupIds: {} }, undefined],
+    ["a group id that is not a UUID", { groupIds: ["grupa-a"] }, undefined],
+    ["a group id that is not a string", { groupIds: [1] }, undefined],
+    [
+      "a group named twice in another case",
+      { groupIds: [GROUP_A, GROUP_A.toUpperCase()] },
+      undefined,
+    ],
+    ["21 groups", { groupIds: TWENTY_ONE_GROUPS }, undefined],
   ])("create: %s is 422 before the port", async (_name, extra, policy) => {
     const { v, body } = setupCase(extra, policy);
     await start(v.request.headers.origin!);
     const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
     expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(422);
     expect(calls).toEqual([]);
+  });
+
+  // F4 wave 2 #5 (1.8): the groups reach the port in lower case, in the order sent;
+  // whether they are the course's is the database's (ZD422, the port's invalid).
+  it("create: groups of the course are 201 and reach the port in lower case", async () => {
+    const { v, body } = setupCase({ groupIds: [GROUP_B.toUpperCase(), GROUP_A] });
+    createAnswer = () => ({ status: "created", id: v.response.body.id as string });
+    await start(v.request.headers.origin!);
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    const got = await send(path, { ...v, request: { ...v.request, body } });
+    expect([got.status, got.body]).toEqual([201, { id: v.response.body.id }]);
+    expect(calls.map((args) => args[7])).toEqual([[GROUP_B, GROUP_A]]);
+  });
+
+  it("create: 20 groups reach the port", async () => {
+    const { v, body } = setupCase({ groupIds: TWENTY_ONE_GROUPS.slice(0, 20) });
+    createAnswer = () => ({ status: "created", id: v.response.body.id as string });
+    await start(v.request.headers.origin!);
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(201);
+    expect(calls.map((args) => args[7])).toEqual([TWENTY_ONE_GROUPS.slice(0, 20)]);
+  });
+
+  it.each([
+    ["invalid", 422, "invalid_input"],
+    ["conflict", 409, "conflict"],
+  ] as const)("create: the port's %s for the groups is %i", async (status, code, problem) => {
+    const { v, body } = setupCase({ groupIds: [GROUP_A] });
+    createAnswer = () => ({ status }) as AssignmentCreateOutcome;
+    await start(v.request.headers.origin!);
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    const got = await send(path, { ...v, request: { ...v.request, body } });
+    expect([got.status, (got.body as { code?: string }).code]).toEqual([code, problem]);
+    expect(calls).toHaveLength(1);
+    expect(activity).toEqual([]);
   });
 
   // SRV-V14-KIND-ENUM: workKind beside documentKind; workKind wins, a difference is 422.
