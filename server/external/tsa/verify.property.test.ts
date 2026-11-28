@@ -161,6 +161,58 @@ describe("arbitrary input", () => {
     expect(!result.ok && result.error.code).toBe("TSA_CHAIN");
   });
 
+  // Offsets inside the ECDSA signature: 3 SEQUENCE tag, 4 its length, 5 the
+  // first INTEGER tag, 6 its length; the second INTEGER follows the first.
+  const signatureByte = (bytes: Uint8Array, bitString: number, part: string): number => {
+    const first = bitString + 5;
+    const second = first + 2 + (bytes[first + 1] ?? 0);
+    const offsets: Record<string, number> = {
+      "SEQUENCE tag": bitString + 3,
+      "first INTEGER tag": first,
+      "first INTEGER length": first + 1,
+      "second INTEGER tag": second,
+      "second INTEGER length": second + 1,
+    };
+    const offset = offsets[part];
+    if (offset === undefined) throw new Error(part);
+    return offset;
+  };
+
+  it.each([
+    ["first INTEGER tag", 0x28],
+    ["first INTEGER tag", 0x08],
+    ["first INTEGER tag", 0x20],
+    ["second INTEGER tag", 0x28],
+    ["second INTEGER tag", 0x08],
+    ["SEQUENCE tag", 0x01],
+    ["first INTEGER length", 0x01],
+    ["second INTEGER length", 0x01],
+  ])("a malformed certificate signature is rejected: %s changed by %i", async (part, mask) => {
+    const { at, bitString } = intermediateSignature();
+    expect(at).toBeGreaterThan(0);
+    const inter = intermediateDer;
+    const result = await verifyTimeStampResponse(
+      flip(der, at + signatureByte(inter, bitString, part), mask),
+      expectation,
+      trust,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it.each([0x28, 0x08])(
+    "a malformed signer signature is rejected: first INTEGER tag changed by %i",
+    async (mask) => {
+      // The signer's signature OCTET STRING is the last value of the response.
+      let octets = -1;
+      for (let i = der.length - 4; i > 0 && octets < 0; i--)
+        if (der[i] === 0x04 && der[i + 2] === 0x30 && i + 2 + (der[i + 1] ?? 0) === der.length)
+          octets = i;
+      expect(octets).toBeGreaterThan(0);
+      const result = await verifyTimeStampResponse(flip(der, octets + 4, mask), expectation, trust);
+      expect(!result.ok && result.error.code).toBe("TSA_SIGNATURE");
+    },
+  );
+
   it("returns its own copy of exactly the response bytes, also for a pooled Buffer", async () => {
     const pooled = Buffer.from(Buffer.from(der).toString("hex"), "hex");
     expect(pooled.buffer.byteLength).toBeGreaterThan(der.byteLength);
