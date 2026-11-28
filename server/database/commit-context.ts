@@ -39,7 +39,7 @@ export type EvidenceCommitContext = {
   /**
    * SRV-V14-SHEET-COMMIT: the kind of the work, from evidence.document
    * (fixed when the work starts). The commit branch of the kind judges the
-   * snapshot and step format; a slides work is not read here yet. The reader
+   * snapshot and step format (text, slides or spreadsheet). The reader
    * always names it; a context without it is a text work (workKindOfContext).
    */
   documentKind?: RevisionZeroKind;
@@ -77,6 +77,9 @@ const KIND_SQL = "SELECT document_kind FROM evidence.document WHERE id = $1";
 // A Map, not an object: a value such as `__proto__` is no kind.
 const KINDS = new Map<unknown, RevisionZeroKind>([
   ["text", "text"],
+  // F4-V13-R04: app.open_student_work opens slides works (F4-V13-R01), and
+  // the commit branch, replay and submission know them; the reader did not.
+  ["slides", "slides"],
   ["spreadsheet", "spreadsheet"],
 ]);
 
