@@ -52,7 +52,9 @@ describe("local switches (SRV-ANALIZA-LOKALNO)", () => {
     expect(localSwitches({ DUCTUS_ANALYSIS_LOCAL: "1" })).toEqual({ DUCTUS_ANALYSIS_LOCAL: "1" });
     for (const value of [undefined, "", "0", "true", " 1"])
       expect(localSwitches({ DUCTUS_ANALYSIS_LOCAL: value })).toEqual({});
-    expect(localSwitches({ DUCTUS_OTHER: "1", DUCTURA_DEPLOYMENT: "x" })).toEqual({});
+    expect(localSwitches({ DUCTUS_AUTH_PROVIDER: "fake-oidc", DUCTURA_DEPLOYMENT: "x" })).toEqual(
+      {},
+    );
   });
 });
 
