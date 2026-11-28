@@ -221,6 +221,25 @@ export const commit = defineRoute({
       baseRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
       segments: Type.Array(Base64, { minItems: 1, maxItems: 1 }),
       document: Base64,
+      // F4-EDI-R05-SRV (B3): the client resolved a stale_base by keeping its own text.
+      resolution: Type.Optional(
+        Type.Object(
+          {
+            kind: Type.Literal("keep_local"),
+            conflictBaseRevision: Type.Integer({
+              minimum: 0,
+              maximum: Number.MAX_SAFE_INTEGER - 2,
+            }),
+          },
+          {
+            additionalProperties: false,
+            description:
+              "Only when this commit keeps the local text over a conflict: conflictBaseRevision is " +
+              "the revision that text was written on, below baseRevision (422 invalid otherwise). " +
+              "A retry sends the same resolution, or none if the first had none.",
+          },
+        ),
+      ),
     }),
   },
   responses: [

@@ -335,6 +335,62 @@ describe("C. the closed envelope", () => {
   });
 });
 
+describe("C11. the resolution of a conflict (F4-EDI-R05-SRV B3)", () => {
+  const keep = (conflictBaseRevision: unknown, baseRevision = 4) =>
+    envelope({ baseRevision, resolution: { kind: "keep_local", conflictBaseRevision } });
+
+  it("hands a keep_local resolution to the service, and none for a body without one", async () => {
+    next = async () => ({ status: "committed", revision: 5, signedReceipt: {} as never });
+    const resolved = await post(keep(2));
+    expect(resolved.status).toBe(200);
+    await post(JSON.stringify(GOOD_BODY));
+    expect(calls.map((call) => call.request.resolution)).toEqual([
+      { kind: "keep_local", conflictBaseRevision: 2 },
+      undefined,
+    ]);
+    expect(calls[0]?.request.baseRevision).toBe(4);
+  });
+
+  it.each([
+    ["the base equal to baseRevision", keep(4)],
+    ["the base above baseRevision", keep(5)],
+    ["a resolution on revision 0", keep(0, 0)],
+    ["a negative base", keep(-1)],
+    ["a base as text", keep("2")],
+    [
+      "another kind",
+      envelope({ baseRevision: 4, resolution: { kind: "keep_remote", conflictBaseRevision: 2 } }),
+    ],
+    ["a null resolution", envelope({ resolution: null })],
+    [
+      "a third key",
+      envelope({
+        baseRevision: 4,
+        resolution: { kind: "keep_local", conflictBaseRevision: 2, at: 1 },
+      }),
+    ],
+    [
+      "the base written twice",
+      keep(2).replace(
+        '"conflictBaseRevision":2',
+        '"conflictBaseRevision":3,"conflictBaseRevision":2',
+      ),
+    ],
+  ])("%s is 422 invalid and never reaches the service", async (_name, body) => {
+    const answer = await post(body);
+    expect(answer.status).toBe(422);
+    expect(JSON.parse(answer.body)).toEqual({ status: "invalid" });
+    expect(calls).toEqual([]);
+  });
+
+  it("an idempotency conflict over a different resolution keeps its closed answer", async () => {
+    next = async () => ({ status: "txid_reused" });
+    const answer = await post(keep(1));
+    expect(answer.status).toBe(409);
+    expect(JSON.parse(answer.body)).toEqual({ status: "txid_reused" });
+  });
+});
+
 describe("E, F4. failures of the service", () => {
   it("a throw is 503 repository; the record has the class only, never the message or token", async () => {
     const lines: string[] = [];

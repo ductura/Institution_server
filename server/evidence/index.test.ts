@@ -3,7 +3,7 @@ import * as domain from "../domain/index.ts";
 import * as area from "./index.ts";
 
 describe("server/evidence public interface", () => {
-  it("exports the service factory, the replay reader, the pending receipt signer, the retry decision and loop, the submission (SRV-18), the versions of a work (SRV-9A), the comparison of two versions (SRV-9E), the closed body parser (M3.1), the object check and the sweep the worker composes (SRV-1502), the reconstruction checkpoint reads, recorder and store it composes (F4-PM2-R02) and the domain's wire limits and snapshot check, nothing else", () => {
+  it("exports the service factory, the replay reader, the pending receipt signer, the retry decision and loop, the submission (SRV-18), the versions of a work (SRV-9A), the comparison of two versions (SRV-9E), the closed body parser (M3.1), the commit resolution check and the nested key count (F4-EDI-R05-SRV B3), the object check and the sweep the worker composes (SRV-1502), the reconstruction checkpoint reads, recorder and store it composes (F4-PM2-R02) and the domain's wire limits and snapshot check, nothing else", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DUCTUS_ASYNC_COMMIT_PROTOCOL",
       "DUCTUS_PROTOCOL_VERSION",
@@ -31,6 +31,8 @@ describe("server/evidence public interface", () => {
       "decideSignatureRetry",
       "diffBlocks",
       "isReplayDocumentId",
+      "isRevisionResolution",
+      "objectKeysWritten",
       "parseClosedJsonObject",
       "readReplayPage",
       "runSubmissionVerdictPass",
