@@ -505,6 +505,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
       startDocument: REVISION_ZERO_JCS,
       segments: record.map((segment) => segment.payload),
       resumeDocuments: { [resumeHash]: RESUME_TEXT },
+      resolutions: {},
     });
 
     const dora = await ask("dora");
@@ -525,6 +526,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
       startDocument: null,
       segments: [record[2]!.payload],
       resumeDocuments: { [resumeHash]: RESUME_TEXT },
+      resolutions: {},
     });
     expect((await ask("vesna", { documentId, from: 3, head })).status).toBe(404);
     expect((await ask("vesna", { documentId, from: -1 })).status).toBe(422);
