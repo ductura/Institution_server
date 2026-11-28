@@ -63,10 +63,14 @@ CREATE FUNCTION pg_temp.att(p_conv text, p_seq int) RETURNS jsonb LANGUAGE sql V
        FROM app.declaration_conversation_hashes(%L, %L) WHERE conversation_id = %L',
     p_seq, p_seq, pg_temp.id('z1'), pg_temp.id('ana'), pg_temp.u(p_conv)))::jsonb
 $$;
--- Ana saves her declaration on the latest version.
+-- Ana saves her declaration on the latest version. As 203-declaration-rpcs:
+-- the fixture made every constraint immediate, so the completeness check is
+-- deferred to the end of the save and then run. A refusal raised by the save
+-- or by that check comes back as {"error": SQLSTATE}, never as a broken cast.
 CREATE FUNCTION pg_temp.save(p_revision bigint, p_confirm boolean, p_attachments jsonb) RETURNS jsonb
 LANGUAGE plpgsql AS $$
 DECLARE
+  result text;
   form text := '{"formId":"test-izjava","formSchema":"ductura-declaration-form-v1","formVersion":1,"text":"Izmišljeni obrazac."}';
   base int := pg_temp.ask_as('ductus_evidence', 'ana',
     'SELECT coalesce(max(version), 0)::text FROM declaration.statement')::int;
@@ -76,7 +80,18 @@ DECLARE
     'ai',jsonb_build_object('use','used','attachments',p_attachments,'declaredTools','[]'::jsonb,
       'externalAttachmentIds','[]'::jsonb));
 BEGIN
-  RETURN pg_temp.ask('ana',format('SELECT declaration.save_statement({z1}, %L::jsonb, %L)',body,form))::jsonb;
+  -- One block: a failed check rolls the save back with it.
+  BEGIN
+    SET CONSTRAINTS declaration.statement_attachments_complete DEFERRED;
+    result := pg_temp.ask('ana',format('SELECT declaration.save_statement({z1}, %L::jsonb, %L)',body,form));
+    SET CONSTRAINTS declaration.statement_attachments_complete IMMEDIATE;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('error', SQLSTATE);
+  END;
+  IF result ~ '^[0-9A-Z]{5}: ' THEN
+    RETURN jsonb_build_object('error', left(result, 5));
+  END IF;
+  RETURN result::jsonb;
 END $$;
 
 -- One request of a conversation: the paragraph and, if given, the response.
