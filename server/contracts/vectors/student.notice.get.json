@@ -85,7 +85,8 @@
           "aiSummaryOnly": true,
           "previousVersion": null,
           "courseName": null,
-          "mentorName": null
+          "mentorName": null,
+          "differsFromFacultyRules": true
         }
       }
     },

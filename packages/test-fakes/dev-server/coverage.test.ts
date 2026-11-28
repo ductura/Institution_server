@@ -575,8 +575,17 @@ const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-00000
 
 const SCENARIOS: Record<RouteId, Scenario> = {
   "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  // F4 wave 2 #3: a declined request carries the teacher's reason.
   "mentorship.student-requests.get": {
-    before: [REQUEST_MENTORSHIP],
+    before: [
+      REQUEST_MENTORSHIP,
+      {
+        path: `${MENTORSHIP_REQUEST}/decline`,
+        as: "nastavnik",
+        headers: ORIGIN,
+        body: { reason: "Izmišljeni razlog." },
+      },
+    ],
     request: { path: "/api/v1/student/mentorship-requests", as: "student" },
   },
   "mentorship.student-mentor-candidates.get": {

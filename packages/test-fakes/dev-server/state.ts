@@ -17,6 +17,7 @@ export const ACCOUNT_KEYS = [
   "nastavnik",
   "nastavnik-2",
   "administrator",
+  "operater",
   "bez-uloge",
 ] as const;
 export type AccountKey = (typeof ACCOUNT_KEYS)[number];
@@ -143,6 +144,8 @@ export type Consultation = {
   topic: string;
   agreement: string;
   additions: { id: string; text: string; createdAt: string }[];
+  /** F4 wave 2 #2: the whole minute it was held; null when none was given. */
+  heldAt: string | null;
 };
 
 /** An amendment or dispute of a summary event (SRV-1315); only ever added. */
@@ -329,6 +332,8 @@ export type MentorshipRequest = {
   /** SRV-1414: when it was made and when it ended, for the student's list. */
   readonly requestedAt: string;
   endedAt: string | null;
+  /** F4 wave 2 #3: the teacher's reason on a decline, shown to the student of the request. */
+  declineReason?: string | null;
 };
 
 export type AccessEntry = {
@@ -519,6 +524,7 @@ export const IDS = {
   teacher: "7e000000-0000-4000-8000-000000000001",
   teacher2: "7e000000-0000-4000-8000-000000000002",
   admin: "ad000000-0000-4000-8000-000000000001",
+  operator: "ad000000-0000-4000-8000-000000000002",
   noRole: "0e000000-0000-4000-8000-000000000001",
   course: "c0000000-0000-4000-8000-000000000001",
   emptyCourse: "c0000000-0000-4000-8000-000000000002",
@@ -584,6 +590,9 @@ export function createState(
       account("nastavnik", IDS.teacher, "Petar", "Kranjčec", ["teacher"]),
       account("nastavnik-2", IDS.teacher2, "Maja", "Džombić", ["teacher"]),
       account("administrator", IDS.admin, "Vesna", "Upravić", ["institution_admin"]),
+      // SEED-OIDC-OPERATER: demo-operater of the seed, a second administrator
+      // who stands in for the operator (ops-routes.ts); no role of its own.
+      account("operater", IDS.operator, "Oto", "Operić", ["institution_admin"]),
       account("bez-uloge", IDS.noRole, "Iva", "Neimenić", []),
     ],
     sessions: new Map(),

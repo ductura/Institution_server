@@ -19,6 +19,20 @@ describe("dev fake server: student routes", () => {
     });
   });
 
+  // F4 1.6: the notice changed since the student confirmed it.
+  it("marks a work whose notice changed since the student acknowledged it", async () => {
+    const state = createState();
+    const headers = await signIn(state, "student");
+    const before = await send(state, "/api/v1/student/works", { headers });
+    expect(contractProblems("student-work.works.get", before)).toEqual([]);
+    expect(before.json).toMatchObject({ works: [{ noticeChangedSinceSeen: false }] });
+    expect((before.json as { works: object[] }).works[0]).not.toHaveProperty("afterDeadline");
+    state.assignments.find((a) => a.id === IDS.assignment)!.version += 1;
+    const after = await send(state, "/api/v1/student/works", { headers });
+    expect(contractProblems("student-work.works.get", after)).toEqual([]);
+    expect(after.json).toMatchObject({ works: [{ noticeChangedSinceSeen: true }] });
+  });
+
   it("a student without a course gets empty lists, then the notice first after enrolling", async () => {
     const state = createState();
     const headers = await signIn(state, "student-2");

@@ -1,6 +1,7 @@
 // SRV-1906 (plan P-D6): the operator's pilot numbers in the dev fake. The fake
 // has no operator list and no second factor (step 8 of the real server), so
-// the administrator account stands in for the operator; every other account
+// an administrator stands in for the operator (`operater`, demo-operater of
+// db/main/local/seed.sql, or `administrator`); every other account
 // gets 403. Counts come from the invented works and keep the real rule: a
 // count from 1 to 4, or one derivable from the published ones, is null, and a
 // shown count is rounded down to a multiple of five.

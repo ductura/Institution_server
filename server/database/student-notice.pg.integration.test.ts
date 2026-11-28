@@ -196,6 +196,49 @@ describe("student.notice.get over PostgreSQL", () => {
       });
     }));
 
+  // Which fields count, the set comparison of purposes and who may ask are in
+  // db/main/tests/283; here the notice carries the answer through the port.
+  it("says whether the version differs from its bound faculty rule version (F4-STU-R08-SRV)", () =>
+    withFixtures(async (db) => {
+      const reader = createStudentNoticeReader(actorOver(db));
+      const differs = async (token: string, id: string) => {
+        const read = await reader.read(token, id);
+        if (!read.ok) return read;
+        return Object.hasOwn(read.value, "differsFromFacultyRules")
+          ? read.value.differsFromFacultyRules
+          : "absent";
+      };
+      // zm1 allows only proofreading; version 1 of the master thesis rule
+      // also literature search.
+      expect(await differs(TOKEN.ana, ZM1)).toBe(true);
+      // z1 was written before fak-a had an essay rule: nothing to compare.
+      expect(await differs(TOKEN.ana, Z1)).toBe("absent");
+      // zm3 is basic, which is not compared (decision of 27 Nov 2026).
+      expect(await differs(TOKEN.boris, ZM3)).toBe("absent");
+      // Written as the owner would: version 2 of zm1 equal to rule version 1,
+      // the purposes in another order.
+      await db.query(
+        `INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type,
+           opens_at, due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+         VALUES ($1::uuid, 2, 'ZM1', 'Izmišljena uputa.', 'master_thesis', now(), now() + interval '365 days',
+           'partially_allowed', '{literature_search,proofreading}', 'extended', false, pg_temp.id('marko'))`,
+        [ZM1],
+      );
+      await db.query("UPDATE institution.assignment SET current_version = 2 WHERE id = $1::uuid", [
+        ZM1,
+      ]);
+      expect(await differs(TOKEN.ana, ZM1)).toBe(false);
+      // A narrower rule version published later leaves the bound one in force.
+      await db.query(
+        `INSERT INTO institution.faculty_rule_version (institution_id, work_type, version_no, ai_policy,
+           ai_purposes, evidence_profile, import_allowed, origin)
+         VALUES (pg_temp.id('fak_a'), 'master_thesis', 2, 'prohibited', '{}', 'basic', false, 'operator')`,
+      );
+      expect(await differs(TOKEN.ana, ZM1)).toBe(false);
+      // Another student still reads the same 404 (C-23).
+      expect(await differs(TOKEN.dora, ZM1)).toEqual(notFound);
+    }));
+
   it("readAt of a mentorship's notice is the caller's own", () =>
     withFixtures(async (db) => {
       const reader = createStudentNoticeReader(actorOver(db));

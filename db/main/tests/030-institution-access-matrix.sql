@@ -238,7 +238,9 @@ SELECT bag_eq(
         -- SRV-ASIST-PREKIDAC: the assistant switch per course; cells in 255-assistant-course-switch.sql.
         'course_assistant_setting',
         -- SRV-ADMIN-2 (OA-10): the roster import; cells per actor in 235-roster-import.sql.
-        'roster_import', 'roster_import_entry'],
+        'roster_import', 'roster_import_entry',
+        -- F4 val 2 #5 (1.8): the groups of an assignment; cells per actor in 279-assignment-group.sql.
+        'assignment_group'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -406,7 +408,8 @@ SELECT bag_eq(
     'assignment_code_tests: assignment_code_tests_owner ALL to ductus_identity',
     'course_assistant_setting: course_assistant_setting_owner ALL to ductus_identity',
     'roster_import: roster_import_owner ALL to ductus_identity',
-    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity'
+    'roster_import_entry: roster_import_entry_owner ALL to ductus_identity',
+    'assignment_group: assignment_group_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -427,6 +430,7 @@ SELECT bag_eq(
         'assignment_version: assignment_version_work_language_offered 7 O',
         'assignment_version: assignment_version_default_language 7 O',
         'assignment_version: assignment_version_purpose_catalog 7 O',
+        'assignment_version: assignment_version_link_faculty_rule 7 O',
         'course_enrollment_code: course_enrollment_code_institution_fill 7 O',
         'work_milestone_event: work_milestone_event_append_only 27 O', 'work_milestone_event: work_milestone_event_no_truncate 34 O',
         'thesis_form: thesis_form_append_only 27 O', 'thesis_form: thesis_form_no_truncate 34 O',
@@ -484,7 +488,8 @@ SELECT bag_eq(
         'qual_segment: qual_segment_fixed 19 O', 'qual_segment: qual_segment_no_truncate 34 O',
         'assignment_code_tests: assignment_code_tests_immutable 27 O', 'assignment_code_tests: assignment_code_tests_no_truncate 34 O',
         'roster_import: roster_import_fixed 27 O', 'roster_import: roster_import_no_truncate 34 O',
-        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O'],
+        'roster_import_entry: roster_import_entry_fixed 27 O', 'roster_import_entry: roster_import_entry_no_truncate 34 O',
+        'assignment_group: assignment_group_same_course 23 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -536,6 +541,7 @@ SELECT bag_eq(
     'refuse_assignment_practice_change()',
     'refuse_assignment_setup_change()',
     'pin_assignment_config() definer',
+    'link_assignment_rule_version() definer',
     'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'acknowledge_notice(p_assignment_id uuid, p_version_no integer, p_template_version integer) definer app',
@@ -622,6 +628,8 @@ SELECT bag_eq(
     'student_assignments() definer app',
     -- INT-31 (Ductus#2055): the assignments of the open mentorships of the caller.
     'student_mentored_assignments() definer app',
+    -- F4-STU-R08-SRV: whether the caller's assignment differs from its bound faculty rule version.
+    'student_assignment_differs_from_faculty_rule(p_assignment_id uuid) definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
     'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
@@ -779,7 +787,10 @@ SELECT bag_eq(
     'roster_import_admin(OUT user_id uuid, OUT institution_id uuid)',
     'roster_import_ineligible(p_user uuid, p_actor uuid)',
     'preview_roster_import(p_course_id uuid, p_source text, p_rows jsonb) definer app',
-    'confirm_roster_import(p_import_id uuid) definer app'
+    'confirm_roster_import(p_import_id uuid) definer app',
+    'check_assignment_group_course()',
+    'add_assignment_groups(p_assignment_id uuid, p_group_ids uuid[]) definer app',
+    'assignment_groups(p_assignment_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

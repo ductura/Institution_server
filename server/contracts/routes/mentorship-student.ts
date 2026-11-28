@@ -35,6 +35,15 @@ const common = {
   workType: WorkType,
   requestedAt: Instant,
 };
+/**
+ * F4 wave 2 #3 (1.4): the teacher's reason for declining, 1 to 600 code points
+ * (the audit row's own check). Null for a decline without a reason and for
+ * every other state; absent from a server older than this field.
+ */
+const DeclineReason = Type.String({
+  pattern: `^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,600}${END}`,
+});
+const NoDeclineReason = { declineReason: Type.Optional(Type.Null()) };
 /** One request; endedAt is the instant of the one end, mentorshipId only on approval. */
 export const StudentMentorshipRequest = Type.Union([
   closed({
@@ -42,19 +51,28 @@ export const StudentMentorshipRequest = Type.Union([
     state: Type.Literal("requested"),
     endedAt: Type.Null(),
     mentorshipId: Type.Null(),
+    ...NoDeclineReason,
   }),
-  closed({ ...common, state: Type.Literal("approved"), endedAt: Instant, mentorshipId: Uuid }),
+  closed({
+    ...common,
+    state: Type.Literal("approved"),
+    endedAt: Instant,
+    mentorshipId: Uuid,
+    ...NoDeclineReason,
+  }),
   closed({
     ...common,
     state: Type.Literal("declined"),
     endedAt: Instant,
     mentorshipId: Type.Null(),
+    declineReason: Type.Optional(Type.Union([DeclineReason, Type.Null()])),
   }),
   closed({
     ...common,
     state: Type.Literal("withdrawn"),
     endedAt: Instant,
     mentorshipId: Type.Null(),
+    ...NoDeclineReason,
   }),
 ]);
 

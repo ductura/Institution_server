@@ -61,13 +61,15 @@ SELECT is((SELECT count(*)::integer FROM unnest(ARRAY['ductus_app', 'ductus_work
     WHERE has_table_privilege(r, t, 'SELECT,INSERT,UPDATE,DELETE')), 0, 'no role but the identity role has a right on the tables');
 SELECT bag_eq($$ SELECT f::text FROM unnest(ARRAY['collaboration.list_consultation_records(text)',
       'collaboration.create_consultation_record(text,date,bigint,text,text)',
-      'collaboration.add_consultation_addition(text,uuid,text)']) AS f
+      'collaboration.add_consultation_addition(text,uuid,text)',
+      'collaboration.create_consultation_record_v2(text,date,bigint,text,text,timestamp with time zone)']) AS f
     WHERE has_function_privilege('ductus_app', f::regprocedure, 'EXECUTE')
       AND NOT has_function_privilege('ductus_worker', f::regprocedure, 'EXECUTE')
       AND NOT has_function_privilege('ductus_evidence', f::regprocedure, 'EXECUTE') $$,
   $$ VALUES ('collaboration.list_consultation_records(text)'),
             ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
-            ('collaboration.add_consultation_addition(text,uuid,text)') $$,
+            ('collaboration.add_consultation_addition(text,uuid,text)'),
+            ('collaboration.create_consultation_record_v2(text,date,bigint,text,text,timestamp with time zone)') $$,
   'only the web role executes the consultation functions');
 
 -- Creating: the teacher of the work only (SRV-MENTOR-1); the owning student reads.
@@ -155,5 +157,50 @@ SELECT throws_ok($$ INSERT INTO collaboration.consultation_addition (record_id, 
   '23503', NULL, 'an addition cannot name another institution than its record');
 -- The web role cannot touch the tables directly.
 
+-- F4 wave 2 #2 (1.3, 20261220640000): the time of the meeting. Times are
+-- relative to now(), which is fixed for this one transaction.
+CREATE TEMP TABLE held (name text PRIMARY KEY, held_on date, held_at timestamptz);
+INSERT INTO held SELECT 'past', ((now() - interval '1 hour 30 seconds') AT TIME ZONE 'UTC')::date, now() - interval '1 hour 30 seconds';
+INSERT INTO held SELECT 'soon', ((now() + interval '4 minutes') AT TIME ZONE 'UTC')::date, now() + interval '4 minutes';
+INSERT INTO held SELECT 'later', ((now() + interval '6 minutes') AT TIME ZONE 'UTC')::date, now() + interval '6 minutes';
+INSERT INTO held SELECT 'tomorrow', ((now() + interval '1 day') AT TIME ZONE 'UTC')::date, now() + interval '1 day';
+SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = 'ductus_identity'::regrole,
+  'create_consultation_record_v2 is a SECURITY DEFINER function of the identity role with an empty search_path')
+FROM pg_proc p WHERE p.oid = 'collaboration.create_consultation_record_v2(text,date,bigint,text,text,timestamptz)'::regprocedure;
+INSERT INTO ref SELECT 'h1', pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Plan poglavlja', 'Poslati nacrt.', %L) $$,
+  h.held_on, h.held_at)) FROM held h WHERE h.name = 'past';
+SELECT matches((SELECT val FROM ref WHERE name = 'h1'), '^[0-9a-f-]{36}$', 'the teacher records a consultation with the time it was held');
+INSERT INTO ref SELECT 'h2', pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Bez vremena', '', NULL) $$,
+  h.held_on)) FROM held h WHERE h.name = 'past';
+SELECT matches((SELECT val FROM ref WHERE name = 'h2'), '^[0-9a-f-]{36}$', 'a null time is allowed');
+SELECT matches(pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Sat naprijed', '', %L) $$,
+  h.held_on, h.held_at)), '^[0-9a-f-]{36}$', 'a time up to 5 minutes ahead is allowed (a clock that runs ahead)')
+FROM held h WHERE h.name = 'soon';
+SELECT is(pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Budućnost', '', %L) $$,
+  h.held_on, h.held_at)), 'ZD422: invalid input', 'a time in the future is refused: ' || h.name)
+FROM held h WHERE h.name IN ('later', 'tomorrow');
+SELECT is(pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Drugi dan', '', %L) $$,
+  h.held_on - 3, h.held_at)), 'ZD422: invalid input', 'a time more than a day from the date of the meeting is refused')
+FROM held h WHERE h.name = 'past';
+SELECT is(pg_temp.ask('vesna', format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, '', '', %L) $$,
+  h.held_on, h.held_at)), 'ZD422: invalid input', 'the rules of the first version still hold: an empty topic')
+FROM held h WHERE h.name = 'past';
+SELECT is(pg_temp.ask(a.name, format($$ SELECT collaboration.create_consultation_record_v2('doc-a', %L, 1, 'Tema', '', %L) $$,
+  h.held_on, h.held_at)), 'ZD403: forbidden', a.name || ' cannot record a consultation with a time on Ana''s work')
+FROM held h, (VALUES ('ana'), ('dora'), ('marko'), ('tomo')) AS a (name) WHERE h.name = 'past';
+SELECT matches(pg_temp.ask('anon', $$ SELECT collaboration.create_consultation_record_v2('doc-a', '2026-11-18', 1, 'Tema', '', NULL) $$), '^ZD401',
+  'a record with a time and no session is not signed in');
+SELECT is(
+  (SELECT held_at FROM collaboration.consultation_record WHERE id = (SELECT val::uuid FROM ref WHERE name = 'h1')),
+  (SELECT date_trunc('minute', h.held_at, 'UTC') FROM held h WHERE h.name = 'past'),
+  'the time is kept as a whole UTC minute');
+SELECT is(
+  pg_temp.ask('ana', format($$ SELECT held_at = %L::timestamptz FROM collaboration.list_consultation_records('doc-a') WHERE record_id = {h1} $$,
+    (SELECT date_trunc('minute', h.held_at, 'UTC') FROM held h WHERE h.name = 'past'))),
+  'true', 'the owning student reads the time of the meeting');
+SELECT is(pg_temp.ask('vesna', $$ SELECT coalesce(held_at::text, 'null') FROM collaboration.list_consultation_records('doc-a') WHERE record_id = {h2} $$), 'null',
+  'a record without a time reads a null time');
+SELECT is(pg_temp.ask('ana', $$ SELECT coalesce(held_at::text, 'null') FROM collaboration.list_consultation_records('doc-a') WHERE record_id = {r1} LIMIT 1 $$), 'null',
+  'a record of the first version reads a null time');
 SELECT * FROM finish();
 ROLLBACK;
