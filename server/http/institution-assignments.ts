@@ -88,12 +88,8 @@ function parseCreateBody(raw: unknown) {
   const tools = optionalFlag(value, "externalToolsAllowed", externalToolsAllowed);
   const summaryOnly = optionalFlag(value, "aiSummaryOnly", aiSummaryOnly);
   if (practice === null || tools === null || summaryOnly === null) return null;
-  // Groups are not stored yet (their own SRV task): absent or empty is the
-  // whole course, as the contract says; any group stays 422 rather than an
-  // assignment published to the whole course in silence.
-  if (Object.hasOwn(value, "groupIds") && !(Array.isArray(groupIds) && groupIds.length === 0)) {
-    return null;
-  }
+  const groups = parseGroupIds(value, groupIds);
+  if (groups === null) return null;
   const content = parseAssignmentInput(fields);
   if (content === null) return null;
   // The contract's 422: summary only under a prohibited policy or with any purpose.
@@ -105,7 +101,23 @@ function parseCreateBody(raw: unknown) {
     content,
     isPractice: practice,
     setup: { externalToolsAllowed: tools, aiSummaryOnly: summaryOnly },
+    groupIds: groups,
   };
+}
+
+/**
+ * The optional groupIds (F4 wave 2 #5, 1.8): absent or empty is the whole
+ * course, as before; otherwise at most 20 UUIDs, each once in any case, in
+ * lower case. Whether each is a group of the course is the database's
+ * (add_assignment_groups, ZD422). Null is the contract's 422.
+ */
+const MAX_GROUPS = 20;
+function parseGroupIds(body: object, groupIds: unknown): string[] | null {
+  if (!Object.hasOwn(body, "groupIds")) return [];
+  if (!Array.isArray(groupIds) || groupIds.length > MAX_GROUPS) return null;
+  if (!groupIds.every((id): id is string => typeof id === "string" && UUID.test(id))) return null;
+  const lower = groupIds.map((id) => id.toLowerCase());
+  return new Set(lower).size === lower.length ? lower : null;
 }
 
 export function createInstitutionAssignmentRoutes(
@@ -160,6 +172,7 @@ export function createInstitutionAssignmentRoutes(
           body.content,
           body.isPractice,
           body.setup,
+          body.groupIds,
         );
       },
       (outcome) => (outcome.status === "created" ? { id: outcome.id } : null),

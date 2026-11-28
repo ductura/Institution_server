@@ -186,6 +186,12 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     callers: ["server/database/declaration/index.ts"],
   },
   {
+    fn: "declaration.list_conversations",
+    why: "owner_only",
+    note: "F4-PRE-R02-SRV2: the student's own conversations as declaration candidates; the transfer links of their own document only mark a conversation transferred, never return text",
+    callers: ["server/database/statement/index.ts"],
+  },
+  {
     fn: "app.evidence_commit_context",
     why: "write",
     note: "the state the owner's next commit continues from (principal_id = actor)",

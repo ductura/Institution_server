@@ -409,11 +409,18 @@ export const courseGroupTeachersPost = defineRoute({
 // it is for, its rule on outside tools and the AI mode "samo sažimanje". Each is
 // optional, so a body without them keeps its meaning. The mounted route stores
 // externalToolsAllowed and aiSummaryOnly on the assignment (SRV-ZAD-POSTAVKE,
-// migration 20261219210000); groups stay their own SRV task, so until it lands
-// a non-empty groupIds is 422 (server/http/institution-assignments.ts).
+// migration 20261219210000), and links groupIds to it in the same transaction
+// (F4 wave 2 #5, institution.create_assignment_with_groups, migration
+// 20261220800000: a replayed requestKey with another set of groups is 409).
 const ASSIGNMENT_SETUP = {
   /** zs-2: the course's seminar groups it is for, distinct; absent or empty is the whole course. */
-  groupIds: Type.Optional(Type.Array(Uuid, { maxItems: 20 })),
+  groupIds: Type.Optional(
+    Type.Array(Uuid, {
+      maxItems: 20,
+      description:
+        "The course's seminar groups the assignment is for, each once in any case; absent or empty is the whole course. Stored with the assignment in one transaction: a group of another course, an unknown one or one named twice is 422 and nothing is stored; the same requestKey with other groups is 409.",
+    }),
+  ),
   /** zs-3 "vanjski alati": the student may use tools outside Ductura (A-14); absent is false. */
   externalToolsAllowed: Type.Optional(Type.Boolean()),
   /** zs-3 "samo sažimanje": the AI assistant only summarises; absent is false. */
@@ -480,7 +487,13 @@ export const assignmentGet = defineRoute({
         ...ASSIGNMENT_CONTENT,
         opensAt: IsoInstant,
         dueAt: IsoInstant,
-        groupIds: Type.Optional(Type.Array(LowerUuid, { maxItems: 20 })),
+        groupIds: Type.Optional(
+          Type.Array(LowerUuid, {
+            maxItems: 20,
+            description:
+              "The groups stored with the assignment at its creation (institution.assignment_groups); absent when it is for the whole course.",
+          }),
+        ),
         externalToolsAllowed: Type.Optional(Type.Boolean()),
         aiSummaryOnly: Type.Optional(Type.Boolean()),
         isPractice: Type.Optional(Type.Boolean()),
