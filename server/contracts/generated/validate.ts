@@ -298,6 +298,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   const local1 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
   const local2 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
   return function check(value: Record<string, unknown>): boolean {
+      const nestedResolution = (typeof value === 'object' && value !== null ? value['resolution'] : undefined) as Record<string, unknown>;
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['documentId'] === 'string') &&
@@ -314,7 +315,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local1.test(value)))) { return false }; return true; })(value['segments']) &&
       (typeof value['document'] === 'string') &&
       local2.test(value['document']) &&
-      Object.getOwnPropertyNames(value).length === 5
+      (value['resolution'] !== undefined ? ((typeof value['resolution'] === 'object' && value['resolution'] !== null && !Array.isArray(value['resolution'])) && (nestedResolution['kind'] === 'keep_local') && (typeof nestedResolution['conflictBaseRevision'] === 'number' && Number.isInteger(nestedResolution['conflictBaseRevision'])) && nestedResolution['conflictBaseRevision'] <= 9007199254740989 && nestedResolution['conflictBaseRevision'] >= 0 && Object.getOwnPropertyNames(value['resolution']).length === 2) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['documentId', 'clientTransactionId', 'baseRevision', 'segments', 'document', 'resolution'].includes(key))
     )
   }
   })(),

@@ -7623,6 +7623,78 @@
   },
   {
     "route": "evidence.commit.post",
+    "name": "committed-keep-local",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "ductus-protocol": "1"
+      },
+      "body": {
+        "documentId": "dokument-izmisljeni-zv-1",
+        "clientTransactionId": "izmisljena-transakcija-0001",
+        "baseRevision": 4,
+        "segments": [
+          "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
+        ],
+        "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9",
+        "resolution": {
+          "kind": "keep_local",
+          "conflictBaseRevision": 2
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "status": "committed",
+        "revision": 5,
+        "receipt": {
+          "status": "signed",
+          "signedReceipt": {
+            "payload": {
+              "receiptSchema": "ductus-evidence-receipt-v2",
+              "receiptId": "potvrda-izmisljena-v2-1",
+              "evidencePackageId": "paket-izmisljeni-zv-1",
+              "documentId": "dokument-izmisljeni-zv-1",
+              "sessionId": "sesija-izmisljena-zv-1",
+              "segmentId": "odsjecak-zv-1",
+              "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
+              "predecessorSegmentHash": null,
+              "previousReceiptId": null,
+              "evidenceSchema": "ductus-evidence-segment-v2",
+              "evidenceProfileId": "standard-v1",
+              "sequenceFrom": 1,
+              "sequenceTo": 2,
+              "eventCount": 2,
+              "payloadBytes": 1554,
+              "acceptedAt": "2026-11-15T10:00:00.000Z",
+              "revision": 1,
+              "clientTransactionId": "izmisljena-transakcija-0001",
+              "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+              "principalId": "72cd1705-85fc-4754-a382-c2500d038368"
+            },
+            "payloadDigestSha256": "8e4865f36df61da20b96ea48e5971c09f423dafd4444952be4e883f93d42f316",
+            "signature": {
+              "algorithm": "Ed25519",
+              "keyId": "ductus-golden-rfc8032-test-1",
+              "keyVersion": "1",
+              "signatureEncoding": "raw",
+              "signatureBase64Url": "kMAWsnqmS8VOqaM5T4eLSRPtPW16hx-ADGJmG4FhrfTOq5hZM7654co3mUUi4p3731F_G5Sl2O9JfgL9oSsRAQ"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "route": "evidence.commit.post",
     "name": "duplicate",
     "request": {
       "headers": {
@@ -8122,6 +8194,42 @@
           "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
         ],
         "document": "nije base64!"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "status": "invalid"
+      }
+    }
+  },
+  {
+    "route": "evidence.commit.post",
+    "name": "invalid-resolution-base",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "ductus-protocol": "1"
+      },
+      "body": {
+        "documentId": "dokument-izmisljeni-zv-1",
+        "clientTransactionId": "izmisljena-transakcija-0001",
+        "baseRevision": 0,
+        "segments": [
+          "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
+        ],
+        "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9",
+        "resolution": {
+          "kind": "keep_local",
+          "conflictBaseRevision": 0
+        }
       }
     },
     "response": {
@@ -41630,7 +41738,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.193.0",
+        "apiVersion": "1.194.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41646,7 +41754,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.193.0",
+        "apiVersion": "1.194.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

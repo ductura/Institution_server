@@ -153,3 +153,75 @@ describe("the request limit (D-96)", () => {
     );
   });
 });
+
+// F4-EDI-R05-SRV (B3): a commit that keeps the local text over a conflict
+// says so with {kind: "keep_local", conflictBaseRevision: M}, M below baseRevision.
+describe("parseCommitEnvelope with the resolution of a conflict (F4-EDI-R05-SRV B3)", () => {
+  const envelope = {
+    documentId: "rad-izmisljeni-2",
+    clientTransactionId: "tx-razrjesenje-2",
+    baseRevision: 7,
+    segments: [Buffer.from("{}").toString("base64")],
+    document: Buffer.from("{}").toString("base64"),
+  };
+  const text = (body: unknown) => new TextEncoder().encode(JSON.stringify(body));
+  const raw = (resolution: string) =>
+    new TextEncoder().encode(
+      JSON.stringify(envelope).replace(/}$/, `,"resolution":${resolution}}`),
+    );
+
+  it("reads a keep_local resolution below baseRevision, and none without it", () => {
+    for (const base of [0, 3, 6]) {
+      const read = parseCommitEnvelope(
+        text({ ...envelope, resolution: { kind: "keep_local", conflictBaseRevision: base } }),
+      );
+      expect(read?.resolution).toStrictEqual({ kind: "keep_local", conflictBaseRevision: base });
+      expect(read).toMatchObject({ documentId: "rad-izmisljeni-2", baseRevision: 7 });
+    }
+    expect(parseCommitEnvelope(text(envelope))?.resolution).toBeUndefined();
+    expect(
+      parseCommitEnvelope(raw(`{"conflictBaseRevision":2,"kind":"keep_local"}`))?.resolution,
+    ).toStrictEqual({ kind: "keep_local", conflictBaseRevision: 2 });
+  });
+
+  it.each([
+    ["null", "null"],
+    ["a string", `"keep_local"`],
+    ["an array", `[{"kind":"keep_local","conflictBaseRevision":1}]`],
+    ["another kind", `{"kind":"keep_remote","conflictBaseRevision":1}`],
+    ["the kind in capitals", `{"kind":"KEEP_LOCAL","conflictBaseRevision":1}`],
+    ["no kind", `{"conflictBaseRevision":1}`],
+    ["no base", `{"kind":"keep_local"}`],
+    ["a third key", `{"kind":"keep_local","conflictBaseRevision":1,"note":"x"}`],
+    ["the base as a string", `{"kind":"keep_local","conflictBaseRevision":"1"}`],
+    ["a null base", `{"kind":"keep_local","conflictBaseRevision":null}`],
+    ["a fractional base", `{"kind":"keep_local","conflictBaseRevision":1.5}`],
+    ["a negative base", `{"kind":"keep_local","conflictBaseRevision":-1}`],
+    ["the base equal to baseRevision", `{"kind":"keep_local","conflictBaseRevision":7}`],
+    ["the base above baseRevision", `{"kind":"keep_local","conflictBaseRevision":8}`],
+    ["an unsafe base", `{"kind":"keep_local","conflictBaseRevision":9007199254740993}`],
+    [
+      "the base written twice",
+      `{"kind":"keep_local","conflictBaseRevision":9,"conflictBaseRevision":1}`,
+    ],
+    [
+      "the kind written twice",
+      `{"kind":"keep_remote","kind":"keep_local","conflictBaseRevision":1}`,
+    ],
+    [
+      "the resolution written twice",
+      `{"kind":"keep_local","conflictBaseRevision":1},"resolution":null`,
+    ],
+  ])("is no envelope with %s as the resolution (422 invalid)", (_, resolution) => {
+    expect(parseCommitEnvelope(raw(resolution))).toBeNull();
+  });
+
+  it("is no envelope with a resolution on the first revision (no conflict to resolve)", () => {
+    const first = { ...envelope, baseRevision: 0 };
+    expect(
+      parseCommitEnvelope(
+        text({ ...first, resolution: { kind: "keep_local", conflictBaseRevision: 0 } }),
+      ),
+    ).toBeNull();
+  });
+});

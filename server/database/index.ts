@@ -80,6 +80,7 @@ export type {
   EvidenceCommitOutcome,
   EvidenceCommitSigning,
   EvidenceCommitter,
+  EvidenceRevisionResolution,
   ReceiptSigner,
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";

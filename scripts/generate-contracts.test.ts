@@ -87,6 +87,33 @@ describe("compileValidator", () => {
       expect(check(value)).toBe(false);
   });
 
+  it("checks a closed object beside an array of strings (F4-EDI-R05-SRV B3, evidence.commit.post)", () => {
+    const schema = Type.Object(
+      {
+        list: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 1 }),
+        pick: Type.Optional(
+          Type.Object(
+            { kind: Type.Literal("keep_local"), base: Type.Integer({ minimum: 0 }) },
+            { additionalProperties: false },
+          ),
+        ),
+      },
+      { additionalProperties: false },
+    );
+    const code = compileValidator(schema, "test:beside");
+    expect(code).toContain("nestedPick['kind']");
+    const check = run(code);
+    expect(check({ list: ["a"] })).toBe(true);
+    expect(check({ list: ["a"], pick: { kind: "keep_local", base: 0 } })).toBe(true);
+    expect(check({ list: ["a"], pick: { kind: "keep_local", base: -1 } })).toBe(false);
+    expect(check({ list: ["a"], pick: { kind: "keep_local", base: 1.5 } })).toBe(false);
+    expect(check({ list: ["a"], pick: { kind: "other", base: 0 } })).toBe(false);
+    expect(check({ list: ["a"], pick: { kind: "keep_local", base: 0, x: 1 } })).toBe(false);
+    expect(check({ list: ["a"], pick: null })).toBe(false);
+    expect(check({ list: [""], pick: { kind: "keep_local", base: 0 } })).toBe(false);
+    expect(check({ list: [1] })).toBe(false);
+  });
+
   it("refuses a nested object two levels deep or inside an array", () => {
     const leaf = Type.Object({ x: Type.String() });
     const deep = Type.Object({ a: Type.Object({ b: leaf }) });

@@ -482,4 +482,76 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
       expect((await replay({ documentId, from: 0 }, who)).status).toBe(404);
     }
   });
+  it("F4-EDI-R05-SRV (B3): a commit with a resolution through the route is on the replay page; a wrong base or a changed retry writes nothing", async () => {
+    const first = JSON.parse(segment) as { evidenceProfileId: string };
+    const head = (await replay({ documentId, from: 0 }, tokens.ana)).body.head as {
+      segmentHash: string;
+      segmentCount: number;
+    };
+    const template = chain.segments[1]!.segment;
+    const before = canonicalizeJcs(chain.documentStates[2]!.value);
+    const after = canonicalizeJcs(chain.documentStates[3]!.value);
+    const third = canonicalizeJcs({
+      ...template,
+      documentId,
+      sessionId: `sesija-${suffix}`,
+      segmentId: `segment-${suffix}-3`,
+      sequenceFrom: 3,
+      sequenceTo: 3,
+      initialDocumentHash: sha256(before),
+      finalDocumentHash: sha256(after),
+      predecessorSegmentHash: head.segmentHash,
+      evidenceProfileId: first.evidenceProfileId,
+      events: [
+        {
+          ...template.events[0],
+          sequence: 3,
+          beforeDocumentHash: sha256(before),
+          afterDocumentHash: sha256(after),
+        },
+      ],
+    });
+    const body = (resolution: unknown) => ({
+      documentId,
+      clientTransactionId: `tx-${suffix}-3`,
+      baseRevision: 2,
+      segments: [Buffer.from(third, "utf8").toString("base64")],
+      document: Buffer.from(after, "utf8").toString("base64"),
+      ...(resolution === undefined ? {} : { resolution }),
+    });
+    // The base the commit is written on resolves no conflict: 422, and nothing is stored.
+    const equal = await post(
+      "/api/v1/evidence/commit",
+      body({ kind: "keep_local", conflictBaseRevision: 2 }),
+      tokens.ana,
+    );
+    expect(equal).toMatchObject({ status: 422, body: { status: "invalid" } });
+    expect((await replay({ documentId, from: 0 }, tokens.ana)).body.segmentCount).toBe(2);
+
+    const keep = { kind: "keep_local", conflictBaseRevision: 1 };
+    const committed = await post("/api/v1/evidence/commit", body(keep), tokens.ana);
+    expect(committed).toMatchObject({ status: 200, body: { status: "committed", revision: 3 } });
+    // The same request again is the same answer; without the resolution it is another request.
+    const again = await post("/api/v1/evidence/commit", body(keep), tokens.ana);
+    expect(again).toMatchObject({ status: 200, body: { duplicate: true, revision: 3 } });
+    const changed = await post("/api/v1/evidence/commit", body(undefined), tokens.ana);
+    expect(changed).toMatchObject({ status: 409, body: { status: "txid_reused" } });
+
+    const stored = await admin.query(
+      `SELECT revision::int AS revision, conflict_base_revision::int AS base, kind FROM evidence.revision_resolution
+        WHERE document_id = $1 AND revision = 3`,
+      [documentId],
+    );
+    expect(stored.rows).toEqual([{ revision: 3, base: 1, kind: "keep_local" }]);
+
+    const owner = await replay({ documentId, from: 0 }, tokens.ana);
+    const teacher = await replay({ documentId, from: 0 }, tokens.vesna);
+    expect(owner.body).toMatchObject({ segmentCount: 3, head: { segmentHash: sha256(third) } });
+    expect(owner.body.resolutions).toEqual({
+      [head.segmentHash]: { kind: "keep_local", conflictBaseRevision: 0 },
+      [sha256(third)]: keep,
+    });
+    expect(teacher.text).toBe(owner.text);
+    expect(owner.text).toBe(canonicalizeJcs(owner.body));
+  });
 });
