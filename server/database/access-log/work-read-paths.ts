@@ -273,4 +273,10 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     note: "the administrator's retention dry run (SRV-1304): one count per data class, never a text, an id or a time",
     callers: ["server/database/retention-dry-run/index.ts"],
   },
+  {
+    fn: "app.teacher_declaration_unbound",
+    why: "no_content",
+    note: "SRV-IZJAVA-AI-UNBOUND: the ids and record hashes of the student's transfer records that no segment with a receipt names, never a text; read in the same transaction as app.teacher_declaration, whose read writes the 'declaration' access-log row",
+    callers: ["server/database/teacher-declaration/index.ts"],
+  },
 ];

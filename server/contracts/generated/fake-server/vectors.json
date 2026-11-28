@@ -41639,7 +41639,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.191.0",
+        "apiVersion": "1.192.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41655,7 +41655,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.191.0",
+        "apiVersion": "1.192.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -86432,6 +86432,85 @@
           "confirmedAt": "2026-11-20T10:00:00.000000Z"
         },
         "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "question": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "text": "Koji ti je izvor najviše pomogao u radu?"
+        },
+        "questionAnswer": {
+          "questionId": "00000000-0000-4000-8000-0000000000e1",
+          "questionText": "Koji ti je izvor najviše pomogao u radu?",
+          "text": "Izmišljeni udžbenik iz metodologije."
+        }
+      }
+    }
+  },
+  {
+    "route": "teacher.declaration-third.get",
+    "name": "bound-with-unbound-transfers",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "state": "bound",
+        "payload": {
+          "declarationSchema": "ductura-declaration-v1",
+          "declarationId": "d1000000-0000-4000-8000-000000000001",
+          "declarationVersion": 1,
+          "principalId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01",
+          "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+          "assignmentVersion": 1,
+          "documentId": "izmisljeni-dokument-1",
+          "revision": 3,
+          "form": {
+            "formId": "test-izjava",
+            "formVersion": 1,
+            "formSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "ownWork": {
+            "confirmed": true
+          },
+          "humanHelp": {
+            "received": true,
+            "entries": [
+              {
+                "kind": "language",
+                "text": "Izmišljena kolegica pregledala je uvod."
+              }
+            ]
+          },
+          "ai": {
+            "use": "not_used",
+            "declaredTools": [],
+            "recorded": [],
+            "attachments": []
+          },
+          "confirmedAt": "2026-11-20T10:00:00.000000Z"
+        },
+        "declarationSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "ai": {
+          "unbound": [
+            {
+              "aiTransferId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c91",
+              "aiTransferSha256": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "aiTransferId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c92",
+              "aiTransferSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ]
+        },
         "question": {
           "questionId": "00000000-0000-4000-8000-0000000000e1",
           "text": "Koji ti je izvor najviše pomogao u radu?"

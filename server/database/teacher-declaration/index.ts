@@ -19,13 +19,23 @@ const SQL = `SELECT state, payload_jcs, declaration_sha256
 // declaration, read in the same transaction after the declaration (same
 // relation check, the same access-log row).
 const ANSWER_SQL = `SELECT question, answer FROM app.teacher_declaration_answer($1::uuid, $2::uuid)`;
+// SRV-IZJAVA-AI-UNBOUND: the student's transfer records of the declared document
+// that no evidence revision binds, read third in the same transaction (same
+// relation check; it writes no access-log row of its own). Only the v3 route asks.
+const UNBOUND_SQL = `SELECT app.teacher_declaration_unbound($1::uuid, $2::uuid) AS unbound`;
 
 type Question = { questionId: string; text: string } | null;
 type Answer = { questionId: string; questionText: string; text: string } | null;
+export type UnboundTransfer = { aiTransferId: string; aiTransferSha256: string };
 
 export type TeacherDeclaration = (
   | { state: "none"; payload: null; declarationSha256: null }
-  | { state: "bound"; payload: unknown; declarationSha256: string }
+  | {
+      state: "bound";
+      payload: unknown;
+      declarationSha256: string;
+      ai?: { unbound: UnboundTransfer[] };
+    }
 ) & { question?: Question; questionAnswer?: Answer };
 
 export type TeacherDeclarationReader = (
@@ -37,7 +47,10 @@ export type TeacherDeclarationReader = (
   | { status: "unauthenticated" | "not_found" | "unavailable" }
 >;
 
-export function createTeacherDeclarationReader(withActor: WithActor): TeacherDeclarationReader {
+export function createTeacherDeclarationReader(
+  withActor: WithActor,
+  options: { unbound?: boolean } = {},
+): TeacherDeclarationReader {
   return async (token, assignmentId, studentId) => {
     assignmentId = assignmentId.toLowerCase();
     studentId = studentId.toLowerCase();
@@ -45,10 +58,14 @@ export function createTeacherDeclarationReader(withActor: WithActor): TeacherDec
 
     let rows: Record<string, unknown>[];
     let extra: Record<string, unknown>[];
+    let unboundRows: Record<string, unknown>[] | undefined;
     try {
-      [rows, extra] = await withActor(token, async (tx) => [
+      [rows, extra, unboundRows] = await withActor(token, async (tx) => [
         (await tx.query<Record<string, unknown>>(SQL, [assignmentId, studentId])).rows,
         (await tx.query<Record<string, unknown>>(ANSWER_SQL, [assignmentId, studentId])).rows,
+        options.unbound === true
+          ? (await tx.query<Record<string, unknown>>(UNBOUND_SQL, [assignmentId, studentId])).rows
+          : undefined,
       ]);
     } catch (error) {
       const code = error instanceof Error && "code" in error ? error.code : undefined;
@@ -82,12 +99,16 @@ export function createTeacherDeclarationReader(withActor: WithActor): TeacherDec
     } catch {
       return { status: "unavailable" };
     }
+    // The list's shape is checked against the contract at the HTTP edge.
+    const unbound = unboundRows?.length === 1 ? unboundRows[0]!.unbound : undefined;
+    if (unboundRows !== undefined && !Array.isArray(unbound)) return { status: "unavailable" };
     return {
       status: "ok",
       body: {
         state: "bound",
         payload,
         declarationSha256: row.declaration_sha256,
+        ...(unboundRows === undefined ? {} : { ai: { unbound: unbound as UnboundTransfer[] } }),
         question,
         questionAnswer,
       },

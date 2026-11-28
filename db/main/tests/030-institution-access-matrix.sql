@@ -151,7 +151,9 @@ SELECT bag_eq(
         'declaration.list_conversations(uuid)',
         'declaration.recorded_transfers(uuid,uuid,text,bigint)',
         'declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)',
-        'declaration.delete_draft_explanation()'],
+        'declaration.delete_draft_explanation()',
+        -- SRV-IZJAVA-AI-UNBOUND: the bound transfer records for the teacher's read (291).
+        'declaration.bound_ai_transfer_ids(uuid,uuid,text,bigint)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -168,8 +170,9 @@ SELECT bag_eq(
         'ductus_app declaration.list_conversations(uuid)',
         'ductus_app declaration.save_statement_explained(uuid,jsonb,text,jsonb,text)',
         'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)',
-        'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)'],
-  'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration and bound-answer helpers'
+        'ductus_identity declaration.bound_answer_of(uuid,uuid,uuid)',
+        'ductus_identity declaration.bound_ai_transfer_ids(uuid,uuid,text,bigint)'],
+  'the web role executes only the student RPCs and the submission gate, and identity only the teacher''s bound-declaration, bound-answer and bound-transfer helpers'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname
