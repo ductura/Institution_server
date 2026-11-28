@@ -18,6 +18,8 @@ const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd914
 // column of the work's kind (a computed key: the lint takes no snake_case key).
 const KIND = "document_kind";
 const SHEET_ZERO = "70f7ffa27faf9f771316120c2b2f94e351aed32af3b94177d4c85ff56b0066e4";
+// F4-V13-R04: the revision 0 of every slides work (SLIDES_REVISION_ZERO_SHA256).
+const SLIDES_ZERO = "f593200307d93c988cc050521ab02853510a424d59763d575de83fda1cf8a0d8";
 const CONTEXT: EvidenceCommitContext = {
   evidencePackageId: "pkg-1",
   institutionId: INSTITUTION,
@@ -123,13 +125,26 @@ describe("readContext", () => {
     });
   });
 
+  it("F4-V13-R04: names a slides work by its kind and its revision 0", async () => {
+    const db = database([row], [{ content_hash: SLIDES_ZERO }], [{ [KIND]: "slides" }]);
+    expect(await readerOf(db).readContext(TOKEN, "doc-1", "tx-1")).toEqual({
+      status: "ok",
+      context: { ...CONTEXT, documentKind: "slides", documentSchemaVersion: 1 },
+    });
+  });
+
   it.each([
     ["a spreadsheet work with a text revision 0", "spreadsheet", V1_ZERO],
     ["a spreadsheet work with a v3 revision 0", "spreadsheet", V3_ZERO],
     ["a text work with the spreadsheet revision 0", "text", SHEET_ZERO],
-    ["a slides work, which this reader does not know yet", "slides", SHEET_ZERO],
+    ["a slides work with the spreadsheet revision 0", "slides", SHEET_ZERO],
+    ["a slides work with a text revision 0", "slides", V1_ZERO],
+    ["a text work with the slides revision 0", "text", SLIDES_ZERO],
+    ["a spreadsheet work with the slides revision 0", "spreadsheet", SLIDES_ZERO],
     ["a kind this server does not know", "drawing", V1_ZERO],
+    ["a video work, which no reader knows", "video", SLIDES_ZERO],
     ["a kind that is an object key", "__proto__", V1_ZERO],
+    ["a kind that is an object key, with the slides revision 0", "__proto__", SLIDES_ZERO],
     ["no kind", null, V1_ZERO],
   ])("SRV-V14-SHEET-COMMIT: is unavailable for %s, never a guessed kind", async (_, kind, zero) => {
     const db = database([row], [{ content_hash: zero }], [{ [KIND]: kind }]);

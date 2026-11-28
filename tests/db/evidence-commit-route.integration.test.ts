@@ -19,8 +19,12 @@ import {
   createWorkOpener,
 } from "../../server/database/index.ts";
 import {
+  applySlideSteps,
   canonicalizeJcs,
   digestEvidenceReceiptPayloadV2,
+  SLIDE_STEP_FORMAT_V1,
+  SLIDES_REVISION_ZERO_SHA256,
+  slidesRevisionZeroDocument,
   type EvidenceDomainKey,
   type EvidenceReceiptPayloadV2,
   verifySignedEvidenceReceiptV2,
@@ -63,6 +67,8 @@ const id = {
   iva: randomUUID(),
   k1: randomUUID(),
   z1: randomUUID(),
+  /** F4-V13-R04: a slides assignment of the same course. */
+  z2: randomUUID(),
   domainA: randomUUID(),
 };
 const token = randomBytes(32).toString("base64url");
@@ -183,6 +189,23 @@ async function fixture(): Promise<void> {
     `INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
      SELECT $1::uuid, 1, unnest($2::uuid[]), $3::uuid`,
     [id.z1, [id.ana, id.iva, ...ENTRY_CASES.map((name) => entry[name].user)], id.a],
+  );
+  await q(
+    `INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by, document_kind)
+     VALUES ($1, $2, $3, 1, $4, 'slides')`,
+    [id.z2, id.k1, id.a, id.vesna],
+  );
+  await q(
+    `INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type,
+       opens_at, due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
+     VALUES ($1, 1, 'Prezentacija (test)', 'Upute za izmišljenu prezentaciju.', 'essay', now(),
+       now() + interval '30 days', 'partially_allowed', '{proofreading}', 'basic', true, $2)`,
+    [id.z2, id.vesna],
+  );
+  await q(
+    `INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
+     VALUES ($1, 1, $2, $3)`,
+    [id.z2, id.ana, id.a],
   );
   await q(
     "INSERT INTO evidence.domain (id, institution_id, region) VALUES ($1, $2, 'eu-central-1')",
@@ -411,6 +434,96 @@ describe("evidence/commit through a real server over real PostgreSQL", () => {
       documentHash: sha256(document),
       headSegmentHash: sha256(segment),
       lastSequenceTo: 1,
+    });
+    expect(Buffer.from(String(reopened.body.document), "base64").toString("utf8")).toBe(document);
+  });
+});
+
+// F4-V13-R04: a slides work commits through the same route. The commit context
+// named no slides kind, so a slides commit was a 503 before any check.
+describe("evidence/commit of a slides work through a real server over real PostgreSQL", () => {
+  it("commits a slide step segment on the slides revision 0, signed, and open reports the revision", async () => {
+    const opened = await post("/api/v1/evidence/open", { assignmentId: id.z2, start: true });
+    expect(opened.status).toBe(200);
+    expect(opened.body).toMatchObject({ workKind: "slides", slidesSchemaVersion: 1 });
+    const { documentId, documentHash, evidenceProfileId, receiptKeys } = opened.body as {
+      documentId: string;
+      documentHash: string;
+      evidenceProfileId: string;
+      receiptKeys: EvidenceDomainKey[];
+    };
+    expect(documentHash).toBe(SLIDES_REVISION_ZERO_SHA256);
+    const step = {
+      type: "slideAdd",
+      slideId: "11111111-1111-4111-8111-111111111111",
+      layout: "title",
+      index: 1,
+    } as const;
+    const applied = applySlideSteps(slidesRevisionZeroDocument(), [step]);
+    if (!applied.ok) throw new Error("slide step");
+    const document = canonicalizeJcs(applied.doc);
+    const template = chain.segments[0]!.segment;
+    const segment = canonicalizeJcs({
+      ...template,
+      documentId,
+      sessionId: `sesija-${suffix}-slajd`,
+      segmentId: `segment-${suffix}-slajd-1`,
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      initialDocumentHash: documentHash,
+      finalDocumentHash: sha256(document),
+      predecessorSegmentHash: null,
+      evidenceProfileId,
+      captureContext: {
+        ...(template.captureContext as Record<string, unknown>),
+        transactionFormat: SLIDE_STEP_FORMAT_V1,
+      },
+      events: [
+        {
+          sequence: 1,
+          source: template.events[0]!.source,
+          steps: [step],
+          beforeDocumentHash: documentHash,
+          afterDocumentHash: sha256(document),
+        },
+      ],
+    });
+    const request = {
+      documentId,
+      clientTransactionId: `tx-${suffix}-slajd-1`,
+      baseRevision: 0,
+      segments: [Buffer.from(segment, "utf8").toString("base64")],
+      document: Buffer.from(document, "utf8").toString("base64"),
+    };
+
+    const committed = await post("/api/v1/evidence/commit", request);
+    expect(committed.status).toBe(200);
+    expect(committed.body).toMatchObject({
+      status: "committed",
+      revision: 1,
+      receipt: { status: "signed" },
+    });
+    const verified = await verifySignedEvidenceReceiptV2(
+      (committed.body.receipt as { signedReceipt: unknown }).signedReceipt,
+      {
+        documentId,
+        clientTransactionId: request.clientTransactionId,
+        revision: 1,
+        evidenceDomainId: id.domainA,
+      },
+      receiptKeys,
+    );
+    expect(verified.ok).toBe(true);
+
+    const reopened = await post("/api/v1/evidence/open", { assignmentId: id.z2 });
+    expect(reopened.body).toMatchObject({
+      status: "opened",
+      documentId,
+      currentRevision: 1,
+      documentHash: sha256(document),
+      headSegmentHash: sha256(segment),
+      lastSequenceTo: 1,
+      workKind: "slides",
     });
     expect(Buffer.from(String(reopened.body.document), "base64").toString("utf8")).toBe(document);
   });
