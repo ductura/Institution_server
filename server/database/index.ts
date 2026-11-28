@@ -222,6 +222,7 @@ export type {
 export type {
   AssignmentContent,
   AssignmentCreateOutcome,
+  AssignmentDocumentKind,
   AssignmentPublishOutcome,
   AssignmentSetup,
   InstitutionAssignments,

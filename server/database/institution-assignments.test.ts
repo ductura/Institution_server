@@ -57,7 +57,7 @@ describe("createAssignment", () => {
     expect(seen).toHaveLength(2);
     expect(seen[0]!.token).toBe(TOKEN);
     expect(seen[0]!.text).toContain("institution.create_assignment_with_groups(");
-    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false, false, false, []]);
+    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false, false, false, [], "text"]);
     expect(seen[1]!.text).toBe("SELECT group_id FROM institution.assignment_groups($1::uuid)");
     expect(seen[1]!.values).toEqual([ID]);
   });
@@ -71,10 +71,24 @@ describe("createAssignment", () => {
       id: ID,
     });
     expect(seen[0]!.text).toMatch(
-      /\$14::boolean,\s+\$15::boolean, \$16::boolean, \$17::uuid\[\]\s+\) AS id/,
+      /\$14::boolean,\s+\$15::boolean, \$16::boolean, \$17::uuid\[\], \$18::text\s+\) AS id/,
     );
-    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, true, true, false, []]);
+    expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, true, true, false, [], "text"]);
   });
+
+  // SRV-V13-VRSTA-PISAC: the kind is the RPC's last argument, after the groups.
+  it.each(["slides", "spreadsheet"] as const)(
+    "passes the kind %s after the groups",
+    async (kind) => {
+      seen.length = 0;
+      const port = createInstitutionAssignments(answering([{ id: ID }]));
+      const setup = { externalToolsAllowed: false, aiSummaryOnly: false };
+      expect(
+        await port.createAssignment(TOKEN, COURSE, KEY, CONTENT, false, setup, [], kind),
+      ).toEqual({ status: "created", id: ID });
+      expect(seen[0]!.values).toEqual([COURSE, KEY, ...VALUES, false, false, false, [], kind]);
+    },
+  );
 
   it.each([
     ["ZD401", "unauthenticated"],
@@ -137,7 +151,7 @@ describe("createAssignment with groups", () => {
       expect.stringContaining("institution.create_assignment_with_groups("),
       "SELECT group_id FROM institution.assignment_groups($1::uuid)",
     ]);
-    expect(db.texts[0]!.values.at(-1)).toEqual([GROUP_A, GROUP_B]);
+    expect(db.texts[0]!.values.at(-2)).toEqual([GROUP_A, GROUP_B]);
     expect(db.texts[1]!.values).toEqual([ID]);
     expect(db.rolledBack()).toBe(false);
   });
@@ -149,7 +163,7 @@ describe("createAssignment with groups", () => {
       status: "created",
       id: ID,
     });
-    expect(db.texts[0]!.values.at(-1)).toEqual([]);
+    expect(db.texts[0]!.values.at(-2)).toEqual([]);
     expect(db.rolledBack()).toBe(false);
   });
 
@@ -202,7 +216,35 @@ describe("publishVersion", () => {
       versionNo: 3,
     });
     expect(seen[0]!.text).toContain("institution.publish_assignment_version(");
-    expect(seen[0]!.values).toEqual([ID, 2, ...VALUES]);
+    expect(seen[0]!.values).toEqual([ID, 2, ...VALUES, null]);
+  });
+
+  // SRV-V13-VRSTA-PISAC: the kind a version names is the RPC's last argument (ZD422 when it
+  // is not the assignment's); none is null, which checks nothing.
+  it.each(["text", "slides", "spreadsheet"] as const)(
+    "passes the kind %s as the last argument",
+    async (kind) => {
+      seen.length = 0;
+      const port = createInstitutionAssignments(answering([{ version_no: 3 }]));
+      expect(await port.publishVersion(TOKEN, ID, 2, CONTENT, kind)).toEqual({
+        status: "published",
+        versionNo: 3,
+      });
+      expect(seen[0]!.text).toMatch(/\$13::integer, \$14::text\s+\) AS version_no/);
+      expect(seen[0]!.values).toEqual([ID, 2, ...VALUES, kind]);
+    },
+  );
+
+  it("ZD422 for a kind other than the assignment's is invalid", async () => {
+    expect(
+      await createInstitutionAssignments(failing("ZD422")).publishVersion(
+        TOKEN,
+        ID,
+        2,
+        CONTENT,
+        "slides",
+      ),
+    ).toEqual({ status: "invalid" });
   });
 
   it("ZD409 is version_conflict; a version other than the next is unavailable", async () => {

@@ -12,6 +12,7 @@
 import { ROUTES } from "../contracts/index.ts";
 import {
   type AssignmentCreateOutcome,
+  type AssignmentDocumentKind,
   type AssignmentPublishOutcome,
   createInstitutionAssignments,
   type InstitutionAssignments,
@@ -58,28 +59,37 @@ const optionalFlag = (body: object, key: string, value: unknown): boolean | null
 
 /**
  * The optional documentKind (SRV-V13-VRSTA-POST) and workKind (SRV-V14-KIND-ENUM): both
- * absent is "text", as in the reads. workKind wins over documentKind; both present and
- * different is the 422 of the contract, as is anything but a known kind. No RPC stores
- * another kind yet (institution.assignment.document_kind has no writer, SRV-V13-MIG-VRSTA),
- * so "slides" and "spreadsheet" are refused too rather than made into a text assignment
- * in silence.
+ * absent is no kind (the creation stores "text", as in the reads; a version checks
+ * nothing). workKind wins over documentKind; both present and different is the 422 of the
+ * contract, as is anything but a known kind (documentKind is text|slides, workKind adds
+ * spreadsheet). SRV-V13-VRSTA-PISAC: create_assignment_with_groups stores all three kinds
+ * in institution.assignment.document_kind (migration 20261220860000), and
+ * publish_assignment_version refuses a kind other than the stored one (ZD422).
  */
-const KINDS_STORED: ReadonlySet<unknown> = new Set(["text"]);
-function withoutDocumentKind(value: unknown): { fields: unknown } | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return { fields: value };
+const DOCUMENT_KINDS: ReadonlySet<unknown> = new Set(["text", "slides"]);
+const KINDS_STORED: ReadonlySet<unknown> = new Set(["text", "slides", "spreadsheet"]);
+function withoutDocumentKind(
+  value: unknown,
+): { fields: unknown; kind: AssignmentDocumentKind | null } | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { fields: value, kind: null };
+  }
   const { documentKind, workKind, ...fields } = value as Record<string, unknown>;
   const hasDocumentKind = Object.hasOwn(value, "documentKind");
   const hasWorkKind = Object.hasOwn(value, "workKind");
+  if (hasDocumentKind && !DOCUMENT_KINDS.has(documentKind)) return null;
   if (hasDocumentKind && hasWorkKind && documentKind !== workKind) return null;
+  if (!hasDocumentKind && !hasWorkKind) return { fields, kind: null };
   const kind = hasWorkKind ? workKind : documentKind;
-  if ((hasDocumentKind || hasWorkKind) && !KINDS_STORED.has(kind)) return null;
-  return { fields };
+  if (!KINDS_STORED.has(kind)) return null;
+  return { fields, kind: kind as AssignmentDocumentKind };
 }
 
 function parseCreateBody(raw: unknown) {
   const stripped = withoutDocumentKind(raw);
   if (stripped === null) return null;
   const value = stripped.fields;
+  const documentKind = stripped.kind ?? "text";
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const { requestKey, isPractice, externalToolsAllowed, aiSummaryOnly, groupIds, ...fields } =
     value as Record<string, unknown>;
@@ -102,6 +112,7 @@ function parseCreateBody(raw: unknown) {
     isPractice: practice,
     setup: { externalToolsAllowed: tools, aiSummaryOnly: summaryOnly },
     groupIds: groups,
+    documentKind,
   };
 }
 
@@ -173,6 +184,7 @@ export function createInstitutionAssignmentRoutes(
           body.isPractice,
           body.setup,
           body.groupIds,
+          body.documentKind,
         );
       },
       (outcome) => (outcome.status === "created" ? { id: outcome.id } : null),
@@ -190,6 +202,7 @@ export function createInstitutionAssignmentRoutes(
           assignmentId.toLowerCase(),
           body.expectedVersion,
           body.content,
+          stripped.kind,
         );
       },
       (outcome, assignmentId) =>

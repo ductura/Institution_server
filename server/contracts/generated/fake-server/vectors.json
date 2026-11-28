@@ -13094,7 +13094,7 @@
   },
   {
     "route": "institution.assignment-versions.post",
-    "name": "document-kind-slides-not-stored",
+    "name": "document-kind-slides",
     "request": {
       "params": {
         "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
@@ -13125,14 +13125,11 @@
       }
     },
     "response": {
-      "status": 422,
+      "status": 201,
       "contentType": "application/json",
       "body": {
-        "error": "invalid_input",
-        "code": "invalid_input",
-        "messageKey": "errors.invalidInput",
-        "status": 422,
-        "requestId": "00000000-0000-4000-8000-000000002107"
+        "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01",
+        "versionNo": 2
       }
     }
   },
@@ -15652,7 +15649,7 @@
   },
   {
     "route": "institution.course-assignments.post",
-    "name": "document-kind-slides-not-stored",
+    "name": "document-kind-slides",
     "request": {
       "params": {
         "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
@@ -15680,20 +15677,16 @@
       }
     },
     "response": {
-      "status": 422,
+      "status": 201,
       "contentType": "application/json",
       "body": {
-        "error": "invalid_input",
-        "code": "invalid_input",
-        "messageKey": "errors.invalidInput",
-        "status": 422,
-        "requestId": "00000000-0000-4000-8000-000000002105"
+        "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
       }
     }
   },
   {
     "route": "institution.course-assignments.post",
-    "name": "work-kind-spreadsheet-not-stored",
+    "name": "work-kind-spreadsheet",
     "request": {
       "params": {
         "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
@@ -15721,14 +15714,10 @@
       }
     },
     "response": {
-      "status": 422,
+      "status": 201,
       "contentType": "application/json",
       "body": {
-        "error": "invalid_input",
-        "code": "invalid_input",
-        "messageKey": "errors.invalidInput",
-        "status": 422,
-        "requestId": "00000000-0000-4000-8000-000000002105"
+        "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
       }
     }
   },

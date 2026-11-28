@@ -34,6 +34,12 @@ export type AssignmentSetup = {
   readonly aiSummaryOnly: boolean;
 };
 
+/**
+ * The kind of document an assignment asks for (institution.assignment.document_kind),
+ * stored on creation and fixed (SRV-V13-VRSTA-PISAC, migration 20261220860000).
+ */
+export type AssignmentDocumentKind = "text" | "slides" | "spreadsheet";
+
 const NO_SETUP: AssignmentSetup = { externalToolsAllowed: false, aiSummaryOnly: false };
 
 /** ZD401, ZD403, ZD409 (the same key with other content), ZD422 by name. */
@@ -57,26 +63,31 @@ export type InstitutionAssignments = {
     isPractice?: boolean,
     setup?: AssignmentSetup,
     groupIds?: readonly string[],
+    documentKind?: AssignmentDocumentKind,
   ): Promise<AssignmentCreateOutcome>;
+  /** documentKind null (or absent) checks nothing; another than the stored one is "invalid". */
   publishVersion(
     token: string,
     assignmentId: string,
     expectedVersion: number,
     content: AssignmentContent,
+    documentKind?: AssignmentDocumentKind | null,
   ): Promise<AssignmentPublishOutcome>;
 };
 
 // F4 wave 2 #5 (1.8): the creation and the links to the course's groups in one
 // statement (migration 20261220800000), which compares the stored links of a
 // replayed key before anything is written; then the links as stored.
+// SRV-V13-VRSTA-PISAC (20261220860000): the kind is the last argument of both; a
+// replay of the key with another kind is ZD409, a version naming another kind ZD422.
 const CREATE_SQL = `SELECT institution.create_assignment_with_groups(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
   $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, 1, $14::boolean,
-  $15::boolean, $16::boolean, $17::uuid[]
+  $15::boolean, $16::boolean, $17::uuid[], $18::text
 ) AS id`;
 const PUBLISH_SQL = `SELECT institution.publish_assignment_version(
   $1::uuid, $2::integer, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
-  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer
+  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, $14::text
 ) AS version_no`;
 const LINKED_SQL = "SELECT group_id FROM institution.assignment_groups($1::uuid)";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -139,6 +150,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
       isPractice = false,
       setup = NO_SETUP,
       groupIds = [],
+      documentKind = "text",
     ) {
       const readId = (rows: unknown) => {
         const id = single(rows, "id");
@@ -152,6 +164,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
         setup.externalToolsAllowed,
         setup.aiSummaryOnly,
         [...groupIds],
+        documentKind,
       ];
       const outcome = await call(
         withActor,
@@ -165,13 +178,13 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
       );
       return "value" in outcome ? { status: "created", id: outcome.value } : outcome;
     },
-    async publishVersion(token, assignmentId, expectedVersion, content) {
+    async publishVersion(token, assignmentId, expectedVersion, content, documentKind = null) {
       // Exactly the next version: anything else is a row of the wrong form.
       const readVersion = (rows: unknown) => {
         const next = single(rows, "version_no");
         return next === expectedVersion + 1 ? next : null;
       };
-      const params = [assignmentId, expectedVersion, ...contentParams(content)];
+      const params = [assignmentId, expectedVersion, ...contentParams(content), documentKind];
       const outcome = await call(
         withActor,
         token,
