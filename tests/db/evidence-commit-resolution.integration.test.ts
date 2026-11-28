@@ -250,6 +250,7 @@ function inputOf(context: EvidenceCommitContext, work: Work, step: Step): Eviden
     storageRef: `local-test:v2/${context.institutionId}/${context.evidencePackageId}/${segmentHash}.json`,
     snapshot: step.snapshot ?? snapshot,
     aiTransferLinks: null,
+    resolution: null,
   };
 }
 
