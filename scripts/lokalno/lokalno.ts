@@ -21,6 +21,7 @@ import {
   baseEnv,
   ensureSecrets,
   type LocalEvidence,
+  localSwitches,
   PORTS,
   oidcEnv,
   serverEnv,
@@ -208,7 +209,10 @@ async function main(): Promise<void> {
     target,
     s3Port: PORTS.s3,
   });
-  const serverVariables = serverEnv(options, target, secrets, evidence);
+  const serverVariables = {
+    ...serverEnv(options, target, secrets, evidence),
+    ...localSwitches(process.env),
+  };
   const children = await startStack(options, serverVariables, base, {
     setup: evidence,
     localDir: LOCAL_DIR,
