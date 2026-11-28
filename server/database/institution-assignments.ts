@@ -3,8 +3,8 @@
 // assignment-version-route.ts at 078c780, in the form of
 // institution-courses.ts: an outcome instead of a response, a malformed row
 // thrown inside the transaction, and a port that never throws. One call is
-// one withActor transaction (of one statement, or three for a creation with
-// groups); the message of a database
+// one withActor transaction (of one statement, or two for a creation: the
+// creation with its groups, then the links as stored); the message of a database
 // error is never read and its SQLSTATE never leaves the port. Inputs come
 // already checked (server/institution/assignment-input.ts, the route).
 import { call, type Refused, single, type Unavailable } from "./institution-courses.ts";
@@ -66,18 +66,18 @@ export type InstitutionAssignments = {
   ): Promise<AssignmentPublishOutcome>;
 };
 
-const CREATE_SQL = `SELECT institution.create_assignment(
+// F4 wave 2 #5 (1.8): the creation and the links to the course's groups in one
+// statement (migration 20261220800000), which compares the stored links of a
+// replayed key before anything is written; then the links as stored.
+const CREATE_SQL = `SELECT institution.create_assignment_with_groups(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
   $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, 1, $14::boolean,
-  $15::boolean, $16::boolean
+  $15::boolean, $16::boolean, $17::uuid[]
 ) AS id`;
 const PUBLISH_SQL = `SELECT institution.publish_assignment_version(
   $1::uuid, $2::integer, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
   $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer
 ) AS version_no`;
-// F4 wave 2 #5 (1.8): the links to the course's groups, in the creation's
-// transaction (migration 20261220620000), then the links as stored.
-const GROUPS_SQL = "SELECT institution.add_assignment_groups($1::uuid, $2::uuid[]) AS added";
 const LINKED_SQL = "SELECT group_id FROM institution.assignment_groups($1::uuid)";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const CREATE_REFUSED = new Map([
@@ -108,18 +108,18 @@ const contentParams = (c: AssignmentContent): unknown[] => [
 ];
 
 /**
- * Links the groups (lower case, distinct: the route's) to the assignment just
- * created or replayed. add_assignment_groups refuses a group of another course
- * (ZD422), which rolls back the assignment too. A replay of the key with other
- * groups leaves another set linked: that is the key's conflict (ZD409), and
- * the extra links roll back with it. A row of the wrong form is false.
+ * Reads back the links of the assignment just created or replayed, which must
+ * be exactly the groups asked (lower case, distinct: the route's); none is the
+ * whole course. create_assignment_with_groups already refuses a replay of the
+ * key with another set (ZD409) and a group of another course (ZD422) before it
+ * writes; another set here is the same conflict and rolls back. A row of the
+ * wrong form is false.
  */
-async function linkGroups(
+async function checkGroups(
   tx: ActorTransaction,
   id: string,
   groupIds: readonly string[],
 ): Promise<boolean> {
-  await tx.query(GROUPS_SQL, [id, [...groupIds]]);
   const { rows } = await tx.query(LINKED_SQL, [id]);
   const linked = rows.map((row) => (Object.hasOwn(row, "group_id") ? row.group_id : undefined));
   if (!linked.every((g): g is string => typeof g === "string" && UUID.test(g))) return false;
@@ -151,6 +151,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
         isPractice,
         setup.externalToolsAllowed,
         setup.aiSummaryOnly,
+        [...groupIds],
       ];
       const outcome = await call(
         withActor,
@@ -160,7 +161,7 @@ export function createInstitutionAssignments(withActor: WithActor): InstitutionA
         readId,
         CREATE_REFUSED,
         "create_assignment_malformed",
-        groupIds.length === 0 ? undefined : (tx, id) => linkGroups(tx, id, groupIds),
+        (tx, id) => checkGroups(tx, id, groupIds),
       );
       return "value" in outcome ? { status: "created", id: outcome.value } : outcome;
     },

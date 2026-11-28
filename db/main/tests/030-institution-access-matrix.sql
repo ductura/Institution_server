@@ -788,7 +788,8 @@ SELECT bag_eq(
     'confirm_roster_import(p_import_id uuid) definer app',
     'check_assignment_group_course()',
     'add_assignment_groups(p_assignment_id uuid, p_group_ids uuid[]) definer app',
-    'assignment_groups(p_assignment_id uuid) definer app'
+    'assignment_groups(p_assignment_id uuid) definer app',
+    'create_assignment_with_groups(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean, p_external_tools_allowed boolean, p_ai_summary_only boolean, p_group_ids uuid[]) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

@@ -93,6 +93,19 @@ it("stores the course's groups with the assignment and reads them back", async (
     // The same key with fewer groups is the key's conflict; the links stay.
     expect(await create(1, [GROUP_A])).toEqual({ status: "conflict" });
     expect(await linksOf(id)).toEqual([GROUP_A, GROUP_B]);
+    // So is the same key with no groups (the whole course).
+    expect(await create(1, [])).toEqual({ status: "conflict" });
+    expect(await linksOf(id)).toEqual([GROUP_A, GROUP_B]);
+
+    // SRV#977 review: the same key with MORE groups is the key's conflict too,
+    // and links nothing; before, the extra link was written and the replay
+    // answered the id of a widened assignment.
+    const narrow = await create(5, [GROUP_A]);
+    expect(narrow).toMatchObject({ status: "created" });
+    const narrowId = (narrow as { id: string }).id;
+    expect(await create(5, [GROUP_A, GROUP_B])).toEqual({ status: "conflict" });
+    expect(await linksOf(narrowId)).toEqual([GROUP_A]);
+    expect(await create(5, [GROUP_A])).toEqual({ status: "created", id: narrowId });
 
     // A group of another course, or none at all, is invalid and links nothing.
     for (const [n, groups] of [
@@ -104,7 +117,7 @@ it("stores the course's groups with the assignment and reads them back", async (
     const { rows } = await db.query<{ links: number }>(
       "SELECT count(*)::int AS links FROM institution.assignment_group",
     );
-    expect(rows).toEqual([{ links: 2 }]);
+    expect(rows).toEqual([{ links: 3 }]);
 
     // No groups is the whole course: no links, no groupIds in the read.
     const whole = await create(4, []);
@@ -114,6 +127,11 @@ it("stores the course's groups with the assignment and reads them back", async (
     const read = await readAssignmentCurrentVersion(withActor, TEACHER, wholeId);
     expect(read).toMatchObject({ kind: "found" });
     expect((read as { body: Record<string, unknown> }).body).not.toHaveProperty("groupIds");
+    // A replay of the whole course with groups is the key's conflict and
+    // links nothing: it does not narrow the assignment to those groups.
+    expect(await create(4, [GROUP_A])).toEqual({ status: "conflict" });
+    expect(await linksOf(wholeId)).toEqual([]);
+    expect(await create(4, [])).toEqual({ status: "created", id: wholeId });
   } finally {
     await db.close();
   }
