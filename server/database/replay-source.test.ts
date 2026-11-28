@@ -4,7 +4,12 @@
 // partial answer. Every identifier and hash below is invented.
 import { describe, expect, it } from "vitest";
 
-import { createReplaySource, sourceResult } from "./replay-source.ts";
+import {
+  createReplayResolutionReader,
+  createReplaySource,
+  resolutionsResult,
+  sourceResult,
+} from "./replay-source.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-evidencije-000000000000001";
@@ -120,5 +125,82 @@ describe("createReplaySource", () => {
       status: "unavailable",
       reason: "checkpoints_malformed",
     });
+  });
+});
+
+describe("resolutionsResult (F4-EDI-R05-SRV B1)", () => {
+  it("names each segment and its base; no row is no resolution", () => {
+    expect(
+      resolutionsResult([
+        { segment_hash: A, conflict_base_revision: "0" },
+        { segment_hash: B, conflict_base_revision: 1 },
+      ]),
+    ).toEqual({
+      status: "found",
+      marks: [
+        { segmentHash: A, conflictBaseRevision: 0 },
+        { segmentHash: B, conflictBaseRevision: 1 },
+      ],
+    });
+    expect(resolutionsResult([])).toEqual({ status: "found", marks: [] });
+  });
+
+  it.each([
+    ["a hash in capitals", { segment_hash: A.toUpperCase(), conflict_base_revision: 0 }],
+    ["no hash", { conflict_base_revision: 0 }],
+    ["a negative base", { segment_hash: A, conflict_base_revision: -1 }],
+    ["a fractional base", { segment_hash: A, conflict_base_revision: 1.5 }],
+    ["no base", { segment_hash: A, conflict_base_revision: null }],
+    [
+      "a base beyond a safe integer",
+      { segment_hash: A, conflict_base_revision: "9007199254740993" },
+    ],
+    ["a base that is no number", { segment_hash: A, conflict_base_revision: "x" }],
+  ])("is unavailable for %s, never a partial answer", (_label, row) => {
+    expect(resolutionsResult([{ segment_hash: B, conflict_base_revision: 0 }, row])).toEqual({
+      status: "unavailable",
+      reason: "resolutions_malformed",
+    });
+  });
+
+  it("is unavailable when one segment is named twice", () => {
+    const row = { segment_hash: A, conflict_base_revision: 0 };
+    expect(resolutionsResult([row, row])).toMatchObject({ status: "unavailable" });
+  });
+});
+
+describe("createReplayResolutionReader", () => {
+  function readerWith(answer: () => Record<string, unknown>[] | Error) {
+    const seen: { text: string; values: readonly unknown[] | undefined; token: unknown }[] = [];
+    const withActor = (async (token, fn) =>
+      fn({
+        async query(text, values) {
+          seen.push({ text, values, token });
+          const rows = answer();
+          if (rows instanceof Error) throw rows;
+          return { rows: rows as never[], rowCount: rows.length };
+        },
+      })) as WithActor;
+    return { reader: createReplayResolutionReader(withActor, TOKEN), seen };
+  }
+
+  it("reads through app.read_replay_resolutions with only the document id as a parameter", async () => {
+    const { reader, seen } = readerWith(() => [{ segment_hash: A, conflict_base_revision: 2 }]);
+    await expect(reader.readResolutions(DOC)).resolves.toEqual({
+      status: "found",
+      marks: [{ segmentHash: A, conflictBaseRevision: 2 }],
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.text).toContain("app.read_replay_resolutions($1)");
+    expect(seen[0]?.values).toEqual([DOC]);
+    expect(seen[0]?.token).toBe(TOKEN);
+  });
+
+  it("answers unauthenticated for ZD401 and rethrows anything else", async () => {
+    await expect(readerWith(zd401).reader.readResolutions(DOC)).resolves.toEqual({
+      status: "unauthenticated",
+    });
+    const other = new Error("izmisljeni kvar");
+    await expect(readerWith(() => other).reader.readResolutions(DOC)).rejects.toBe(other);
   });
 });

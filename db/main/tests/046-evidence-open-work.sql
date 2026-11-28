@@ -113,6 +113,8 @@ SELECT bag_eq(
   $$ VALUES ('app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text)'),
             -- SRV-1809: the overload that takes a v4 segment's AI transfer links (275).
             ('app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text,jsonb)'),
+            -- F4-EDI-R05-SRV: the overload that takes the resolution of a conflict (289).
+            ('app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text,jsonb,jsonb)'),
             ('app.attach_receipt_signature(uuid,text,jsonb)'),
             ('app.request_submission(text,bigint)'), ('app.record_submission(uuid,text)'),
             ('app.open_student_work(uuid,boolean)'), ('app.evidence_commit_context(text,text)'),

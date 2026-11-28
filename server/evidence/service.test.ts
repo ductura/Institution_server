@@ -207,6 +207,8 @@ describe("createEvidenceService().commit", () => {
       "memory:put-ref",
       new TextDecoder().decode(DOCUMENT),
       null,
+      // F4-EDI-R05-SRV (B1): no resolution yet.
+      null,
     ]);
   });
 

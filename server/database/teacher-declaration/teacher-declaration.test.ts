@@ -10,8 +10,9 @@ const HASH = "c".repeat(64);
 
 const NO_QUESTION = [{ question: null, answer: null }];
 
-function setup(answer: object[] | Error, question: object[] = NO_QUESTION) {
+function setup(answer: object[] | Error, question: object[] = NO_QUESTION, unbound?: object[]) {
   const calls: (readonly unknown[] | undefined)[] = [];
+  const unboundCalls: (readonly unknown[] | undefined)[] = [];
   const withActor: WithActor = async (_token, run) =>
     run({
       async query<Row>(sql: string, params?: readonly unknown[]) {
@@ -20,11 +21,17 @@ function setup(answer: object[] | Error, question: object[] = NO_QUESTION) {
         if (sql.includes("teacher_declaration_answer")) {
           return { rows: question as Row[], rowCount: question.length };
         }
+        // SRV-IZJAVA-AI-UNBOUND: the third read, asked only by the v3 reader.
+        if (sql.includes("teacher_declaration_unbound")) {
+          unboundCalls.push(params);
+          return { rows: (unbound ?? []) as Row[], rowCount: unbound?.length ?? 0 };
+        }
         calls.push(params);
         return { rows: answer as Row[], rowCount: answer.length };
       },
     });
-  return { read: createTeacherDeclarationReader(withActor), calls };
+  const options = unbound === undefined ? {} : { unbound: true };
+  return { read: createTeacherDeclarationReader(withActor, options), calls, unboundCalls };
 }
 
 /** A database row, with the column names the RPC returns. */
@@ -73,6 +80,51 @@ it("SRV-IZJAVA-PITANJE: shows no answer without a bound declaration", async () =
 
 it("SRV-IZJAVA-PITANJE: is unavailable without the answer row", async () => {
   const { read } = setup([row("bound", PAYLOAD, HASH)], []);
+  expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "unavailable" });
+});
+
+const UNBOUND = [
+  { aiTransferId: "00000000-0000-4000-8000-0000000000f1", aiTransferSha256: "1".repeat(64) },
+];
+
+it("SRV-IZJAVA-AI-UNBOUND: the v3 reader adds ai.unbound beside the bound payload", async () => {
+  const { read, unboundCalls } = setup([row("bound", PAYLOAD, HASH)], NO_QUESTION, [
+    { unbound: UNBOUND },
+  ]);
+  expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({
+    status: "ok",
+    body: {
+      state: "bound",
+      payload: JSON.parse(PAYLOAD),
+      declarationSha256: HASH,
+      ai: { unbound: UNBOUND },
+      question: null,
+      questionAnswer: null,
+    },
+  });
+  expect(unboundCalls).toEqual([[ASSIGNMENT, STUDENT]]);
+});
+
+it("SRV-IZJAVA-AI-UNBOUND: the default reader does not ask for the list", async () => {
+  const { read, unboundCalls } = setup([row("bound", PAYLOAD, HASH)]);
+  const result = await read("session", ASSIGNMENT, STUDENT);
+  expect(result.status === "ok" && "ai" in result.body).toBe(false);
+  expect(unboundCalls).toEqual([]);
+});
+
+it("SRV-IZJAVA-AI-UNBOUND: none carries no list", async () => {
+  const { read } = setup([row("none", null, null)], NO_QUESTION, [{ unbound: null }]);
+  const result = await read("session", ASSIGNMENT, STUDENT);
+  expect(result).toMatchObject({ status: "ok", body: { state: "none" } });
+  expect(result.status === "ok" && "ai" in result.body).toBe(false);
+});
+
+it.each([
+  ["no row", []],
+  ["a null list", [{ unbound: null }]],
+  ["an object", [{ unbound: {} }]],
+])("SRV-IZJAVA-AI-UNBOUND: a bound read is unavailable for %s", async (_name, rows) => {
+  const { read } = setup([row("bound", PAYLOAD, HASH)], NO_QUESTION, rows);
   expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "unavailable" });
 });
 

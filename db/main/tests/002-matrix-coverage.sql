@@ -162,6 +162,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('evidence', 'project', '040-evidence-schema.sql'),
     ('evidence', 'receipt', '040-evidence-schema.sql'),
     ('evidence', 'reconstruction_checkpoint', '195-reconstruction-checkpoint.sql'),
+    ('evidence', 'revision_resolution', '289-evidence-revision-resolution.sql'),
     ('evidence', 'revision_restore', '227-revision-restore.sql'),
     ('evidence', 'segment', '040-evidence-schema.sql'),
     ('evidence', 'segment_ai_transfer', '275-evidence-segment-v4-ingest.sql'),
@@ -315,7 +316,7 @@ CREATE VIEW pg_temp.matrix_stale AS
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM pg_temp.matrix_gap', 'every table has a row in the list of access tests');
 SELECT is_empty('SELECT found FROM pg_temp.matrix_stale', 'every row of the list names a table that exists');
-SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 219, 'the list has the expected number of rows');
+SELECT is((SELECT count(*)::int FROM pg_temp.matrix_row), 220, 'the list has the expected number of rows');
 SELECT is_empty(
   'SELECT schema_name, table_name FROM pg_temp.matrix_row GROUP BY 1, 2 HAVING count(*) > 1',
   'no table has two rows');
