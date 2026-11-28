@@ -3,7 +3,8 @@
 // order): the same contents, origin and labels give the same bytes. It holds
 // only what the worker read for one person (server/database
 // student-data-export): the exact submitted texts, the receipt PDF of each
-// signed submission (the same renderer as the student's own receipt), the
+// signed submission (the same renderer and confirmation code as the
+// student's own receipt), the
 // person's notes, and who opened their works, by day of Europe/Zagreb. A
 // manifest names every file with its SHA-256. Nothing here reads a clock, the
 // network or a database.
@@ -38,6 +39,11 @@ export type PackageSubmission = {
     readonly payloadDigestSha256: string;
     readonly signature: unknown;
   } | null;
+  /**
+   * Dizajn 1.1: the bound confirmation code of the receipt, so its PDF is the
+   * bytes student.receipt-pdf.get gives; null while the receipt waits.
+   */
+  readonly confirmationCode: string | null;
 };
 
 export type PackageNote = {
@@ -128,7 +134,10 @@ export async function buildStudentDataExportPackage(
       const receipt = await receiptOf(submission);
       if (receipt === null) return { status: "refused", reason: "receipt_malformed" };
       receiptName = `${folder}/potvrda-predaje.pdf`;
-      entries.push({ name: receiptName, data: await renderReceiptPdf(receipt, origin, labels) });
+      entries.push({
+        name: receiptName,
+        data: await renderReceiptPdf(receipt, origin, labels, submission.confirmationCode),
+      });
     }
     listed.push({
       submissionId: submission.submissionId,
