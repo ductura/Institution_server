@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6378);
+SELECT plan(6380);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -47,7 +47,9 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_ev
                -- SRV-IZJAVA-PITANJE: the student's answer to the teacher's question.
                ('declaration.question_answer', 'question_answer_owner'),
                -- F4-PRE-R02-SRV2: the student's explanation of a mismatch with the record.
-               ('declaration.mismatch_explanation', 'mismatch_explanation_owner')) t(relation, policy)
+               ('declaration.mismatch_explanation', 'mismatch_explanation_owner'),
+               -- F4-PRE-R02-SRV2: the switch of the mandatory conversations, owner's SQL only.
+               ('declaration.mandatory_attachment_setting', 'mandatory_attachment_setting_owner')) t(relation, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.relation);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -115,7 +117,9 @@ SELECT ok('search_path=""' = ANY(p.proconfig)
                ('assistant.refuse_ai_transfer_rewrite()'), ('assistant.ai_transfer_phase(text,uuid)'),
                ('assistant.ai_transfer_max()'),
                -- SRV-1809: for the evidence owner alone (275).
-               ('assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)')) f(signature)
+               ('assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)'),
+               -- F4-PRE-R02-SRV2: for the evidence owner alone (286).
+               ('assistant.ai_transfer_through_seqs(uuid,uuid,text,uuid,uuid[])')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
@@ -123,7 +127,7 @@ SELECT bag_eq(
   $$ SELECT c.relname::text FROM pg_class c
      WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
   ARRAY['statement', 'external_attachment', 'conversation_attachment', 'question_answer',
-        'mismatch_explanation'],
+        'mismatch_explanation', 'mandatory_attachment_setting'],
   'the declaration schema holds exactly its three tables'
 );
 SELECT bag_eq(
@@ -790,7 +794,8 @@ SELECT bag_eq(
     'confirm_roster_import(p_import_id uuid) definer app',
     'check_assignment_group_course()',
     'add_assignment_groups(p_assignment_id uuid, p_group_ids uuid[]) definer app',
-    'assignment_groups(p_assignment_id uuid) definer app'
+    'assignment_groups(p_assignment_id uuid) definer app',
+    'create_assignment_with_groups(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean, p_external_tools_allowed boolean, p_ai_summary_only boolean, p_group_ids uuid[]) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

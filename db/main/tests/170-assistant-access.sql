@@ -229,7 +229,9 @@ SELECT bag_eq(
             ('ai_transfer_max ductus_identity false search_path=""'),
             ('create_ai_transfer ductus_identity true search_path=""'),
             -- SRV-1809: the hash of a record for the v4 segment's link; 275 tests it.
-            ('ai_transfer_link_sha256 ductus_identity true search_path=""') $$,
+            ('ai_transfer_link_sha256 ductus_identity true search_path=""'),
+            -- F4-PRE-R02-SRV2: the last transferred seq of each conversation; 286 tests it.
+            ('ai_transfer_through_seqs ductus_identity true search_path=""') $$,
   'the schema has four trigger functions and, since SRV-1203, SRV-1205, SRV-1207, SRV-ASIST-BROJAC, SRV-ASIST-LIMIT-ADMIN and SRV-1809, the RPCs and their helpers');
 SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
@@ -252,7 +254,9 @@ SELECT bag_eq(
             ('ductus_app assistant.create_ai_transfer(text,uuid,text)'),
             ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)'),
             -- SRV-1809: the evidence owner checks a v4 segment's link against the record (275).
-            ('ductus_evidence assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)') $$,
+            ('ductus_evidence assistant.ai_transfer_link_sha256(uuid,uuid,uuid,text)'),
+            -- F4-PRE-R02-SRV2: the evidence owner reads the mandatory conversations (286).
+            ('ductus_evidence assistant.ai_transfer_through_seqs(uuid,uuid,text,uuid,uuid[])') $$,
   'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, since SRV-ASIST-LIMIT-ADMIN, two more and, since SRV-1809, one more, the worker the sweep and its listing (SRV-1205), the evidence owner the link hash (SRV-1809)');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
