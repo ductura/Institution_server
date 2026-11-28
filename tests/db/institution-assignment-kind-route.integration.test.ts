@@ -160,11 +160,11 @@ const create = (who: Account, requestKey: string, kind: Record<string, unknown>)
 /** The kind as the teacher reads it through ductus_app and the row security. */
 const storedKind = (assignment: string) =>
   withActor(tokens["demo-teacher"], async (tx) => {
-    const { rows } = await tx.query<{ document_kind: string }>(
-      "SELECT document_kind FROM institution.assignment WHERE id = $1",
+    const { rows } = await tx.query<{ kind: string }>(
+      "SELECT document_kind AS kind FROM institution.assignment WHERE id = $1",
       [assignment],
     );
-    return rows.map((row) => row.document_kind);
+    return rows.map((row) => row.kind);
   });
 
 describe("SRV-V13-VRSTA-PISAC: the kind of a new assignment over the real database", () => {
