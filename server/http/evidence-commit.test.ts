@@ -11,7 +11,7 @@ import {
 } from "../domain/index.ts";
 import type { EvidenceCommitRequestOutcome } from "../evidence/index.ts";
 
-import { commitAnswer } from "./evidence-commit.ts";
+import { commitAnswer, parseCommitEnvelope } from "./evidence-commit.ts";
 
 const RECEIPT = {
   payload: { receiptId: "potvrda-izmisljena" },
@@ -108,6 +108,40 @@ describe("commitAnswer: the closed mapping of 4.13 t. 4", () => {
     [{ status: "pending_signature" } as never, unavailable("repository")],
   ])("maps %j", (outcome, answer) => {
     expect(commitAnswer(outcome)).toStrictEqual(answer);
+  });
+});
+
+// F4-EDI-R05-SRV: a resolving commit is an ordinary envelope. The server takes
+// the actor, institution and revision from the session and the database, so a
+// body that names them is not an envelope, and the route answers 422 invalid.
+describe("parseCommitEnvelope: a resolving commit names nothing but the envelope", () => {
+  const envelope = {
+    documentId: "rad-izmisljeni-1",
+    clientTransactionId: "tx-razrjesenje-1",
+    baseRevision: 7,
+    segments: [Buffer.from("{}").toString("base64")],
+    document: Buffer.from("{}").toString("base64"),
+  };
+  const bytes = (body: unknown) => new TextEncoder().encode(JSON.stringify(body));
+
+  it("reads the envelope of five keys", () => {
+    expect(parseCommitEnvelope(bytes(envelope))).toMatchObject({
+      documentId: "rad-izmisljeni-1",
+      clientTransactionId: "tx-razrjesenje-1",
+      baseRevision: 7,
+    });
+  });
+
+  it.each([
+    ["actor", { actor: "student@primjer.invalid" }],
+    ["actorId", { actorId: "00000000-0000-4000-8000-0000000000b1" }],
+    ["institutionId", { institutionId: "00000000-0000-4000-8000-0000000000a1" }],
+    ["revision", { revision: 8 }],
+    ["evidencePackageId", { evidencePackageId: "paket-izmisljeni-1" }],
+    ["state", { state: { currentRevision: 7 } }],
+    ["resolution", { resolution: "keep-local" }],
+  ])("is no envelope with %s in the body (422 invalid)", (_, extra) => {
+    expect(parseCommitEnvelope(bytes({ ...envelope, ...extra }))).toBeNull();
   });
 });
 
