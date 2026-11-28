@@ -114,6 +114,7 @@ const ENV_NAMES = [
   // The login of the worker process (F4-PM2-R01B, server/http/worker-composition.ts) and its tests.
   "WORKER_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
+  "DUCTUS_ANALYSIS_LOCAL",
   // The engine of the test databases, set per vitest project (S-1F-e, test-support/database).
   "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).

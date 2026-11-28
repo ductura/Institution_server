@@ -1,5 +1,5 @@
 -- F4-EDI-R05-SRV (B1): the resolution of a revision committed over a conflict
--- (20261220810000). Acceptance: (1) the 11-argument app.commit_evidence_segment
+-- (20261220870000). Acceptance: (1) the 11-argument app.commit_evidence_segment
 -- takes NULL or exactly {kind: "keep_local", conflictBaseRevision: M} with
 -- 0 <= M <= the expected revision; anything else is invalid and writes
 -- nothing; (2) a resolution is stored only with a reserved commit, never with

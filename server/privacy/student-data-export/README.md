@@ -8,13 +8,13 @@ Posao izvoza podataka studenta (SRV-1308; plan M10.5; D-271 MQ02), nad bazom iz 
 
 `buildStudentDataExportPackage` slaže deterministički ZIP (`writeZip`: spremljeni unosi, fiksno vrijeme, imena u fiksnom redu): isti sadržaj, ishodište i oznake daju iste bajtove.
 
-| Datoteka                                    | Sadržaj                                                                                        |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `manifest.json`                             | format, popis predaja i svaka datoteka sa SHA-256                                              |
-| `predaje/NNN-<predaja>/predani-tekst.json`  | točan predani tekst (`.txt` kad tekst nije JSON objekt)                                        |
-| `predaje/NNN-<predaja>/potvrda-predaje.pdf` | PDF potvrde predaje istim crtačem kao studentova potvrda; nema ga dok potvrda čeka potpis      |
-| `biljeske.json`                             | studentove bilješke uz predaje                                                                 |
-| `dnevnik-pristupa.json`                     | tko je otvarao studentove radove, po danima Europe/Zagreb (isti model kao S-42, bez zbrajanja) |
+| Datoteka                                    | Sadržaj                                                                                                           |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `manifest.json`                             | format, popis predaja i svaka datoteka sa SHA-256                                                                 |
+| `predaje/NNN-<predaja>/predani-tekst.json`  | točan predani tekst (`.txt` kad tekst nije JSON objekt)                                                           |
+| `predaje/NNN-<predaja>/potvrda-predaje.pdf` | PDF potvrde predaje istim crtačem i s istim kodom potvrde kao studentova potvrda; nema ga dok potvrda čeka potpis |
+| `biljeske.json`                             | studentove bilješke uz predaje                                                                                    |
+| `dnevnik-pristupa.json`                     | tko je otvarao studentove radove, po danima Europe/Zagreb (isti model kao S-42, bez zbrajanja)                    |
 
 ## Tko ga zove
 
@@ -22,7 +22,7 @@ Proces workera (još nema vlastiti sastavljač; vidi „Otvorene stavke”). Pre
 
 ## Koje podatke dira
 
-Samo kroz portove: čitanje workera (`server/database/student-data-export`, `app.worker_student_data_export_*`), pohranu paketa i dostavu poveznice. Sat, mrežu ni bazu ne otvara sam.
+Samo kroz portove: čitanje workera (`server/database/student-data-export`, `app.worker_student_data_export_*`, uz kod potvrde iz `app.worker_student_data_export_confirmation_codes`), pohranu paketa i dostavu poveznice. Sat, mrežu ni bazu ne otvara sam.
 
 ## Otvorene stavke
 
