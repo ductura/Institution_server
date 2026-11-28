@@ -125681,7 +125681,7 @@
     "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/declaration-v3": {
       "get": {
         "operationId": "teacher.declaration-third.get",
-        "summary": "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. A bound declaration also carries ai.unbound: the student's transfer records of the declared document that no evidence revision binds. Opening a bound declaration is recorded in the access log.",
+        "summary": "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. Opening a bound declaration is recorded in the access log.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts",
         "parameters": [
@@ -126159,6 +126159,7 @@
                           "properties": {
                             "unbound": {
                               "maxItems": 5000,
+                              "description": "The student's transfer records of the declared document that no evidence revision up to the declared one binds, ordered by aiTransferId: the complement of payload.ai.recorded. A transfer bound only by a later revision stays here.",
                               "type": "array",
                               "items": {
                                 "additionalProperties": false,
