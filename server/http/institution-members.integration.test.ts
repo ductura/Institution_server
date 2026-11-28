@@ -167,6 +167,7 @@ const OUTCOME: Record<Kind, Record<string, unknown>> = {
   version: {
     published: { status: "published", versionNo: 2 },
     "published-kind-text": { status: "published", versionNo: 2 },
+    "document-kind-slides": { status: "published", versionNo: 2 },
     forbidden: { status: "forbidden" },
     "version-conflict": { status: "version_conflict" },
     unavailable: { status: "unavailable", reason: "database_error" },
@@ -237,7 +238,7 @@ describe("what reaches the port", () => {
     expect(got.status).toBe(201);
     expect(JSON.parse(got.body)).toEqual({ assignmentId: ASSIGNMENT, versionNo: 7 });
     const { expectedVersion, ...content } = published.request.body as Record<string, unknown>;
-    expect(calls[0]!.args).toEqual([activity[0], ASSIGNMENT, expectedVersion, content]);
+    expect(calls[0]!.args).toEqual([activity[0], ASSIGNMENT, expectedVersion, content, null]);
   });
 
   it("a tightening the RPC refuses is 422 invalid_input; an unknown status is 503", async () => {

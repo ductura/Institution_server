@@ -185,7 +185,7 @@ describe("the arguments of the port", () => {
     const path = `/api/v1/institution/courses/${course.toUpperCase()}/assignments`;
     expect((await send(path, upper)).status).toBe(201);
     expect(calls).toEqual([
-      ["create", tokenOf(v), course, requestKey, content, false, NO_SETUP, []],
+      ["create", tokenOf(v), course, requestKey, content, false, NO_SETUP, [], "text"],
     ]);
   });
 
@@ -234,7 +234,17 @@ describe("the arguments of the port", () => {
     const setupKeys = new Set(["requestKey", "externalToolsAllowed", "aiSummaryOnly", "groupIds"]);
     const content = Object.fromEntries(Object.entries(body).filter(([k]) => !setupKeys.has(k)));
     expect(calls).toEqual([
-      ["create", tokenOf(v), v.request.params.courseId, body.requestKey, content, false, setup, []],
+      [
+        "create",
+        tokenOf(v),
+        v.request.params.courseId,
+        body.requestKey,
+        content,
+        false,
+        setup,
+        [],
+        "text",
+      ],
     ]);
   });
 
@@ -301,14 +311,44 @@ describe("the arguments of the port", () => {
   });
 
   // SRV-V14-KIND-ENUM: workKind beside documentKind; workKind wins, a difference is 422.
+  // SRV-V13-VRSTA-PISAC: every kind the database stores reaches the port (absent is text).
   it.each([
-    ["workKind text alone", { workKind: "text" }, 201],
-    ["workKind and documentKind both text", { workKind: "text", documentKind: "text" }, 201],
-    ["workKind text, documentKind slides", { workKind: "text", documentKind: "slides" }, 422],
-    ["workKind spreadsheet, not stored yet", { workKind: "spreadsheet" }, 422],
-    ["workKind unknown", { workKind: "video" }, 422],
-    ["workKind not a string", { workKind: 1 }, 422],
-  ])("create: %s is %i", async (_name, extra, status) => {
+    ["no kind", {}, 201, "text"],
+    ["workKind text alone", { workKind: "text" }, 201, "text"],
+    [
+      "workKind and documentKind both text",
+      { workKind: "text", documentKind: "text" },
+      201,
+      "text",
+    ],
+    ["documentKind slides alone", { documentKind: "slides" }, 201, "slides"],
+    ["workKind slides alone", { workKind: "slides" }, 201, "slides"],
+    [
+      "workKind and documentKind both slides",
+      { workKind: "slides", documentKind: "slides" },
+      201,
+      "slides",
+    ],
+    ["workKind spreadsheet alone", { workKind: "spreadsheet" }, 201, "spreadsheet"],
+    ["workKind text, documentKind slides", { workKind: "text", documentKind: "slides" }, 422, null],
+    [
+      "workKind spreadsheet, documentKind slides",
+      { workKind: "spreadsheet", documentKind: "slides" },
+      422,
+      null,
+    ],
+    ["documentKind spreadsheet (not a DocumentKind)", { documentKind: "spreadsheet" }, 422, null],
+    [
+      "documentKind spreadsheet with workKind spreadsheet",
+      { workKind: "spreadsheet", documentKind: "spreadsheet" },
+      422,
+      null,
+    ],
+    ["workKind unknown", { workKind: "video" }, 422, null],
+    ["documentKind unknown", { documentKind: "video" }, 422, null],
+    ["workKind not a string", { workKind: 1 }, 422, null],
+    ["documentKind null", { documentKind: null }, 422, null],
+  ])("create: %s is %i", async (_name, extra, status, kind) => {
     const v = CREATE.find((x) => x.kind === "success")!;
     createAnswer = () => ({ status: "created", id: v.response.body.id as string });
     await start(v.request.headers.origin!);
@@ -317,8 +357,48 @@ describe("the arguments of the port", () => {
     const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
     expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(status);
     expect(calls.length).toBe(status === 201 ? 1 : 0);
-    // The kind fields never reach the port as content.
-    if (status === 201) expect(calls[0]![4]).toEqual(contentWithoutSetup(base));
+    // The kind fields never reach the port as content; the kind is its own last argument.
+    if (status === 201) {
+      expect(calls[0]![4]).toEqual(contentWithoutSetup(base));
+      expect(calls[0]![8]).toBe(kind);
+    }
+  });
+
+  it.each([
+    ["no kind", {}, 201, null],
+    ["documentKind slides", { documentKind: "slides" }, 201, "slides"],
+    ["workKind spreadsheet", { workKind: "spreadsheet" }, 201, "spreadsheet"],
+    ["workKind text", { workKind: "text" }, 201, "text"],
+    ["different kinds", { workKind: "spreadsheet", documentKind: "text" }, 422, null],
+    ["documentKind spreadsheet", { documentKind: "spreadsheet" }, 422, null],
+    ["workKind unknown", { workKind: "video" }, 422, null],
+  ])(
+    "publish: %s is %i; the kind (null for none) is the port's last argument",
+    async (_name, extra, status, kind) => {
+      const v = PUBLISH.find((x) => x.kind === "success")!;
+      publishAnswer = () => ({
+        status: "published",
+        versionNo: v.response.body.versionNo as number,
+      });
+      await start(v.request.headers.origin!);
+      const body = { ...(v.request.body as Record<string, unknown>), ...extra };
+      const path = `/api/v1/institution/assignments/${v.request.params.assignmentId}/versions`;
+      expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(status);
+      expect(calls.map((args) => args[5])).toEqual(status === 201 ? [kind] : []);
+    },
+  );
+
+  // The database refuses a version that names another kind than the assignment's (ZD422).
+  it("publish: the port's invalid for another kind is the 422 of the contract", async () => {
+    const v = PUBLISH.find((x) => x.kind === "success")!;
+    publishAnswer = () => ({ status: "invalid" }) as AssignmentPublishOutcome;
+    await start(v.request.headers.origin!);
+    const body = { ...(v.request.body as Record<string, unknown>), documentKind: "slides" };
+    const path = `/api/v1/institution/assignments/${v.request.params.assignmentId}/versions`;
+    const got = await send(path, { ...v, request: { ...v.request, body } });
+    expect([got.status, (got.body as { code?: string }).code]).toEqual([422, "invalid_input"]);
+    expect(calls).toHaveLength(1);
+    expect(activity).toEqual([]);
   });
 
   it("create: no key, or a key that is not a UUID, is 422 before the port", async () => {
@@ -344,7 +424,7 @@ describe("the arguments of the port", () => {
     ).toBe(201);
     const { expectedVersion, ...content } = v.request.body as Record<string, unknown>;
     expect(calls).toEqual([
-      ["publish", tokenOf(v), v.request.params.assignmentId, expectedVersion, content],
+      ["publish", tokenOf(v), v.request.params.assignmentId, expectedVersion, content, null],
     ]);
   });
 });

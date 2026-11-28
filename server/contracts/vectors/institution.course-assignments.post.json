@@ -845,9 +845,8 @@
       }
     },
     {
-      "name": "document-kind-slides-not-stored",
-      "kind": "error",
-      "code": "invalid_input",
+      "name": "document-kind-slides",
+      "kind": "success",
       "request": {
         "params": {
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
@@ -875,21 +874,16 @@
         }
       },
       "response": {
-        "status": 422,
+        "status": 201,
         "contentType": "application/json",
         "body": {
-          "error": "invalid_input",
-          "code": "invalid_input",
-          "messageKey": "errors.invalidInput",
-          "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000002105"
+          "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
         }
       }
     },
     {
-      "name": "work-kind-spreadsheet-not-stored",
-      "kind": "error",
-      "code": "invalid_input",
+      "name": "work-kind-spreadsheet",
+      "kind": "success",
       "request": {
         "params": {
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
@@ -917,14 +911,10 @@
         }
       },
       "response": {
-        "status": 422,
+        "status": 201,
         "contentType": "application/json",
         "body": {
-          "error": "invalid_input",
-          "code": "invalid_input",
-          "messageKey": "errors.invalidInput",
-          "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000002105"
+          "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
         }
       }
     },
