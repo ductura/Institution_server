@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.188.0",
+    "version": "1.191.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -52400,6 +52400,9 @@
                               },
                               "mentorshipId": {
                                 "type": "null"
+                              },
+                              "declineReason": {
+                                "type": "null"
                               }
                             }
                           },
@@ -52485,6 +52488,9 @@
                               "mentorshipId": {
                                 "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
                                 "type": "string"
+                              },
+                              "declineReason": {
+                                "type": "null"
                               }
                             }
                           },
@@ -52569,6 +52575,17 @@
                               },
                               "mentorshipId": {
                                 "type": "null"
+                              },
+                              "declineReason": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,600}(?![\\s\\S])",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -52652,6 +52669,9 @@
                                 "type": "string"
                               },
                               "mentorshipId": {
+                                "type": "null"
+                              },
+                              "declineReason": {
                                 "type": "null"
                               }
                             }
@@ -88828,6 +88848,10 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "differsFromFacultyRules": {
+                      "description": "true when the settings of this version that the faculty rule prescribes (AI policy, purposes, evidence profile, import) differ from the faculty rule version the assignment is bound to, false when they are the same. Absent when there is nothing to compare: the version is bound to no faculty rule version, or its evidence profile is basic (no comparison for basic, decision of 27 Nov 2026). A later faculty rule version does not change it.",
+                      "type": "boolean"
                     }
                   }
                 }

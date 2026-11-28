@@ -410,7 +410,8 @@ export const courseGroupTeachersPost = defineRoute({
 // optional, so a body without them keeps its meaning. The mounted route stores
 // externalToolsAllowed and aiSummaryOnly on the assignment (SRV-ZAD-POSTAVKE,
 // migration 20261219210000), and links groupIds to it in the same transaction
-// (F4 wave 2 #5, institution.add_assignment_groups, migration 20261220620000).
+// (F4 wave 2 #5, institution.create_assignment_with_groups, migration
+// 20261220800000: a replayed requestKey with another set of groups is 409).
 const ASSIGNMENT_SETUP = {
   /** zs-2: the course's seminar groups it is for, distinct; absent or empty is the whole course. */
   groupIds: Type.Optional(

@@ -628,6 +628,8 @@ SELECT bag_eq(
     'student_assignments() definer app',
     -- INT-31 (Ductus#2055): the assignments of the open mentorships of the caller.
     'student_mentored_assignments() definer app',
+    -- F4-STU-R08-SRV: whether the caller's assignment differs from its bound faculty rule version.
+    'student_assignment_differs_from_faculty_rule(p_assignment_id uuid) definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
     'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
