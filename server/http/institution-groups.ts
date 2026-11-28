@@ -51,11 +51,13 @@ function onlyField(value: unknown, name: string): unknown {
 }
 
 /** A group name: 1 to 80 UTF-16 units, no white space at either end (the RPC judges further). */
+export const isGroupName = (name: unknown): name is string =>
+  typeof name === "string" && name.length >= 1 && name.length <= 80 && name.trim() === name;
+
+/** {name} with a group name, or null. */
 export function parseGroupBody(value: unknown): string | null {
   const name = onlyField(value, "name");
-  return typeof name === "string" && name.length >= 1 && name.length <= 80 && name.trim() === name
-    ? name
-    : null;
+  return isGroupName(name) ? name : null;
 }
 
 /** A teacher id, a UUID in any case; lower case for the RPC. */

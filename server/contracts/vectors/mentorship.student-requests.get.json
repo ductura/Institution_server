@@ -51,7 +51,8 @@
               "requestedAt": "2027-01-10T12:00:00.000Z",
               "state": "declined",
               "endedAt": "2027-01-12T12:00:00.000Z",
-              "mentorshipId": null
+              "mentorshipId": null,
+              "declineReason": "Ovaj semestar nemam slobodnih termina."
             },
             {
               "requestId": "00000000-0000-4000-8000-000000001424",
@@ -61,7 +62,8 @@
               "requestedAt": "2027-01-05T12:00:00.000Z",
               "state": "withdrawn",
               "endedAt": "2027-01-06T12:00:00.000Z",
-              "mentorshipId": null
+              "mentorshipId": null,
+              "declineReason": null
             }
           ]
         }

@@ -103,6 +103,10 @@ describe("student.notice.get", () => {
         value: { ...storedOf(VECTORS[0]!.response.body), aiSummaryOnly: "true" },
       }),
       async () => ({ ok: true, value: { ...storedOf(VECTORS[0]!.response.body), mentorName: "" } }),
+      async () => ({
+        ok: true,
+        value: { ...storedOf(VECTORS[0]!.response.body), differsFromFacultyRules: "true" },
+      }),
       () => Promise.reject(new Error("izmisljena greska")),
     ]) {
       answer = bad;

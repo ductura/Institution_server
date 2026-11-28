@@ -193,6 +193,8 @@ export const INSTITUTION_HANDLERS: Handlers = {
         // F4-STU-R08-SRV: the fake records no person names, so no mentor is named.
         courseName: course.name,
         mentorName: null,
+        // The fake keeps no faculty rule versions, so it binds no version to one
+        // and leaves differsFromFacultyRules out, as the server does then.
       },
     };
   },

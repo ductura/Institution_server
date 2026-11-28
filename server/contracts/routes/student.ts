@@ -385,6 +385,18 @@ export const studentNoticeGet = defineRoute({
               'A display string only: one mentor, or several teachers joined by ", ". Clients show it as is and never split or parse it.',
           }),
         ),
+        /**
+         * F4-STU-R08-SRV (P-B4): whether aiPolicy, aiPurposes (as a set),
+         * evidenceProfile or import of this version differ from the faculty
+         * rule version the assignment is bound to (M2.12-P01b). Not a member
+         * of the notice fingerprint.
+         */
+        differsFromFacultyRules: Type.Optional(
+          Type.Boolean({
+            description:
+              "true when the settings of this version that the faculty rule prescribes (AI policy, purposes, evidence profile, import) differ from the faculty rule version the assignment is bound to, false when they are the same. Absent when there is nothing to compare: the version is bound to no faculty rule version, or its evidence profile is basic (no comparison for basic, decision of 27 Nov 2026). A later faculty rule version does not change it.",
+          }),
+        ),
       }),
     },
   ],
