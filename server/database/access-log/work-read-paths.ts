@@ -88,6 +88,13 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     callers: ["server/database/replay-source.ts", "server/http/time-machine/store.ts"],
   },
   {
+    fn: "app.read_replay_resolutions",
+    returns: "content",
+    surfaces: ["replay"],
+    proof: "db/main/tests/289-evidence-revision-resolution.sql",
+    callers: ["server/database/replay-source.ts"],
+  },
+  {
     fn: "app.read_work_versions",
     returns: "content",
     surfaces: ["replay"],

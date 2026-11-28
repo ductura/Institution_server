@@ -256,6 +256,8 @@ async function prepareAndCommit(
       storageRef,
       snapshot: snapshotText,
       aiTransferLinks: aiTransferLinksOf(s),
+      // F4-EDI-R05-SRV (B1): the route does not take a resolution yet.
+      resolution: null,
     },
     signing,
   );
