@@ -56,6 +56,37 @@ describe("local switches (SRV-ANALIZA-LOKALNO)", () => {
       {},
     );
   });
+
+  it("passes the PDF renderer origin only as a loopback origin (LOK-SRV-PDF-ORIGIN)", () => {
+    for (const origin of ["http://127.0.0.1:8095", "http://[::1]:3000"]) {
+      expect(baseEnv({ DUCTURA_PDF_RENDERER_ORIGIN: origin })).not.toHaveProperty(
+        "DUCTURA_PDF_RENDERER_ORIGIN",
+      );
+      expect(localSwitches({ DUCTURA_PDF_RENDERER_ORIGIN: origin })).toEqual({
+        DUCTURA_PDF_RENDERER_ORIGIN: origin,
+      });
+    }
+    for (const origin of [
+      undefined,
+      "",
+      "http://gotenberg.example:3000",
+      "http://10.0.0.5:3000",
+      "https://127.0.0.1:8095",
+      "http://127.0.0.1:8095/",
+      "http://127.0.0.1",
+      "http://127.0.0.1:0",
+      "http://127.0.0.1.example:8095",
+      "http://localhost:8095",
+    ])
+      expect(localSwitches({ DUCTURA_PDF_RENDERER_ORIGIN: origin })).toEqual({});
+    expect(
+      localSwitches({
+        DUCTUS_ANALYSIS_LOCAL: "1",
+        DUCTURA_PDF_RENDERER_ORIGIN: "http://127.0.0.1:8095",
+        DUCTURA_DEPLOYMENT: "x",
+      }),
+    ).toEqual({ DUCTUS_ANALYSIS_LOCAL: "1", DUCTURA_PDF_RENDERER_ORIGIN: "http://127.0.0.1:8095" });
+  });
 });
 
 describe("contract §1: ports, issuer and origin", () => {

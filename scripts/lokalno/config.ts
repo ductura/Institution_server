@@ -275,14 +275,25 @@ export function serverEnv(
   };
 }
 
+/** The only renderer origins the server accepts (server/downloads/export/pdf/slides-pdf.ts). */
+const LOOPBACK_ORIGIN = /^http:\/\/(?:127\.0\.0\.1|\[::1\]):[1-9][0-9]{0,4}$/u;
+
 /**
  * The local-only switches the caller may hand to the server. baseEnv drops every
- * DUCTUS_* variable, so the analysis switch of SRV-ANALIZA-LOKALNO
+ * DUCTUS_* and DUCTURA_* variable, so the analysis switch of SRV-ANALIZA-LOKALNO
  * (server/http/analysis/index.ts) passes only here, and only as exactly "1";
- * the server still checks its own local stack marker.
+ * the server still checks its own local stack marker. The local PDF renderer
+ * (LOK-SRV-PDF-ORIGIN, Gotenberg started by the local tooling) passes only as a
+ * loopback origin, the same form the server itself requires.
  */
 export function localSwitches(env: Env): Record<string, string> {
-  return env.DUCTUS_ANALYSIS_LOCAL === "1" ? { DUCTUS_ANALYSIS_LOCAL: "1" } : {};
+  const renderer = env.DUCTURA_PDF_RENDERER_ORIGIN;
+  return {
+    ...(env.DUCTUS_ANALYSIS_LOCAL === "1" ? { DUCTUS_ANALYSIS_LOCAL: "1" } : {}),
+    ...(renderer !== undefined && LOOPBACK_ORIGIN.test(renderer)
+      ? { DUCTURA_PDF_RENDERER_ORIGIN: renderer }
+      : {}),
+  };
 }
 
 /**
