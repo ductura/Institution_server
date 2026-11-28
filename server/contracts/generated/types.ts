@@ -166,7 +166,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "from": 0 } | { "documentId": string; "from": number; "head": { "segmentHash": string; "segmentCount": number } };
-    success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string } }; headers: {  } };
+    success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string }; "resolutions"?: { [key: string]: { "kind": "keep_local"; "conflictBaseRevision": number } } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
   };
   "institution.academic-years.get": {

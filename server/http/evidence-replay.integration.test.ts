@@ -44,6 +44,13 @@ type Row = Record<string, unknown>;
 // The source row per document: what app.read_replay_source answers for this session.
 let sources: Record<string, Row | Error> = {};
 let checkpoints: Row[] = [];
+// F4-EDI-R05-SRV (B2): what app.read_replay_resolutions answers for this session.
+let resolutions: Row[] | Error = [];
+const mark = (hash: string, base: unknown): Row =>
+  Object.fromEntries([
+    ["segment_hash", hash],
+    ["conflict_base_revision", base],
+  ]);
 const queries: { text: string; values: readonly unknown[] | undefined; token: unknown }[] = [];
 // A row of app.read_replay_source; its column names are the database's, which
 // only server/database names in code, so the row is built from pairs here.
@@ -63,6 +70,10 @@ const withActor = (async (token, fn) => {
         const rows = checkpoints.filter((r) => asked.includes(r.content_hash as string));
         return { rows: rows as never[], rowCount: rows.length };
       }
+      if (text.includes("read_replay_resolutions")) {
+        if (resolutions instanceof Error) throw resolutions;
+        return { rows: resolutions as never[], rowCount: resolutions.length };
+      }
       const row = sources[String(values?.[0])] ?? { outcome: "not_found" };
       if (row instanceof Error) throw row;
       return { rows: [row] as never[], rowCount: 1 };
@@ -81,6 +92,7 @@ function reset() {
   queries.length = 0;
   reads.mockClear();
   checkpoints = [{ content_hash: sha(page.startDocument), body: page.startDocument }];
+  resolutions = [];
   sources = {
     [DOC]: found([HASH]),
     "dokument-izmisljeni-zv-2": found([]),
@@ -175,8 +187,11 @@ describe("every vector of evidence.replay.post", () => {
 describe("A. access comes from the session and the database only", () => {
   it("the token goes only to withActor; the RPC gets only the document id", async () => {
     await post(JSON.stringify({ documentId: DOC, from: 0 }));
-    expect(queries.map((q) => q.token)).toEqual([TOKEN, TOKEN]);
+    expect(queries.map((q) => q.token)).toEqual([TOKEN, TOKEN, TOKEN]);
     expect(queries[0]?.values).toEqual([DOC]);
+    // F4-EDI-R05-SRV (B2): the resolutions are read last, by the document id only.
+    expect(queries[2]?.text).toContain("read_replay_resolutions");
+    expect(queries[2]?.values).toEqual([DOC]);
     for (const q of queries) expect(JSON.stringify(q.values)).not.toContain(TOKEN);
   });
 
@@ -321,5 +336,38 @@ describe("C and E. failures are whole and never look like absence", () => {
       expect(line).not.toContain("kanarinac");
       expect(line).not.toContain(TOKEN);
     }
+  });
+});
+
+describe("F4-EDI-R05-SRV (B2): the resolutions of the record on the page", () => {
+  it("names keep_local and its base for a listed segment, as the JCS text", async () => {
+    resolutions = [mark(HASH, "0"), mark("e".repeat(64), 3)];
+    const answer = await post(JSON.stringify({ documentId: DOC, from: 0 }));
+    expect(answer.status).toBe(200);
+    const body = JSON.parse(answer.body) as Record<string, unknown>;
+    expect(body.resolutions).toEqual({ [HASH]: { kind: "keep_local", conflictBaseRevision: 0 } });
+    expect(answer.body).toBe(JSON.stringify(body));
+    expect(answer.body).not.toContain("e".repeat(64));
+  });
+
+  it("a malformed resolution row is 503 context, never a page without it", async () => {
+    resolutions = [mark(HASH, -1)];
+    const answer = await post(JSON.stringify({ documentId: DOC, from: 0 }));
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+  });
+
+  it("ZD401 from the resolutions is 401", async () => {
+    resolutions = Object.assign(new Error("izmisljeno"), { code: "ZD401" });
+    const answer = await post(JSON.stringify({ documentId: DOC, from: 0 }));
+    expect(answer.status).toBe(401);
+    expect(JSON.parse(answer.body)).toEqual({ status: "unauthenticated" });
+  });
+
+  it("a throw from the resolutions is 503 context", async () => {
+    resolutions = new Error("izmisljeno");
+    const answer = await post(JSON.stringify({ documentId: DOC, from: 0 }));
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
   });
 });

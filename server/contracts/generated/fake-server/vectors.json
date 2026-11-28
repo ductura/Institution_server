@@ -9061,6 +9061,7 @@
         },
         "next": null,
         "replayFormat": "ductus-evidence-replay-v1",
+        "resolutions": {},
         "resumeDocuments": {},
         "segmentCount": 1,
         "segments": [
@@ -9097,6 +9098,7 @@
         "head": null,
         "next": null,
         "replayFormat": "ductus-evidence-replay-v1",
+        "resolutions": {},
         "resumeDocuments": {},
         "segmentCount": 0,
         "segments": [],
@@ -41628,7 +41630,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.192.0",
+        "apiVersion": "1.193.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -41644,7 +41646,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.192.0",
+        "apiVersion": "1.193.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

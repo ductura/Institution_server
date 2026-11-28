@@ -153,6 +153,9 @@ export type {
 export type {
   ReplayCheckpointsResult,
   ReplayHead,
+  ReplayResolutionMark,
+  ReplayResolutionReader,
+  ReplayResolutionsResult,
   ReplaySource,
   ReplaySourceResult,
 } from "./replay-source.ts";
@@ -323,7 +326,7 @@ export {
   type PendingReceiptObjectRead,
   type PendingReceiptObjectSource,
 } from "./receipts/index.ts";
-export { createReplaySource } from "./replay-source.ts";
+export { createReplayResolutionReader, createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export {
   readSettingsValues,

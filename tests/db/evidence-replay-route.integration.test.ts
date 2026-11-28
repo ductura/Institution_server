@@ -343,6 +343,7 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
       startDocument: start,
       segments: [segment],
       resumeDocuments: {},
+      resolutions: {},
     });
     expect(page.text).toBe(canonicalizeJcs(page.body));
   });
@@ -451,5 +452,34 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
     const head = fresh.body.head;
     const later = await replay({ documentId, from: 1, head }, tokens.vesna);
     expect(later.body).toMatchObject({ from: 1, segments: [second], startDocument: null });
+  });
+  it("F4-EDI-R05-SRV (B2): a stored resolution is on the page of its segment, the same bytes for owner and teacher", async () => {
+    // Written as the commit with a resolution writes it (B1): revision 2, kept over revision 0.
+    const second = (await replay({ documentId, from: 0 }, tokens.ana)).body.head as {
+      segmentHash: string;
+      segmentCount: number;
+    };
+    const written = await admin.query(
+      `INSERT INTO evidence.revision_resolution (receipt_id, evidence_package_id, institution_id,
+         principal_id, document_id, revision, conflict_base_revision, kind, created_at)
+       SELECT r.id, r.evidence_package_id, r.institution_id, $3, $1, 2, 0, 'keep_local', now()
+         FROM evidence.receipt r WHERE r.institution_id = $2 AND r.payload_sha256 = $4`,
+      [documentId, id.a, id.ana, second.segmentHash],
+    );
+    expect(written.rowCount).toBe(1);
+    const resolved = { [second.segmentHash]: { kind: "keep_local", conflictBaseRevision: 0 } };
+    const owner = await replay({ documentId, from: 0 }, tokens.ana);
+    const teacher = await replay({ documentId, from: 0 }, tokens.vesna);
+    expect(owner.status).toBe(200);
+    expect(owner.body.resolutions).toEqual(resolved);
+    expect(teacher.text).toBe(owner.text);
+    expect(owner.text).toBe(canonicalizeJcs(owner.body));
+    // A later page names its own segment.
+    const later = await replay({ documentId, from: 1, head: second }, tokens.vesna);
+    expect(later.body).toMatchObject({ from: 1, resolutions: resolved });
+    // A reader who may not see the work still gets the answer of a missing one.
+    for (const who of [tokens.ivo, tokens.petra, tokens.marko]) {
+      expect((await replay({ documentId, from: 0 }, who)).status).toBe(404);
+    }
   });
 });

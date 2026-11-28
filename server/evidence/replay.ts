@@ -12,7 +12,12 @@
 // through `source`, so the owner and the teacher of the same stored state get
 // the same bytes (PRODUCT §5 rule 5). Every failure is whole, never a partial
 // page; `reason` is a fixed code for the server log.
-import type { ReplayHead, ReplaySource } from "../database/index.ts";
+//
+// F4-EDI-R05-SRV (B2): the page also names, for each of its segments that was
+// committed over a conflict, the earlier revision the conflict was against
+// (`resolutions`). They are read after the listing, through the same viewers
+// and the same submission cut, so a mark is shown only for a listed segment.
+import type { ReplayHead, ReplayResolutionReader, ReplaySource } from "../database/index.ts";
 import {
   canonicalizeJcs,
   REVISION_ZERO_JCS,
@@ -59,7 +64,12 @@ export type ReplayReaderDeps = {
   readonly source: ReplaySource;
   /** Storage of every institution; bound here to the institution the source names. */
   readonly payloads: InstitutionEvidencePayloadReader;
+  /** Bound to the same session as `source`; the resolutions of the record. */
+  readonly resolutions: ReplayResolutionReader;
 };
+
+/** F4-EDI-R05-SRV: the text of this device kept over the revision `conflictBaseRevision`. */
+export type ReplayResolution = { kind: "keep_local"; conflictBaseRevision: number };
 
 export type ReplayPage = {
   replayFormat: typeof REPLAY_FORMAT;
@@ -72,6 +82,8 @@ export type ReplayPage = {
   segments: string[];
   /** Per chain break on this page: the checkpoint the replay resumes from, when one has that hash. */
   resumeDocuments: Record<string, string>;
+  /** Per segment on this page that was committed over a conflict: what it resolved. */
+  resolutions: Record<string, ReplayResolution>;
 };
 
 export type ReplayUnavailableReason =
@@ -81,6 +93,7 @@ export type ReplayUnavailableReason =
   | "invalid_segment"
   | "segment_mismatch"
   | "checkpoints_unavailable"
+  | "resolutions_unavailable"
   | "start_missing";
 
 export type ReplayReadResult =
@@ -167,6 +180,7 @@ export async function readReplayPage(
     startDocument: null,
     segments: [],
     resumeDocuments: {},
+    resolutions: {},
   };
   if (hashes.length === 0) {
     return from === 0 ? { status: "ok", body: canonicalizeJcs(page) } : { status: "not_found" };
@@ -281,5 +295,27 @@ export async function readReplayPage(
   }
   // Without the document the first change applies to there is nothing to replay.
   if (start !== null && page.startDocument === null) return unavailable("start_missing");
+
+  // Read after the listing: a listed segment was committed with its mark in
+  // the same transaction, and a submission since cuts only past the head that
+  // was listed, so every listed mark is still there. Marks of segments not on
+  // this page are dropped; a reader that fails fails the whole page.
+  let marks;
+  try {
+    marks = await deps.resolutions.readResolutions(documentId);
+  } catch {
+    return unavailable("resolutions_unavailable");
+  }
+  if (marks.status === "unauthenticated") return { status: "unauthenticated" };
+  if (marks.status !== "found") return unavailable("resolutions_unavailable");
+  const onPage = new Set(hashes.slice(from, index));
+  for (const mark of marks.marks) {
+    if (onPage.has(mark.segmentHash)) {
+      page.resolutions[mark.segmentHash] = {
+        kind: "keep_local",
+        conflictBaseRevision: mark.conflictBaseRevision,
+      };
+    }
+  }
   return { status: "ok", body: canonicalizeJcs(page) };
 }

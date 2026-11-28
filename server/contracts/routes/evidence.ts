@@ -456,6 +456,22 @@ export const replay = defineRoute({
         resumeDocuments: Type.Record(Type.String({ pattern: "^[0-9a-f]{64}$" }), Type.String(), {
           additionalProperties: false,
         }),
+        // F4-EDI-R05-SRV (B2): per segment on this page committed over a conflict.
+        // Optional for clients of older versions; this server always sends it.
+        resolutions: Type.Optional(
+          Type.Record(
+            Type.String({ pattern: "^[0-9a-f]{64}$" }),
+            closed({ kind: Type.Literal("keep_local"), conflictBaseRevision: Count }),
+            {
+              additionalProperties: false,
+              description:
+                "Per segment hash on this page whose revision was committed over a conflict: " +
+                "the text of the committing device was kept over revision conflictBaseRevision. " +
+                "A segment without an entry resolved no conflict; the same for owner and teacher. " +
+                "Sent on every page since 1.193.0.",
+            },
+          ),
+        ),
       }),
     },
   ],
