@@ -52,7 +52,7 @@ SELECT is(pg_temp.kinds('anon'), 'ZD401: not authenticated', 'without a session 
 SELECT is((SELECT p.prosecdef FROM pg_proc p WHERE p.oid = 'institution.student_assignments()'::regprocedure),
           true, 'still SECURITY DEFINER');
 SELECT is((SELECT p.proconfig::text FROM pg_proc p WHERE p.oid = 'institution.student_assignments()'::regprocedure),
-          '{search_path=""}', 'still with an empty search_path');
+          '{"search_path=\"\""}', 'still with an empty search_path');
 SELECT is((SELECT p.provolatile::text FROM pg_proc p WHERE p.oid = 'institution.student_assignments()'::regprocedure),
           's', 'still STABLE');
 SELECT ok(has_function_privilege('ductus_app', 'institution.student_assignments()', 'EXECUTE'),
