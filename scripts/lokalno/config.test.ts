@@ -20,6 +20,7 @@ import {
   PORTS,
   ensureSecrets,
   ISSUER,
+  localSwitches,
   loginUrl,
   oidcEnv,
   SEED_ACCOUNTS_FILE,
@@ -44,6 +45,18 @@ afterEach(() => {
   dir = undefined;
 });
 const tempDir = (): string => (dir = mkdtempSync(join(tmpdir(), "lokalno-")));
+
+describe("local switches (SRV-ANALIZA-LOKALNO)", () => {
+  it("passes the analysis switch only as exactly 1, which baseEnv would drop", () => {
+    expect(baseEnv({ DUCTUS_ANALYSIS_LOCAL: "1" })).not.toHaveProperty("DUCTUS_ANALYSIS_LOCAL");
+    expect(localSwitches({ DUCTUS_ANALYSIS_LOCAL: "1" })).toEqual({ DUCTUS_ANALYSIS_LOCAL: "1" });
+    for (const value of [undefined, "", "0", "true", " 1"])
+      expect(localSwitches({ DUCTUS_ANALYSIS_LOCAL: value })).toEqual({});
+    expect(localSwitches({ DUCTUS_AUTH_PROVIDER: "fake-oidc", DUCTURA_DEPLOYMENT: "x" })).toEqual(
+      {},
+    );
+  });
+});
 
 describe("contract §1: ports, issuer and origin", () => {
   it("the provider and the server agree on the issuer and the callback of the edge origin", () => {
