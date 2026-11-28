@@ -38,3 +38,25 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
 - **Zaglavlje `ductus-protocol`.** Ugovor ga zasad navodi u opisu rute i u vektorima. Format ugovora (`RequestSpec`) još nema polje za zaglavlja zahtjeva.
 - **Generirani klijent** (`generated/client.ts`) ne pokriva ove dvije rute. Ne šalje `ductus-protocol`, `Origin` ni kolačić, a od greške čita samo kod, pa gubi stanje rada iz 409 i `stage` iz 503. Klijent evidencije ostaje Ductusov `src/client/evidence-ingest.ts` dok `RequestSpec` ne dobije zaglavlja. Isto vrijedi za replay (`evidence.replay.post`, DAN-818): klijent replaya mora slati `ductus-protocol: 1`, a Ductusov `src/client/replay.ts` ga ne šalje, pa bi doslovni prijenos svaku stranicu dobio kao 426.
 - **`receiptKeys`** može biti prazan popis kad domena nema ključ potvrde. Ruta ga tada šalje uz 200, a klijent rad smatra nedostupnim.
+
+## Razrješenje sukoba: „zadrži tekst s ovog uređaja” (F4-EDI-R05-SRV)
+
+Razrješenje je običan commit (`evidence.commit.post`) bez novog polja, nove rute i promjene na serveru. Uređaj B pomakne rad na reviziju N. Commit uređaja A tada dobiva 409 `stale_base` ili `chain_conflict` sa stanjem glave (`currentRevision`, `documentHash`, `headSegmentHash`, `lastSequenceTo`). Uređaj A šalje **novi** segment na toj glavi:
+
+- `baseRevision = currentRevision`, `predecessorSegmentHash = headSegmentHash`;
+- `sequenceFrom = lastSequenceTo + 1`, `initialDocumentHash = documentHash`;
+- događaji koji tekst servera pretvaraju u tekst uređaja A, s atribucijom `unattributed`.
+
+Rezultat je obična revizija N + 1. Revizija N, njezina kontrolna točka i potvrda ostaju nepromijenjene, a potvrda N + 1 u `previousReceiptId` imenuje potvrdu revizije N. Rad uređaja B ostaje u lancu, a lanac se od revizije 0 nastavlja bez prekida.
+
+Razrješenje prolazi sve provjere običnog commita, istim redom i s istim odgovorima:
+
+- tuđi rad, tuđi paket i rad druge ustanove daju isti 404 `not_found` kao nepostojeći rad;
+- baza različita od glave (starija ili iz budućnosti) daje `stale_base` sa stanjem; prethodnik koji nije glava daje `chain_conflict`; pogrešan `initialDocumentHash` ili preskočen slijed daju `not_continuous`; `sequenceFrom` ≤ `lastSequenceTo` daje 422 `invalid`;
+- `segmentId` koji paket već ima daje 422 `invalid`, snimka koja nije završni dokument 422 `document_mismatch`, a segment iznad granice paketa 413 `too_large`, nikad 503;
+- isti zahtjev ponovno daje `duplicate` s istom revizijom i istim bajtovima potvrde. `clientTransactionId` koji je prije odbijen sa `stale_base` nije spremljen, pa ga razrješenje smije ponovno koristiti. Isti `clientTransactionId` s drugim segmentom daje `txid_reused`;
+- od dva usporedna commita na istoj bazi N (razrješenje i običan commit) točno jedan dobiva N + 1, a drugi `stale_base`.
+
+**Razrješenje je dopušteno i nakon roka, prije predaje.** Nakon predaje paket više ne prima dokaze, pa novo razrješenje dobiva 409 `not_accepting`, a ponovljeni zahtjev razrješenja prihvaćenog prije predaje i dalje daje `duplicate`.
+
+Testovi: `tests/db/evidence-commit-resolution.integration.test.ts` (baza), `server/evidence/resolution.test.ts` (priprema prije pohrane) i `server/http/evidence-commit.test.ts` (zatvoreno tijelo: `actor`, `institutionId`, `revision` i slična polja daju 422 `invalid`).
