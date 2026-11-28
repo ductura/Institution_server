@@ -713,8 +713,8 @@
       "code": "invalid_input"
     },
     {
-      "name": "document-kind-slides-not-stored",
-      "kind": "error",
+      "name": "document-kind-slides",
+      "kind": "success",
       "request": {
         "params": {
           "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01"
@@ -742,17 +742,13 @@
         }
       },
       "response": {
-        "status": 422,
+        "status": 201,
         "contentType": "application/json",
         "body": {
-          "error": "invalid_input",
-          "code": "invalid_input",
-          "messageKey": "errors.invalidInput",
-          "status": 422,
-          "requestId": "00000000-0000-4000-8000-000000002107"
+          "assignmentId": "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01",
+          "versionNo": 2
         }
-      },
-      "code": "invalid_input"
+      }
     }
   ]
 }
