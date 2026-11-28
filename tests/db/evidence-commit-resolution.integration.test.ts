@@ -253,9 +253,18 @@ function inputOf(context: EvidenceCommitContext, work: Work, step: Step): Eviden
   };
 }
 
-async function commit(who: Student, work: Work, step: Step) {
+/** The context read alone, which the service passes on when it is a refusal. */
+async function readContextOf(who: Student, work: Work, txid: string) {
+  return createEvidenceCommitter(withActor, signerOf(registered).signer).readContext(
+    token[who],
+    work.documentId,
+    txid,
+  );
+}
+
+async function commit(who: Student, work: Work, step: Step, read?: EvidenceCommitContext) {
   const key = signerOf(registered);
-  const context = await contextOf(who, work, step.txid);
+  const context = read ?? (await contextOf(who, work, step.txid));
   const input = inputOf(context, work, step);
   const outcome = await createEvidenceCommitter(withActor, key.signer).commit(token[who], input);
   return { outcome, input, calls: key.calls };
@@ -625,6 +634,11 @@ describe("a resolution and submission", () => {
     const done = await commit("mia", mia, step);
     const first = committed(done.outcome);
     expect(first.revision).toBe(2);
+    const late = onHead(head, `tx-${suffix}-mia-b2`, "B 2");
+    const resolved = onHead(headAfter(done), `tx-${suffix}-mia-k2`, "A, opet.");
+    // Contexts read while the package still accepted, so the commit itself meets the close.
+    const lateContext = await contextOf("mia", mia, late.txid);
+    const resolvedContext = await contextOf("mia", mia, resolved.txid);
     // Submission closes the package (evidence.close_submitted_packages), as D10 holds.
     await admin.query(
       "UPDATE evidence.package SET accepts_evidence = false WHERE document_id = $1",
@@ -634,11 +648,14 @@ describe("a resolution and submission", () => {
     expect(again.outcome).toMatchObject({ status: "duplicate", revision: 2 });
     if (again.outcome.status !== "duplicate") throw new Error();
     expect(JSON.stringify(again.outcome.signedReceipt)).toBe(JSON.stringify(first.signedReceipt));
-    // A new commit and a new resolution on the closed package are both refused.
-    const late = onHead(head, `tx-${suffix}-mia-b2`, "B 2");
-    expect((await commit("mia", mia, late)).outcome).toEqual({ status: "not_accepting" });
-    const resolved = onHead(headAfter(done), `tx-${suffix}-mia-k2`, "A, opet.");
-    const refusedAfter = await commit("mia", mia, resolved);
+    // A new commit and a new resolution on the closed package are both refused:
+    // already when the context is read, and by the commit with an earlier context.
+    expect(await readContextOf("mia", mia, late.txid)).toEqual({ status: "not_accepting" });
+    expect(await readContextOf("mia", mia, resolved.txid)).toEqual({ status: "not_accepting" });
+    expect((await commit("mia", mia, late, lateContext)).outcome).toEqual({
+      status: "not_accepting",
+    });
+    const refusedAfter = await commit("mia", mia, resolved, resolvedContext);
     expect(refusedAfter.outcome).toEqual({ status: "not_accepting" });
     expect(refusedAfter.calls).toHaveLength(0);
     expectUnbrokenFromZero(await chainOf(mia), 2);
