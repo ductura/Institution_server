@@ -308,7 +308,10 @@ const NESTED_READ = /value\['(\w+)'\]\['/g;
  * is an object; TypeBox tests value['k'] for a plain object before it reads a
  * field of it, so nestedK is read only after that test passed. One level only,
  * and not inside an array check, whose items shadow `value`: anything else is
- * refused, as an unexpected shape.
+ * refused, as an unexpected shape. TypeBox writes each array check as one
+ * line, so an array beside the object (evidence.commit.post: segments and
+ * resolution, F4-EDI-R05-SRV B3) passes, while a nested read on the line of an
+ * array check is refused.
  */
 function nestedObjects(code: string, where: string): string {
   // A nested read whose key is not a plain name would stay untyped: refuse it here, not in tsc.
@@ -316,7 +319,10 @@ function nestedObjects(code: string, where: string): string {
     throw new Error(`unexpected nested validator shape for ${where}`);
   const keys = [...new Set([...code.matchAll(NESTED_READ)].map((m) => m[1] ?? ""))];
   if (keys.length === 0) return code;
-  if (code.includes("for(const value of array") || /\['\w+'\]\['\w+'\]\['/.test(code))
+  const inArray = code
+    .split("\n")
+    .some((line) => line.includes("for(const value") && /value\['\w+'\]\['/.test(line));
+  if (inArray || /\['\w+'\]\['\w+'\]\['/.test(code))
     throw new Error(`unexpected nested validator shape for ${where}`);
   const head = "function check(value: Record<string, unknown>): boolean {";
   const name = (key: string) => `nested${key.charAt(0).toUpperCase()}${key.slice(1)}`;

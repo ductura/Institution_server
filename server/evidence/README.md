@@ -30,6 +30,7 @@ Razrješenje sukoba „zadrži tekst s ovog uređaja” je obična revizija N (d
 
 - `keep_local` znači: uređaj je zadržao svoj tekst, koji je počeo od revizije M, preko revizija M + 1 … N − 1 drugog uređaja. Te revizije ostaju u lancu nepromijenjene; razrješenje ništa ne briše ni ne prepisuje.
 - Uvijek vrijedi 0 ≤ M < N. Jedna revizija ima najviše jedno razrješenje, i ono se poslije ne mijenja.
+- Od API 1.194.0 (B3) ruta `evidence.commit.post` prima neobavezno polje `resolution` i prosljeđuje ga pohrani. Granica (`parseCommitEnvelope`) i servis (`isRevisionResolution`) traže točno ključeve `kind` i `conflictBaseRevision`, svaki napisan jednom, i cijeli broj 0 ≤ M < `baseRevision`; sve ostalo je 422 `invalid` bez poziva servisa. Ponovljeni zahtjev šalje isto razrješenje; drugo razrješenje ili njegov izostanak daje 409 `txid_reused`.
 - Replay (`readReplayPage`, od API 1.193.0) za svaki segment na stranici čija je revizija razriješila sukob vraća `resolutions[<hash segmenta>] = {kind: "keep_local", conflictBaseRevision: M}`. Segment bez unosa nije razriješio sukob. Unos postoji samo za segment na toj stranici, do glave na koju je stranica vezana.
 - Razrješenja se čitaju nakon popisa zapisa, kroz iste čitatelje i isti presjek predaje (`app.read_replay_resolutions`). Vlasnik i nastavnik zadatka dobivaju iste bajtove (PRODUCT §5 pravilo 5).
 - Ako se razrješenja ne mogu pročitati ili je redak neispravan, cijela stranica je 503 `context`. Stranica bez razrješenja koja ih ima nikad ne izlazi.

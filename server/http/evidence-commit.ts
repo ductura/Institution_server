@@ -14,7 +14,9 @@ import {
   type EvidenceCommitRequest,
   type EvidenceCommitRequestOutcome,
   type EvidenceService,
+  isRevisionResolution,
   MAX_COMMIT_REQUEST_BYTES,
+  objectKeysWritten,
 } from "../evidence/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
@@ -36,6 +38,8 @@ export const COMMIT_TIMEOUT_MS = 60_000;
 /** Seconds until a client asks again for a receipt the worker has not signed yet. */
 const PENDING_RETRY_AFTER = "2";
 const KEYS = ["documentId", "clientTransactionId", "baseRevision", "segments", "document"];
+/** F4-EDI-R05-SRV (B3): the same envelope with the resolution of a conflict. */
+const RESOLVED_KEYS = [...KEYS, "resolution"];
 // Linear on purpose: the grouped pattern of Ductus backtracks in V8 and throws
 // on a string of some 4.5 M characters, which the body limit still admits (a
 // 500 instead of a closed answer). The encode-back check below still fixes
@@ -58,9 +62,14 @@ function strictBase64(value: unknown): Uint8Array | null {
   return decoded.toString("base64") === value ? new Uint8Array(decoded) : null;
 }
 
-/** The envelope of 4.13 t. 2, or null for anything else (`gap` included). */
+/**
+ * The envelope of 4.13 t. 2, or null for anything else (`gap` included). With
+ * `resolution` (F4-EDI-R05-SRV B3) it is exactly {kind: "keep_local",
+ * conflictBaseRevision: M}, 0 <= M < baseRevision, each key written once.
+ */
 export function parseCommitEnvelope(bytes: Uint8Array): EvidenceCommitRequest | null {
-  const body = parseClosedObject(bytes, KEYS);
+  const resolved = parseClosedObject(bytes, RESOLVED_KEYS);
+  const body = resolved ?? parseClosedObject(bytes, KEYS);
   if (body === null) return null;
   const { documentId, clientTransactionId, baseRevision, segments, document } = body;
   if (
@@ -75,7 +84,22 @@ export function parseCommitEnvelope(bytes: Uint8Array): EvidenceCommitRequest | 
   const segment = strictBase64(segments[0]);
   const snapshot = strictBase64(document);
   if (segment === null || snapshot === null) return null;
-  return { documentId, clientTransactionId, baseRevision, segment, document: snapshot };
+  if (resolved === null) {
+    return { documentId, clientTransactionId, baseRevision, segment, document: snapshot };
+  }
+  const resolution = resolved.resolution;
+  if (resolution === null || !isRevisionResolution(resolution, baseRevision)) return null;
+  // Six keys of the envelope and two of the resolution, and no other object:
+  // a key written twice inside the resolution, which JSON.parse drops, is refused.
+  if (objectKeysWritten(bytes) !== RESOLVED_KEYS.length + 2) return null;
+  return {
+    documentId,
+    clientTransactionId,
+    baseRevision,
+    segment,
+    document: snapshot,
+    resolution: { kind: resolution.kind, conflictBaseRevision: resolution.conflictBaseRevision },
+  };
 }
 
 const refusal = (status: number, code: string): EvidenceAnswer => ({

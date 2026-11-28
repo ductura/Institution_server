@@ -2,7 +2,7 @@
 // body refuses a key written twice. Identifiers are invented.
 import { describe, expect, it } from "vitest";
 
-import { parseClosedJsonObject } from "./closed-object.ts";
+import { objectKeysWritten, parseClosedJsonObject } from "./closed-object.ts";
 
 const A = "00000000-0000-4000-8000-0000000000a1";
 const B = "00000000-0000-4000-8000-0000000000b2";
@@ -55,5 +55,28 @@ describe("parseClosedJsonObject", () => {
     const long = "A".repeat(5_000_000);
     expect(parse(`{"documentId":"${long}","from":1}`)?.documentId).toBe(long);
     expect(parse(`{"documentId":"${long}","from":1,"from":2}`)).toBeNull();
+  });
+});
+
+describe("objectKeysWritten (F4-EDI-R05-SRV B3)", () => {
+  it.each([
+    ["no object", `"a"`, 0],
+    ["an empty object", "{}", 0],
+    ["a flat object", `{"a":1,"b":"x"}`, 2],
+    ["a nested object", `{"a":{"b":1,"c":[{"d":2},{}]},"e":[1,"f"]}`, 5],
+    ["strings that look like keys", `{"a":"{\\"b\\":1,\\"c\\":2}","d":["e","f"]}`, 2],
+    ["a key written twice inside", `{"a":{"b":1,"b":2}}`, 3],
+    ["keys and values with commas and braces", `{"a,}":"]{,","b":[[],[{}]]}`, 2],
+    ["keys and values outside ASCII", `{"ključ":"čšž{","b":{"ž":"\\"},"}}`, 3],
+  ])("counts %s", (_name, text, count) => {
+    expect(objectKeysWritten(new TextEncoder().encode(text))).toBe(count);
+  });
+
+  it.each([
+    ["an unclosed key", `{"a`],
+    ["an unclosed value", `{"a":"b`],
+    ["a backslash at the end", `{"a":"b\\`],
+  ])("ends on %s instead of reading past the bytes", (_name, text) => {
+    expect(objectKeysWritten(new TextEncoder().encode(text))).toBeLessThanOrEqual(1);
   });
 });

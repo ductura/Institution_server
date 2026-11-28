@@ -207,7 +207,20 @@ describe("createEvidenceService().commit", () => {
       "memory:put-ref",
       new TextDecoder().decode(DOCUMENT),
       null,
-      // F4-EDI-R05-SRV (B1): no resolution yet.
+      // F4-EDI-R05-SRV: no resolution sent, none passed on.
+      null,
+    ]);
+  });
+
+  it("passes the client's resolution to the commit, a copy of exactly its two keys (F4-EDI-R05-SRV B3)", async () => {
+    const { run, queries } = setup();
+    for (const conflictBaseRevision of [0, 2]) {
+      await run({ resolution: { kind: "keep_local", conflictBaseRevision } });
+    }
+    await run({ resolution: null });
+    expect(queries.filter((q) => q.kind === "commit").map((q) => q.values.at(-1))).toEqual([
+      JSON.stringify({ kind: "keep_local", conflictBaseRevision: 0 }),
+      JSON.stringify({ kind: "keep_local", conflictBaseRevision: 2 }),
       null,
     ]);
   });
@@ -305,11 +318,37 @@ describe("createEvidenceService().commit", () => {
     ["a base revision with no next revision", { baseRevision: Number.MAX_SAFE_INTEGER }],
     ["a segment that is no byte array", { segment: "{}" as unknown as Uint8Array }],
     ["a document id that is no text", { documentId: 7 as unknown as string }],
-  ])("refuses %s as invalid before reading any state", async (_, change) => {
-    const { run, queries } = setup();
-    expect(await run(change)).toEqual({ status: "invalid" });
-    expect(queries).toEqual([]);
-  });
+    // F4-EDI-R05-SRV (B3): the resolution is checked with the form, M below baseRevision.
+    ...(
+      [
+        ["a resolution with the base equal to baseRevision", { conflictBaseRevision: 3 }],
+        ["a resolution with the base above baseRevision", { conflictBaseRevision: 4 }],
+        ["a resolution with a negative base", { conflictBaseRevision: -1 }],
+        ["a resolution with a fractional base", { conflictBaseRevision: 1.5 }],
+        ["a resolution of another kind", { kind: "keep_remote", conflictBaseRevision: 1 }],
+        ["a resolution with a third key", { conflictBaseRevision: 1, note: "x" }],
+      ] as const
+    ).map(([name, change]): [string, Partial<EvidenceCommitRequest>] => [
+      name,
+      {
+        resolution: {
+          kind: "keep_local",
+          ...change,
+        } as unknown as NonNullable<EvidenceCommitRequest["resolution"]>,
+      },
+    ]),
+    [
+      "a resolution that is no object",
+      { resolution: "keep_local" as unknown as NonNullable<EvidenceCommitRequest["resolution"]> },
+    ],
+  ] as [string, Partial<EvidenceCommitRequest>][])(
+    "refuses %s as invalid before reading any state",
+    async (_, change) => {
+      const { run, queries } = setup();
+      expect(await run(change)).toEqual({ status: "invalid" });
+      expect(queries).toEqual([]);
+    },
+  );
 
   it.each([
     ["a segment over D-96", { segment: new Uint8Array(MAX_EVIDENCE_SEGMENT_BYTES + 1) }],

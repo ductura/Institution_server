@@ -11,6 +11,7 @@ import type {
   EvidenceCommitOutcome,
   EvidenceCommitSigning,
   EvidenceCommitter,
+  EvidenceRevisionResolution,
 } from "../database/index.ts";
 import {
   EVIDENCE_SEGMENT_SCHEMA_V4,
@@ -38,6 +39,11 @@ export type EvidenceCommitRequest = {
   segment: Uint8Array;
   /** Exact JCS bytes of the document after the segment's last event, as received. */
   document: Uint8Array;
+  /**
+   * F4-EDI-R05-SRV (B3): the commit keeps the local text, written on
+   * conflictBaseRevision, over a conflict; absent or null when it resolves none.
+   */
+  resolution?: EvidenceRevisionResolution | null;
 };
 
 export type EvidenceCommitRequestOutcome =
@@ -72,6 +78,31 @@ export type EvidenceService = {
 const MAX_BASE_REVISION = Number.MAX_SAFE_INTEGER - 1;
 
 /**
+ * F4-EDI-R05-SRV (B3): null, or exactly {kind: "keep_local",
+ * conflictBaseRevision: M} with M an integer, 0 <= M < baseRevision. M equal
+ * to baseRevision would be the revision the commit is written on, so no
+ * conflict was resolved; that is refused as invalid like any other value.
+ */
+export function isRevisionResolution(
+  value: unknown,
+  baseRevision: number,
+): value is EvidenceRevisionResolution | null {
+  if (value === null) return true;
+  if (typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  if (keys.length !== 2 || !keys.includes("kind") || !keys.includes("conflictBaseRevision")) {
+    return false;
+  }
+  const { kind, conflictBaseRevision } = value as Record<string, unknown>;
+  return (
+    kind === "keep_local" &&
+    Number.isSafeInteger(conflictBaseRevision) &&
+    (conflictBaseRevision as number) >= 0 &&
+    (conflictBaseRevision as number) < baseRevision
+  );
+}
+
+/**
  * SRV-1809: the AI transfer records a segment's events name, in event order,
  * for the 10-argument acceptance: an array for v4 (empty when it names none),
  * null for v2 and v3. A record named twice stays twice, so the database, which
@@ -94,6 +125,7 @@ async function prepareAndCommit(
 ): Promise<EvidenceCommitRequestOutcome> {
   // t. 3.1: the form and the size limits, before any state is read.
   const { documentId, clientTransactionId, baseRevision, segment, document } = request;
+  const resolution = request.resolution ?? null;
   if (
     typeof documentId !== "string" ||
     !isReceiptClientTransactionId(clientTransactionId) ||
@@ -101,7 +133,8 @@ async function prepareAndCommit(
     baseRevision < 0 ||
     baseRevision > MAX_BASE_REVISION ||
     !(segment instanceof Uint8Array) ||
-    !(document instanceof Uint8Array)
+    !(document instanceof Uint8Array) ||
+    !isRevisionResolution(resolution, baseRevision)
   ) {
     return { status: "invalid" };
   }
@@ -256,8 +289,11 @@ async function prepareAndCommit(
       storageRef,
       snapshot: snapshotText,
       aiTransferLinks: aiTransferLinksOf(s),
-      // F4-EDI-R05-SRV (B1): the route does not take a resolution yet.
-      resolution: null,
+      // F4-EDI-R05-SRV (B3): the client's resolution, checked in t. 3.1.
+      resolution:
+        resolution === null
+          ? null
+          : { kind: resolution.kind, conflictBaseRevision: resolution.conflictBaseRevision },
     },
     signing,
   );
