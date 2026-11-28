@@ -78,7 +78,8 @@ const CLOSE_OBJECT = 0x7d;
 /**
  * F4-EDI-R05-SRV (B3): every key of every object in a UTF-8 JSON body, in any
  * depth, as written. Only called on bytes JSON.parse has taken, so every
- * string token is closed and the scan is linear; it reads bytes, since a
+ * string token is closed and the scan is linear (an unclosed one ends the scan at
+ * the last byte, never loops); it reads bytes, since a
  * quote, backslash, brace, bracket or comma is never part of a multibyte
  * character. A caller that knows how many keys its parsed value holds
  * compares the two: a key written twice in a nested object, which JSON.parse
@@ -93,7 +94,8 @@ export function objectKeysWritten(bytes: Uint8Array): number {
     const char = bytes[index];
     if (char === QUOTE) {
       index += 1;
-      while (bytes[index] !== QUOTE) index += bytes[index] === BACKSLASH ? 2 : 1;
+      while (index < bytes.length && bytes[index] !== QUOTE)
+        index += bytes[index] === BACKSLASH ? 2 : 1;
       index += 1;
       if (expectKey) {
         count += 1;

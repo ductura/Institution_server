@@ -531,15 +531,23 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
     const keep = { kind: "keep_local", conflictBaseRevision: 1 };
     const committed = await post("/api/v1/evidence/commit", body(keep), tokens.ana);
     expect(committed).toMatchObject({ status: 200, body: { status: "committed", revision: 3 } });
-    // The same request again is the same answer; without the resolution it is another request.
+    // The same request again is the same answer; without the resolution, or with another
+    // base M, it is another request: 409, and the stored resolution stays as it was.
     const again = await post("/api/v1/evidence/commit", body(keep), tokens.ana);
     expect(again).toMatchObject({ status: 200, body: { duplicate: true, revision: 3 } });
     const changed = await post("/api/v1/evidence/commit", body(undefined), tokens.ana);
     expect(changed).toMatchObject({ status: 409, body: { status: "txid_reused" } });
+    const otherBase = await post(
+      "/api/v1/evidence/commit",
+      body({ kind: "keep_local", conflictBaseRevision: 0 }),
+      tokens.ana,
+    );
+    expect(otherBase).toMatchObject({ status: 409, body: { status: "txid_reused" } });
+    expect((await replay({ documentId, from: 0 }, tokens.ana)).body.segmentCount).toBe(3);
 
     const stored = await admin.query(
       `SELECT revision::int AS revision, conflict_base_revision::int AS base, kind FROM evidence.revision_resolution
-        WHERE document_id = $1 AND revision = 3`,
+        WHERE document_id = $1 AND revision >= 3`,
       [documentId],
     );
     expect(stored.rows).toEqual([{ revision: 3, base: 1, kind: "keep_local" }]);

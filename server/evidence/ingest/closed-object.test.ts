@@ -71,4 +71,12 @@ describe("objectKeysWritten (F4-EDI-R05-SRV B3)", () => {
   ])("counts %s", (_name, text, count) => {
     expect(objectKeysWritten(new TextEncoder().encode(text))).toBe(count);
   });
+
+  it.each([
+    ["an unclosed key", `{"a`],
+    ["an unclosed value", `{"a":"b`],
+    ["a backslash at the end", `{"a":"b\\`],
+  ])("ends on %s instead of reading past the bytes", (_name, text) => {
+    expect(objectKeysWritten(new TextEncoder().encode(text))).toBeLessThanOrEqual(1);
+  });
 });
