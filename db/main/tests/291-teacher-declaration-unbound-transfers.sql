@@ -1,4 +1,4 @@
--- SRV-IZJAVA-AI-UNBOUND (20261220830000): beside the bound declaration the
+-- SRV-IZJAVA-AI-UNBOUND (20261220860000): beside the bound declaration the
 -- course teacher reads, as { aiTransferId, aiTransferSha256 } ordered by id,
 -- the student's AI transfer records of the declared document that no segment
 -- with a receipt at or before the declared revision names: the complement of

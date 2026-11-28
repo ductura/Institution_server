@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6376);
+SELECT plan(6380);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1437,7 +1437,12 @@ FROM (VALUES
   ('ductus_app', 'worker_student_data_export_access_log', '42501: permission denied for function worker_student_data_export_access_log'),
   ('ductus_retention', 'worker_student_data_export_access_log', '42501: permission denied for function worker_student_data_export_access_log'),
   ('ductus_auth', 'worker_student_data_export_access_log', '42501: permission denied for schema app'),
-  ('ductus_worker', 'worker_student_data_export_access_log', '0')
+  ('ductus_worker', 'worker_student_data_export_access_log', '0'),
+  -- F4-1.1-4-6-SRV: the confirmation codes of the package (287-student-data-export-confirmation-codes.sql).
+  ('ductus_app', 'worker_student_data_export_confirmation_codes', '42501: permission denied for function worker_student_data_export_confirmation_codes'),
+  ('ductus_retention', 'worker_student_data_export_confirmation_codes', '42501: permission denied for function worker_student_data_export_confirmation_codes'),
+  ('ductus_auth', 'worker_student_data_export_confirmation_codes', '42501: permission denied for schema app'),
+  ('ductus_worker', 'worker_student_data_export_confirmation_codes', '0')
 ) AS c (role, fn, result);
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute app.student_data_export_subject(uuid)'
