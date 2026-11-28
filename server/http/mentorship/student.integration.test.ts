@@ -30,6 +30,7 @@ const COLUMNS: Record<string, string> = {
   requested: "requested_at",
   ended: "ended_at",
   mentorship: "mentorship_id",
+  reason: "decline_reason",
 };
 const row = (values: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(values).map(([key, value]) => [COLUMNS[key] ?? key, value]));
@@ -68,6 +69,7 @@ describe("the student's mentorship reads", () => {
         requested: new Date("2027-01-10T12:00:00.123456Z"),
         ended: new Date("2027-01-12T12:00:00Z"),
         mentorship: null,
+        reason: "Ovaj semestar nemam slobodnih termina.",
       }),
     ]);
     const response = await get("mentorship-requests", STUDENT);
@@ -84,10 +86,60 @@ describe("the student's mentorship reads", () => {
           requestedAt: "2027-01-10T12:00:00.123Z",
           endedAt: "2027-01-12T12:00:00.000Z",
           mentorshipId: null,
+          declineReason: "Ovaj semestar nemam slobodnih termina.",
         },
       ],
     });
     expect(query.mock.calls[0]![1]).toContain("app.student_mentorship_requests()");
+    expect(query.mock.calls[0]![1]).toContain("app.student_mentorship_decline_reason(request_id)");
+  });
+
+  it("answers a null declineReason for a decline without one and for every other state (F4 wave 2 #3)", async () => {
+    const base = {
+      teacher: TEACHER_ID,
+      given: null,
+      family: null,
+      work: "bachelor_thesis",
+      requested: new Date("2027-01-10T12:00:00Z"),
+      ended: new Date("2027-01-12T12:00:00Z"),
+      mentorship: null,
+    };
+    query.mockReturnValueOnce([
+      row({ ...base, request: REQUEST_ID, state: "declined", reason: null }),
+      // A reason on a state that is not a decline is never passed on.
+      row({
+        ...base,
+        request: "00000000-0000-4000-8000-0000000014a2",
+        state: "withdrawn",
+        reason: "Izmišljeni razlog.",
+      }),
+      row({
+        ...base,
+        request: "00000000-0000-4000-8000-0000000014a3",
+        state: "requested",
+        ended: null,
+      }),
+    ]);
+    const response = await get("mentorship-requests", STUDENT);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { requests: { declineReason: unknown }[] };
+    expect(body.requests.map((r) => r.declineReason)).toEqual([null, null, null]);
+  });
+
+  it("is 503 for a decline reason the contract does not allow", async () => {
+    query.mockReturnValueOnce([
+      row({
+        request: REQUEST_ID,
+        teacher: TEACHER_ID,
+        work: "bachelor_thesis",
+        state: "declined",
+        requested: new Date("2027-01-10T12:00:00Z"),
+        ended: new Date("2027-01-12T12:00:00Z"),
+        mentorship: null,
+        reason: "",
+      }),
+    ]);
+    expect((await get("mentorship-requests", STUDENT)).status).toBe(503);
   });
 
   it("lists the candidates with no personal datum beyond the name", async () => {

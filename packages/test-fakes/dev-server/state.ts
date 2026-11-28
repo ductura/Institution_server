@@ -332,6 +332,8 @@ export type MentorshipRequest = {
   /** SRV-1414: when it was made and when it ended, for the student's list. */
   readonly requestedAt: string;
   endedAt: string | null;
+  /** F4 wave 2 #3: the teacher's reason on a decline, shown to the student of the request. */
+  declineReason?: string | null;
 };
 
 export type AccessEntry = {

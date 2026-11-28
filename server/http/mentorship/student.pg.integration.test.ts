@@ -83,6 +83,7 @@ it("serves the student's side of mentorship only along the student's own relatio
             requestedAt: expect.stringMatching(/Z$/u),
             endedAt: null,
             mentorshipId: null,
+            declineReason: null,
           },
         ],
       });
@@ -103,6 +104,38 @@ it("serves the student's side of mentorship only along the student's own relatio
       expect((await get("mentorship-requests", "D")).body).toMatchObject({
         requests: [{ requestId: ana, state: "withdrawn", endedAt: expect.stringMatching(/Z$/u) }],
       });
+
+      // F4 wave 2 #3: Dora reads Marko's reason for declining her request; Ana,
+      // whose request was withdrawn, reads none, and nobody else reads Dora's.
+      const declined = await db.query<{ dora: string }>(
+        "SELECT pg_temp.ask('dora', $$ SELECT institution.request_mentorship({marko}, 'master_thesis') $$) AS dora",
+      );
+      const dora = declined.rows[0]!.dora;
+      expect(dora).toMatch(/^[0-9a-f-]{36}$/u);
+      await db.query(
+        `SELECT pg_temp.ask('marko', $$ SELECT institution.decline_mentorship_request('${dora}', 'Izmišljeno: nemam slobodnih termina.') $$)`,
+      );
+      expect((await get("mentorship-requests", "E")).body).toEqual({
+        requests: [
+          {
+            requestId: dora,
+            teacherId: ids.marko,
+            teacherName: null,
+            workType: "master_thesis",
+            state: "declined",
+            requestedAt: expect.stringMatching(/Z$/u),
+            endedAt: expect.stringMatching(/Z$/u),
+            mentorshipId: null,
+            declineReason: "Izmišljeno: nemam slobodnih termina.",
+          },
+        ],
+      });
+      expect((await get("mentorship-requests", "D")).body).toMatchObject({
+        requests: [{ requestId: ana, declineReason: null }],
+      });
+      expect(JSON.stringify((await get("mentorship-requests", "J")).body)).not.toContain(
+        "nemam slobodnih",
+      );
 
       // (2) Candidates: the confirmed teachers of the own institution only.
       expect(await get("mentor-candidates", "D")).toEqual({

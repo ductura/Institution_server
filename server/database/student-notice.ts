@@ -66,6 +66,11 @@ export type StoredNotice = {
   courseName: string | null;
   /** F4-STU-R08-SRV: the mentor's name; null when there is none or no name is recorded. */
   mentorName: string | null;
+  /**
+   * F4-STU-R08-SRV: the version differs from its bound faculty rule version;
+   * absent when it is bound to none or its evidence profile is basic.
+   */
+  differsFromFacultyRules?: boolean;
 };
 
 /** The fingerprint content of one earlier version of the notice. */
@@ -105,7 +110,11 @@ const ACTOR_SQL = "SELECT app.current_user_id() AS user_id";
 // the teachers of the caller's own seminar groups) and
 // institution.student_mentored_assignments() (the mentor of an open mentorship
 // with a confirmed teacher role). Several group teachers are named in name
-// order, joined by ", "; no recorded name is null.
+// order, joined by ", "; no recorded name is null. differs_from_faculty_rules
+// comes from institution.student_assignment_differs_from_faculty_rule(), the
+// one definer that compares the current version with the faculty rule
+// version it is bound to (the student reads no rule version); it is null for
+// another's assignment and for a version bound to none.
 const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instructions, v.work_type,
     v.opens_at, v.due_at, v.ai_policy, v.ai_purposes, v.evidence_profile, v.word_min, v.word_max,
     v.purpose_catalog_version, a.ai_summary_only,
@@ -125,7 +134,8 @@ const NOTICE_SQL = `SELECT a.id AS assignment_id, v.version_no, v.title, v.instr
         FROM institution.student_mentored_assignments() m WHERE m.assignment_id = a.id),
       (SELECT string_agg(g.value ->> 'name', ', ' ORDER BY g.value ->> 'name')
         FROM jsonb_array_elements(sa.mentors) g WHERE g.value ->> 'name' IS NOT NULL)
-    ) AS mentor_name
+    ) AS mentor_name,
+    institution.student_assignment_differs_from_faculty_rule(a.id) AS differs_from_faculty_rules
   FROM institution.assignment a
   JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
   LEFT JOIN institution.assignment_version p ON p.assignment_id = a.id
@@ -238,6 +248,7 @@ export function noticeOf(rows: unknown): StoredNotice | null {
   const summaryOnly = own(row, "ai_summary_only");
   const courseName = own(row, "course_name");
   const mentorName = own(row, "mentor_name");
+  const differs = own(row, "differs_from_faculty_rules");
   // A first version has no previous one: every prev_* column is null. Any
   // other mix, or an absent column, is a row the read cannot vouch for.
   const first = PREVIOUS_COLUMNS.every((key) => own(row, key) === null);
@@ -251,6 +262,7 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     typeof summaryOnly !== "boolean" ||
     !(courseName === null || (typeof courseName === "string" && courseName !== "")) ||
     !(mentorName === null || (typeof mentorName === "string" && mentorName !== "")) ||
+    !(differs === null || typeof differs === "boolean") ||
     !Number.isInteger(catalog) ||
     (catalog as number) < 1 ||
     (catalog as number) > 2_147_483_647 ||
@@ -268,6 +280,11 @@ export function noticeOf(rows: unknown): StoredNotice | null {
     previousVersion: previous,
     courseName: courseName as string | null,
     mentorName: mentorName as string | null,
+    // No comparison for the basic profile (decision of 27 Nov 2026): the
+    // field is left out, as for a version bound to no faculty rule version.
+    ...(typeof differs === "boolean" && current.evidenceProfile !== "basic"
+      ? { differsFromFacultyRules: differs }
+      : {}),
   };
 }
 

@@ -8,10 +8,11 @@
 // thrown inside fn, so withActor rolls back, instead of an Error; the course
 // row is checked inside the transaction and must be exactly one (Ductus:
 // after it, rows[0]), as Ductus already does for the code and the
-// revocation; and the port never throws. One call is one withActor transaction of one statement.
+// revocation; and the port never throws. One call is one withActor transaction of one statement
+// (or more, through call's then).
 // The message of a database error is never read and its SQLSTATE never
 // leaves the port. Inputs come already checked (852-3, 852-4).
-import type { WithActor } from "./with-actor.ts";
+import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 export type Refused<S extends string> = { readonly status: S };
 export type Unavailable = { readonly status: "unavailable"; readonly reason: string };
@@ -92,6 +93,12 @@ export async function call<T, S extends string>(
   read: (rows: unknown) => T | null,
   refused: ReadonlyMap<string, S>,
   malformed: string,
+  /**
+   * More statements in the same transaction, after the value is read: a
+   * refusal there (its SQLSTATE) rolls back the whole call, and false is a
+   * row of the wrong form.
+   */
+  then?: (tx: ActorTransaction, value: T) => Promise<boolean>,
 ): Promise<{ readonly value: T } | Refused<S> | Unavailable> {
   try {
     const value = await withActor(token, async (tx) => {
@@ -101,6 +108,7 @@ export async function call<T, S extends string>(
       const text = typeof sql === "string" ? sql : sql[1];
       const found = read((await tx.query(text, params)).rows);
       if (found === null) throw MALFORMED;
+      if (then !== undefined && !(await then(tx, found))) throw MALFORMED;
       return found;
     });
     return { value };
