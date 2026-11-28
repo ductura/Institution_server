@@ -93,10 +93,21 @@ it("lists the records with their additions for whoever may read the work", async
         additions: [
           { id: ADDITION, text: "Dopuna nastavnika.", createdAt: "2026-11-19T09:30:00.000Z" },
         ],
+        heldAt: null,
       },
     ],
   });
   expect(statements[0]?.values).toEqual([DOCUMENT]);
+});
+
+it("lists the time a meeting was held as its whole minute (F4 wave 2 #2)", async () => {
+  const { base } = await serve([{ ...row(null), heldAt: new Date("2026-11-18T10:15:00.000Z") }]);
+  const response = await fetch(`${base}/${DOCUMENT}/consultation-records`, {
+    headers: { cookie: COOKIE },
+  });
+  expect(response.status).toBe(200);
+  const body = (await response.json()) as { records: { heldAt: unknown }[] };
+  expect(body.records.map((r) => r.heldAt)).toEqual(["2026-11-18T10:15:00.000Z"]);
 });
 
 it("answers 401 without a session and 404 for a work id that is not one or a refused work", async () => {
@@ -115,8 +126,59 @@ it("creates a record: 201 with the record and no additions", async () => {
   const { base, statements } = await serve([{ id: RECORD }]);
   const response = await write(`${base}/${DOCUMENT}/consultation-records`, RECORD_BODY);
   expect(response.status).toBe(201);
-  expect(await response.json()).toEqual({ id: RECORD, ...RECORD_BODY, additions: [] });
-  expect(statements[0]?.values).toEqual([DOCUMENT, "2026-11-18", 3, "Izmišljena tema", "Dogovor."]);
+  expect(await response.json()).toEqual({
+    id: RECORD,
+    ...RECORD_BODY,
+    additions: [],
+    heldAt: null,
+  });
+  expect(statements[0]?.values).toEqual([
+    DOCUMENT,
+    "2026-11-18",
+    3,
+    "Izmišljena tema",
+    "Dogovor.",
+    null,
+  ]);
+  expect(statements[0]?.sql).toContain("create_consultation_record_v2(");
+});
+
+it("creates a record with the time it was held: sent as given, answered as its whole minute", async () => {
+  const { base, statements } = await serve([{ id: RECORD }]);
+  const url = `${base}/${DOCUMENT}/consultation-records`;
+  const response = await write(url, { ...RECORD_BODY, heldAt: "2026-11-18T10:15:42.123Z" });
+  expect(response.status).toBe(201);
+  expect(await response.json()).toEqual({
+    id: RECORD,
+    ...RECORD_BODY,
+    additions: [],
+    heldAt: "2026-11-18T10:15:00.000Z",
+  });
+  expect(statements[0]?.values?.[5]).toBe("2026-11-18T10:15:42.123Z");
+  const bare = await write(url, { ...RECORD_BODY, heldAt: null });
+  expect(bare.status).toBe(201);
+  expect(((await bare.json()) as { heldAt: unknown }).heldAt).toBeNull();
+  expect(statements[1]?.values?.[5]).toBeNull();
+});
+
+it("refuses a heldAt that is not an ISO UTC instant with 422, before the database", async () => {
+  const { base, statements } = await serve([{ id: RECORD }]);
+  const url = `${base}/${DOCUMENT}/consultation-records`;
+  for (const heldAt of [
+    "2026-11-18",
+    "2026-11-18T10:15:00+01:00",
+    "2026-11-18 10:15Z",
+    "2026-13-18T10:15Z",
+    "2026-02-30T10:15Z",
+    "2026-11-18T24:15Z",
+    "2026-11-18T10:60Z",
+    "2026-11-18T10:15:61Z",
+    "",
+    1_763_460_900_000,
+  ]) {
+    expect((await write(url, { ...RECORD_BODY, heldAt })).status).toBe(422);
+  }
+  expect(statements).toEqual([]);
 });
 
 it("refuses an empty topic, a date that does not exist, an extra field and a control character with 422, before the database", async () => {

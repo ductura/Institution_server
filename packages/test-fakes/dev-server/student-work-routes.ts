@@ -59,6 +59,9 @@ export const STUDENT_WORK_HANDLERS: Handlers = {
       const extension = state.deadlineExtensions
         .filter((e) => e.assignmentId === assignment.id && e.studentId === account.id)
         .at(-1);
+      // F4 1.6: the fake keeps only the newest acknowledged version per student.
+      const seen = assignment.acknowledged.get(account.id)?.version;
+      const dueAt = extension?.dueAt ?? assignment.content.dueAt;
       return [
         {
           workId: work.documentId,
@@ -67,11 +70,13 @@ export const STUDENT_WORK_HANDLERS: Handlers = {
           courseId: course.id,
           courseName: course.name,
           academicYear: course.academicYear,
-          dueAt: extension?.dueAt ?? assignment.content.dueAt,
+          dueAt,
           state: work.state,
           revision: work.revision,
           submittedAt: work.submittedAt,
           language: assignment.studentLanguage.get(account.id) ?? assignment.language,
+          noticeChangedSinceSeen: seen !== undefined && seen < assignment.version,
+          ...(work.submittedAt === null ? {} : { afterDeadline: work.submittedAt > dueAt }),
         },
       ];
     });

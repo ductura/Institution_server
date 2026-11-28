@@ -3,7 +3,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../index.ts";
-import { createConsultationRecords, isCalendarDate, recordsOf } from "./consultation-records.ts";
+import {
+  createConsultationRecords,
+  heldAtMinute,
+  isCalendarDate,
+  recordsOf,
+} from "./consultation-records.ts";
 
 const TOKEN = "izmisljeni-token-studenta-00000000000000001";
 const DOCUMENT = "izmisljeni-rad-0001";
@@ -59,6 +64,14 @@ describe("list", () => {
       createdAt: "2026-11-19T09:30:00.000Z",
     });
     expect(answer.records[0]?.revision).toBe(3);
+    expect(answer.records[0]?.heldAt).toBeNull();
+  });
+
+  it("reads the time of a meeting as its whole minute (F4 wave 2 #2)", async () => {
+    const answer = await fake([
+      { ...row(R1), heldAt: new Date("2026-11-18T10:15:00.000Z") },
+    ]).port.list(TOKEN, DOCUMENT);
+    expect(answer.status === "ok" && answer.records[0]?.heldAt).toBe("2026-11-18T10:15:00.000Z");
   });
 
   it("answers an empty list for a work with no record", async () => {
@@ -80,19 +93,50 @@ describe("list", () => {
     expect(
       recordsOf([{ ...row(R1, A1), additionMinute: new Date("2026-11-19T09:30:01.000Z") }]),
     ).toBeNull();
+    expect(recordsOf([{ ...row(R1), heldAt: new Date("2026-11-18T10:15:30.000Z") }])).toBeNull();
+    expect(recordsOf([{ ...row(R1), heldAt: "2026-11-18T10:15:00.000Z" }])).toBeNull();
   });
 });
 
 describe("create", () => {
   const input = { heldOn: "2026-11-18", revision: 3, topic: "Tema", agreement: "Dogovor." };
 
-  it("asks create_consultation_record once and answers the record without additions", async () => {
+  it("asks create_consultation_record_v2 once and answers the record without additions", async () => {
     const { port, seen } = fake([{ id: R1 }]);
     expect(await port.create(TOKEN, DOCUMENT, input)).toEqual({
       status: "ok",
-      record: { id: R1, ...input, additions: [] },
+      record: { id: R1, ...input, additions: [], heldAt: null },
     });
-    expect(seen[0]?.values).toEqual([DOCUMENT, "2026-11-18", 3, "Tema", "Dogovor."]);
+    expect(seen[0]?.sql).toContain("collaboration.create_consultation_record_v2(");
+    expect(seen[0]?.values).toEqual([DOCUMENT, "2026-11-18", 3, "Tema", "Dogovor.", null]);
+  });
+
+  it("sends the time as given and answers its whole minute", async () => {
+    const { port, seen } = fake([{ id: R1 }]);
+    const answer = await port.create(TOKEN, DOCUMENT, {
+      ...input,
+      heldAt: "2026-11-18T10:15:42.5Z",
+    });
+    expect(answer).toEqual({
+      status: "ok",
+      record: { id: R1, ...input, additions: [], heldAt: "2026-11-18T10:15:00.000Z" },
+    });
+    expect(seen[0]?.values[5]).toBe("2026-11-18T10:15:42.5Z");
+  });
+
+  it("refuses a time that is not a real instant before the database", async () => {
+    const { port, seen } = fake([{ id: R1 }]);
+    for (const heldAt of [
+      "2026-02-30T10:15Z",
+      "2026-11-18T25:00Z",
+      "2026-11-18T10:15:60Z",
+      "jučer",
+    ]) {
+      expect(await port.create(TOKEN, DOCUMENT, { ...input, heldAt })).toEqual({
+        status: "invalid_input",
+      });
+    }
+    expect(seen).toHaveLength(0);
   });
 
   it("refuses a date that does not exist before the database", async () => {
@@ -125,6 +169,18 @@ describe("addAddition", () => {
 
   it("is unavailable when the row is not what the function returns", async () => {
     expect((await fake([]).port.addAddition(TOKEN, DOCUMENT, R1, "x")).status).toBe("unavailable");
+  });
+});
+
+describe("heldAtMinute", () => {
+  it("keeps the whole UTC minute of a real instant, null for none", () => {
+    expect(heldAtMinute(null)).toBeNull();
+    expect(heldAtMinute(undefined)).toBeNull();
+    expect(heldAtMinute("2026-11-18T10:15Z")).toBe("2026-11-18T10:15:00.000Z");
+    expect(heldAtMinute("2026-11-18T10:15:59.999Z")).toBe("2026-11-18T10:15:00.000Z");
+    expect(heldAtMinute("1969-12-31T23:59:30Z")).toBe("1969-12-31T23:59:00.000Z");
+    expect(heldAtMinute("2026-11-18T10:15:00+01:00")).toBeUndefined();
+    expect(heldAtMinute("2026-11-31T10:15Z")).toBeUndefined();
   });
 });
 

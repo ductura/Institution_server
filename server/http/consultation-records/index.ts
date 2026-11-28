@@ -121,11 +121,12 @@ export function createConsultationRecordRoutes(records: ConsultationRecords): Ro
         if (body === null) return;
         const documentId = workOf(params?.documentId);
         if (documentId === null) return sendProblem(response, 404, "not_found");
-        const { heldOn, revision, topic, agreement } = body as {
+        const { heldOn, revision, topic, agreement, heldAt } = body as {
           heldOn: string;
           revision: number;
           topic: string;
           agreement: string;
+          heldAt?: string | null;
         };
         if (!isCleanText(topic) || !isCleanText(agreement)) {
           return sendProblem(response, 422, "invalid_input");
@@ -136,6 +137,7 @@ export function createConsultationRecordRoutes(records: ConsultationRecords): Ro
             revision,
             topic,
             agreement,
+            heldAt: heldAt ?? null,
           });
           if (answer.status !== "ok") return refusal(response, answer.status);
           sendJson(response, 201, answer.record);

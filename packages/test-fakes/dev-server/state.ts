@@ -144,6 +144,8 @@ export type Consultation = {
   topic: string;
   agreement: string;
   additions: { id: string; text: string; createdAt: string }[];
+  /** F4 wave 2 #2: the whole minute it was held; null when none was given. */
+  heldAt: string | null;
 };
 
 /** An amendment or dispute of a summary event (SRV-1315); only ever added. */

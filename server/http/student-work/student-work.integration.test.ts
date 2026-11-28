@@ -58,6 +58,8 @@ const workRow = (overrides: Record<string, unknown> = {}) =>
     state: "none",
     requestedAt: null,
     language: "hr",
+    noticeChanged: false,
+    afterDeadline: null,
     ...overrides,
   });
 
@@ -154,6 +156,8 @@ describe("the student's works", () => {
         state: "ceka",
         requestedAt: "2027-01-19T10:15:00.000Z",
         language: "en",
+        noticeChanged: true,
+        afterDeadline: false,
       }),
       workRow(),
     ]);
@@ -165,10 +169,19 @@ describe("the student's works", () => {
       state: "submitted",
       revision: 12,
       submittedAt: "2027-01-19T10:15:00.000Z",
+      noticeChangedSinceSeen: true,
+      afterDeadline: false,
     });
+    expect(body.works[0]).toMatchObject({ noticeChangedSinceSeen: false });
+    expect(body.works[0]).not.toHaveProperty("afterDeadline");
     for (const work of body.works) {
-      expect(Object.keys(work).sort()).toEqual(
+      expect(
+        Object.keys(work)
+          .filter((key) => key !== "afterDeadline")
+          .sort(),
+      ).toEqual(
         [
+          "noticeChangedSinceSeen",
           "academicYear",
           "assignmentId",
           "assignmentTitle",
@@ -201,6 +214,8 @@ describe("the student's works", () => {
     query.mockReturnValueOnce([workRow({ state: "not_found" })]);
     expect((await works(STUDENT)).status).toBe(503);
     query.mockReturnValueOnce([workRow(), workRow()]);
+    expect((await works(STUDENT)).status).toBe(503);
+    query.mockReturnValueOnce([workRow({ noticeChanged: null })]);
     expect((await works(STUDENT)).status).toBe(503);
     query.mockImplementationOnce(() => {
       throw refusal("ZD401");

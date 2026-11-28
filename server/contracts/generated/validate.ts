@@ -4344,6 +4344,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   const local0 = /^\d{4}-\d{2}-\d{2}$/;
   const local1 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,200}(?![\s\S])/;
   const local2 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,2000}(?![\s\S])/;
+  const local3 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?Z$/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -4356,7 +4357,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       local1.test(value['topic']) &&
       (typeof value['agreement'] === 'string') &&
       local2.test(value['agreement']) &&
-      Object.getOwnPropertyNames(value).length === 4
+      (value['heldAt'] !== undefined ? ((((typeof value['heldAt'] === 'string') && local3.test(value['heldAt'])) || ((value['heldAt'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['heldOn', 'revision', 'topic', 'agreement', 'heldAt'].includes(key))
     )
   }
   })(),

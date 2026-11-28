@@ -48,6 +48,17 @@ export const StudentWork = closed({
   /** The kind of the work (SRV-V13-UGOVOR-VRSTA); absent means text. */
   documentKind: Type.Optional(DocumentKind),
   workKind: Type.Optional(WorkKind),
+  /**
+   * F4 1.6: the assignment's current notice is newer than the newest one the
+   * student confirmed. False when nothing changed and when the student never
+   * confirmed one. Absent from an older server.
+   */
+  noticeChangedSinceSeen: Type.Optional(Type.Boolean()),
+  /**
+   * Once a submission is recorded: it was asked for after the student's due
+   * time of that moment. Absent while no submission is recorded.
+   */
+  afterDeadline: Type.Optional(Type.Boolean()),
 });
 
 export const studentWorkRoutes = [
