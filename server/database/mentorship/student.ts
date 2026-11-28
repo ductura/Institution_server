@@ -3,8 +3,13 @@ import type { WithActor } from "../index.ts";
 // SRV-1414: the two reads of the student's side of mentorship, each one RPC of
 // the main database. The functions decide who may: ZD401 without a session,
 // ZD403 for a caller with a confirmed teacher role, which the HTTP adapter maps.
+// F4 wave 2 #3: a declined request also reads the teacher's reason through
+// app.student_mentorship_decline_reason, which answers only the student of the
+// request; the other states never ask it.
 const REQUESTS_SQL = `SELECT request_id, teacher_id, given_name, family_name, work_type, state,
-       requested_at, ended_at, mentorship_id
+       requested_at, ended_at, mentorship_id,
+       CASE WHEN state = 'declined' THEN app.student_mentorship_decline_reason(request_id) END
+         AS decline_reason
   FROM app.student_mentorship_requests()`;
 const CANDIDATES_SQL =
   "SELECT teacher_id, given_name, family_name FROM app.student_mentor_candidates()";
@@ -20,6 +25,8 @@ export type StudentMentorshipRequestRow = {
   readonly requestedAt: string;
   readonly endedAt: string | null;
   readonly mentorshipId: string | null;
+  /** The teacher's reason, only for a declined request that has one. */
+  readonly declineReason: string | null;
 };
 
 export type MentorCandidateRow = {
@@ -49,6 +56,10 @@ export function createStudentMentorshipReader(withActor: WithActor) {
           requestedAt: instant(row.requested_at),
           endedAt: row.ended_at === null ? null : instant(row.ended_at),
           mentorshipId: (row.mentorship_id as string | null) ?? null,
+          declineReason:
+            row.state === "declined" && typeof row.decline_reason === "string"
+              ? row.decline_reason
+              : null,
         }));
       }),
     /** The teachers the caller may ask; no source holds a department yet. */

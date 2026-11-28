@@ -63,10 +63,13 @@ export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
       body: { requestId: request.id, state: "approved", mentorshipId: request.mentorshipId },
     };
   },
-  "mentorship.request-decline.post": ({ state, account, params, now }) => {
+  "mentorship.request-decline.post": ({ state, account, params, body, now }) => {
     const request = own(state, account, params.requestId, "teacher");
     if (request === null) return { error: "not_found" };
-    if (request.state === "requested") end(request, "declined", now);
+    if (request.state === "requested") {
+      end(request, "declined", now);
+      request.declineReason = body.reason ?? null;
+    }
     if (request.state !== "declined") return { error: "conflict" };
     return { status: 200, body: { requestId: request.id, state: "declined" } };
   },
@@ -101,7 +104,16 @@ export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
           return { ...base, state: r.state, endedAt: null, mentorshipId: null };
         if (r.state === "approved" && r.mentorshipId !== null)
           return { ...base, state: r.state, endedAt, mentorshipId: r.mentorshipId };
-        return { ...base, state: r.state as "declined" | "withdrawn", endedAt, mentorshipId: null };
+        // F4 wave 2 #3: the student of the request reads the teacher's reason.
+        if (r.state === "declined")
+          return {
+            ...base,
+            state: r.state,
+            endedAt,
+            mentorshipId: null,
+            declineReason: r.declineReason ?? null,
+          };
+        return { ...base, state: r.state as "withdrawn", endedAt, mentorshipId: null };
       });
     return { status: 200, body: { requests } };
   },

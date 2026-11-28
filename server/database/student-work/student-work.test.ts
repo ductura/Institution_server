@@ -30,6 +30,8 @@ const row = (overrides: Record<string, unknown> = {}) =>
     state: "none",
     requestedAt: null,
     language: "hr",
+    noticeChanged: false,
+    afterDeadline: null,
     ...overrides,
   });
 
@@ -114,6 +116,26 @@ describe("the student's works", () => {
     ]);
   });
 
+  // F4 1.6: the notice flag is the database's boolean; afterDeadline only once recorded.
+  it("passes whether the notice changed and, once recorded, whether the submission was late", () => {
+    const [unchanged] = worksOf([row()]);
+    expect(unchanged!.noticeChangedSinceSeen).toBe(false);
+    expect(unchanged!).not.toHaveProperty("afterDeadline");
+    const [changed] = worksOf([
+      row({
+        noticeChanged: true,
+        state: "potvrdeno",
+        requestedAt: "2027-01-19T10:15:00.000Z",
+        afterDeadline: true,
+      }),
+    ]);
+    expect(changed).toMatchObject({ noticeChangedSinceSeen: true, afterDeadline: true });
+    const [onTime] = worksOf([
+      row({ state: "ceka", requestedAt: "2027-01-19T10:15:00.000Z", afterDeadline: false }),
+    ]);
+    expect(onTime!.afterDeadline).toBe(false);
+  });
+
   it("copies only the named columns", () => {
     const [work] = worksOf([row({ grade: "A", accommodation: true })]);
     expect(Object.keys(work!)).not.toContain("grade");
@@ -128,6 +150,11 @@ describe("the student's works", () => {
       [row({ revision: "-1" })],
       [row({ language: "de" })],
       [row({ title: "" })],
+      [row({ noticeChanged: null })],
+      [row({ noticeChanged: "true" })],
+      [row({ noticeChanged: undefined })],
+      [row({ afterDeadline: "false" })],
+      [row({ afterDeadline: undefined })],
       [inherited],
       [row(), row()],
       [null],

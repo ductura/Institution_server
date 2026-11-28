@@ -4,7 +4,7 @@ Port zajedničkog zapisa konzultacije o jednom radu i njegovih dopuna (SRV-1105,
 
 ## Što radi
 
-`createConsultationRecords(withActor)` daje `list`, `create` i `addAddition`, svaki u jednoj transakciji nad funkcijom `collaboration.list_consultation_records`, `create_consultation_record` ili `add_consultation_addition`:
+`createConsultationRecords(withActor)` daje `list`, `create` i `addAddition`, svaki u jednoj transakciji nad funkcijom `collaboration.list_consultation_records`, `create_consultation_record_v2` (od F4 vala 2 #2 s vremenom održavanja `held_at`, cijela minuta; stara funkcija ostaje) ili `add_consultation_addition`:
 
 - pristup odlučuje baza odnosom komentara: nastavnik zadatka ili student vlasnik rada; tuđi, nepoznati i neispravan rad su isti ZD403, koji port vraća kao `not_found` (C-23);
 - revizija zapisa mora biti revizija istog rada (inače ZD422, `invalid_input`); prazna tema i prazna ili prazna-po-znakovima dopuna također;

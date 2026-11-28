@@ -1,8 +1,7 @@
 // SRV-12: POST /api/v1/institution/admin/courses on a real server with the
 // real pipeline, over a fake AdminCourses port. Every vector that does not
-// frame the body itself is sent; until the database gives the administrator
-// the groups, a course with groups is 422 before the port. All values are
-// invented.
+// frame the body itself is sent, groups included (F4 wave 2 #9, 1.9). All
+// values are invented.
 import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -86,42 +85,63 @@ const withoutRequestId = (body: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(body).filter(([k]) => k !== "requestId"));
 
 describe("POST /api/v1/institution/admin/courses", () => {
-  // "created" names two groups, which the administrator cannot make yet (see the route).
-  it.each(
-    VECTORS.filter((v) => !framed(v) && v.name !== "created").map((v) => [v.name, v] as const),
-  )("answers the %s vector", async (_name, v) => {
-    answer =
-      v.kind === "success"
-        ? () => ({ status: "created", id: v.response.body.id as string })
-        : () =>
-            ({
-              status: PORT_REFUSAL.get(v.code!) ?? "unexpected",
-              reason: "database_error",
-            }) as AdminCourseOutcome;
-    await start();
-    // A refusal the database decides is asked with a body the route passes on.
-    const byPort = v.kind === "error" && PORT_REFUSAL.has(v.code!);
-    const body = v.request.body as Record<string, unknown> | undefined;
-    const got = await send(v, byPort && body !== undefined ? { ...body, groups: [] } : body);
-    expect([got.status, withoutRequestId(got.body)]).toEqual([
-      v.response.status,
-      withoutRequestId(v.response.body),
-    ]);
-    expect(activity).toEqual(v.kind === "success" ? [expect.any(String)] : []);
+  const created = (v: Vector): AdminCourseOutcome => ({
+    status: "created",
+    id: v.response.body.id as string,
+    groups: v.response.body.groups as { id: string; name: string }[],
   });
 
-  it("the holder in lower case reaches the port; a course with groups is 422 before it", async () => {
-    const v = VECTORS.find((x) => x.name === "created-without-groups")!;
-    answer = () => ({ status: "created", id: v.response.body.id as string });
+  it.each(VECTORS.filter((v) => !framed(v)).map((v) => [v.name, v] as const))(
+    "answers the %s vector",
+    async (_name, v) => {
+      answer =
+        v.kind === "success"
+          ? () => created(v)
+          : () =>
+              ({
+                status: PORT_REFUSAL.get(v.code!) ?? "unexpected",
+                reason: "database_error",
+              }) as AdminCourseOutcome;
+      await start();
+      const got = await send(v);
+      expect([got.status, withoutRequestId(got.body)]).toEqual([
+        v.response.status,
+        withoutRequestId(v.response.body),
+      ]);
+      expect(activity).toEqual(v.kind === "success" ? [expect.any(String)] : []);
+    },
+  );
+
+  it("the holder in lower case and the groups in order reach the port", async () => {
+    const v = VECTORS.find((x) => x.name === "created")!;
+    answer = () => created(v);
     await start();
     const body = v.request.body as Record<string, unknown>;
     const holder = body.holderId as string;
     expect((await send(v, { ...body, holderId: holder.toUpperCase() })).status).toBe(200);
-    const course = Object.fromEntries(Object.entries(body).filter(([k]) => k !== "groups"));
-    expect(calls).toEqual([[expect.any(String), { ...course, holderId: holder }]]);
-    calls.length = 0;
-    expect((await send(VECTORS.find((x) => x.name === "created")!)).status).toBe(422);
+    expect(calls).toEqual([[expect.any(String), { ...body, holderId: holder }]]);
+  });
+
+  it.each([
+    ["21 groups", Array.from({ length: 21 }, (_, i) => `Grupa ${i + 1}`)],
+    ["a group named twice", ["Grupa A", "Grupa A"]],
+    ["a group name with an edge space", ["Grupa A "]],
+  ])("%s is 422 before the port", async (_name, groups) => {
+    const v = VECTORS.find((x) => x.name === "created")!;
+    answer = () => ({ status: "unavailable", reason: "never" });
+    await start();
+    const got = await send(v, { ...(v.request.body as object), groups });
+    expect([got.status, got.body.code]).toEqual([422, "invalid_input"]);
     expect(calls).toEqual([]);
+  });
+
+  it("a name the database refuses is 422", async () => {
+    const v = VECTORS.find((x) => x.name === "created")!;
+    answer = () => ({ status: "invalid" });
+    await start();
+    const got = await send(v);
+    expect([got.status, got.body.code]).toEqual([422, "invalid_input"]);
+    expect(activity).toEqual([]);
   });
 });
 
@@ -134,8 +154,14 @@ describe("parseAdminCourseBody", () => {
     groups: [],
   };
   it("takes exactly the five keys, groups empty", () => {
-    const course = Object.fromEntries(Object.entries(good).filter(([k]) => k !== "groups"));
-    expect(parseAdminCourseBody(good)).toEqual(course);
+    expect(parseAdminCourseBody(good)).toEqual(good);
+  });
+  it("takes up to 20 distinct group names of 1 to 80 units", () => {
+    const groups = Array.from(
+      { length: 20 },
+      (_, i) => "G".repeat(78) + String(i).padStart(2, "0"),
+    );
+    expect(parseAdminCourseBody({ ...good, groups })).toEqual({ ...good, groups });
   });
   it.each([
     ["no groups key", { ...good, groups: undefined }],
@@ -143,7 +169,13 @@ describe("parseAdminCourseBody", () => {
     ["a holder that is not a UUID", { ...good, holderId: "x" }],
     ["a year that is not consecutive", { ...good, academicYear: "2026/2028" }],
     ["a name with an edge space", { ...good, name: " X" }],
-    ["groups", { ...good, groups: ["Grupa A"] }],
+    ["groups that is not an array", { ...good, groups: "Grupa A" }],
+    ["21 groups", { ...good, groups: Array.from({ length: 21 }, (_, i) => `Grupa ${i}`) }],
+    ["an empty group name", { ...good, groups: [""] }],
+    ["a group name of 81 units", { ...good, groups: ["G".repeat(81)] }],
+    ["a group name with an edge space", { ...good, groups: [" Grupa A"] }],
+    ["a group name that is not a string", { ...good, groups: [1] }],
+    ["a group named twice", { ...good, groups: ["Grupa A", "Grupa B", "Grupa A"] }],
   ])("refuses %s", (_name, value) => {
     expect(parseAdminCourseBody(JSON.parse(JSON.stringify(value)))).toBeNull();
   });
