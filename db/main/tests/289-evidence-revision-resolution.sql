@@ -1,8 +1,8 @@
 -- F4-EDI-R05-SRV (B1): the resolution of a revision committed over a conflict
 -- (20261220870000). Acceptance: (1) the 11-argument app.commit_evidence_segment
 -- takes NULL or exactly {kind: "keep_local", conflictBaseRevision: M} with
--- 0 <= M <= the expected revision; anything else is invalid and writes
--- nothing; (2) a resolution is stored only with a reserved commit, never with
+-- 0 <= M < the expected revision (20261220900000: M equal to it too is
+-- refused); anything else is invalid and writes nothing; (2) a resolution is stored only with a reserved commit, never with
 -- a refused one; (3) a retry must send the same resolution, absence included;
 -- (4) the row is append only and no runtime role reaches the table;
 -- (5) a row that cannot be written undoes the commit; (6) the owner and the
@@ -122,7 +122,24 @@ SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-1', pg_temp.descriptor(), 0, repeat('
     repeat('b', 64), NULL, 'resolution'), NULL, 'its retry answers no resolution');
 SELECT is(pg_temp.stored(), '', 'and none is stored');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-1', pg_temp.descriptor(), 0, repeat('a', 64), repeat('d', 64),
-    repeat('b', 64), pg_temp.keep(0)), 'idempotency_conflict', 'its retry with a resolution is an idempotency conflict');
+    repeat('b', 64), pg_temp.keep(0)), 'invalid', 'its retry with a resolution is invalid: no base lies below revision 0');
+-- A commit without a resolution on a later base: Tomo's revisions 1 and 2 of
+-- doc-b. A base below revision 1 exists (0), so its retry with a resolution
+-- reaches the idempotency check.
+SELECT is(pg_temp.call5('tomo', 'pkg-b', 'tb-1',
+    pg_temp.descriptor(p_package => 'pkg-b', p_document => 'doc-b', p_segment => 'segment-b-1'),
+    0, repeat('c', 64), repeat('d', 64), repeat('b', 64), NULL), 'reserved', 'fixture: Tomo commits revision 1');
+SELECT is(pg_temp.call5('tomo', 'pkg-b', 'tb-2',
+    pg_temp.descriptor(p_package => 'pkg-b', p_document => 'doc-b', p_segment => 'segment-b-2', p_sequence_from => 2,
+                       p_sequence_to => 2, p_hash => repeat('c', 64), p_predecessor => repeat('b', 64)),
+    1, repeat('d', 64), repeat('e', 64), repeat('c', 64), NULL), 'reserved',
+  'fixture: Tomo commits revision 2 without a resolution');
+SELECT is(pg_temp.call5('tomo', 'pkg-b', 'tb-2',
+    pg_temp.descriptor(p_package => 'pkg-b', p_document => 'doc-b', p_segment => 'segment-b-2', p_sequence_from => 2,
+                       p_sequence_to => 2, p_hash => repeat('c', 64), p_predecessor => repeat('b', 64)),
+    1, repeat('d', 64), repeat('e', 64), repeat('c', 64), pg_temp.keep(0)), 'idempotency_conflict',
+  'its retry with a resolution is an idempotency conflict');
+SELECT is(pg_temp.stored(), '', 'and none is stored');
 
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-2', pg_temp.seg2(), 1, repeat('d', 64), repeat('e', 64),
     repeat('c', 64), pg_temp.keep(0)), 'reserved', 'revision 2 committed over a conflict with revision 0 is accepted');
@@ -147,8 +164,10 @@ SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-2', pg_temp.seg2(), 1, repeat('d', 64
   'the same resolution written otherwise is the same');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-2', pg_temp.seg2(), 1, repeat('d', 64), repeat('e', 64),
     repeat('c', 64), NULL), 'idempotency_conflict', 'a retry without the resolution is an idempotency conflict');
+-- Revision 2 sits on base 1, so 0 is its only valid base; a retry with another
+-- base is in section 6, on revision 3.
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-2', pg_temp.seg2(), 1, repeat('d', 64), repeat('e', 64),
-    repeat('c', 64), pg_temp.keep(1)), 'idempotency_conflict', 'a retry with another base is an idempotency conflict');
+    repeat('c', 64), pg_temp.keep(1)), 'invalid', 'a retry with the base equal to the expected revision is invalid');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-2', pg_temp.seg2(), 1, repeat('d', 64), repeat('e', 64),
     repeat('c', 64), pg_temp.keep(1), 'receipt_id'), NULL, 'and returns no receipt');
 SELECT is(pg_temp.stored(), '2:0', 'no retry changes the row');
@@ -173,11 +192,15 @@ FROM (VALUES
   (14, '{"kind": "keep_local", "conflictBaseRevision": 3}'::jsonb, 'the base of the revision being made'),
   (15, '{"kind": "keep_local", "conflictBaseRevision": 9}'::jsonb, 'a base in the future'),
   (16, '{"kind": "keep_local", "conflictBaseRevision": 1e30}'::jsonb, 'a base beyond any revision'),
-  (17, '{"kind": "keep_local", "conflictBaseRevision": [1]}'::jsonb, 'the base in an array')
+  (17, '{"kind": "keep_local", "conflictBaseRevision": [1]}'::jsonb, 'the base in an array'),
+  (18, '{"kind": "keep_local", "conflictBaseRevision": 2}'::jsonb, 'the base equal to the expected revision'),
+  (19, '{"kind": "keep_local", "conflictBaseRevision": 2.0}'::jsonb, 'the base equal to the expected revision, written as 2.0')
 ) AS v (n, resolution, why)
 ORDER BY v.n;
 SELECT is(pg_temp.receipts('bad-%'), '0', 'the refused commits leave no receipt');
 SELECT is(pg_temp.stored(), '2:0', 'and no resolution');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'ana', $$ SELECT current_revision::text FROM evidence.document WHERE id = 'doc-a' $$),
+  '2', 'nor a revision');
 
 -- 4. A refused commit stores no resolution.
 SELECT is(pg_temp.call5('tomo', 'pkg-a', 'no-foreign', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
@@ -185,11 +208,11 @@ SELECT is(pg_temp.call5('tomo', 'pkg-a', 'no-foreign', pg_temp.seg3(), 2, repeat
 SELECT is(pg_temp.call5('anon', 'pkg-a', 'no-anon', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
     repeat('9', 64), '[]'::jsonb), 'unauthorized', 'no session is unauthorized before the resolution is looked at');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'no-stale', pg_temp.seg3(), 1, repeat('e', 64), repeat('f', 64),
-    repeat('9', 64), pg_temp.keep(1)), 'stale_base', 'a resolution on an old base is still stale');
+    repeat('9', 64), pg_temp.keep(0)), 'stale_base', 'a resolution on an old base is still stale');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'no-stale', pg_temp.seg3(), 1, repeat('e', 64), repeat('f', 64),
-    repeat('9', 64), pg_temp.keep(1), 'current_revision'), '2', 'and answers the current revision');
+    repeat('9', 64), pg_temp.keep(0), 'current_revision'), '2', 'and answers the current revision');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'no-stale', pg_temp.seg3(), 1, repeat('e', 64), repeat('f', 64),
-    repeat('9', 64), pg_temp.keep(1), 'resolution'), NULL, 'and no resolution');
+    repeat('9', 64), pg_temp.keep(0), 'resolution'), NULL, 'and no resolution');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'no-chain',
     pg_temp.descriptor(p_segment => 'segment-a-3', p_sequence_from => 3, p_sequence_to => 3,
                        p_hash => repeat('9', 64), p_predecessor => repeat('b', 64)),
@@ -214,6 +237,15 @@ SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-
   'fixture: Ana requests revision 2');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
     repeat('9', 64), pg_temp.keep(1)), 'reserved', 'revision 3 committed over a conflict with revision 1 is accepted');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(2)), 'invalid',
+  'its retry with the base equal to the expected revision is refused before the retry is looked at');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(1)), 'duplicate_pending', 'and its retry with the same base still returns the receipt');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(0)), 'idempotency_conflict', 'a retry with another base is an idempotency conflict');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(0), 'receipt_id'), NULL, 'and returns no receipt');
 SELECT is(pg_temp.stored(), '2:0,3:1', 'both resolutions are stored');
 
 -- 7. Append only, for the owner too; no runtime role writes directly.
