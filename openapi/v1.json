@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.193.0",
+    "version": "1.194.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -11784,6 +11784,26 @@
                   "document": {
                     "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
                     "type": "string"
+                  },
+                  "resolution": {
+                    "additionalProperties": false,
+                    "description": "Only when this commit keeps the local text over a conflict: conflictBaseRevision is the revision that text was written on, below baseRevision (422 invalid otherwise). A retry sends the same resolution, or none if the first had none.",
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "conflictBaseRevision"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "keep_local",
+                        "type": "string"
+                      },
+                      "conflictBaseRevision": {
+                        "minimum": 0,
+                        "maximum": 9007199254740989,
+                        "type": "integer"
+                      }
+                    }
                   }
                 }
               }

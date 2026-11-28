@@ -59,4 +59,4 @@ Razrješenje prolazi sve provjere običnog commita, istim redom i s istim odgovo
 
 **Razrješenje je dopušteno i nakon roka, prije predaje.** Nakon predaje paket više ne prima dokaze, pa novo razrješenje dobiva 409 `not_accepting`, a ponovljeni zahtjev razrješenja prihvaćenog prije predaje i dalje daje `duplicate`.
 
-Testovi: `tests/db/evidence-commit-resolution.integration.test.ts` (baza), `server/evidence/resolution.test.ts` (priprema prije pohrane) i `server/http/evidence-commit.test.ts` (zatvoreno tijelo: `actor`, `institutionId`, `revision` i slična polja daju 422 `invalid`).
+Testovi: `tests/db/evidence-commit-resolution.integration.test.ts` (baza), `server/evidence/resolution.test.ts` (priprema prije pohrane) i `server/http/evidence-commit.test.ts` (zatvoreno tijelo: `actor`, `institutionId`, `revision` i slična polja daju 422 `invalid`). Od API 1.194.0 tijelo smije nositi `resolution: {"kind":"keep_local","conflictBaseRevision":M}` s 0 ≤ M < `baseRevision` (pravilo u `server/evidence/README.md`); put kroz rutu do replaya je u `tests/db/evidence-replay-route.integration.test.ts`.
