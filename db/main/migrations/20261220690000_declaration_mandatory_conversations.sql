@@ -19,13 +19,14 @@
 --       transfer record named by a segment of the declared document, with a
 --       receipt up to the revision, comes from it; required_through_seq is the
 --       highest seq of such a response (rule 1 of 2.4), never above the
---       messages known. Every other conversation stays student_added with 0.
---   declaration.check_conversation_refs   with the switch off, neither a
---       missing transferred conversation nor a throughSeq below its
---       required_through_seq is reported; reason and throughSeq of each
---       attachment are returned either way. The switch governs only the
---       reason this migration derives: the other mandatory reasons
---       (transferred_deleted, pasted_known) keep the check of 20261129112000.
+--       messages known, and 0 while the institution's switch is off. Every
+--       other conversation stays student_added with 0.
+--   declaration.check_conversation_refs   the check of 20261129112000, except
+--       that a mandatory conversation with required_through_seq 0 is not
+--       reported missing. So with the switch off neither a missing transferred
+--       conversation nor a throughSeq below its last transfer is reported,
+--       while the check of any other mandatory reason stays as it was; reason
+--       and throughSeq of each attachment are returned either way.
 --
 -- Decisions (owner, F4 val 2 #7):
 --   OD-7  transferred_deleted is not returned: it needs the text of the events,
@@ -83,7 +84,12 @@ CREATE OR REPLACE FUNCTION declaration.conversation_snapshot(
 LANGUAGE sql STABLE SET search_path = '' AS $$
   SELECT h.conversation_id,
          CASE WHEN x.through_seq IS NULL THEN 'student_added' ELSE 'transferred' END,
-         coalesce(least(x.through_seq, cardinality(h.message_hashes)), 0),
+         -- least() skips a NULL, so a conversation without a record is 0
+         -- explicitly; with the switch off a transfer requires nothing either.
+         CASE WHEN x.through_seq IS NULL OR NOT coalesce((
+                SELECT s.enabled FROM declaration.mandatory_attachment_setting s
+                 WHERE s.institution_id = p_institution), false)
+              THEN 0 ELSE least(x.through_seq, cardinality(h.message_hashes)) END,
          h.message_hashes
     FROM app.declaration_conversation_hashes(p_assignment, p_student) h
     LEFT JOIN assistant.ai_transfer_through_seqs(p_institution, p_student, p_document, p_assignment, ARRAY(
@@ -103,17 +109,13 @@ CREATE OR REPLACE FUNCTION declaration.check_conversation_refs(
   p_institution uuid, p_assignment uuid, p_student uuid, p_document text, p_revision bigint, p_refs jsonb
 ) RETURNS TABLE (has_unknown boolean, too_many boolean, missing jsonb, stale jsonb, attachments jsonb)
 LANGUAGE sql STABLE SET search_path = '' AS $$
-  WITH setting AS (
-    SELECT coalesce((SELECT s.enabled FROM declaration.mandatory_attachment_setting s
-                      WHERE s.institution_id = p_institution), false) AS enabled
-  ), requested AS (
+  WITH requested AS (
     SELECT r AS ref, (r->>'conversationId')::uuid AS id, (r->>'throughSeq')::bigint AS seq
     FROM jsonb_array_elements(p_refs) r
   ), checks AS (
-    SELECT c.conversation_id, c.reason, r.ref, r.id, CASE
+    SELECT c.conversation_id, c.reason, c.required_through_seq, r.ref, r.id, CASE
       WHEN r.seq IS NULL OR c.conversation_id IS NULL THEN false
-      WHEN ((c.reason <> 'transferred' OR (SELECT enabled FROM setting)) AND r.seq < c.required_through_seq)
-        OR r.seq > cardinality(c.message_hashes) THEN true
+      WHEN r.seq < c.required_through_seq OR r.seq > cardinality(c.message_hashes) THEN true
       ELSE (r.ref->>'messagesSha256') IS DISTINCT FROM encode(sha256(
         convert_to(array_to_json(c.message_hashes[1:r.seq::integer])::text, 'UTF8')), 'hex')
       END AS is_stale
@@ -125,8 +127,7 @@ LANGUAGE sql STABLE SET search_path = '' AS $$
   SELECT count(*) FILTER (WHERE conversation_id IS NULL) > 0,
     count(*) FILTER (WHERE id IS NOT NULL AND reason = 'student_added') > (SELECT max_student_added FROM limits),
     coalesce(jsonb_agg(conversation_id ORDER BY conversation_id)
-      FILTER (WHERE id IS NULL AND reason <> 'student_added'
-                AND (reason <> 'transferred' OR (SELECT enabled FROM setting))), '[]'::jsonb),
+      FILTER (WHERE id IS NULL AND reason <> 'student_added' AND required_through_seq > 0), '[]'::jsonb),
     coalesce(jsonb_agg(conversation_id ORDER BY conversation_id) FILTER (WHERE is_stale), '[]'::jsonb),
     coalesce(jsonb_agg(ref || jsonb_build_object('reason',reason)
       ORDER BY array_position(ARRAY['transferred_deleted','transferred','pasted_known','student_added'],reason),

@@ -3,9 +3,10 @@
 -- by a segment with a receipt up to the revision, is transferred, and its
 -- required_through_seq is the last seq of a transferred response; a record of
 -- a later revision does not count; a conversation without one, another
--- student's or another assignment's stays out. The check of a missing or too
--- short mandatory attachment runs only when the institution's switch is on (no
--- row: off); the switch is written by the owner's SQL alone. Every person,
+-- student's or another assignment's stays out. A transferred conversation
+-- requires its seq only when the institution's switch is on (no row: off;
+-- off gives seq 0, so neither a missing nor a too short attachment is
+-- reported); the switch is written by the owner's SQL alone. Every person,
 -- document and text below is invented; the documents are those of the shared
 -- fixture.
 BEGIN;
@@ -165,13 +166,15 @@ SELECT matches(pg_temp.ask_as('ductus_app', a, 'SELECT count(*)::text FROM decla
   '^42501', format('the web role with the session of %s reads nothing of the switch', a))
 FROM unnest(ARRAY['ana', 'anon']) a;
 
--- 1. The snapshot follows the chain up to the revision.
+-- 1. The snapshot follows the chain up to the revision. With the switch off
+-- (no row) a transferred conversation requires nothing (seq 0); section 3
+-- reads the seqs with the switch on.
 SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 1, 'conv_a'), 'student_added|0',
   'up to revision 1 no record names conv_a: student_added');
-SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 2, 'conv_a'), 'transferred|2',
-  'up to revision 2 the record of revision 1 is in: transferred through the response at seq 2');
-SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 3, 'conv_a'), 'transferred|4',
-  'up to revision 3 the last transferred response is at seq 4');
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 2, 'conv_a'), 'transferred|0',
+  'switch off, up to revision 2: transferred, nothing required');
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 3, 'conv_a'), 'transferred|0',
+  'switch off, up to revision 3: transferred, nothing required');
 SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 3, 'conv_b'), 'student_added|0',
   'a conversation no record comes from stays student_added');
 SELECT is(pg_temp.snap('dora', 'z1', 'doc-a', 3, 'conv_d'), 'student_added|0',
@@ -195,6 +198,16 @@ SELECT is(pg_temp.save(3, true, jsonb_build_array(pg_temp.att('conv_a', 2))) #> 
 SET LOCAL ROLE ductus_evidence;
 INSERT INTO declaration.mandatory_attachment_setting (institution_id, enabled) VALUES (pg_temp.id('fak_a'), true);
 RESET ROLE;
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 1, 'conv_a'), 'student_added|0',
+  'switch on, up to revision 1 no record names conv_a: student_added');
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 2, 'conv_a'), 'transferred|2',
+  'switch on, up to revision 2 the record of revision 1 is in: transferred through the response at seq 2');
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 3, 'conv_a'), 'transferred|4',
+  'switch on, up to revision 3 the last transferred response is at seq 4');
+SELECT is(pg_temp.snap('ana', 'z1', 'doc-a', 3, 'conv_b'), 'student_added|0',
+  'switch on: a conversation no record comes from stays student_added with 0');
+SELECT is(pg_temp.snap('dora', 'z1', 'doc-a', 3, 'conv_d'), 'student_added|0',
+  'switch on: another student''s conversation is never made mandatory by Ana''s records');
 SELECT is(pg_temp.save(3, true, '[]'::jsonb),
   jsonb_build_object('status', 'conflict', 'reason', 'mandatory_attachment_missing',
     'conversationIds', jsonb_build_array(pg_temp.u('conv_a'))),
