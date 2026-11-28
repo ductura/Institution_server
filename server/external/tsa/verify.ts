@@ -261,15 +261,59 @@ function algorithmBytes(algorithm: pkijs.AlgorithmIdentifier): Uint8Array {
  */
 const OID_ECDSA_PREFIX = "1.2.840.10045.4.";
 
-/** An ECDSA signature is one DER SEQUENCE of two INTEGERs, with no other encoding. */
+const OID_EC_PUBLIC_KEY = "1.2.840.10045.2.1";
+
+/** A DER length of one or two bytes, minimally encoded; null for anything else. */
+function derLength(bytes: Uint8Array, at: number): { length: number; next: number } | null {
+  const first = bytes[at];
+  if (first === undefined) return null;
+  if (first < 0x80) return { length: first, next: at + 1 };
+  const second = bytes[at + 1];
+  if (first !== 0x81 || second === undefined || second < 0x80) return null;
+  return { length: second, next: at + 2 };
+}
+
+/** One positive, minimally encoded DER INTEGER at `at`: the offset after it, or null. */
+function derPositiveInteger(bytes: Uint8Array, at: number, end: number): number | null {
+  if (bytes[at] !== 0x02) return null;
+  const header = derLength(bytes, at + 1);
+  if (header === null || header.length === 0) return null;
+  const next = header.next + header.length;
+  if (next > end) return null;
+  const lead = bytes[header.next] ?? 0;
+  if (lead >= 0x80) return null;
+  if (lead === 0 && (header.length === 1 || (bytes[header.next + 1] ?? 0) < 0x80)) return null;
+  return next;
+}
+
+/**
+ * ECDSA-Sig-Value (RFC 3279 §2.2.3) in DER, read byte by byte: the SEQUENCE
+ * tag 0x30, two INTEGER tags 0x02, minimal lengths and integers, positive
+ * values and nothing after them.
+ */
+function strictEcdsaSignature(bytes: Uint8Array): boolean {
+  if (bytes[0] !== 0x30) return false;
+  const header = derLength(bytes, 1);
+  if (header === null || header.next + header.length !== bytes.byteLength) return false;
+  const r = derPositiveInteger(bytes, header.next, bytes.byteLength);
+  const s = r === null ? null : derPositiveInteger(bytes, r, bytes.byteLength);
+  return s === bytes.byteLength;
+}
+
 function canonicalSignatureBytes(certificate: pkijs.Certificate): boolean {
   if (!certificate.signatureAlgorithm.algorithmId.startsWith(OID_ECDSA_PREFIX)) return true;
-  const bytes = bytesOf(certificate.signatureValue.valueBlock.valueHexView);
-  const asn = parseOne(bytes);
-  if (!(asn instanceof asn1js.Sequence)) return false;
-  const parts = asn.valueBlock.value;
-  if (parts.length !== 2 || !parts.every((p) => p instanceof asn1js.Integer)) return false;
-  return equalBytes(new Uint8Array(asn.toBER(false)), bytes);
+  return strictEcdsaSignature(bytesOf(certificate.signatureValue.valueBlock.valueHexView));
+}
+
+/** The same strict form for the signer's signature over the signed attributes. */
+function canonicalSignerSignature(
+  signerInfo: pkijs.SignerInfo,
+  signer: pkijs.Certificate,
+): boolean {
+  const ecdsa =
+    signerInfo.signatureAlgorithm.algorithmId.startsWith(OID_ECDSA_PREFIX) ||
+    signer.subjectPublicKeyInfo.algorithm.algorithmId === OID_EC_PUBLIC_KEY;
+  return !ecdsa || strictEcdsaSignature(bytesOf(signerInfo.signature.valueBlock.valueHexView));
 }
 
 function canonicalCertificate(certificate: pkijs.Certificate): boolean {
@@ -378,7 +422,10 @@ async function verifyChecked(
   if (!validAt(signer, genTime)) return fail("TSA_CERTIFICATE_EXPIRED");
   if (!hasTimeStampingEku(signer)) return fail("TSA_EKU");
 
-  if ((await attemptAsync(() => signatureValid(signedData, signerInfo, signer))) !== true)
+  if (
+    !canonicalSignerSignature(signerInfo, signer) ||
+    (await attemptAsync(() => signatureValid(signedData, signerInfo, signer))) !== true
+  )
     return fail("TSA_SIGNATURE");
 
   if (trust.anchors.length === 0) return fail("TSA_ANCHORS_INVALID");
