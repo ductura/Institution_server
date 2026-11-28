@@ -63,7 +63,7 @@ const optionalFlag = (body: object, key: string, value: unknown): boolean | null
  * nothing). workKind wins over documentKind; both present and different is the 422 of the
  * contract, as is anything but a known kind (documentKind is text|slides, workKind adds
  * spreadsheet). SRV-V13-VRSTA-PISAC: create_assignment_with_groups stores all three kinds
- * in institution.assignment.document_kind (migration 20261220860000), and
+ * in institution.assignment.document_kind (migration 20261220880000), and
  * publish_assignment_version refuses a kind other than the stored one (ZD422).
  */
 const DOCUMENT_KINDS: ReadonlySet<unknown> = new Set(["text", "slides"]);

@@ -36,7 +36,7 @@ export type AssignmentSetup = {
 
 /**
  * The kind of document an assignment asks for (institution.assignment.document_kind),
- * stored on creation and fixed (SRV-V13-VRSTA-PISAC, migration 20261220860000).
+ * stored on creation and fixed (SRV-V13-VRSTA-PISAC, migration 20261220880000).
  */
 export type AssignmentDocumentKind = "text" | "slides" | "spreadsheet";
 
@@ -78,7 +78,7 @@ export type InstitutionAssignments = {
 // F4 wave 2 #5 (1.8): the creation and the links to the course's groups in one
 // statement (migration 20261220800000), which compares the stored links of a
 // replayed key before anything is written; then the links as stored.
-// SRV-V13-VRSTA-PISAC (20261220860000): the kind is the last argument of both; a
+// SRV-V13-VRSTA-PISAC (20261220880000): the kind is the last argument of both; a
 // replay of the key with another kind is ZD409, a version naming another kind ZD422.
 const CREATE_SQL = `SELECT institution.create_assignment_with_groups(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,

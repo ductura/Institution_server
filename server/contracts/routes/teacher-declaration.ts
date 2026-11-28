@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema/index.ts";
+import { closed, defineRoute, error, REQUEST_ID_PATTERN } from "../schema/index.ts";
 
 import {
   DeclarationPayload,
@@ -9,6 +9,7 @@ import {
   DeclarationQuestionAnswer,
   DeclarationSha256,
   DeclarationTeacherQuestion,
+  MAX_RECORDED_TRANSFERS,
 } from "./statement.ts";
 
 // SRV-IZJAVA-PITANJE: the question in force and the answer bound with the
@@ -129,6 +130,23 @@ export const teacherDeclarationV3Get = defineRoute({
           state: Type.Literal("bound"),
           payload: DeclarationPayloadV3,
           declarationSha256: DeclarationSha256,
+          // SRV-IZJAVA-AI-UNBOUND: beside the payload, outside its hash. Optional
+          // only so older clients keep validating.
+          ai: Type.Optional(
+            closed({
+              unbound: Type.Array(
+                closed({
+                  aiTransferId: Type.String({ pattern: REQUEST_ID_PATTERN }),
+                  aiTransferSha256: DeclarationSha256,
+                }),
+                {
+                  maxItems: MAX_RECORDED_TRANSFERS,
+                  description:
+                    "The student's transfer records of the declared document that no evidence revision up to the declared one binds, ordered by aiTransferId: the complement of payload.ai.recorded. A transfer bound only by a later revision stays here.",
+                },
+              ),
+            }),
+          ),
           ...Question,
         }),
       ]),

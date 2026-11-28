@@ -4,7 +4,7 @@
 // mounted assignment routes and the student's POST /api/v1/evidence/open, in a
 // random institution of this file's own (the assignments it makes stay, so they
 // must not land in the seed's courses that other files read). The kind the
-// teacher sends is the kind stored (migration 20261220860000), read back through
+// teacher sends is the kind stored (migration 20261220880000), read back through
 // the row security and as the workKind of the student's work; a replay with another kind is 409, a version
 // naming another kind 422, and a student of the course cannot create one. Every
 // institution, person, token, text and key is random and synthetic; the login

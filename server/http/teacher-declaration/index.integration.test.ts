@@ -84,3 +84,36 @@ it("answers 503 for a bound payload outside the contract", async () => {
   const response = await get(read, bound);
   expect(response.status).toBe(503);
 });
+
+// SRV-IZJAVA-AI-UNBOUND: ai.unbound passes on v3 only; v1 and v2 stay closed.
+const third = (
+  JSON.parse(
+    readFileSync(
+      new URL("../../contracts/vectors/teacher.declaration-third.get.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { vectors: Vector[] }
+).vectors.find((vector) => vector.name === "bound-with-unbound-transfers")!;
+
+it.each([
+  ["teacher.declaration-third.get", "declaration-v3", 200],
+  ["teacher.declaration-second.get", "declaration-v2", 503],
+] as const)("SRV-IZJAVA-AI-UNBOUND: %s answers %i for ai.unbound", async (id, path, status) => {
+  const read = vi
+    .fn<TeacherDeclarationReader>()
+    .mockResolvedValue({ status: "ok", body: third.response.body as TeacherDeclaration });
+  running = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    databases: createDatabases(),
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    routes: [createTeacherDeclarationRoute(read, id)],
+  });
+  const { assignmentId, studentId } = third.request.params;
+  const response = await fetch(
+    `http://127.0.0.1:${running.port}/api/v1/teacher/assignments/${assignmentId}/students/${studentId}/${path}`,
+    { ...(third.request.headers === undefined ? {} : { headers: third.request.headers }) },
+  );
+  expect(response.status).toBe(status);
+  if (status === 200) expect(await response.json()).toEqual(third.response.body);
+});

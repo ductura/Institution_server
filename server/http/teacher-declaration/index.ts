@@ -71,5 +71,9 @@ export function createTeacherDeclarationV2RouteFor(main: { withActor: WithActor 
 }
 
 export function createTeacherDeclarationV3RouteFor(main: { withActor: WithActor }): Route {
-  return createTeacherDeclarationRoute(createTeacherDeclarationReader(main.withActor), ID_V3);
+  // SRV-IZJAVA-AI-UNBOUND: only v3 carries ai.unbound; v1 and v2 stay as they are.
+  return createTeacherDeclarationRoute(
+    createTeacherDeclarationReader(main.withActor, { unbound: true }),
+    ID_V3,
+  );
 }

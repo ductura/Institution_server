@@ -1,4 +1,4 @@
--- SRV-V13-VRSTA-PISAC (migration 20261220860000): the creation stores the
+-- SRV-V13-VRSTA-PISAC (migration 20261220880000): the creation stores the
 -- kind of document of an assignment in institution.assignment.document_kind,
 -- and a version cannot name another kind. Without the migration every
 -- creation below with a kind fails (no such function) and every read of the

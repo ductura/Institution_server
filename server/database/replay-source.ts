@@ -88,6 +88,68 @@ export function sourceResult(rows: readonly Row[]): ReplaySourceResult {
   };
 }
 
+/** F4-EDI-R05-SRV (B1): one segment that resolved a conflict with an earlier base. */
+export type ReplayResolutionMark = { segmentHash: string; conflictBaseRevision: number };
+
+export type ReplayResolutionsResult =
+  | { status: "found"; marks: readonly ReplayResolutionMark[] }
+  | { status: "unauthenticated" }
+  | { status: "unavailable"; reason: string };
+
+/**
+ * The resolutions of one record, bound to one session: the same viewers and
+ * the same submission cut as the source. A refused or missing record has
+ * none, so refusal looks like absence. No caller reads it yet.
+ */
+export type ReplayResolutionReader = {
+  readResolutions(documentId: string): Promise<ReplayResolutionsResult>;
+};
+
+const RESOLUTIONS_SQL =
+  "SELECT segment_hash, conflict_base_revision FROM app.read_replay_resolutions($1)";
+
+/** The rows of app.read_replay_resolutions, checked before they leave this folder. */
+export function resolutionsResult(rows: readonly Row[]): ReplayResolutionsResult {
+  const marks: ReplayResolutionMark[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const hash = row.segment_hash;
+    const base = Number(row.conflict_base_revision);
+    if (
+      !isSha256Hex(hash) ||
+      seen.has(hash) ||
+      (typeof row.conflict_base_revision !== "string" &&
+        typeof row.conflict_base_revision !== "number") ||
+      !Number.isSafeInteger(base) ||
+      base < 0
+    ) {
+      return { status: "unavailable", reason: "resolutions_malformed" };
+    }
+    seen.add(hash);
+    marks.push({ segmentHash: hash, conflictBaseRevision: base });
+  }
+  return { status: "found", marks };
+}
+
+/** The resolution reader of one session's token; the token is only presented, never a parameter. */
+export function createReplayResolutionReader(
+  withActor: WithActor,
+  token: string,
+): ReplayResolutionReader {
+  return {
+    async readResolutions(documentId) {
+      let rows: Row[];
+      try {
+        rows = (await withActor(token, (tx) => tx.query<Row>(RESOLUTIONS_SQL, [documentId]))).rows;
+      } catch (error) {
+        if (isUnauthenticated(error)) return { status: "unauthenticated" };
+        throw error;
+      }
+      return resolutionsResult(rows);
+    },
+  };
+}
+
 /** The source of one session's token; the token is only presented, never a parameter. */
 export function createReplaySource(withActor: WithActor, token: string): ReplaySource {
   return {

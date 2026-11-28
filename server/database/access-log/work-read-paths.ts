@@ -88,6 +88,13 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     callers: ["server/database/replay-source.ts", "server/http/time-machine/store.ts"],
   },
   {
+    fn: "app.read_replay_resolutions",
+    returns: "content",
+    surfaces: ["replay"],
+    proof: "db/main/tests/289-evidence-revision-resolution.sql",
+    callers: ["server/database/replay-source.ts"],
+  },
+  {
     fn: "app.read_work_versions",
     returns: "content",
     surfaces: ["replay"],
@@ -265,5 +272,11 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     why: "no_content",
     note: "the administrator's retention dry run (SRV-1304): one count per data class, never a text, an id or a time",
     callers: ["server/database/retention-dry-run/index.ts"],
+  },
+  {
+    fn: "app.teacher_declaration_unbound",
+    why: "no_content",
+    note: "SRV-IZJAVA-AI-UNBOUND: the ids and record hashes of the student's transfer records that no segment with a receipt names, never a text; read in the same transaction as app.teacher_declaration, whose read writes the 'declaration' access-log row",
+    callers: ["server/database/teacher-declaration/index.ts"],
   },
 ];

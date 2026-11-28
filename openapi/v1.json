@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.191.0",
+    "version": "1.192.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -126149,6 +126149,38 @@
                         "declarationSha256": {
                           "pattern": "^[0-9a-f]{64}$",
                           "type": "string"
+                        },
+                        "ai": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "unbound"
+                          ],
+                          "properties": {
+                            "unbound": {
+                              "maxItems": 5000,
+                              "description": "The student's transfer records of the declared document that no evidence revision up to the declared one binds, ordered by aiTransferId: the complement of payload.ai.recorded. A transfer bound only by a later revision stays here.",
+                              "type": "array",
+                              "items": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "aiTransferId",
+                                  "aiTransferSha256"
+                                ],
+                                "properties": {
+                                  "aiTransferId": {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                    "type": "string"
+                                  },
+                                  "aiTransferSha256": {
+                                    "pattern": "^[0-9a-f]{64}$",
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
                         },
                         "question": {
                           "anyOf": [
