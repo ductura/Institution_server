@@ -1,8 +1,8 @@
 -- F4-EDI-R05-SRV (B1): the resolution of a revision committed over a conflict
 -- (20261220870000). Acceptance: (1) the 11-argument app.commit_evidence_segment
 -- takes NULL or exactly {kind: "keep_local", conflictBaseRevision: M} with
--- 0 <= M <= the expected revision; anything else is invalid and writes
--- nothing; (2) a resolution is stored only with a reserved commit, never with
+-- 0 <= M < the expected revision (20261220900000: M equal to it too is
+-- refused); anything else is invalid and writes nothing; (2) a resolution is stored only with a reserved commit, never with
 -- a refused one; (3) a retry must send the same resolution, absence included;
 -- (4) the row is append only and no runtime role reaches the table;
 -- (5) a row that cannot be written undoes the commit; (6) the owner and the
@@ -173,11 +173,15 @@ FROM (VALUES
   (14, '{"kind": "keep_local", "conflictBaseRevision": 3}'::jsonb, 'the base of the revision being made'),
   (15, '{"kind": "keep_local", "conflictBaseRevision": 9}'::jsonb, 'a base in the future'),
   (16, '{"kind": "keep_local", "conflictBaseRevision": 1e30}'::jsonb, 'a base beyond any revision'),
-  (17, '{"kind": "keep_local", "conflictBaseRevision": [1]}'::jsonb, 'the base in an array')
+  (17, '{"kind": "keep_local", "conflictBaseRevision": [1]}'::jsonb, 'the base in an array'),
+  (18, '{"kind": "keep_local", "conflictBaseRevision": 2}'::jsonb, 'the base equal to the expected revision'),
+  (19, '{"kind": "keep_local", "conflictBaseRevision": 2.0}'::jsonb, 'the base equal to the expected revision, written as 2.0')
 ) AS v (n, resolution, why)
 ORDER BY v.n;
 SELECT is(pg_temp.receipts('bad-%'), '0', 'the refused commits leave no receipt');
 SELECT is(pg_temp.stored(), '2:0', 'and no resolution');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'ana', $$ SELECT current_revision::text FROM evidence.document WHERE id = 'doc-a' $$),
+  '2', 'nor a revision');
 
 -- 4. A refused commit stores no resolution.
 SELECT is(pg_temp.call5('tomo', 'pkg-a', 'no-foreign', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
@@ -214,6 +218,11 @@ SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-
   'fixture: Ana requests revision 2');
 SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
     repeat('9', 64), pg_temp.keep(1)), 'reserved', 'revision 3 committed over a conflict with revision 1 is accepted');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(2)), 'invalid',
+  'its retry with the base equal to the expected revision is refused before the retry is looked at');
+SELECT is(pg_temp.call5('ana', 'pkg-a', 'r-3', pg_temp.seg3(), 2, repeat('e', 64), repeat('f', 64),
+    repeat('9', 64), pg_temp.keep(1)), 'duplicate_pending', 'and its retry with the same base still returns the receipt');
 SELECT is(pg_temp.stored(), '2:0,3:1', 'both resolutions are stored');
 
 -- 7. Append only, for the owner too; no runtime role writes directly.
