@@ -21,9 +21,11 @@
 --       highest seq of such a response (rule 1 of 2.4), never above the
 --       messages known. Every other conversation stays student_added with 0.
 --   declaration.check_conversation_refs   with the switch off, neither a
---       missing mandatory conversation nor a throughSeq below
+--       missing transferred conversation nor a throughSeq below its
 --       required_through_seq is reported; reason and throughSeq of each
---       attachment are returned either way.
+--       attachment are returned either way. The switch governs only the
+--       reason this migration derives: the other mandatory reasons
+--       (transferred_deleted, pasted_known) keep the check of 20261129112000.
 --
 -- Decisions (owner, F4 val 2 #7):
 --   OD-7  transferred_deleted is not returned: it needs the text of the events,
@@ -110,7 +112,7 @@ LANGUAGE sql STABLE SET search_path = '' AS $$
   ), checks AS (
     SELECT c.conversation_id, c.reason, r.ref, r.id, CASE
       WHEN r.seq IS NULL OR c.conversation_id IS NULL THEN false
-      WHEN ((SELECT enabled FROM setting) AND r.seq < c.required_through_seq)
+      WHEN ((c.reason <> 'transferred' OR (SELECT enabled FROM setting)) AND r.seq < c.required_through_seq)
         OR r.seq > cardinality(c.message_hashes) THEN true
       ELSE (r.ref->>'messagesSha256') IS DISTINCT FROM encode(sha256(
         convert_to(array_to_json(c.message_hashes[1:r.seq::integer])::text, 'UTF8')), 'hex')
@@ -123,7 +125,8 @@ LANGUAGE sql STABLE SET search_path = '' AS $$
   SELECT count(*) FILTER (WHERE conversation_id IS NULL) > 0,
     count(*) FILTER (WHERE id IS NOT NULL AND reason = 'student_added') > (SELECT max_student_added FROM limits),
     coalesce(jsonb_agg(conversation_id ORDER BY conversation_id)
-      FILTER (WHERE id IS NULL AND reason <> 'student_added' AND (SELECT enabled FROM setting)), '[]'::jsonb),
+      FILTER (WHERE id IS NULL AND reason <> 'student_added'
+                AND (reason <> 'transferred' OR (SELECT enabled FROM setting))), '[]'::jsonb),
     coalesce(jsonb_agg(conversation_id ORDER BY conversation_id) FILTER (WHERE is_stale), '[]'::jsonb),
     coalesce(jsonb_agg(ref || jsonb_build_object('reason',reason)
       ORDER BY array_position(ARRAY['transferred_deleted','transferred','pasted_known','student_added'],reason),
