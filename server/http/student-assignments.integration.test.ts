@@ -88,6 +88,7 @@ const row = (over: Partial<StudentAssignmentRow>): StudentAssignmentRow => ({
   extendedDueAt: null,
   acknowledged: true,
   isPractice: false,
+  documentKind: "text",
   ...over,
 });
 
@@ -146,6 +147,33 @@ describe("GET /api/v1/student/assignments", () => {
     const assignments = courses.flatMap((c) => c.assignments);
     expect(assignments).toHaveLength(2);
     for (const a of assignments) expect(a).not.toHaveProperty("isPractice");
+  });
+
+  // F4-V13-R04-SRV2 (WEB#1146, R04): a slides assignment opened the text editor
+  // because the answer named no kind. workKind always; documentKind only for the
+  // two kinds DocumentKind can name (shared.ts).
+  it("names the kind of document of each assignment: slides, text and spreadsheet", async () => {
+    await start(async () => ({
+      status: "ok",
+      rows: [
+        row({ documentKind: "slides" }),
+        row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02", documentKind: "text" }),
+        row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03", documentKind: "spreadsheet" }),
+      ],
+    }));
+    const got = await get(HEADERS);
+    expect(got.status).toBe(200);
+    expect(Value.Check(SCHEMA as never, got.body)).toBe(true);
+    const courses = got.body.courses as { assignments: Record<string, unknown>[] }[];
+    const kinds = courses
+      .flatMap((c) => c.assignments)
+      .map((a) => [a.id, a.documentKind, a.workKind]);
+    expect(kinds).toEqual([
+      ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01", "slides", "slides"],
+      ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02", "text", "text"],
+      ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03", undefined, "spreadsheet"],
+    ]);
+    expect(courses[0]!.assignments[2]).not.toHaveProperty("documentKind");
   });
 
   it.each([

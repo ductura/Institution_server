@@ -8,6 +8,10 @@
 // never a partial list. groups, teachers and mentor are left out until the
 // read gives them in the contract's shape (Ductus#2028 c.7009610321); the
 // contract has them optional, so the answer stays valid.
+// F4-V13-R04-SRV2: every assignment carries its kind as the contract's rule
+// says (shared.ts WorkKind): workKind always, documentKind only for "text" and
+// "slides", which is all DocumentKind can name. A client reads
+// workKind ?? documentKind ?? "text".
 import type { StudentAssignmentRow } from "../database/index.ts";
 
 export const WORK_TYPES: ReadonlySet<string> = new Set([
@@ -22,6 +26,8 @@ export type StudentAssignment = {
   noticeFirst: boolean;
   workType: string;
   extendedDueAt: string | null;
+  documentKind?: "text" | "slides";
+  workKind: "text" | "slides" | "spreadsheet";
 };
 export type StudentCourse = {
   id: string;
@@ -52,6 +58,8 @@ export function studentCoursesOf(rows: readonly StudentAssignmentRow[]): Student
       noticeFirst: !row.acknowledged,
       workType: row.workType,
       extendedDueAt: row.extendedDueAt,
+      ...(row.documentKind === "spreadsheet" ? {} : { documentKind: row.documentKind }),
+      workKind: row.documentKind,
       // isPractice stays out of the answer (VLAK-WEB934-ISPRACTICE): clients
       // on contracts 2.9.1 reject a body that carries it.
     });

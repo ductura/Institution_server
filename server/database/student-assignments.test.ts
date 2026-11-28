@@ -1,7 +1,8 @@
 // F4-STU-R02: the port of student.assignments.get over a fake withActor. It
 // reads whether each assignment is a practice one, and a row without that
 // answer (or with one that is not a boolean) makes the whole read unavailable,
-// never a partial list. All values are invented.
+// never a partial list. The same holds for the kind of document
+// (F4-V13-R04-SRV2). All values are invented.
 import { describe, expect, it } from "vitest";
 
 import { createStudentAssignmentsReader } from "./student-assignments.ts";
@@ -32,6 +33,7 @@ const row = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   extendedDueAt: null,
   acknowledged: true,
   isPractice: false,
+  documentKind: "text",
   ...over,
 });
 
@@ -60,6 +62,7 @@ describe("createStudentAssignmentsReader", () => {
       extendedDueAt: null,
       acknowledged: true,
       isPractice: false,
+      documentKind: "text",
     });
   });
 
@@ -68,6 +71,31 @@ describe("createStudentAssignmentsReader", () => {
     ["null", { isPractice: null }],
     ["text", { isPractice: "true" }],
   ])("is unavailable when the practice answer is %s", async (_name, over) => {
+    const { read } = fake(async () => [row(), row(over)]);
+    expect(await read(TOKEN)).toEqual({ status: "unavailable" });
+  });
+
+  // F4-V13-R04-SRV2 (20261220890000): the kind of document of each assignment.
+  it("reads the kind of document of each assignment", async () => {
+    const { read, seen } = fake(async () => [
+      row(),
+      row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02", documentKind: "slides" }),
+      row({ assignmentId: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03", documentKind: "spreadsheet" }),
+    ]);
+    const got = await read(TOKEN);
+    expect(seen[0]).toContain('document_kind AS "documentKind"');
+    expect(got.status).toBe("ok");
+    if (got.status !== "ok") return;
+    expect(got.rows.map((r) => r.documentKind)).toEqual(["text", "slides", "spreadsheet"]);
+  });
+
+  it.each([
+    ["missing", { documentKind: undefined }],
+    ["null", { documentKind: null }],
+    ["empty", { documentKind: "" }],
+    ["unknown", { documentKind: "video" }],
+    ["upper case", { documentKind: "SLIDES" }],
+  ])("is unavailable when the kind of document is %s", async (_name, over) => {
     const { read } = fake(async () => [row(), row(over)]);
     expect(await read(TOKEN)).toEqual({ status: "unavailable" });
   });
