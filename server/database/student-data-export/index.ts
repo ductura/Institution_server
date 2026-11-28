@@ -11,6 +11,8 @@ import type { Pool } from "pg";
 import type { WithActor } from "../index.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** The shape evidence.submission_confirmation_code checks (e.g. DK7M-4Q9P-X2HT-R8VN). */
+const CONFIRMATION_CODE = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/;
 const STATES = ["requested", "approved", "ready", "downloaded", "expired"] as const;
 
 export type StudentDataExportState = (typeof STATES)[number];
@@ -191,6 +193,8 @@ export type StudentDataExportSubmission = {
   requestedAt: string;
   body: string;
   receipt: { payload: string; payloadDigestSha256: string; signature: unknown } | null;
+  /** Dizajn 1.1: the bound confirmation code of the receipt; null exactly when `receipt` is. */
+  confirmationCode: string | null;
 };
 
 export type StudentDataExportNote = {
@@ -251,14 +255,27 @@ function submissionOf(row: Record<string, unknown>): StudentDataExportSubmission
     return undefined;
   }
   let receipt: StudentDataExportSubmission["receipt"];
-  if (row.payload === null && row.digest === null && row.signature === null) {
+  let confirmationCode: string | null;
+  if (
+    row.payload === null &&
+    row.digest === null &&
+    row.signature === null &&
+    row.confirmationCode === null
+  ) {
+    // Still waiting for its signature: no receipt and no code.
     receipt = null;
+    confirmationCode = null;
   } else if (
     typeof row.payload === "string" &&
     typeof row.digest === "string" &&
-    row.signature !== null
+    row.signature !== null &&
+    typeof row.confirmationCode === "string" &&
+    CONFIRMATION_CODE.test(row.confirmationCode)
   ) {
+    // A bound receipt always has its code (the trigger issues it with the
+    // receipt); one without is refused, so a PDF never goes out without it.
     receipt = { payload: row.payload, payloadDigestSha256: row.digest, signature: row.signature };
+    confirmationCode = row.confirmationCode;
   } else {
     return undefined;
   }
@@ -269,6 +286,7 @@ function submissionOf(row: Record<string, unknown>): StudentDataExportSubmission
     requestedAt,
     body: row.body,
     receipt,
+    confirmationCode,
   };
 }
 
@@ -327,10 +345,14 @@ export function createStudentDataExportWorker(
       const [submissionRows, noteRows, accessRows] = await Promise.all([
         rowsOf(
           db,
-          `SELECT submission_id::text AS "submissionId", assignment_id::text AS "assignmentId",
-                  revision::text AS revision, requested_at AS "requestedAt", body,
-                  receipt_payload AS payload, payload_digest_sha256 AS digest, signature
-             FROM app.worker_student_data_export_submissions($1::uuid)`,
+          // One statement, one snapshot: the code is the one of the receipt read with it.
+          `SELECT s.submission_id::text AS "submissionId", s.assignment_id::text AS "assignmentId",
+                  s.revision::text AS revision, s.requested_at AS "requestedAt", s.body,
+                  s.receipt_payload AS payload, s.payload_digest_sha256 AS digest, s.signature,
+                  c.code AS "confirmationCode"
+             FROM app.worker_student_data_export_submissions($1::uuid) s
+             LEFT JOIN app.worker_student_data_export_confirmation_codes($1::uuid) c
+               ON c.submission_id = s.submission_id`,
           [exportId],
         ),
         rowsOf(

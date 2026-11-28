@@ -18,6 +18,7 @@ import {
   TEXT,
   unzipStored,
 } from "../../../test-support/portable-record/index.ts";
+import { renderReceiptPdf } from "../../downloads/index.ts";
 
 import {
   ACCESS_LOG_FILE,
@@ -37,6 +38,8 @@ const decoder = new TextDecoder();
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 const ASSIGNMENT = PAYLOAD.assignmentId;
+/** An invented confirmation code of A's signed submission. */
+const CODE = "DK7M-4Q9P-X2HT-R8VN";
 const VESNA = { givenName: "Vesna", familyName: "Izmisljena" };
 
 /** A row of the access log read, under the database's own column names. */
@@ -66,6 +69,7 @@ async function contentsOfA(): Promise<PackageContents> {
           payloadDigestSha256: source.payloadDigestSha256,
           signature: source.signature,
         },
+        confirmationCode: CODE,
       },
       {
         submissionId: "0b8a6f3e-2d1c-4e5f-9a7b-6c5d4e3f2a1b",
@@ -74,6 +78,7 @@ async function contentsOfA(): Promise<PackageContents> {
         requestedAt: "2026-11-21T09:00:00.000Z",
         body: "Izmisljeni drugi predani tekst studentice A.",
         receipt: null,
+        confirmationCode: null,
       },
     ],
     notes: [
@@ -100,6 +105,7 @@ const CONTENTS_B: PackageContents = {
       requestedAt: "2026-11-20T10:00:00.000Z",
       body: "Izmisljeni predani tekst studenta B.",
       receipt: null,
+      confirmationCode: null,
     },
   ],
   notes: [
@@ -170,6 +176,43 @@ describe("buildStudentDataExportPackage", () => {
     expect(manifest.format).toBe(STUDENT_DATA_EXPORT_FORMAT);
     expect(manifest.submissions.map((s) => s.receipt === null)).toEqual([false, true]);
     for (const file of manifest.files) expect(sha(files.get(file.name)!)).toBe(file.sha256);
+  });
+
+  it("carries the bound confirmation code as the receipt route's PDF does (Dizajn 1.1)", async () => {
+    const a = await contentsOfA();
+    const built = await buildStudentDataExportPackage(a, ORIGIN, LABELS);
+    if (built.status !== "built") throw new Error("not built");
+    const pdf = Buffer.from(
+      unzipStored(built.bytes).get(`predaje/001-${SUBMISSION_ID}/potvrda-predaje.pdf`)!,
+    );
+    const stored = a.submissions[0]!.receipt!;
+    const receipt = {
+      payload: JSON.parse(stored.payload) as unknown,
+      payloadDigestSha256: stored.payloadDigestSha256,
+      signature: stored.signature,
+    } as Parameters<typeof renderReceiptPdf>[0];
+    // student.receipt-pdf.get: renderReceiptPdf(receipt, origin, receiptPdfHr, code).
+    expect(pdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, LABELS, CODE)))).toBe(
+      true,
+    );
+    expect(pdf.equals(Buffer.from(await renderReceiptPdf(receipt, ORIGIN, LABELS)))).toBe(false);
+    // Another code gives other bytes: the PDF is bound to the code it was given.
+    const other = await buildStudentDataExportPackage(
+      {
+        ...a,
+        submissions: [{ ...a.submissions[0]!, confirmationCode: "0000-1111-2222-3333" }],
+      },
+      ORIGIN,
+      LABELS,
+    );
+    if (other.status !== "built") throw new Error("not built");
+    expect(
+      pdf.equals(
+        Buffer.from(
+          unzipStored(other.bytes).get(`predaje/001-${SUBMISSION_ID}/potvrda-predaje.pdf`)!,
+        ),
+      ),
+    ).toBe(false);
   });
 
   it("holds nothing of another student (acceptance 3)", async () => {
