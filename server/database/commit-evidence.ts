@@ -55,7 +55,16 @@ export type EvidenceCommitInput = {
    * and v3. The RPC checks each against its record and binds it to the segment.
    */
   aiTransferLinks: readonly EvidenceAiTransferLink[] | null;
+  /**
+   * F4-EDI-R05-SRV: how the revision resolved a conflict with an earlier base,
+   * or null. The RPC stores it with an accepted revision only, and a retry
+   * must send the same value.
+   */
+  resolution: EvidenceRevisionResolution | null;
 };
+
+/** The resolution of a conflict, as the RPC takes it: the local text was kept over that base. */
+export type EvidenceRevisionResolution = { kind: "keep_local"; conflictBaseRevision: number };
 
 /** One link of a v4 event to its AI transfer record, as the RPC takes it. */
 export type EvidenceAiTransferLink = { aiTransferId: string; aiTransferSha256: string };
@@ -95,8 +104,8 @@ export type EvidenceCommitter = CommitContextReader & {
 };
 
 const COMMIT_SQL = `SELECT outcome, committed_revision, receipt_payload, receipt_id, signature,
-       current_revision, document_hash, head_segment_hash, last_sequence_to
-  FROM app.commit_evidence_segment($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10::jsonb)`;
+       current_revision, document_hash, head_segment_hash, last_sequence_to, resolution
+  FROM app.commit_evidence_segment($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10::jsonb, $11::jsonb)`;
 const ATTACH_SQL = "SELECT outcome FROM app.attach_receipt_signature($1::uuid, $2, $3::jsonb)";
 type Row = Record<string, unknown>;
 /** Thrown inside the transaction, so withActor rolls all of it back. */
@@ -293,6 +302,12 @@ async function runCommit(
             aiTransferSha256,
           })),
         ),
+    input.resolution === null
+      ? null
+      : JSON.stringify({
+          kind: input.resolution.kind,
+          conflictBaseRevision: input.resolution.conflictBaseRevision,
+        }),
   ]);
   const row = rows.length === 1 ? rows[0] : undefined;
   if (row === undefined) return fault("repository", "commit_rows");

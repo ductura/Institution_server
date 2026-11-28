@@ -70,6 +70,7 @@ const INPUT: EvidenceCommitInput = {
   storageRef: "local-demo:v2/x/pkg-1/b.json",
   snapshot: "{}",
   aiTransferLinks: null,
+  resolution: null,
 };
 const PAYLOAD: EvidenceReceiptPayloadV2 = {
   receiptSchema: "ductus-evidence-receipt-v2",
@@ -744,11 +745,22 @@ describe("statement parameters", () => {
       return seen.find((call) => call.text.includes("commit_evidence_segment"));
     }
 
-    it("calls the 10-argument acceptance with null for a v2 or v3 segment", async () => {
+    it("calls the 11-argument acceptance with null links for a v2 or v3 segment", async () => {
       const call = await commitValues(INPUT);
-      expect(call?.text).toContain("$9, $10::jsonb)");
-      expect(call?.values).toHaveLength(10);
+      expect(call?.text).toContain("$9, $10::jsonb, $11::jsonb)");
+      expect(call?.values).toHaveLength(11);
       expect(call?.values?.[9]).toBeNull();
+    });
+
+    it("sends SQL null when the revision resolves no conflict", async () => {
+      const call = await commitValues(INPUT);
+      expect(call?.values?.[10]).toBeNull();
+    });
+
+    it("sends only the two keys of a resolution", async () => {
+      const resolution = { kind: "keep_local", conflictBaseRevision: 3, note: "x" } as const;
+      const call = await commitValues({ ...INPUT, baseRevision: 4, resolution });
+      expect(call?.values?.[10]).toBe('{"kind":"keep_local","conflictBaseRevision":3}');
     });
 
     it("sends the links of a v4 segment as a JSON array, in their order", async () => {

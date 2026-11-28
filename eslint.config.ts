@@ -282,6 +282,9 @@ const DATABASE_NAMES = [
   "notice_fingerprint",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
   "segment_hashes",
+  // Result columns of the replay resolutions (replay-source.ts, F4-EDI-R05-SRV) and their tests.
+  "segment_hash",
+  "conflict_base_revision",
   // Result columns of the WebAuthn credential port (webauthn-credentials.ts, DAN-840) and its tests.
   "credential_id",
   "public_key",

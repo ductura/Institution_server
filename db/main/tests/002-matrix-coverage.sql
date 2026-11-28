@@ -161,6 +161,7 @@ CREATE VIEW pg_temp.matrix_row AS
     ('evidence', 'project', '040-evidence-schema.sql'),
     ('evidence', 'receipt', '040-evidence-schema.sql'),
     ('evidence', 'reconstruction_checkpoint', '195-reconstruction-checkpoint.sql'),
+    ('evidence', 'revision_resolution', '289-evidence-revision-resolution.sql'),
     ('evidence', 'revision_restore', '227-revision-restore.sql'),
     ('evidence', 'segment', '040-evidence-schema.sql'),
     ('evidence', 'segment_ai_transfer', '275-evidence-segment-v4-ingest.sql'),

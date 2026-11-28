@@ -359,6 +359,8 @@ ALTER TABLE declaration.mismatch_explanation DISABLE TRIGGER mismatch_explanatio
 ALTER TABLE evidence.revision_restore DISABLE TRIGGER revision_restore_no_truncate;
 -- The ranges of origin of a revision (SRV-KARTA-RASPON) reference the revisions of a work; append only.
 ALTER TABLE evidence.origin_segment DISABLE TRIGGER origin_segment_no_truncate;
+-- The resolution of a revision committed over a conflict (F4-EDI-R05-SRV) references the revisions and receipts; append only.
+ALTER TABLE evidence.revision_resolution DISABLE TRIGGER revision_resolution_no_truncate;
 -- The agreed tasks of a consultation record (SRV-MENTOR-1) reference the assignment through the record; they are append only.
 ALTER TABLE collaboration.consultation_task DISABLE TRIGGER consultation_task_no_truncate;
 ALTER TABLE collaboration.consultation_task_mark DISABLE TRIGGER consultation_task_mark_no_truncate;
@@ -382,6 +384,7 @@ SELECT is(
 );
 ALTER TABLE evidence.revision_restore ENABLE TRIGGER revision_restore_no_truncate;
 ALTER TABLE evidence.origin_segment ENABLE TRIGGER origin_segment_no_truncate;
+ALTER TABLE evidence.revision_resolution ENABLE TRIGGER revision_resolution_no_truncate;
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE evidence.submission_reconstruction ENABLE TRIGGER submission_reconstruction_no_truncate;
 ALTER TABLE evidence.event_dispute ENABLE TRIGGER event_dispute_no_truncate;

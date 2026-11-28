@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(6374);
+SELECT plan(6387);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -1687,6 +1687,56 @@ FROM (VALUES ('', 'empty'), (' doc-nema', 'a blank at its edge'), ('doc' || chr(
   AS d (id, label);
 SELECT is(pg_temp.ask('ana', $$ SELECT string_agg(outcome, ',') FROM app.record_revision_restore('doc-nema', 0) $$),
   'ZD422: invalid input', 'INT-21 C: a revision below 1 is refused before the access');
+
+-- 1f-ter. F4-EDI-R05-SRV (B1): the resolution of a revision committed over a
+-- conflict (evidence.revision_resolution) is written only through the
+-- 11-argument app.commit_evidence_segment and read only through
+-- app.read_replay_resolutions; the table has forced RLS and no right for a
+-- runtime role. This fixture has no work, so every signed-in actor reads no
+-- row; the owner, the teacher, a stranger and the cut are in
+-- 289-evidence-revision-resolution.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND ARRAY(SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth',
+                                         'ductus_identity', 'public']) r
+               WHERE has_table_privilege(r, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) = '{}'
+    AND ARRAY(SELECT p.policyname::text FROM pg_policies p
+      WHERE p.schemaname = 'evidence' AND p.tablename = c.relname
+        AND p.roles = ARRAY['ductus_evidence'::name] AND p.cmd = 'ALL') = ARRAY['evidence_revision_resolution_owner']
+    AND (SELECT count(*) FROM pg_policies p WHERE p.schemaname = 'evidence' AND p.tablename = c.relname) = 1,
+  'F4-EDI-R05-SRV: evidence.revision_resolution has forced RLS and only the evidence owner has access')
+  FROM pg_class c WHERE c.oid = to_regclass('evidence.revision_resolution');
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.commit_evidence_segment(text,text,bigint,text,text,jsonb,text,text,text,jsonb,jsonb)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_replay_resolutions(text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.replay_resolution_marks(text,text[])']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'F4-EDI-R05-SRV: only ductus_app and the owners execute the commit and the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT coalesce(string_agg(segment_hash, ','), '-') FROM app.read_replay_resolutions('doc-nema') $$), 1, 9),
+  c.outcome, format('F4-EDI-R05-SRV: %s reads the resolutions of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', '-'), ('dora', '-'), ('vesna', '-'), ('marko', '-'),
+  ('iva', '-'), ('boris', '-'), ('nina', '-'), ('tomo', '-'),
+  ('lea', '-'), ('petra', '-'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
 
 -- 1g. SRV-10B: the attachments of a work (institution.work_attachment) only
 -- through its three RPCs; the web role has no privilege or policy on the
