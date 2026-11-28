@@ -99,7 +99,8 @@ export type ReplayResolutionsResult =
 /**
  * The resolutions of one record, bound to one session: the same viewers and
  * the same submission cut as the source. A refused or missing record has
- * none, so refusal looks like absence. No caller reads it yet.
+ * none, so refusal looks like absence. The replay route reads it through
+ * readReplayPage (B2).
  */
 export type ReplayResolutionReader = {
   readResolutions(documentId: string): Promise<ReplayResolutionsResult>;

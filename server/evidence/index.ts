@@ -16,6 +16,7 @@ export {
   type ReplayPage,
   type ReplayReadResult,
   type ReplayReaderDeps,
+  type ReplayResolution,
 } from "./replay.ts";
 // SRV-9A: the versions of a work, the same page for its owner and its teacher.
 export { answerWorkVersions, type WorkVersionsAnswer } from "./versions/index.ts";

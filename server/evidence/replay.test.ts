@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   ReplayCheckpointsResult,
   ReplayHead as EvidenceChainHeadV2,
+  ReplayResolutionReader,
+  ReplayResolutionsResult,
   ReplaySource,
   ReplaySourceResult,
 } from "../database/index.ts";
@@ -154,13 +156,26 @@ function sourceOf(
   } satisfies ReplaySource;
 }
 
+/** F4-EDI-R05-SRV (B2): a reader that answers `answer`, for DOCUMENT only. */
+function resolutionsOf(answer: ReplayResolutionsResult) {
+  return {
+    readResolutions: vi.fn(async (documentId: string) =>
+      documentId === DOCUMENT
+        ? structuredClone(answer)
+        : ({ status: "found", marks: [] } as ReplayResolutionsResult),
+    ),
+  } satisfies ReplayResolutionReader;
+}
+const NONE = resolutionsOf({ status: "found", marks: [] });
+
 async function page(
   source: ReplaySource,
   payloads: InstitutionEvidencePayloadReader,
   from = 0,
   pin: EvidenceChainHeadV2 | null = null,
+  resolutions: ReplayResolutionReader = NONE,
 ) {
-  const result = await readReplayPage({ source, payloads }, DOCUMENT, from, pin);
+  const result = await readReplayPage({ source, payloads, resolutions }, DOCUMENT, from, pin);
   return result.status === "ok"
     ? { ...result, page: JSON.parse(result.body) as ReplayPage }
     : result;
@@ -182,6 +197,7 @@ describe("readReplayPage (DAN-344 R3)", () => {
       startDocument: REVISION_ZERO_JCS,
       segments: record.payloads,
       resumeDocuments: {},
+      resolutions: {},
     });
     expect(source.readCheckpoints).not.toHaveBeenCalled();
     // No institution, package, receipt or reader in the page.
@@ -194,13 +210,13 @@ describe("readReplayPage (DAN-344 R3)", () => {
     const store = await storeOf(record);
     const texts = { [docHash(9)]: "unused" };
     const first = await readReplayPage(
-      { source: sourceOf(found(record.hashes), texts), payloads: store },
+      { source: sourceOf(found(record.hashes), texts), payloads: store, resolutions: NONE },
       DOCUMENT,
       0,
       null,
     );
     const second = await readReplayPage(
-      { source: sourceOf(found(record.hashes), texts), payloads: store },
+      { source: sourceOf(found(record.hashes), texts), payloads: store, resolutions: NONE },
       DOCUMENT,
       0,
       null,
@@ -285,7 +301,7 @@ describe("readReplayPage (DAN-344 R3)", () => {
     expect(await page(sourceOf(found([])), store, 1)).toStrictEqual({ status: "not_found" });
     expect(
       await readReplayPage(
-        { source: sourceOf(found(record.hashes)), payloads: store },
+        { source: sourceOf(found(record.hashes)), payloads: store, resolutions: NONE },
         " doc",
         0,
         null,
@@ -678,7 +694,9 @@ describe("isReplayDocumentId (DAN-818)", () => {
     async (documentId) => {
       const source = sourceOf(found([]));
       const payloads = { readImmutable: vi.fn() };
-      expect(await readReplayPage({ source, payloads }, documentId, 0, null)).toStrictEqual({
+      expect(
+        await readReplayPage({ source, payloads, resolutions: NONE }, documentId, 0, null),
+      ).toStrictEqual({
         status: "not_found",
       });
       expect(source.readSource).not.toHaveBeenCalled();
@@ -758,5 +776,139 @@ describe("readReplayPage from revision 0 of document v2 and v3 (SRV-33C)", () =>
       [REVISION_ZERO_V2_SHA256]: REVISION_ZERO_V2_JCS,
     });
     expect(source.readCheckpoints).not.toHaveBeenCalled();
+  });
+});
+
+// F4-EDI-R05-SRV (B2): the resolutions of the record on the page.
+describe("readReplayPage with the resolutions of the record (F4-EDI-R05-SRV B2)", () => {
+  it("names keep_local with its base for each segment on this page, and only those", async () => {
+    const record = await buildRecord([{}, {}, {}]);
+    const store = await storeOf(record);
+    const marks = resolutionsOf({
+      status: "found",
+      marks: [
+        { segmentHash: record.hashes[0] as string, conflictBaseRevision: 0 },
+        { segmentHash: record.hashes[2] as string, conflictBaseRevision: 1 },
+        // A mark of no listed segment is never shown.
+        { segmentHash: docHash(42), conflictBaseRevision: 2 },
+      ],
+    });
+    const first = await page(sourceOf(found(record.hashes)), store, 0, null, marks);
+    expect(first.status === "ok" && first.page.resolutions).toStrictEqual({
+      [record.hashes[0] as string]: { kind: "keep_local", conflictBaseRevision: 0 },
+      [record.hashes[2] as string]: { kind: "keep_local", conflictBaseRevision: 1 },
+    });
+    expect(marks.readResolutions).toHaveBeenCalledWith(DOCUMENT);
+
+    // A later page names only its own segments.
+    const later = await page(
+      sourceOf(found(record.hashes)),
+      store,
+      1,
+      headOf(record.hashes),
+      marks,
+    );
+    expect(later.status === "ok" && later.page.resolutions).toStrictEqual({
+      [record.hashes[2] as string]: { kind: "keep_local", conflictBaseRevision: 1 },
+    });
+    // A page pinned to an earlier head does not name a segment past it.
+    const pinned = await page(
+      sourceOf(found(record.hashes)),
+      store,
+      1,
+      headOf(record.hashes.slice(0, 2)),
+      marks,
+    );
+    expect(pinned.status === "ok" && pinned.page).toMatchObject({
+      segments: record.payloads.slice(1, 2),
+      resolutions: {},
+    });
+  });
+
+  it("gives the same bytes for every reader bound to the same record", async () => {
+    const record = await buildRecord([{}, {}]);
+    const store = await storeOf(record);
+    const answer: ReplayResolutionsResult = {
+      status: "found",
+      marks: [{ segmentHash: record.hashes[1] as string, conflictBaseRevision: 0 }],
+    };
+    const owner = await page(sourceOf(found(record.hashes)), store, 0, null, resolutionsOf(answer));
+    const teacher = await page(
+      sourceOf(found(record.hashes)),
+      store,
+      0,
+      null,
+      resolutionsOf(answer),
+    );
+    expect(owner).toStrictEqual(teacher);
+    expect(owner.status === "ok" && owner.body).toContain('"resolutions":{"');
+  });
+
+  it("does not read the resolutions when access is refused or the record is empty", async () => {
+    const record = await buildRecord([{}]);
+    const store = await storeOf(record);
+    for (const refused of [{ status: "not_found" }, { status: "unauthenticated" }] as const) {
+      const marks = resolutionsOf({ status: "found", marks: [] });
+      expect(await page(sourceOf(refused), store, 0, null, marks)).toStrictEqual(refused);
+      expect(marks.readResolutions).not.toHaveBeenCalled();
+    }
+    const marks = resolutionsOf({ status: "found", marks: [] });
+    const empty = await page(sourceOf(found([])), store, 0, null, marks);
+    expect(empty.status === "ok" && empty.page.resolutions).toStrictEqual({});
+    expect(marks.readResolutions).not.toHaveBeenCalled();
+  });
+
+  it("fails the whole page, never a page without its resolutions, when they cannot be read", async () => {
+    const record = await buildRecord([{}, {}]);
+    const store = await storeOf(record);
+    expect(
+      await page(
+        sourceOf(found(record.hashes)),
+        store,
+        0,
+        null,
+        resolutionsOf({ status: "unauthenticated" }),
+      ),
+    ).toStrictEqual({ status: "unauthenticated" });
+    expect(
+      await page(
+        sourceOf(found(record.hashes)),
+        store,
+        0,
+        null,
+        resolutionsOf({ status: "unavailable", reason: "resolutions_malformed" }),
+      ),
+    ).toStrictEqual({ status: "unavailable", reason: "resolutions_unavailable" });
+    const throwing: ReplayResolutionReader = {
+      readResolutions: vi.fn(async () => {
+        throw new Error("connection lost");
+      }),
+    };
+    expect(await page(sourceOf(found(record.hashes)), store, 0, null, throwing)).toStrictEqual({
+      status: "unavailable",
+      reason: "resolutions_unavailable",
+    });
+  });
+
+  it("reads the resolutions after the listing", async () => {
+    const record = await buildRecord([{}]);
+    const order: string[] = [];
+    const source = sourceOf(found(record.hashes));
+    const readSource = source.readSource;
+    const listed = {
+      ...source,
+      readSource: vi.fn(async (documentId: string) => {
+        order.push("source");
+        return readSource(documentId);
+      }),
+    } satisfies ReplaySource;
+    const marks: ReplayResolutionReader = {
+      readResolutions: vi.fn(async () => {
+        order.push("resolutions");
+        return { status: "found", marks: [] } as ReplayResolutionsResult;
+      }),
+    };
+    expect((await page(listed, await storeOf(record), 0, null, marks)).status).toBe("ok");
+    expect(order).toStrictEqual(["source", "resolutions"]);
   });
 });

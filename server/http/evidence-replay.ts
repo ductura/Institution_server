@@ -11,6 +11,7 @@
 import { ROUTES } from "../contracts/index.ts";
 import {
   type ActorReader,
+  createReplayResolutionReader,
   createReplaySource,
   type ReplayHead,
   type WithActor,
@@ -134,7 +135,12 @@ export function createEvidenceReplayRoute(options: EvidenceReplayOptions): Route
       let page: ReplayReadResult;
       try {
         page = await readReplayPage(
-          { source: createReplaySource(options.withActor, read.token), payloads: options.payloads },
+          {
+            source: createReplaySource(options.withActor, read.token),
+            payloads: options.payloads,
+            // F4-EDI-R05-SRV (B2): the same session and the same viewers as the source.
+            resolutions: createReplayResolutionReader(options.withActor, read.token),
+          },
           body.documentId,
           body.from,
           body.pin,
