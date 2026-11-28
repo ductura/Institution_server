@@ -276,6 +276,16 @@ export function serverEnv(
 }
 
 /**
+ * The local-only switches the caller may hand to the server. baseEnv drops every
+ * DUCTUS_* variable, so the analysis switch of SRV-ANALIZA-LOKALNO
+ * (server/http/analysis/index.ts) passes only here, and only as exactly "1";
+ * the server still checks its own local stack marker.
+ */
+export function localSwitches(env: Env): Record<string, string> {
+  return env.DUCTUS_ANALYSIS_LOCAL === "1" ? { DUCTUS_ANALYSIS_LOCAL: "1" } : {};
+}
+
+/**
  * db/main/local/seed.sql without its psql guard (the `\set` … `\endif` block
  * that refuses TCP): pnpm lokalno reaches the database over loopback TCP, as
  * Windows has no socket, and checks the loopback host itself (adminTarget).
