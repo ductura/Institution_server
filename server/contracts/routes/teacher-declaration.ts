@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema/index.ts";
+import { closed, defineRoute, error, REQUEST_ID_PATTERN } from "../schema/index.ts";
 
 import {
   DeclarationPayload,
@@ -9,6 +9,7 @@ import {
   DeclarationQuestionAnswer,
   DeclarationSha256,
   DeclarationTeacherQuestion,
+  MAX_RECORDED_TRANSFERS,
 } from "./statement.ts";
 
 // SRV-IZJAVA-PITANJE: the question in force and the answer bound with the
@@ -113,7 +114,7 @@ export const teacherDeclarationV3Get = defineRoute({
   inventory:
     "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration-v3/route.ts",
   summary:
-    "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. Opening a bound declaration is recorded in the access log.",
+    "The declaration as teacher.declaration-second.get reads it, with up to 5000 recorded transfers; teacher.declaration-second.get answers 503 unavailable for a declaration that records more than 500. A bound declaration also carries ai.unbound: the student's transfer records of the declared document that no evidence revision binds. Opening a bound declaration is recorded in the access log.",
   responses: [
     {
       status: 200,
@@ -129,6 +130,21 @@ export const teacherDeclarationV3Get = defineRoute({
           state: Type.Literal("bound"),
           payload: DeclarationPayloadV3,
           declarationSha256: DeclarationSha256,
+          // SRV-IZJAVA-AI-UNBOUND: the student's transfer records of the declared
+          // document that no evidence revision binds, ordered by aiTransferId.
+          // Beside the payload, outside its hash. Optional only so older clients
+          // keep validating.
+          ai: Type.Optional(
+            closed({
+              unbound: Type.Array(
+                closed({
+                  aiTransferId: Type.String({ pattern: REQUEST_ID_PATTERN }),
+                  aiTransferSha256: DeclarationSha256,
+                }),
+                { maxItems: MAX_RECORDED_TRANSFERS },
+              ),
+            }),
+          ),
           ...Question,
         }),
       ]),
